@@ -6,7 +6,8 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)   ---@type common_config
 local common_const = require(MainStorage.code.common.MConst)    ---@type common_const
-local ItemBase = require(MainStorage.code.server.items.ItemBase)   ---@type ItemBase
+local CommonModule = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ItemBase = require(MainStorage.code.server.item_types.ItemBase)   ---@type ItemBase
 
 ---@class CardItem : ItemBase
 ---@field card_id number 卡片ID
@@ -15,8 +16,7 @@ local ItemBase = require(MainStorage.code.server.items.ItemBase)   ---@type Item
 ---@field equippable boolean 是否可装备
 ---@field slot_type string 装备栏位类型
 ---@field unique boolean 是否唯一
-local CardItem = setmetatable({}, {__index = ItemBase})
-CardItem.__index = CardItem
+local CardItem = CommonModule.Class("CardItem", ItemBase)
 
 -- 卡片类型常量
 CardItem.CARD_TYPE = {
@@ -37,9 +37,9 @@ CardItem.SLOT_TYPE = {
 
 --- 创建一个新卡片实例
 ---@param data table 卡片初始数据
----@return CardItem 卡片实例
-function CardItem.new(data)
-    local self = setmetatable(ItemBase.new(data), CardItem)
+function CardItem:OnInit(data)
+    -- 调用父类初始化
+    ItemBase.OnInit(self, data)
     
     -- 卡片特有属性
     self.card_id = data.card_id or 0
@@ -52,8 +52,6 @@ function CardItem.new(data)
     -- 确保分类正确
     self.category = ItemBase.CATEGORY.CARD
     self.itype = common_const.ITEM_TYPE.CARD
-    
-    return self
 end
 
 --- 重写：获取物品描述
@@ -276,7 +274,7 @@ end
 ---@param itemData table 物品数据
 ---@return CardItem 卡片对象
 function CardItem.fromData(itemData)
-    return CardItem.new(itemData)
+    return CardItem.New(itemData)
 end
 
 --- 创建一个能力卡片
@@ -299,7 +297,7 @@ function CardItem.createAbilityCard(cardId, name, quality, effects)
         asset = "sandboxSysId://items/icon10001.png"  -- 替换为实际的卡片图标
     }
     
-    return CardItem.new(data)
+    return CardItem.New(data)
 end
 
 --- 创建一个怪物卡片
@@ -342,7 +340,7 @@ function CardItem.createMonsterCard(monsterId, quality)
         asset = "sandboxSysId://items/icon10002.png"  -- 替换为实际的卡片图标
     }
     
-    return CardItem.new(data)
+    return CardItem.New(data)
 end
 
 --- 创建一个事件卡片
@@ -366,7 +364,7 @@ function CardItem.createEventCard(eventId, name, description)
         asset = "sandboxSysId://items/icon10003.png"  -- 替换为实际的卡片图标
     }
     
-    return CardItem.new(data)
+    return CardItem.New(data)
 end
 
 return CardItem

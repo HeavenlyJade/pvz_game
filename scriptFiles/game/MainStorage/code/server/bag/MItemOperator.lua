@@ -17,7 +17,6 @@ local EquipmentItem = require(MainStorage.code.server.item_types.EquipmentItem) 
 local ConsumableItem = require(MainStorage.code.server.item_types.ConsumableItem) ---@type ConsumableItem
 local MaterialItem = require(MainStorage.code.server.item_types.MaterialItem) ---@type MaterialItem
 local CardItem = require(MainStorage.code.server.item_types.CardItem) ---@type CardItem
--- gg.log("MainStorage.code.server.item_types.ItemBase",ItemBase)
 ---@class ItemOperator
 local ItemOperator = {
     

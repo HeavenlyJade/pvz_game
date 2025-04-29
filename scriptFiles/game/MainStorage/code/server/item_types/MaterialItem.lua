@@ -6,15 +6,15 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)   ---@type common_config
 local common_const = require(MainStorage.code.common.MConst)    ---@type common_const
-local ItemBase = require(MainStorage.code.server.items.ItemBase)   ---@type ItemBase
+local CommonModule = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ItemBase = require(MainStorage.code.server.item_types.ItemBase)   ---@type ItemBase
 
 ---@class MaterialItem : ItemBase
 ---@field mat_id number 材料ID
 ---@field mat_type string 材料类型
 ---@field use_for table 材料用途描述
 ---@field num number 堆叠数量
-local MaterialItem = setmetatable({}, {__index = ItemBase})
-MaterialItem.__index = MaterialItem
+local MaterialItem = CommonModule.Class("MaterialItem", ItemBase)
 
 -- 材料类型
 MaterialItem.MAT_TYPE = {
@@ -28,9 +28,9 @@ MaterialItem.MAT_TYPE = {
 
 --- 创建一个新材料实例
 ---@param data table 材料初始数据
----@return MaterialItem 材料实例
-function MaterialItem.new(data)
-    local self = setmetatable(ItemBase.new(data), MaterialItem)
+function MaterialItem:OnInit(data)
+    -- 调用父类初始化
+    ItemBase.OnInit(self, data)
     
     -- 材料特有属性
     self.mat_id = data.mat_id or common_const.MAT_ID.FRAGMENT
@@ -41,8 +41,6 @@ function MaterialItem.new(data)
     -- 确保分类正确
     self.category = ItemBase.CATEGORY.MATERIAL
     self.itype = common_const.ITEM_TYPE.MAT
-    
-    return self
 end
 
 --- 重写：获取物品描述
@@ -200,7 +198,7 @@ end
 ---@param itemData table 物品数据
 ---@return MaterialItem 材料对象
 function MaterialItem.fromData(itemData)
-    return MaterialItem.new(itemData)
+    return MaterialItem.New(itemData)
 end
 
 --- 创建一个碎片材料
@@ -220,7 +218,7 @@ function MaterialItem.createFragment(quality, amount)
         use_for = {desc = "用于合成与强化装备"}
     }
     
-    return MaterialItem.new(data)
+    return MaterialItem.New(data)
 end
 
 --- 创建一个宝箱
@@ -239,7 +237,7 @@ function MaterialItem.createBox(quality, level)
         use_for = {desc = "打开可获得随机装备"}
     }
     
-    return MaterialItem.new(data)
+    return MaterialItem.New(data)
 end
 
 return MaterialItem

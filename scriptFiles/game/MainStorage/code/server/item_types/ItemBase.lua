@@ -6,6 +6,7 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)   ---@type common_config
 local common_const = require(MainStorage.code.common.MConst)    ---@type common_const
+local CommonModule = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
 
 ---@class ItemBase
 ---@field uuid string 物品唯一ID
@@ -17,18 +18,14 @@ local common_const = require(MainStorage.code.common.MConst)    ---@type common_
 ---@field asset string 资源路径
 ---@field num number? 堆叠数量
 ---@field pos number? 装备位置
-local ItemBase = {}
-ItemBase.__index = ItemBase
+local ItemBase = CommonModule.Class("ItemBase")
 
 -- 物品分类常量
 ItemBase.CATEGORY = common_const.ITEM_TYPE
 
---- 创建一个新物品实例
+--- 创建一个新物品实例（OnInit替代原来的new方法）
 ---@param data table 物品初始数据
----@return ItemBase 物品实例
-function ItemBase.new(data)
-    local self = setmetatable({}, ItemBase)
-    
+function ItemBase:OnInit(data)
     -- 基本属性
     self.uuid = data.uuid or gg.create_uuid('item')
     self.itype = data.itype
@@ -39,8 +36,6 @@ function ItemBase.new(data)
     self.asset = data.asset or ""
     self.num = data.num or 1
     self.pos = data.pos or 0  -- 装备位置
-    
-    return self
 end
 
 --- 获取物品描述
@@ -116,8 +111,7 @@ end
 ---@param itemData table 物品数据
 ---@return ItemBase 物品对象
 function ItemBase.fromData(itemData)
-    return ItemBase.new(itemData)
-    
+    return ItemBase.New(itemData)
 end
 
 return ItemBase

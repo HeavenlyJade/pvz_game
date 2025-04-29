@@ -6,7 +6,8 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)   ---@type common_config
 local common_const = require(MainStorage.code.common.MConst)    ---@type common_const
-local ItemBase = require(MainStorage.code.server.items.ItemBase)   ---@type ItemBase
+local CommonModule = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ItemBase = require(MainStorage.code.server.item_types.ItemBase)   ---@type ItemBase
 
 ---@class ConsumableItem : ItemBase
 ---@field effect_type string 效果类型
@@ -16,8 +17,7 @@ local ItemBase = require(MainStorage.code.server.items.ItemBase)   ---@type Item
 ---@field buff_id number? Buff ID
 ---@field is_instant boolean 是否立即生效
 ---@field num number 堆叠数量
-local ConsumableItem = setmetatable({}, {__index = ItemBase})
-ConsumableItem.__index = ConsumableItem
+local ConsumableItem = CommonModule.Class("ConsumableItem", ItemBase)
 
 -- 效果类型常量
 ConsumableItem.EFFECT_TYPE = {
@@ -32,9 +32,9 @@ ConsumableItem.EFFECT_TYPE = {
 
 --- 创建一个新消耗品实例
 ---@param data table 消耗品初始数据
----@return ConsumableItem 消耗品实例
-function ConsumableItem.new(data)
-    local self = setmetatable(ItemBase.new(data), ConsumableItem)
+function ConsumableItem:OnInit(data)
+    -- 调用父类初始化
+    ItemBase.OnInit(self, data)
     
     -- 消耗品特有属性
     self.effect_type = data.effect_type or ConsumableItem.EFFECT_TYPE.HEAL
@@ -48,8 +48,6 @@ function ConsumableItem.new(data)
     -- 确保分类正确
     self.category = ItemBase.CATEGORY.CONSUMABLE
     self.itype = common_const.ITEM_TYPE.CONSUMABLE
-    
-    return self
 end
 
 --- 重写：获取物品描述
@@ -275,7 +273,7 @@ end
 ---@param itemData table 物品数据
 ---@return ConsumableItem 消耗品对象
 function ConsumableItem.fromData(itemData)
-    return ConsumableItem.new(itemData)
+    return ConsumableItem.New(itemData)
 end
 
 --- 创建一个生命药水
@@ -295,7 +293,7 @@ function ConsumableItem.createHealthPotion(quality, amount, stackSize)
         asset = "sandboxSysId://items/icon11001.png"  -- 替换为实际的药水图标
     }
     
-    return ConsumableItem.new(data)
+    return ConsumableItem.New(data)
 end
 
 --- 创建一个魔法药水
@@ -315,7 +313,7 @@ function ConsumableItem.createManaPotion(quality, amount, stackSize)
         asset = "sandboxSysId://items/icon11002.png"  -- 替换为实际的药水图标
     }
     
-    return ConsumableItem.new(data)
+    return ConsumableItem.New(data)
 end
 
 --- 创建一个增益药水
@@ -341,7 +339,7 @@ function ConsumableItem.createBuffPotion(buffId, duration, stackSize)
         asset = buffConfig.icon or "sandboxSysId://items/icon11003.png"  -- 使用buff图标或默认图标
     }
     
-    return ConsumableItem.new(data)
+    return ConsumableItem.New(data)
 end
 
 return ConsumableItem

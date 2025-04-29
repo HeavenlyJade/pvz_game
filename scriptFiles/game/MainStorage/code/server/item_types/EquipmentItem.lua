@@ -6,6 +6,7 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)   ---@type common_config
 local common_const = require(MainStorage.code.common.MConst)    ---@type common_const
+local CommonModule = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
 local ItemBase = require(MainStorage.code.server.item_types.ItemBase)   ---@type ItemBase
 
 ---@class EquipmentItem : ItemBase
@@ -17,14 +18,13 @@ local ItemBase = require(MainStorage.code.server.item_types.ItemBase)   ---@type
 ---@field spell2 number? 法术上限
 ---@field attrs table? 附加属性
 ---@field pos number? 装备位置
-local EquipmentItem = setmetatable({}, {__index = ItemBase})
-EquipmentItem.__index = EquipmentItem
+local EquipmentItem = CommonModule.Class("EquipmentItem", ItemBase)
 
 --- 创建一个新装备实例
 ---@param data table 装备初始数据
----@return EquipmentItem 装备实例
-function EquipmentItem.new(data)
-    local self = setmetatable(ItemBase.new(data), EquipmentItem)
+function EquipmentItem:OnInit(data)
+    -- 调用父类初始化
+    ItemBase.OnInit(self, data)
     
     -- 装备特有属性
     self.attack = data.attack or 0
@@ -39,8 +39,6 @@ function EquipmentItem.new(data)
     -- 确保分类正确
     self.category = ItemBase.CATEGORY.EQUIPMENT
     self.itype = common_const.ITEM_TYPE.EQUIPMENT
-    
-    return self
 end
 
 --- 获取装备位置描述
@@ -187,7 +185,7 @@ end
 ---@param itemData table 物品数据
 ---@return EquipmentItem 装备对象
 function EquipmentItem.fromData(itemData)
-    return EquipmentItem.new(itemData)
+    return EquipmentItem.New(itemData)
 end
 
 --- 创建一个随机装备
@@ -241,7 +239,7 @@ function EquipmentItem.createRandom(quality, level, pos)
         data.asset = "sandboxSysId://items/icon12005.png"  -- 默认图标
     end
     
-    return EquipmentItem.new(data)
+    return EquipmentItem.New(data)
 end
 
 return EquipmentItem
