@@ -1,6 +1,0 @@
-{
-    "Lua.diagnostics.disable": [
-        "undefined-doc-param",
-        "need-check-nil"
-    ]
-}
