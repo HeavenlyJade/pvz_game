@@ -270,17 +270,16 @@ end
 
 
 -- 玩家改动装备，重算一个玩家的属性和词条
--- 遍历玩家已装备物品：读取玩家背包中“已装备”的物品（不同部位）。
+-- 遍历玩家已装备物品：读取玩家背包中"已装备"的物品（不同部位）。
 -- 汇总装备属性：将所有装备的基础攻防和词缀属性（如 attack, defence, spell, p 等）进行叠加。
 -- 写回玩家对象：将计算好的总属性更新到玩家对象里，并调用 resetBattleData 对战斗属性做最终重置或生效。
 -- 日志输出：打印调试信息，方便查看玩家最终属性。
 function BattleMgr.refreshPlayerAttr(uin_)
     local player_data_ = gg.server_player_bag_data[uin_]
-    --bag_index = {}
-    --bag_items = {}
-    --bag_ver   = 1001
-
-
+    
+    -- 使用for循环打印背包数据信息
+    gg.log('BattleMgr.refreshPlayerAttr开始打印玩家背包数据 uin=' .. uin_)
+    
     local all_attr = {
         wspeed   = 1, --武器速度
         attack   = 0, --最小伤害

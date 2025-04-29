@@ -114,6 +114,50 @@ function MCloudDataMgr.savePlayerData( uin_,  force_ )
 end
 
 
+--- 判断物品类型并返回对应的容器名称
+function MCloudDataMgr.getContainerNameByType(itemType)
+    local typeToContainer = {
+        [common_const.ITEM_TYPE.EQUIPMENT] = "bag_equ_items",
+        [common_const.ITEM_TYPE.CONSUMABLE] = "bag_consum_items",
+        [common_const.ITEM_TYPE.BOX] = "bag_consum_items", -- 宝箱也放在消耗品容器
+        [common_const.ITEM_TYPE.MAT] = "bag_mater_items",
+        [common_const.ITEM_TYPE.CARD] = "bag_card_items"
+    }
+    return typeToContainer[itemType] or "bag_equ_items" -- 默认放在装备容器
+end
+
+--- 迁移背包数据到新格式
+function MCloudDataMgr.migrateBagDataToNewFormat(bagData)
+    -- 只处理有旧格式数据的情况
+    if not bagData.bag_items then
+        return bagData
+    end
+    
+    -- 初始化新容器
+    bagData.bag_equ_items = bagData.bag_equ_items or {}
+    bagData.bag_consum_items = bagData.bag_consum_items or {}
+    bagData.bag_mater_items = bagData.bag_mater_items or {}
+    bagData.bag_card_items = bagData.bag_card_items or {}
+    
+    -- 迁移物品数据
+    for uuid, item in pairs(bagData.bag_items) do
+        local containerName = MCloudDataMgr.getContainerNameByType(item.itype)
+        bagData[containerName][uuid] = item
+        
+        -- 更新索引中的类型信息
+        for bagId, index in pairs(bagData.bag_index) do
+            if index.uuid == uuid then
+                index.type = item.itype
+            end
+        end
+    end
+    
+    -- 增加版本号
+    bagData.bag_ver = bagData.bag_ver + 1
+    
+    return bagData
+end
+
 -- 读取玩家的背包数据
 function MCloudDataMgr.readPlayerBag(uin_)
     local success, bagData = cloudService:GetTableOrEmpty('bag' .. uin_)
@@ -128,57 +172,127 @@ function MCloudDataMgr.readPlayerBag(uin_)
         return 0, {}
     end
     
+    -- 处理旧数据格式迁移
+    if bagData.bag_items and not bagData.bag_equ_items then
+        -- 初始化新容器
+        bagData.bag_equ_items = {}
+        bagData.bag_consum_items = {}
+        bagData.bag_mater_items = {}
+        bagData.bag_card_items = {}
+        
+        -- 迁移物品数据
+        for uuid, item in pairs(bagData.bag_items) do
+            local containerName = MCloudDataMgr.getContainerNameByType(item.itype)
+            bagData[containerName][uuid] = item
+            
+            -- 更新索引中的类型信息
+            for bagId, index in pairs(bagData.bag_index) do
+                if index.uuid == uuid then
+                    index.type = item.itype
+                end
+            end
+        end
+        
+        -- 增加版本号
+        bagData.bag_ver = (bagData.bag_ver or 1000) + 1
+        
+        -- 不删除旧数据，保留兼容性
+    end
+    
+    -- 确保索引中有类型信息
+    if bagData.bag_index then
+        for bagId, index in pairs(bagData.bag_index) do
+            if index.uuid and not index.type then
+                -- 尝试确定物品类型
+                local item = nil
+                for _, containerName in ipairs({"bag_equ_items", "bag_consum_items", "bag_mater_items", "bag_card_items", "bag_items"}) do
+                    if bagData[containerName] and bagData[containerName][index.uuid] then
+                        item = bagData[containerName][index.uuid]
+                        break
+                    end
+                end
+                
+                if item then
+                    index.type = item.itype
+                else
+                    -- 如果找不到物品，默认为装备类型
+                    index.type = common_const.ITEM_TYPE.EQUIPMENT
+                end
+            end
+        end
+    end
+    
     -- 开始清理无效数据
     -- 1. 收集有效物品索引
     local validUUIDToBagID = {}
     local invalidBagIDs = {}
     
     for bagID, indexData in pairs(bagData.bag_index) do
-        if indexData.uuid and bagData.bag_items[indexData.uuid] then
-            if bagData.bag_items[indexData.uuid].quality then
+        local isValid = false
+        if indexData.uuid and indexData.type then
+            local containerName = MCloudDataMgr.getContainerNameByType(indexData.type)
+            if bagData[containerName] and bagData[containerName][indexData.uuid] then
                 validUUIDToBagID[indexData.uuid] = bagID
+                isValid = true
             end
-        else
+        end
+        
+        if not isValid then
             table.insert(invalidBagIDs, bagID)
         end
     end
     
-    -- 2. 收集无引用的物品UUID
-    local orphanedUUIDs = {}
-    for uuid in pairs(bagData.bag_items) do
-        if not validUUIDToBagID[uuid] then
-            table.insert(orphanedUUIDs, uuid)
-        end
-    end
-    
-    -- 3. 清理无效索引和物品
+    -- 2. 清理无效索引
     for _, bagID in ipairs(invalidBagIDs) do
         bagData.bag_index[bagID] = nil
     end
     
-    for _, uuid in ipairs(orphanedUUIDs) do
-        bagData.bag_items[uuid] = nil
+    -- 3. 清理无引用的物品
+    local containerNames = {"bag_equ_items", "bag_consum_items", "bag_mater_items", "bag_card_items", "bag_items"}
+    for _, containerName in ipairs(containerNames) do
+        if bagData[containerName] then
+            local orphanedUUIDs = {}
+            for uuid in pairs(bagData[containerName]) do
+                if not validUUIDToBagID[uuid] then
+                    table.insert(orphanedUUIDs, uuid)
+                end
+            end
+            
+            for _, uuid in ipairs(orphanedUUIDs) do
+                bagData[containerName][uuid] = nil
+            end
+        end
     end
-    local re_bagData = MCloudDataMgr.restoreFilteredItemFields(bagData)
-    gg.log("恢复背包数据", 'bag' .. uin_, re_bagData)
-    return 0, re_bagData
+    
+    -- 恢复物品资源信息
+    bagData = MCloudDataMgr.restoreFilteredItemFields(bagData)
+    
+    gg.log("读取并处理背包数据", 'bag' .. uin_, bagData.bag_ver)
+    return 0, bagData
 end
 
 function MCloudDataMgr.restoreFilteredItemFields(bagData)
-    if not bagData.bag_items then return end
+    -- 容器列表
+    local containerNames = {"bag_equ_items", "bag_consum_items", "bag_mater_items", "bag_card_items", "bag_items"}
     
-    for uuid, item in pairs(bagData.bag_items) do
-        -- 恢复资源路径(asset)
-        local re_item = MCloudDataMgr.restoreItemAsset(item)
-        bagData.bag_items[uuid] = re_item
+    -- 处理每个容器
+    for _, containerName in ipairs(containerNames) do
+        if bagData[containerName] then
+            for uuid, item in pairs(bagData[containerName]) do
+                -- 恢复资源路径(asset)
+                local re_item = MCloudDataMgr.restoreItemAsset(item)
+                bagData[containerName][uuid] = re_item
+            end
+        end
     end
+    
     return bagData
 end
 
 
 -- 恢复物品的资源路径
 function MCloudDataMgr.restoreItemAsset(item)
-    if item.asset then return end
+    if item.asset then return item end
     
     if item.itype == common_const.ITEM_TYPE.EQUIPMENT then
         -- 装备类物品
@@ -214,6 +328,36 @@ function MCloudDataMgr.restoreItemAsset(item)
     return item
 end
 
+--- 创建兼容旧格式的背包数据（用于同步到客户端）
+function MCloudDataMgr.createCompatibleBagData(playerData)
+    -- 如果已经有旧格式数据，直接返回
+    if playerData.bag_items then
+        return playerData
+    end
+    
+    -- 创建兼容数据
+    local compatibleData = {
+        bag_index = playerData.bag_index,
+        bag_ver = playerData.bag_ver,
+        bag_size = playerData.bag_size,
+        bag_items = {}
+    }
+    
+    -- 容器列表
+    local containerNames = {"bag_equ_items", "bag_consum_items", "bag_mater_items", "bag_card_items"}
+    
+    -- 合并所有容器的物品
+    for _, containerName in ipairs(containerNames) do
+        if playerData[containerName] then
+            for uuid, item in pairs(playerData[containerName]) do
+                compatibleData.bag_items[uuid] = item
+            end
+        end
+    end
+    
+    return compatibleData
+end
+
 -- 保存玩家的背包数据
 -- force_:  立即存储，不检查时间间隔
 function MCloudDataMgr.savePlayerBag( uin_, force_ )
@@ -228,36 +372,45 @@ function MCloudDataMgr.savePlayerBag( uin_, force_ )
 
     local player_bag_ = gg.server_player_bag_data[ uin_ ]
     if player_bag_ then
-        -- 创建数据的深拷贝，以便不影响原始数据
-        local cleaned_items = {}
-        
-        -- 清理不必要的字段
-        for uuid, item in pairs(player_bag_.bag_items) do
-            local cleaned_item = {}
-            for k, v in pairs(item) do
-                -- 过滤掉不需要保存的字段
-                if k ~= "asset" and k ~= "attrs" then
-                    cleaned_item[k] = v
-                end
-            end
-            cleaned_items[uuid] = cleaned_item
-        end
-        
-        local data_ = {
-            uin       = uin_,
+        -- 创建清理过的数据副本
+        local cleanedData = {
+            uin = uin_,
             bag_index = player_bag_.bag_index,
-            bag_items = cleaned_items,
-            bag_ver   = player_bag_.bag_ver,
-            bag_size  = player_bag_.bag_size
+            bag_ver = player_bag_.bag_ver,
+            bag_size = player_bag_.bag_size,
+            bag_equ_items = {},
+            bag_consum_items = {},
+            bag_mater_items = {},
+            bag_card_items = {}
         }
         
-        cloudService:SetTableAsync( 'bag' .. uin_, data_, function ( ret_ )
-            if not ret_ then
-                gg.log("保存背包数据失败", 'bag' .. uin_,data_)
-            else
-                gg.log("保存背包数据成功", 'bag' .. uin_,data_)
+        -- 容器列表
+        local containerNames = {"bag_equ_items", "bag_consum_items", "bag_mater_items", "bag_card_items"}
+        
+        -- 清理每个容器的物品数据
+        for _, containerName in ipairs(containerNames) do
+            if player_bag_[containerName] then
+                for uuid, item in pairs(player_bag_[containerName]) do
+                    local cleaned_item = {}
+                    for k, v in pairs(item) do
+                        -- 过滤掉不需要保存的字段
+                        if k ~= "asset" and k ~= "attrs" then
+                            cleaned_item[k] = v
+                        end
+                    end
+                    cleanedData[containerName][uuid] = cleaned_item
+                end
             end
-        end )
+        end
+        
+        -- 保存到云端
+        cloudService:SetTableAsync('bag' .. uin_, cleanedData, function(ret_)
+            if not ret_ then
+                gg.log("保存背包数据失败", 'bag' .. uin_, cleanedData.bag_ver)
+            else
+                gg.log("保存背包数据成功", 'bag' .. uin_, cleanedData.bag_ver)
+            end
+        end)
     end
 end
 

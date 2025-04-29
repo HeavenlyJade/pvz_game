@@ -46,6 +46,8 @@ local  common_const = {
         EQUIPMENT  = 1,      --装备
         BOX        = 2,      --箱子
         MAT        = 3,      --材料
+        CARD       = 4,      --卡片
+        CONSUMABLE = 5,      --消耗品
     },
 
 

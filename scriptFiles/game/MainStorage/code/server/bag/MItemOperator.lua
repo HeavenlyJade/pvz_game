@@ -18,38 +18,147 @@ local ConsumableItem = require(MainStorage.code.server.item_types.ConsumableItem
 local MaterialItem = require(MainStorage.code.server.item_types.MaterialItem) ---@type MaterialItem
 local CardItem = require(MainStorage.code.server.item_types.CardItem) ---@type CardItem
 ---@class ItemOperator
-local ItemOperator = {
-    
-}
+local ItemOperator = {}
 
 ---获取玩家背包数据
 ---@param uin number 玩家ID
 ---@return table 玩家背包数据
 function ItemOperator:getPlayerBagData(uin)
-    if not gg.server_player_bag_data[uin]  then
-        -- 如果缓存中没有，则初始化空背包
+    if not gg.server_player_bag_data[uin] then
+        -- 初始化新的背包数据结构
         gg.server_player_bag_data[uin] = {
-            bag_index = {},
-            bag_items = {},
-            bag_ver = 1001,
-            bag_size = 36
+            bag_index = {},           -- 保留原有索引结构，但会添加类型信息
+            bag_equ_items = {},       -- 装备类物品容器
+            bag_consum_items = {},    -- 消耗品类物品容器
+            bag_mater_items = {},     -- 材料类物品容器
+            bag_card_items = {},      -- 卡片类物品容器
+            bag_ver = 1001,           -- 版本号
+            bag_size = 36             -- 背包大小
         }
     end
     return gg.server_player_bag_data[uin]
+end
+
+-- 根据物品类型获取对应的容器名称
+function ItemOperator:getContainerNameByType(itemType)
+    local typeToContainer = {
+        [common_const.ITEM_TYPE.EQUIPMENT] = "bag_equ_items",
+        [common_const.ITEM_TYPE.CONSUMABLE] = "bag_consum_items",
+        [common_const.ITEM_TYPE.BOX] = "bag_consum_items", -- 宝箱也放在消耗品容器
+        [common_const.ITEM_TYPE.MAT] = "bag_mater_items",
+        [common_const.ITEM_TYPE.CARD] = "bag_card_items"
+    }
+    return typeToContainer[itemType] or "bag_equ_items" -- 默认放在装备容器
+end
+
+-- 根据物品获取容器
+function ItemOperator:getContainerByItem(item)
+    return self:getContainerNameByType(item.itype)
+end
+
+-- 根据物品UUID和类型获取物品
+function ItemOperator:getItemByUUID(playerData, uuid, itemType)
+    local containerName = self:getContainerNameByType(itemType)
+    return playerData[containerName] and playerData[containerName][uuid]
+end
+
+-- 根据背包ID获取物品
+function ItemOperator:getItemByBagId(playerData, bagId)
+    local index = playerData.bag_index[bagId]
+    if not index or not index.uuid or not index.type then
+        return nil
+    end
+    
+    return self:getItemByUUID(playerData, index.uuid, index.type)
+end
+
+-- 添加物品到背包
+function ItemOperator:addItemToBag(playerData, item, bagId)
+    local containerName = self:getContainerByItem(item)
+    
+    -- 添加物品到对应容器
+    playerData[containerName][item.uuid] = item
+    
+    -- 更新索引，包含类型信息
+    playerData.bag_index[bagId] = {
+        uuid = item.uuid,
+        type = item.itype
+    }
+    
+    -- 增加版本号
+    playerData.bag_ver = playerData.bag_ver + 1
+    
+    return true
+end
+
+-- 迁移旧格式数据到新格式
+function ItemOperator:migrateOldDataFormat(playerData)
+    -- 检查是否需要迁移
+    if playerData.bag_items and not playerData.bag_equ_items then
+        -- 初始化新容器
+        playerData.bag_equ_items = {}
+        playerData.bag_consum_items = {}
+        playerData.bag_mater_items = {}
+        playerData.bag_card_items = {}
+        
+        -- 迁移物品数据
+        for uuid, item in pairs(playerData.bag_items) do
+            local containerName = self:getContainerNameByType(item.itype)
+            playerData[containerName][uuid] = item
+            
+            -- 更新索引中的类型信息
+            for bagId, index in pairs(playerData.bag_index) do
+                if index.uuid == uuid then
+                    index.type = item.itype
+                end
+            end
+        end
+        
+        -- 增加版本号
+        playerData.bag_ver = playerData.bag_ver + 1
+        
+        -- 移除旧格式数据
+        playerData.bag_items = nil
+    end
+    
+    return playerData
 end
 
 ---设置玩家背包数据
 ---@param uin number 玩家ID
 ---@param data table 背包数据
 function ItemOperator:setPlayerBagData(uin, data)
-    local bag_data = {
-        bag_index = data.bag_index or {},
-        bag_items = data.bag_items or {},
-        bag_ver = data.bag_ver,
-        bag_size = data.bag_size or 36
-    }
-    
-    gg.server_player_bag_data[uin] = bag_data
+    -- 如果是旧格式数据，先迁移
+    if data.bag_items then
+        -- 转换为新格式
+        local newData = {
+            bag_index = data.bag_index or {},
+            bag_equ_items = {},
+            bag_consum_items = {},
+            bag_mater_items = {},
+            bag_card_items = {},
+            bag_ver = data.bag_ver,
+            bag_size = data.bag_size or 36
+        }
+        
+        -- 迁移物品数据
+        for uuid, item in pairs(data.bag_items) do
+            local containerName = self:getContainerNameByType(item.itype)
+            newData[containerName][uuid] = item
+            
+            -- 更新索引中的类型信息
+            for bagId, index in pairs(newData.bag_index) do
+                if index.uuid == uuid then
+                    index.type = item.itype
+                end
+            end
+        end
+        
+        gg.server_player_bag_data[uin] = newData
+    else
+        -- 已经是新格式，直接设置
+        gg.server_player_bag_data[uin] = data
+    end
 end
 
 ---同步背包数据到客户端
@@ -57,6 +166,8 @@ end
 ---@param clientBagVer number 客户端背包版本
 function ItemOperator:syncBagToClient(uin, clientBagVer)
     local playerData = self:getPlayerBagData(uin)
+    
+    -- 准备发送数据
     local ret = { 
         cmd = 'cmd_player_items_ret', 
         index = playerData.bag_index, 
@@ -66,7 +177,30 @@ function ItemOperator:syncBagToClient(uin, clientBagVer)
     
     -- 只有当客户端版本与服务器不一致时，才发送完整物品数据
     if not clientBagVer or clientBagVer ~= playerData.bag_ver then
-        ret.items = playerData.bag_items
+        -- 合并所有容器的物品
+        local allItems = {}
+        
+        -- 添加装备类物品
+        for uuid, item in pairs(playerData.bag_equ_items) do
+            allItems[uuid] = item
+        end
+        
+        -- 添加消耗品类物品
+        for uuid, item in pairs(playerData.bag_consum_items) do
+            allItems[uuid] = item
+        end
+        
+        -- 添加材料类物品
+        for uuid, item in pairs(playerData.bag_mater_items) do
+            allItems[uuid] = item
+        end
+        
+        -- 添加卡片类物品
+        for uuid, item in pairs(playerData.bag_card_items) do
+            allItems[uuid] = item
+        end
+        
+        ret.items = allItems
     end
     
     gg.network_channel:fireClient(uin, ret)
@@ -78,36 +212,28 @@ end
 ---@return boolean 是否成功
 function ItemOperator:useItem(uin, bagId)
     local playerData = self:getPlayerBagData(uin)
-    local index = playerData.bag_index[bagId]
+    local item = self:getItemByBagId(playerData, bagId)
     
-    if not index or not index.uuid then
-        return false
-    end
-    
-    local itemData = playerData.bag_items[index.uuid]
-    if not itemData then
+    if not item then
         return false
     end
     
     -- 创建物品对象
-    local itype = itemData.itype
-    -- 根据分类创建不同的物品对象
-    gg.log("itemData",itemData)
-    local item = nil
-    if itype == common_const.ITEM_TYPE.EQUIPMENT then
-        item = EquipmentItem.fromData(itemData)
-    elseif itype == common_const.ITEM_TYPE.CONSUMABLE or itype == common_const.ITEM_TYPE.BOX then
-        item = ConsumableItem.fromData(itemData)
-    elseif itype == common_const.ITEM_TYPE.MAT then
-        item= MaterialItem.fromData(itemData)
-    elseif itype == common_const.ITEM_TYPE.CARD then
-        item= CardItem.fromData(itemData)
+    local itemObject = nil
+    if item.itype == common_const.ITEM_TYPE.EQUIPMENT then
+        itemObject = EquipmentItem.fromData(item)
+    elseif item.itype == common_const.ITEM_TYPE.CONSUMABLE or item.itype == common_const.ITEM_TYPE.BOX then
+        itemObject = ConsumableItem.fromData(item)
+    elseif item.itype == common_const.ITEM_TYPE.MAT then
+        itemObject = MaterialItem.fromData(item)
+    elseif item.itype == common_const.ITEM_TYPE.CARD then
+        itemObject = CardItem.fromData(item)
     else
-        item = ItemBase.fromData(itemData)
+        itemObject = ItemBase.fromData(item)
     end
     
     -- 检查物品是否可使用
-    if not item:canUse() then
+    if not itemObject:canUse() then
         gg.network_channel:fireClient(uin, { 
             cmd = "cmd_client_show_msg", 
             txt = '该物品不能使用' 
@@ -122,21 +248,22 @@ function ItemOperator:useItem(uin, bagId)
     end
     
     -- 调用物品的onUse方法执行具体效果
-    local success, message = item:onUse(player)
+    local success, message = itemObject:onUse(player)
     
     if success then
-        -- 处理使用后的物品状态
-        --- and not item.is_reusable
-        if item.itype == common_const.ITEM_TYPE.BOX or 
-           (item.itype == common_const.ITEM_TYPE.CONSUMABLE ) then
-            -- 消耗型物品使用后消失
+        -- 物品使用后的处理
+        local index = playerData.bag_index[bagId]
+        local containerName = self:getContainerNameByType(item.itype)
+        
+        if (item.itype == common_const.ITEM_TYPE.BOX or 
+            item.itype == common_const.ITEM_TYPE.CONSUMABLE) then
             if item.num and item.num > 1 then
                 -- 堆叠物品减少数量
                 item.num = item.num - 1
-                playerData.bag_items[index.uuid] = item:serialize()
+                playerData[containerName][index.uuid] = item
             else
                 -- 移除物品
-                playerData.bag_items[index.uuid] = nil
+                playerData[containerName][index.uuid] = nil
                 playerData.bag_index[bagId] = nil
             end
             
@@ -153,7 +280,7 @@ function ItemOperator:useItem(uin, bagId)
         gg.network_channel:fireClient(uin, { 
             cmd = "cmd_client_show_msg", 
             txt = message or ('成功使用 ' .. item.name), 
-            color = item:getQualityColor() 
+            color = itemObject:getQualityColor() 
         })
         
         return true
@@ -183,13 +310,8 @@ function ItemOperator:decomposeItem(uin, bagId)
     end
     
     local playerData = self:getPlayerBagData(uin)
-    local index = playerData.bag_index[bagId]
+    local item = self:getItemByBagId(playerData, bagId)
     
-    if not index or not index.uuid then
-        return false
-    end
-    
-    local item = playerData.bag_items[index.uuid]
     if not item or item.itype ~= common_const.ITEM_TYPE.EQUIPMENT then
         gg.network_channel:fireClient(uin, { 
             cmd = "cmd_client_show_msg", 
@@ -198,9 +320,11 @@ function ItemOperator:decomposeItem(uin, bagId)
         return false
     end
     
+    local index = playerData.bag_index[bagId]
+    
     -- 执行分解
     playerData.bag_index[bagId] = nil
-    playerData.bag_items[index.uuid] = nil
+    playerData.bag_equ_items[index.uuid] = nil
     
     -- 计算获得的材料数量
     local matQuality = 1         -- 1=魔力碎片  2=神力碎片
@@ -211,16 +335,15 @@ function ItemOperator:decomposeItem(uin, bagId)
     local baseId = 10000
     for i = 0, playerData.bag_size - 1 do
         local currBagId = baseId + i
-        local tmpItem = playerData.bag_index[currBagId]
-        if tmpItem and tmpItem.uuid then
-            local tmpItemDetail = playerData.bag_items[tmpItem.uuid]
+        local tmpIndex = playerData.bag_index[currBagId]
+        if tmpIndex and tmpIndex.uuid and tmpIndex.type == common_const.ITEM_TYPE.MAT then
+            local tmpItem = self:getItemByUUID(playerData, tmpIndex.uuid, common_const.ITEM_TYPE.MAT)
             
-            if tmpItemDetail and 
-               tmpItemDetail.itype == common_const.ITEM_TYPE.MAT and
-               tmpItemDetail.mat_id == common_const.MAT_ID.FRAGMENT and
-               tmpItemDetail.quality == matQuality then
+            if tmpItem and 
+               tmpItem.mat_id == common_const.MAT_ID.FRAGMENT and
+               tmpItem.quality == matQuality then
                 -- 增加已有材料的数量
-                tmpItemDetail.num = tmpItemDetail.num + matNum
+                tmpItem.num = tmpItem.num + matNum
                 materialUpdated = true
                 break
             end
@@ -234,8 +357,11 @@ function ItemOperator:decomposeItem(uin, bagId)
             quality = matQuality, 
             num = matNum 
         })
-        playerData.bag_items[material.uuid] = material
-        playerData.bag_index[bagId] = { uuid = material.uuid }
+        playerData.bag_mater_items[material.uuid] = material
+        playerData.bag_index[bagId] = { 
+            uuid = material.uuid,
+            type = common_const.ITEM_TYPE.MAT
+        }
     end
     
     -- 更新版本并保存
@@ -248,6 +374,49 @@ function ItemOperator:decomposeItem(uin, bagId)
         cmd = "cmd_client_show_msg", 
         txt = '分解成功，获得魔力碎片 x ' .. matNum 
     })
+    
+    return true
+end
+
+---交换物品位置
+---@param uin number 玩家ID
+---@param pos1 number 位置1
+---@param pos2 number 位置2
+---@return boolean 是否成功
+function ItemOperator:swapItems(uin, pos1, pos2)
+    local playerData = self:getPlayerBagData(uin)
+    
+    local index1 = playerData.bag_index[pos1]
+    local index2 = playerData.bag_index[pos2]
+    
+    -- 检查装备位置匹配
+    if gg.isWearPos(pos2) and index1 then
+        local item = self:getItemByBagId(playerData, pos1)
+        if item and item.pos ~= pos2 then
+            gg.network_channel:fireClient(uin, { 
+                cmd = "cmd_client_show_msg", 
+                txt = '该物品不能穿戴在这里', 
+                color = ColorQuad.new(255, 0, 0, 255) 
+            })
+            return false
+        end
+    end
+    
+    -- 交换索引
+    playerData.bag_index[pos1] = index2
+    playerData.bag_index[pos2] = index1
+    
+    -- 同步到客户端
+    self:syncBagToClient(uin, nil)
+    
+    -- 如果涉及装备位置，重新计算属性
+    if gg.isWearPos(pos1) or gg.isWearPos(pos2) then
+        battleMgr.refreshPlayerAttr(uin)
+        local player = gg.server_players_list[uin]
+        if player then
+            player:rsyncData(1)
+        end
+    end
     
     return true
 end
@@ -284,18 +453,16 @@ function ItemOperator:composeItem(uin)
     
     for i = 0, playerData.bag_size - 1 do
         local bagId = baseId + i
-        if playerData.bag_index[bagId] then
-            local tmpItem = playerData.bag_index[bagId]
-            local tmpUuid = tmpItem.uuid
-            local tmpItemDetail = playerData.bag_items[tmpUuid]
+        if playerData.bag_index[bagId] and playerData.bag_index[bagId].type == common_const.ITEM_TYPE.MAT then
+            local tmpIndex = playerData.bag_index[bagId]
+            local tmpItem = self:getItemByUUID(playerData, tmpIndex.uuid, common_const.ITEM_TYPE.MAT)
             
-            if tmpItemDetail and
-               tmpItemDetail.itype == common_const.ITEM_TYPE.MAT and
-               tmpItemDetail.mat_id == common_const.MAT_ID.FRAGMENT and
-               tmpItemDetail.quality == matQuality then
+            if tmpItem and
+               tmpItem.mat_id == common_const.MAT_ID.FRAGMENT and
+               tmpItem.quality == matQuality then
                 
-                if tmpItemDetail.num < 800 then
-                    num = tmpItemDetail.num
+                if tmpItem.num < 800 then
+                    num = tmpItem.num
                     gg.network_channel:fireClient(uin, { 
                         cmd = "cmd_btn_compose_ret", 
                         msg = "no_enough", 
@@ -304,11 +471,13 @@ function ItemOperator:composeItem(uin)
                     return false, "材料不足"
                 else
                     -- 扣除材料
-                    tmpItemDetail.num = tmpItemDetail.num - 800
-                    num = tmpItemDetail.num
+                    tmpItem.num = tmpItem.num - 800
+                    num = tmpItem.num
                     matBagId = bagId
                     
-                    if tmpItemDetail.num == 0 then
+                    if tmpItem.num == 0 then
+                        playerData.bag_mater_items[tmpIndex.uuid] = nil
+                        playerData.bag_index[bagId] = nil
                         emptyBagId = bagId
                     end
                     
@@ -334,8 +503,11 @@ function ItemOperator:composeItem(uin)
         level = gg.rand_int_between(1, 99) 
     })
     
-    playerData.bag_items[box.uuid] = box
-    playerData.bag_index[emptyBagId] = { uuid = box.uuid }
+    playerData.bag_consum_items[box.uuid] = box
+    playerData.bag_index[emptyBagId] = { 
+        uuid = box.uuid,
+        type = common_const.ITEM_TYPE.BOX
+    }
     
     -- 更新版本并保存
     playerData.bag_ver = playerData.bag_ver + 1
@@ -359,49 +531,6 @@ function ItemOperator:composeItem(uin)
     return true, "合成成功"
 end
 
----交换物品位置
----@param uin number 玩家ID
----@param pos1 number 位置1
----@param pos2 number 位置2
----@return boolean 是否成功
-function ItemOperator:swapItems(uin, pos1, pos2)
-    local playerData = self:getPlayerBagData(uin)
-    
-    local pos1Data = playerData.bag_index[pos1]
-    local pos2Data = playerData.bag_index[pos2]
-    
-    -- 检查装备位置匹配
-    if gg.isWearPos(pos2) and pos1Data and pos1Data.uuid then
-        local item = playerData.bag_items[pos1Data.uuid]
-        if item and item.pos ~= pos2 then
-            gg.network_channel:fireClient(uin, { 
-                cmd = "cmd_client_show_msg", 
-                txt = '该物品不能穿戴在这里', 
-                color = ColorQuad.new(255, 0, 0, 255) 
-            })
-            return false
-        end
-    end
-    
-    -- 交换位置
-    playerData.bag_index[pos1] = pos2Data
-    playerData.bag_index[pos2] = pos1Data
-    
-    -- 同步到客户端
-    self:syncBagToClient(uin, nil)
-    
-    -- 如果涉及装备位置，重新计算属性
-    if gg.isWearPos(pos1) or gg.isWearPos(pos2) then
-        battleMgr.refreshPlayerAttr(uin)
-        local player = gg.server_players_list[uin]
-        if player then
-            player:rsyncData(1)
-        end
-    end
-    
-    return true
-end
-
 ---批量使用所有宝箱
 ---@param uin number 玩家ID
 ---@return boolean 是否成功
@@ -409,13 +538,12 @@ function ItemOperator:useAllBoxes(uin)
     local playerData = self:getPlayerBagData(uin)
     local count = 0
     
-    for bagId, v in pairs(playerData.bag_index) do
-        local uuid = v.uuid
-        local item = playerData.bag_items[uuid]
+    for bagId, index in pairs(playerData.bag_index) do
+        local item = self:getItemByBagId(playerData, bagId)
         
         if item and item.itype == common_const.ITEM_TYPE.BOX then
             -- 删除宝箱
-            playerData.bag_items[uuid] = nil
+            playerData.bag_consum_items[index.uuid] = nil
             count = count + 1
             
             -- 创建随机装备替换宝箱
@@ -424,8 +552,11 @@ function ItemOperator:useAllBoxes(uin)
                 level = item.level 
             })
             
-            playerData.bag_items[eq.uuid] = eq
-            playerData.bag_index[bagId] = { uuid = eq.uuid }
+            playerData.bag_equ_items[eq.uuid] = eq
+            playerData.bag_index[bagId] = { 
+                uuid = eq.uuid,
+                type = common_const.ITEM_TYPE.EQUIPMENT
+            }
             
             -- 通知客户端
             gg.network_channel:fireClient(uin, { 
@@ -461,22 +592,20 @@ function ItemOperator:decomposeAllLowEquipment(uin)
     local matItem
     
     -- 遍历查找并分解低级装备
-    for bagId, v in pairs(playerData.bag_index) do
+    for bagId, index in pairs(playerData.bag_index) do
         if bagId >= 10000 then
-            local uuid = v.uuid
-            local item = playerData.bag_items[uuid]
+            local item = self:getItemByBagId(playerData, bagId)
             
             if item and item.itype == common_const.ITEM_TYPE.EQUIPMENT and item.quality < 4 then
                 -- 删除装备
                 playerData.bag_index[bagId] = nil
-                playerData.bag_items[uuid] = nil
+                playerData.bag_equ_items[index.uuid] = nil
                 
                 if not firstBagId then 
                     firstBagId = bagId 
                 end
                 
                 matNum = matNum + item.quality * item.level
-                
             elseif item and
                    item.itype == common_const.ITEM_TYPE.MAT and
                    item.mat_id == common_const.MAT_ID.FRAGMENT and
@@ -498,8 +627,11 @@ function ItemOperator:decomposeAllLowEquipment(uin)
                 quality = matQuality, 
                 num = matNum 
             })
-            playerData.bag_items[matItem.uuid] = matItem
-            playerData.bag_index[firstBagId] = { uuid = matItem.uuid }
+            playerData.bag_mater_items[matItem.uuid] = matItem
+            playerData.bag_index[firstBagId] = { 
+                uuid = matItem.uuid,
+                type = common_const.ITEM_TYPE.MAT
+            }
         end
         
         playerData.bag_ver = playerData.bag_ver + 1
@@ -538,10 +670,14 @@ function ItemOperator:pickupItem(uin, itemInfo)
             if not item then
                 return 0
             end
-            gg.log("背包物品数据",item)
+            
             -- 加入背包
-            playerData.bag_items[item.uuid] = item
-            playerData.bag_index[bagId] = { uuid = item.uuid }
+            local containerName = self:getContainerByItem(item)
+            playerData[containerName][item.uuid] = item
+            playerData.bag_index[bagId] = { 
+                uuid = item.uuid,
+                type = item.itype
+            }
             playerData.bag_ver = playerData.bag_ver + 1
             
             -- 保存并通知客户端
@@ -568,6 +704,8 @@ end
 ---创建初始装备
 ---@param uin number 玩家ID
 function ItemOperator:generateInitialEquipment(uin)
+    -- 这个方法可能需要根据新的数据结构进行调整
+    -- 现在直接使用旧方法，数据结构会在setPlayerBagData中自动迁移
     local data = eqGen.debug_createRandEquipment()
     self:setPlayerBagData(uin, data)
     cloudDataMgr.savePlayerBag(uin, true)
@@ -592,7 +730,5 @@ function ItemOperator:debugGenerateBoxes(uin, boxCount)
         self:pickupItem(uin, dropBox)
     end
 end
-
-
 
 return ItemOperator
