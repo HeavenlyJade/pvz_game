@@ -561,15 +561,16 @@ end
 --数据回调 玩家物品
 function UiBag.handleSyncPlayerItems( args1_ )
     --{ cmd='cmd_player_items_ret', index=data_, items=items_,size=int } )
-    gg.log('数据回调玩家物品handleSyncPlayerItems====', args1_ )
-    if  args1_.index then
-        gg.client_bag_size = args1_.size
-        gg.client_bag_index = args1_.index
-        if  args1_.items then
-            gg.client_bag_items = args1_.items
+    local bag_data = args1_.bag_data
+    gg.log("数据回调 玩家物品", bag_data)
+    if  bag_data then
+        gg.client_bag_size = bag_data.bag_size
+        gg.client_bag_index = bag_data.bag_index
+        if  bag_data.bag_equ_items then
+            gg.client_bag_items = bag_data.bag_equ_items
         end
         if  args1_.bag_ver then
-            gg.client_bag_ver   = args1_.bag_ver
+            gg.client_bag_ver   = bag_data.bag_ver
         end
 
         UiBag.refreshUi()

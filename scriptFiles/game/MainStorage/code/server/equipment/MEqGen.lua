@@ -205,7 +205,6 @@ function EqGen.createRandEquipment( info_ )
     if not temp then
         return nil
     end
-    gg.log("config_map",config_map)
     local item_info = config_map[drop_type][item_id]
     gg.log("equipment item_info",item_info,drop_type,item_id)
     item_info.uuid   = gg.create_uuid( 'eq_' )

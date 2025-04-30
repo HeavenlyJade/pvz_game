@@ -24,18 +24,6 @@ local ItemOperator = {}
 ---@param uin number 玩家ID
 ---@return table 玩家背包数据
 function ItemOperator:getPlayerBagData(uin)
-    if not gg.server_player_bag_data[uin] then
-        -- 初始化新的背包数据结构
-        gg.server_player_bag_data[uin] = {
-            bag_index = {},           -- 保留原有索引结构，但会添加类型信息
-            bag_equ_items = {},       -- 装备类物品容器
-            bag_consum_items = {},    -- 消耗品类物品容器
-            bag_mater_items = {},     -- 材料类物品容器
-            bag_card_items = {},      -- 卡片类物品容器
-            bag_ver = 1001,           -- 版本号
-            bag_size = 36             -- 背包大小
-        }
-    end
     return gg.server_player_bag_data[uin]
 end
 
@@ -129,39 +117,8 @@ function ItemOperator:syncBagToClient(uin, clientBagVer)
     -- 准备发送数据
     local ret = { 
         cmd = 'cmd_player_items_ret', 
-        index = playerData.bag_index, 
-        bag_ver = playerData.bag_ver,
-        bag_size = playerData.bag_size 
+        bag_data = playerData
     }
-    
-    -- 只有当客户端版本与服务器不一致时，才发送完整物品数据
-    if not clientBagVer or clientBagVer ~= playerData.bag_ver then
-        -- 合并所有容器的物品
-        local allItems = {}
-        
-        -- 添加装备类物品
-        for uuid, item in pairs(playerData.bag_equ_items) do
-            allItems[uuid] = item
-        end
-        
-        -- 添加消耗品类物品
-        for uuid, item in pairs(playerData.bag_consum_items) do
-            allItems[uuid] = item
-        end
-        
-        -- 添加材料类物品
-        for uuid, item in pairs(playerData.bag_mater_items) do
-            allItems[uuid] = item
-        end
-        
-        -- 添加卡片类物品
-        for uuid, item in pairs(playerData.bag_card_items) do
-            allItems[uuid] = item
-        end
-        
-        ret.items = allItems
-    end
-    
     gg.network_channel:fireClient(uin, ret)
 end
 
@@ -618,7 +575,6 @@ end
 ---@return number 0成功，1失败
 function ItemOperator:pickupItem(uin, itemInfo)
     local playerData = self:getPlayerBagData(uin)
-    
     -- 查找空背包格子
     local baseId = 10000
     for i = 0, playerData.bag_size - 1 do

@@ -125,95 +125,44 @@ function MCloudDataMgr.readPlayerBag(uin_)
         bag_card_items = {},
         bag_unknown_items = {},
         bag_index ={bag_equ_items={},bag_consum_items = {},bag_mater_items = {},bag_card_items = {},bag_unknown_items = {}},
-        bag_ver={},
+        bag_ver=0,
         bag_size = 36,
     }
+    bagData.bag_ver = 0
+    gg.log("读取玩家背包数据", 'bag' .. uin_, success,bagData)
     -- 读取失败或数据为空
     if not success then
         return 1, {}  -- 数据失败，踢玩家下线，防止数据洗白
     end
     
     -- 验证玩家ID
-    if not bagData or bagData.uin ~= uin_ then
-        return 0, {}
-    end
-    bag_data_new.bag_ver = bagData.bag_ver
-    bag_data_new.bag_size = bagData.bag_size
-    -- 处理旧数据格式迁移
-    if bagData.bag_items and not bagData.bag_equ_items then
-        -- 迁移物品数据
-        for uuid, item in pairs(bagData.bag_items) do
-            local containerName = common_const.getContainerNameByType(item.itype)
-            bag_data_new[containerName][uuid] = item
-            -- 更新索引中的类型信息
-            for bag_item_position, val in pairs(bagData.bag_index) do
-                if val.uuid == uuid then
-                    val.type = item.itype
-                end
-            end
-        end
-    end
-    
-    -- 确保索引中有类型信息
-    if bagData.bag_index then
-        for bagId, bag_index_item in pairs(bagData.bag_index) do
-            if bag_index_item.uuid and bag_index_item.type then
-                -- 尝试确定物品类型
-                local containerName = common_const.getContainerNameByType(bag_index_item.type)
-                bag_index_item["bag_item_position"] = bagId
-                bag_data_new.bag_index[containerName][bag_index_item.uuid] = bag_index_item
-            
-            end
-        end
+    if not bagData then
+        return 1, {}
     end
 
-    -- 开始清理无效数据
-    -- 1. 收集有效物品索引
     local validUUIDToBagID = {}
     local invalidBagIDs = {}
     
-    for containerName, indexContainer in pairs(bag_data_new.bag_index) do
-        for uuid, indexData in pairs(indexContainer) do
-            local isValid = false
-            if indexData.uuid and indexData.type then
-                if bag_data_new[containerName] and bag_data_new[containerName][indexData.uuid] then
-                    validUUIDToBagID[indexData.uuid] = indexData.bag_item_position
-                    isValid = true
-                end
-            end
-            
-            if not isValid then
-                table.insert(invalidBagIDs, indexData.bag_item_position)
-            end
-        end
-    end
-    
     -- 2. 清理无效索引
-    for _, bagID in ipairs(invalidBagIDs) do
-        bagData.bag_index[bagID] = nil
-    end
-    
+    for _, bagID in ipairs(invalidBagIDs) do bagData.bag_index[bagID] = nil end
     -- 3. 清理无引用的物品
     local containerNames = {"bag_equ_items", "bag_consum_items", "bag_mater_items", "bag_card_items", "bag_items"}
     for _, containerName in ipairs(containerNames) do
         if bagData[containerName] then
             local orphanedUUIDs = {}
-            for uuid in pairs(bagData[containerName]) do
+            for uuid,value in pairs(bagData[containerName]) do
                 if not validUUIDToBagID[uuid] then
                     table.insert(orphanedUUIDs, uuid)
                 end
             end
-            
             for _, uuid in ipairs(orphanedUUIDs) do
                 bagData[containerName][uuid] = nil
             end
         end
     end
-    
     -- 恢复物品资源信息
     bagData = MCloudDataMgr.restoreFilteredItemFields(bagData)
-    
-    gg.log("读取并处理背包数据", 'bag' .. uin_, bagData.bag_ver)
+    gg.log("读取并处理背包数据", 'bag' .. uin_, bagData)
     return 0, bagData
 end
 
@@ -298,7 +247,8 @@ function MCloudDataMgr.savePlayerBag( uin_, force_ )
             bag_equ_items = {},
             bag_consum_items = {},
             bag_mater_items = {},
-            bag_card_items = {}
+            bag_card_items = {},
+            bag_unknown_items = {},
         }
         
         -- 容器列表

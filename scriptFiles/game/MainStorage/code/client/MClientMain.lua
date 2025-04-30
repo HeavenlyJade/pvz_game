@@ -233,7 +233,6 @@ end
 
 --数据回调 玩家属性
 function MainClient.handleSyncPlayerData(args1_)
-    -- gg.log("数据回调玩家属性",args1_)
     if args1_.v.level then
         local level_ = args1_.v.level
 
