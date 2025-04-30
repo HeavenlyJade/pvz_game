@@ -135,7 +135,6 @@ end
 
 
 
-
 --初始化 dict_monster_config， 用来快速生成生物配置
 function common_config.Init()
 

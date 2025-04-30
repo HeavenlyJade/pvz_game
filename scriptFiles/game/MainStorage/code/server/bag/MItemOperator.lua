@@ -40,25 +40,15 @@ function ItemOperator:getPlayerBagData(uin)
 end
 
 -- 根据物品类型获取对应的容器名称
-function ItemOperator:getContainerNameByType(itemType)
-    local typeToContainer = {
-        [common_const.ITEM_TYPE.EQUIPMENT] = "bag_equ_items",
-        [common_const.ITEM_TYPE.CONSUMABLE] = "bag_consum_items",
-        [common_const.ITEM_TYPE.BOX] = "bag_consum_items", -- 宝箱也放在消耗品容器
-        [common_const.ITEM_TYPE.MAT] = "bag_mater_items",
-        [common_const.ITEM_TYPE.CARD] = "bag_card_items"
-    }
-    return typeToContainer[itemType] or "bag_equ_items" -- 默认放在装备容器
-end
 
 -- 根据物品获取容器
 function ItemOperator:getContainerByItem(item)
-    return self:getContainerNameByType(item.itype)
+    return common_const:getContainerNameByType(item.itype)
 end
 
 -- 根据物品UUID和类型获取物品
 function ItemOperator:getItemByUUID(playerData, uuid, itemType)
-    local containerName = self:getContainerNameByType(itemType)
+    local containerName = common_const:getContainerNameByType(itemType)
     return playerData[containerName] and playerData[containerName][uuid]
 end
 
@@ -91,38 +81,7 @@ function ItemOperator:addItemToBag(playerData, item, bagId)
     return true
 end
 
--- 迁移旧格式数据到新格式
-function ItemOperator:migrateOldDataFormat(playerData)
-    -- 检查是否需要迁移
-    if playerData.bag_items and not playerData.bag_equ_items then
-        -- 初始化新容器
-        playerData.bag_equ_items = {}
-        playerData.bag_consum_items = {}
-        playerData.bag_mater_items = {}
-        playerData.bag_card_items = {}
-        
-        -- 迁移物品数据
-        for uuid, item in pairs(playerData.bag_items) do
-            local containerName = self:getContainerNameByType(item.itype)
-            playerData[containerName][uuid] = item
-            
-            -- 更新索引中的类型信息
-            for bagId, index in pairs(playerData.bag_index) do
-                if index.uuid == uuid then
-                    index.type = item.itype
-                end
-            end
-        end
-        
-        -- 增加版本号
-        playerData.bag_ver = playerData.bag_ver + 1
-        
-        -- 移除旧格式数据
-        playerData.bag_items = nil
-    end
-    
-    return playerData
-end
+
 
 ---设置玩家背包数据
 ---@param uin number 玩家ID
@@ -143,7 +102,7 @@ function ItemOperator:setPlayerBagData(uin, data)
         
         -- 迁移物品数据
         for uuid, item in pairs(data.bag_items) do
-            local containerName = self:getContainerNameByType(item.itype)
+            local containerName = common_const:getContainerNameByType(item.itype)
             newData[containerName][uuid] = item
             
             -- 更新索引中的类型信息
@@ -253,7 +212,7 @@ function ItemOperator:useItem(uin, bagId)
     if success then
         -- 物品使用后的处理
         local index = playerData.bag_index[bagId]
-        local containerName = self:getContainerNameByType(item.itype)
+        local containerName = common_const:getContainerNameByType(item.itype)
         
         if (item.itype == common_const.ITEM_TYPE.BOX or 
             item.itype == common_const.ITEM_TYPE.CONSUMABLE) then

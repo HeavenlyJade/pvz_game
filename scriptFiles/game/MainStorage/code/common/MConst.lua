@@ -48,6 +48,7 @@ local  common_const = {
         MAT        = 3,      --材料
         CARD       = 4,      --卡片
         CONSUMABLE = 5,      --消耗品
+        UNKNOWN    = 99,     --未知
     },
 
 
@@ -60,5 +61,18 @@ local  common_const = {
     },
 
 }
+
+
+function common_const:getContainerNameByType(itemType)
+    local typeToContainer = {
+        [common_const.ITEM_TYPE.EQUIPMENT] = "bag_equ_items",
+        [common_const.ITEM_TYPE.CONSUMABLE] = "bag_consum_items",
+        [common_const.ITEM_TYPE.BOX] = "bag_consum_items", -- 宝箱也放在消耗品容器
+        [common_const.ITEM_TYPE.MAT] = "bag_mater_items",
+        [common_const.ITEM_TYPE.CARD] = "bag_card_items"
+    }
+    return typeToContainer[itemType] or "bag_equ_items" -- 默认放在装备容器
+end
+
 
 return common_const

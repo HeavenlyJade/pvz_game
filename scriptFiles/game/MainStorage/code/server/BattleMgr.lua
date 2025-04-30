@@ -277,9 +277,6 @@ end
 function BattleMgr.refreshPlayerAttr(uin_)
     local player_data_ = gg.server_player_bag_data[uin_]
     
-    -- 使用for循环打印背包数据信息
-    gg.log('BattleMgr.refreshPlayerAttr开始打印玩家背包数据 uin=' .. uin_)
-    
     local all_attr = {
         wspeed   = 1, --武器速度
         attack   = 0, --最小伤害
@@ -289,19 +286,20 @@ function BattleMgr.refreshPlayerAttr(uin_)
         defence  = 0, --最小防御
         defence2 = 0, --最大防御
     }
+    
     --计算所有的已经装备的物品
     for i = 1, 8 do
         local pos_ = 1000 + i
         if player_data_.bag_index[pos_] then
             local uuid_ = player_data_.bag_index[pos_].uuid
             if uuid_ then
-                local item_ = player_data_.bag_items[uuid_]
+                -- 根据物品类型获取对应容器
+                local item_type = player_data_.bag_index[pos_].type
+                local containerName = common_const:getContainerNameByType(item_type)
+                local item_ = player_data_[containerName] and player_data_[containerName][uuid_]
 
                 --词缀
                 if item_ and item_.attrs then
-                    --eq_10014={quality=4 uuid=eq_10014 defence=4 defence2=32 attrs={1={k=rd3 v=32} 2={k=agile v=20}
-                    --3={k=r2 v=16} 4={k=s2 v=16} 5={k=ed v=8} 6={k=s1 v=20}}
-                    --asset=sandboxSysId://items/icon12318.png pos=1002}
                     for seq_, attr in pairs(item_.attrs) do
                         if all_attr[attr.k] then
                             all_attr[attr.k].v = all_attr[attr.k].v + attr.v
@@ -312,26 +310,23 @@ function BattleMgr.refreshPlayerAttr(uin_)
                 end
 
                 --攻防
-                if pos_ == 1001 then
+                if pos_ == 1001 and item_ then
                     --如果是武器，计算速度
-                    if all_attr.wspeed then all_attr.wspeed = item_.wspeed end
+                    if item_.wspeed and all_attr.wspeed then all_attr.wspeed = item_.wspeed end
                 end
 
                 --基础攻防
-                if item_.attack then all_attr.attack = all_attr.attack + item_.attack end
-                if item_.attack2 then all_attr.attack2 = all_attr.attack2 + item_.attack2 end
-
-                if item_.spell then all_attr.spell = all_attr.spell + item_.spell end
-                if item_.spell2 then all_attr.spell2 = all_attr.spell2 + item_.spell2 end
-
-                if item_.defence then all_attr.defence = all_attr.defence + item_.defence end
-                if item_.defence2 then all_attr.defence2 = all_attr.defence2 + item_.defence2 end
+                if item_ then
+                    if item_.attack then all_attr.attack = all_attr.attack + item_.attack end
+                    if item_.attack2 then all_attr.attack2 = all_attr.attack2 + item_.attack2 end
+                    if item_.spell then all_attr.spell = all_attr.spell + item_.spell end
+                    if item_.spell2 then all_attr.spell2 = all_attr.spell2 + item_.spell2 end
+                    if item_.defence then all_attr.defence = all_attr.defence + item_.defence end
+                    if item_.defence2 then all_attr.defence2 = all_attr.defence2 + item_.defence2 end
+                end
             end
         end
     end
-
-    --打印所有属性
-    -- gg.log('打印玩家属性玩all_attr====', uin_, all_attr)
 
     --修改属性数据
     local player_ = gg.getPlayerByUin(uin_)

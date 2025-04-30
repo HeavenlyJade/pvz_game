@@ -114,54 +114,20 @@ function MCloudDataMgr.savePlayerData( uin_,  force_ )
 end
 
 
---- 判断物品类型并返回对应的容器名称
-function MCloudDataMgr.getContainerNameByType(itemType)
-    local typeToContainer = {
-        [common_const.ITEM_TYPE.EQUIPMENT] = "bag_equ_items",
-        [common_const.ITEM_TYPE.CONSUMABLE] = "bag_consum_items",
-        [common_const.ITEM_TYPE.BOX] = "bag_consum_items", -- 宝箱也放在消耗品容器
-        [common_const.ITEM_TYPE.MAT] = "bag_mater_items",
-        [common_const.ITEM_TYPE.CARD] = "bag_card_items"
-    }
-    return typeToContainer[itemType] or "bag_equ_items" -- 默认放在装备容器
-end
-
---- 迁移背包数据到新格式
-function MCloudDataMgr.migrateBagDataToNewFormat(bagData)
-    -- 只处理有旧格式数据的情况
-    if not bagData.bag_items then
-        return bagData
-    end
-    
-    -- 初始化新容器
-    bagData.bag_equ_items = bagData.bag_equ_items or {}
-    bagData.bag_consum_items = bagData.bag_consum_items or {}
-    bagData.bag_mater_items = bagData.bag_mater_items or {}
-    bagData.bag_card_items = bagData.bag_card_items or {}
-    
-    -- 迁移物品数据
-    for uuid, item in pairs(bagData.bag_items) do
-        local containerName = MCloudDataMgr.getContainerNameByType(item.itype)
-        bagData[containerName][uuid] = item
-        
-        -- 更新索引中的类型信息
-        for bagId, index in pairs(bagData.bag_index) do
-            if index.uuid == uuid then
-                index.type = item.itype
-            end
-        end
-    end
-    
-    -- 增加版本号
-    bagData.bag_ver = bagData.bag_ver + 1
-    
-    return bagData
-end
 
 -- 读取玩家的背包数据
 function MCloudDataMgr.readPlayerBag(uin_)
     local success, bagData = cloudService:GetTableOrEmpty('bag' .. uin_)
-    
+    local bag_data_new = {
+        bag_equ_items = {},
+        bag_consum_items = {},
+        bag_mater_items = {},
+        bag_card_items = {},
+        bag_unknown_items = {},
+        bag_index ={bag_equ_items={},bag_consum_items = {},bag_mater_items = {},bag_card_items = {},bag_unknown_items = {}},
+        bag_ver={},
+        bag_size = 36,
+    }
     -- 读取失败或数据为空
     if not success then
         return 1, {}  -- 数据失败，踢玩家下线，防止数据洗白
@@ -171,74 +137,54 @@ function MCloudDataMgr.readPlayerBag(uin_)
     if not bagData or bagData.uin ~= uin_ then
         return 0, {}
     end
-    
+    bag_data_new.bag_ver = bagData.bag_ver
+    bag_data_new.bag_size = bagData.bag_size
     -- 处理旧数据格式迁移
     if bagData.bag_items and not bagData.bag_equ_items then
-        -- 初始化新容器
-        bagData.bag_equ_items = {}
-        bagData.bag_consum_items = {}
-        bagData.bag_mater_items = {}
-        bagData.bag_card_items = {}
-        
         -- 迁移物品数据
         for uuid, item in pairs(bagData.bag_items) do
-            local containerName = MCloudDataMgr.getContainerNameByType(item.itype)
-            bagData[containerName][uuid] = item
-            
+            local containerName = common_const.getContainerNameByType(item.itype)
+            bag_data_new[containerName][uuid] = item
             -- 更新索引中的类型信息
-            for bagId, index in pairs(bagData.bag_index) do
-                if index.uuid == uuid then
-                    index.type = item.itype
+            for bag_item_position, val in pairs(bagData.bag_index) do
+                if val.uuid == uuid then
+                    val.type = item.itype
                 end
             end
         end
-        
-        -- 增加版本号
-        bagData.bag_ver = (bagData.bag_ver or 1000) + 1
-        
-        -- 不删除旧数据，保留兼容性
     end
     
     -- 确保索引中有类型信息
     if bagData.bag_index then
-        for bagId, index in pairs(bagData.bag_index) do
-            if index.uuid and not index.type then
+        for bagId, bag_index_item in pairs(bagData.bag_index) do
+            if bag_index_item.uuid and bag_index_item.type then
                 -- 尝试确定物品类型
-                local item = nil
-                for _, containerName in ipairs({"bag_equ_items", "bag_consum_items", "bag_mater_items", "bag_card_items", "bag_items"}) do
-                    if bagData[containerName] and bagData[containerName][index.uuid] then
-                        item = bagData[containerName][index.uuid]
-                        break
-                    end
-                end
-                
-                if item then
-                    index.type = item.itype
-                else
-                    -- 如果找不到物品，默认为装备类型
-                    index.type = common_const.ITEM_TYPE.EQUIPMENT
-                end
+                local containerName = common_const.getContainerNameByType(bag_index_item.type)
+                bag_index_item["bag_item_position"] = bagId
+                bag_data_new.bag_index[containerName][bag_index_item.uuid] = bag_index_item
+            
             end
         end
     end
-    
+
     -- 开始清理无效数据
     -- 1. 收集有效物品索引
     local validUUIDToBagID = {}
     local invalidBagIDs = {}
     
-    for bagID, indexData in pairs(bagData.bag_index) do
-        local isValid = false
-        if indexData.uuid and indexData.type then
-            local containerName = MCloudDataMgr.getContainerNameByType(indexData.type)
-            if bagData[containerName] and bagData[containerName][indexData.uuid] then
-                validUUIDToBagID[indexData.uuid] = bagID
-                isValid = true
+    for containerName, indexContainer in pairs(bag_data_new.bag_index) do
+        for uuid, indexData in pairs(indexContainer) do
+            local isValid = false
+            if indexData.uuid and indexData.type then
+                if bag_data_new[containerName] and bag_data_new[containerName][indexData.uuid] then
+                    validUUIDToBagID[indexData.uuid] = indexData.bag_item_position
+                    isValid = true
+                end
             end
-        end
-        
-        if not isValid then
-            table.insert(invalidBagIDs, bagID)
+            
+            if not isValid then
+                table.insert(invalidBagIDs, indexData.bag_item_position)
+            end
         end
     end
     
@@ -328,35 +274,6 @@ function MCloudDataMgr.restoreItemAsset(item)
     return item
 end
 
---- 创建兼容旧格式的背包数据（用于同步到客户端）
-function MCloudDataMgr.createCompatibleBagData(playerData)
-    -- 如果已经有旧格式数据，直接返回
-    if playerData.bag_items then
-        return playerData
-    end
-    
-    -- 创建兼容数据
-    local compatibleData = {
-        bag_index = playerData.bag_index,
-        bag_ver = playerData.bag_ver,
-        bag_size = playerData.bag_size,
-        bag_items = {}
-    }
-    
-    -- 容器列表
-    local containerNames = {"bag_equ_items", "bag_consum_items", "bag_mater_items", "bag_card_items"}
-    
-    -- 合并所有容器的物品
-    for _, containerName in ipairs(containerNames) do
-        if playerData[containerName] then
-            for uuid, item in pairs(playerData[containerName]) do
-                compatibleData.bag_items[uuid] = item
-            end
-        end
-    end
-    
-    return compatibleData
-end
 
 -- 保存玩家的背包数据
 -- force_:  立即存储，不检查时间间隔
