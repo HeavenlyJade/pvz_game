@@ -42,7 +42,6 @@ function MCloudDataMgr.readSkillData( uin_ )
 end
 
 
-
 -- 保存玩家技能设置
 -- force_:  立即存储，不检查时间间隔
 function MCloudDataMgr.saveSkillData( uin_ )
@@ -118,18 +117,17 @@ end
 -- 读取玩家的背包数据
 function MCloudDataMgr.readPlayerBag(uin_)
     local success, bagData = cloudService:GetTableOrEmpty('bag' .. uin_)
-    local bag_data_new = {
-        bag_equ_items = {},
-        bag_consum_items = {},
-        bag_mater_items = {},
-        bag_card_items = {},
-        bag_unknown_items = {},
-        bag_index ={bag_equ_items={},bag_consum_items = {},bag_mater_items = {},bag_card_items = {},bag_unknown_items = {}},
-        bag_ver=0,
-        bag_size = 36,
-    }
+    -- local bag_data_new = {
+    --     bag_equ_items = {},
+    --     bag_consum_items = {},
+    --     bag_mater_items = {},
+    --     bag_card_items = {},
+    --     bag_unknown_items = {},
+    --     bag_index ={bag_equ_items={},bag_consum_items = {},bag_mater_items = {},bag_card_items = {},bag_unknown_items = {}},
+    --     bag_ver=0,
+    --     bag_size = 36,
+    -- }
     bagData.bag_ver = 0
-    gg.log("读取玩家背包数据", 'bag' .. uin_, success,bagData)
     -- 读取失败或数据为空
     if not success then
         return 1, {}  -- 数据失败，踢玩家下线，防止数据洗白
@@ -138,27 +136,6 @@ function MCloudDataMgr.readPlayerBag(uin_)
     -- 验证玩家ID
     if not bagData then
         return 1, {}
-    end
-
-    local validUUIDToBagID = {}
-    local invalidBagIDs = {}
-    
-    -- 2. 清理无效索引
-    for _, bagID in ipairs(invalidBagIDs) do bagData.bag_index[bagID] = nil end
-    -- 3. 清理无引用的物品
-    local containerNames = {"bag_equ_items", "bag_consum_items", "bag_mater_items", "bag_card_items", "bag_items"}
-    for _, containerName in ipairs(containerNames) do
-        if bagData[containerName] then
-            local orphanedUUIDs = {}
-            for uuid,value in pairs(bagData[containerName]) do
-                if not validUUIDToBagID[uuid] then
-                    table.insert(orphanedUUIDs, uuid)
-                end
-            end
-            for _, uuid in ipairs(orphanedUUIDs) do
-                bagData[containerName][uuid] = nil
-            end
-        end
     end
     -- 恢复物品资源信息
     bagData = MCloudDataMgr.restoreFilteredItemFields(bagData)
@@ -237,6 +214,11 @@ function MCloudDataMgr.savePlayerBag( uin_, force_ )
     end
 
     local player_bag_ = gg.server_player_bag_data[ uin_ ]
+    if not player_bag_ then
+        return 1, {}
+    end
+
+    
     if player_bag_ then
         -- 创建清理过的数据副本
         local cleanedData = {
@@ -273,9 +255,9 @@ function MCloudDataMgr.savePlayerBag( uin_, force_ )
         -- 保存到云端
         cloudService:SetTableAsync('bag' .. uin_, cleanedData, function(ret_)
             if not ret_ then
-                gg.log("保存背包数据失败", 'bag' .. uin_, cleanedData.bag_ver)
+                gg.log("保存背包数据失败", 'bag' .. uin_, cleanedData.cleanedData)
             else
-                gg.log("保存背包数据成功", 'bag' .. uin_, cleanedData.bag_ver)
+                gg.log("保存背包数据成功", 'bag' .. uin_, cleanedData.cleanedData)
             end
         end)
     end

@@ -562,7 +562,6 @@ end
 function UiBag.handleSyncPlayerItems( args1_ )
     --{ cmd='cmd_player_items_ret', index=data_, items=items_,size=int } )
     local bag_data = args1_.bag_data
-    gg.log("数据回调 玩家物品", bag_data)
     if  bag_data then
         gg.client_bag_size = bag_data.bag_size
         gg.client_bag_index = bag_data.bag_index
@@ -717,17 +716,5 @@ function UiBag.updateItemIcon(button, asset_id, quality, num)
         end
     end
 end
-
--- 装备位置配置
-local EQUIPMENT_POSITIONS = {
-    {id = 1001, side = "left", row = 0}, -- 武器
-    {id = 1003, side = "left", row = 1}, -- 头盔
-    {id = 1004, side = "left", row = 2}, -- 衣服
-    {id = 1005, side = "left", row = 3}, -- 裤子
-    {id = 1002, side = "right", row = 0}, -- 盾牌
-    {id = 1006, side = "right", row = 1}, -- 披风
-    {id = 1007, side = "right", row = 2}, -- 鞋子
-    {id = 1008, side = "right", row = 3}, -- 饰品
-}
 
 return UiBag;

@@ -75,37 +75,7 @@ end
 ---@param uin number 玩家ID
 ---@param data table 背包数据
 function ItemOperator:setPlayerBagData(uin, data)
-    -- 如果是旧格式数据，先迁移
-    if data.bag_items then
-        -- 转换为新格式
-        local newData = {
-            bag_index = data.bag_index or {},
-            bag_equ_items = {},
-            bag_consum_items = {},
-            bag_mater_items = {},
-            bag_card_items = {},
-            bag_ver = data.bag_ver,
-            bag_size = data.bag_size or 36
-        }
-        
-        -- 迁移物品数据
-        for uuid, item in pairs(data.bag_items) do
-            local containerName = common_const:getContainerNameByType(item.itype)
-            newData[containerName][uuid] = item
-            
-            -- 更新索引中的类型信息
-            for bagId, index in pairs(newData.bag_index) do
-                if index.uuid == uuid then
-                    index.type = item.itype
-                end
-            end
-        end
-        
-        gg.server_player_bag_data[uin] = newData
-    else
-        -- 已经是新格式，直接设置
-        gg.server_player_bag_data[uin] = data
-    end
+    gg.server_player_bag_data[uin] = data    
 end
 
 ---同步背包数据到客户端
@@ -170,9 +140,12 @@ function ItemOperator:useItem(uin, bagId)
         -- 物品使用后的处理
         local index = playerData.bag_index[bagId]
         local containerName = common_const:getContainerNameByType(item.itype)
+        local ITEM_TYPE_SET = {
+            [common_const.ITEM_TYPE.BOX] = true,
+            [common_const.ITEM_TYPE.CONSUMABLE] = true
+        }
         
-        if (item.itype == common_const.ITEM_TYPE.BOX or 
-            item.itype == common_const.ITEM_TYPE.CONSUMABLE) then
+        if ITEM_TYPE_SET[item.itype] then
             if item.num and item.num > 1 then
                 -- 堆叠物品减少数量
                 item.num = item.num - 1
@@ -574,32 +547,87 @@ end
 ---@param itemInfo table 物品信息
 ---@return number 0成功，1失败
 function ItemOperator:pickupItem(uin, itemInfo)
-    local playerData = self:getPlayerBagData(uin)
+    gg.log("玩家拾取物品", itemInfo)
+    local playerData = self:getPlayerBagData(uin)    
+    -- 创建物品
+    local item = eqGen.pickup_create_item(itemInfo)
+    if not item then
+        return 1 -- 物品创建失败
+    end
+    local ITEM_TYPE_SET = {
+        [common_const.ITEM_TYPE.BOX] = true,
+        [common_const.ITEM_TYPE.CONSUMABLE] = true,
+        [common_const.ITEM_TYPE.CARD] = true,
+        [common_const.ITEM_TYPE.MAT] = true,
+
+    }
+    -- 如果是可堆叠物品，先尝试堆叠
+    if ITEM_TYPE_SET[item.itype] and item.num then
+        local stacked = false
+        -- 查找已有相同材料
+        for bagId, index in pairs(playerData.bag_index) do
+            if bagId >= 10000 and index.type == common_const.ITEM_TYPE.MAT then
+                local existingItem = self:getItemByUUID(playerData, index.uuid, common_const.ITEM_TYPE.MAT)
+                if existingItem and 
+                   existingItem.mat_id == item.mat_id and
+                   existingItem.quality == item.quality then
+                    -- 找到相同材料，堆叠
+                    existingItem.num = existingItem.num + item.num
+                    stacked = true
+                    
+                    -- 通知客户端
+                    gg.network_channel:fireClient(uin, { 
+                        cmd = "cmd_client_show_msg", 
+                        txt = '你获得了 ' .. item.name .. ' x' .. item.num, 
+                        color = gg.getQualityColor(item.quality) 
+                    })
+                    
+                    -- 更新版本号
+                    playerData.bag_ver = playerData.bag_ver + 1
+                    cloudDataMgr.savePlayerBag(uin, false)
+                    return 0
+                end
+            end
+        end
+    end    
     -- 查找空背包格子
     local baseId = 10000
+    local containerName = common_const:getContainerNameByType(item.itype)
+    gg.log("containerName",containerName)
+
+    gg.log("更新前玩家背包索引", playerData.bag_index[containerName])
+
     for i = 0, playerData.bag_size - 1 do
         local bagId = baseId + i
-        if not playerData.bag_index[bagId] then
-            -- 创建物品
-            local item = eqGen.pickup_create_item(itemInfo)
-            if not item then
-                return 0
-            end
-            
-            -- 加入背包
-            local containerName = self:getContainerByItem(item)
+
+        if not playerData.bag_index[containerName][bagId] then
+            -- 根据物品类型确定容器
+            -- 加入对应容器
             playerData[containerName][item.uuid] = item
-            playerData.bag_index[bagId] = { 
+            -- 更新索引
+            playerData.bag_index[containerName][bagId] = { 
                 uuid = item.uuid,
-                type = item.itype
+                type = item.itype,
+                pos = bagId
             }
+            gg.log("更新后玩家背包索引", playerData.bag_index[containerName])
+            gg.log("更新后玩家背包", playerData[containerName])
+            
+            -- 更新版本号
             playerData.bag_ver = playerData.bag_ver + 1
             
             -- 保存并通知客户端
             cloudDataMgr.savePlayerBag(uin, false)
+            self:syncBagToClient(uin, nil)
+            -- 显示获得物品消息
+            local msgText = '你获得了 ' .. item.name
+            if item.num and item.num > 1 then
+                msgText = msgText .. ' x' .. item.num
+            end
+            
             gg.network_channel:fireClient(uin, { 
                 cmd = "cmd_client_show_msg", 
-                txt = '你获得了 ' .. item.name, 
+                txt = msgText, 
                 color = gg.getQualityColor(item.quality) 
             })
             
@@ -612,6 +640,12 @@ function ItemOperator:pickupItem(uin, itemInfo)
     if player then
         player:showDamage(0, { bag_full = 1 })
     end
+    
+    gg.network_channel:fireClient(uin, { 
+        cmd = "cmd_client_show_msg", 
+        txt = '背包已满，无法拾取物品', 
+        color = ColorQuad.new(255, 0, 0, 255)
+    })
     
     return 1
 end

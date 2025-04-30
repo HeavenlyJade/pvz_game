@@ -1,5 +1,3 @@
-
-
 --- V109 miniw-haima
 
 local print        = print
