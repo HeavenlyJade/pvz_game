@@ -24,7 +24,7 @@ local MTerrain      = require(MainStorage.code.server.MTerrain)         ---@type
 local skillMgr      = require(MainStorage.code.server.skill.MSkillMgr)  ---@type SkillMgr
 local buffMgr       = require(MainStorage.code.server.buff.BuffMgr)  ---@type BufferMgr
 local bagMgr        = require(MainStorage.code.server.bag.MBagMgr)          ---@type BagMgr
-local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
+local cloudDataMgr  = require(MainStorage.code.server.MDataStorage.MCloudDataMgr)    ---@type MCloudDataMgr
 local battleMgr     = require(MainStorage.code.server.BattleMgr)        ---@type BattleMgr
 -- 总入口
 ---@class MainServer

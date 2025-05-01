@@ -6,7 +6,6 @@ local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local bagMgr = require(MainStorage.code.server.bag.MBagMgr)  ---@type BagMgr
 local common_const = require(MainStorage.code.common.MConst)  ---@type common_const
 local battleMgr = require(MainStorage.code.server.BattleMgr)  ---@type BattleMgr
-local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr)  ---@type MCloudDataMgr
 
 ---@class ItemCommands
 local ItemCommands = {}

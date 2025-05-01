@@ -3,7 +3,7 @@
 
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
-local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr)  ---@type MCloudDataMgr
+local cloudDataMgr = require(MainStorage.code.server.MDataStorage.MCloudDataMgr)  ---@type MCloudDataMgr
 local eqAttr = require(MainStorage.code.server.equipment.MEqAttr)  ---@type EqAttr
 
 ---@class PlayerCommands

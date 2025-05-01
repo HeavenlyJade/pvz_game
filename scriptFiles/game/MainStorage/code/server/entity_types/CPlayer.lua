@@ -19,7 +19,7 @@ print("playerCommonModule对象",CommonModule)
 local TaskSystem = require(MainStorage.code.server.TaskSystem.MTaskSystem) ---@type TaskSystem
 local CLiving      = require(MainStorage.code.server.entity_types.CLiving) ---@type CLiving
 local skillMgr     = require(MainStorage.code.server.skill.MSkillMgr) ---@type SkillMgr
-local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
+local cloudDataMgr = require(MainStorage.code.server.MDataStorage.MCloudDataMgr) ---@type MCloudDataMgr
 
 ---@class CPlayer : CLiving    --玩家类  (单个玩家) (管理玩家状态)
 ---@field dict_btn_skill table 技能按钮映射

@@ -24,7 +24,7 @@ local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@t
 
 local skillMgr          = require(MainStorage.code.server.skill.MSkillMgr)    ---@type SkillMgr
 local eqAttr            = require(MainStorage.code.server.equipment.MEqAttr)  ---@type EqAttr
-local cloudDataMgr      = require(MainStorage.code.server.MCloudDataMgr)      ---@type MCloudDataMgr
+local cloudDataMgr      = require(MainStorage.code.server.MDataStorage.MCloudDataMgr)      ---@type MCloudDataMgr
 
 
 

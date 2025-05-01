@@ -4,7 +4,7 @@
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)  ---@type common_config
-local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr)  ---@type MCloudDataMgr
+local cloudDataMgr = require(MainStorage.code.server.MDataStorage.MCloudDataMgr)  ---@type MCloudDataMgr
 
 ---@class SkillCommands
 local SkillCommands = {}
