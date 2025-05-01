@@ -23,6 +23,16 @@ local  CONST_CLOUD_SAVE_TIME = 30    --每60秒存盘一次
 local MCloudDataMgr = {
     last_time_player = 0,     --最后一次玩家存盘时间
     last_time_bag    = 0,     --最后一次背包存盘时间
+    bag_init_data_var = {
+        bag_equ_items = {},
+        bag_consum_items = {},
+        bag_mater_items = {},
+        bag_card_items = {},
+        bag_unknown_items = {},
+        bag_index ={bag_equ_items={},bag_consum_items = {},bag_mater_items = {},bag_card_items = {},bag_unknown_items = {}},
+        bag_ver=1001,
+        bag_size = 36,
+    }
 }
 
 
@@ -51,7 +61,6 @@ function MCloudDataMgr.saveSkillData( uin_ )
             uin   = uin_,
             skill = player_.dict_btn_skill
         }
-
         cloudService:SetTableAsync( 'sk' .. uin_, data_, function ( ret_ )
             if  not ret_ then
                 gg.log("保存玩家技能失败", 'sk' .. uin_, data_ )
@@ -117,29 +126,20 @@ end
 -- 读取玩家的背包数据
 function MCloudDataMgr.readPlayerBag(uin_)
     local success, bagData = cloudService:GetTableOrEmpty('bag' .. uin_)
-    -- local bag_data_new = {
-    --     bag_equ_items = {},
-    --     bag_consum_items = {},
-    --     bag_mater_items = {},
-    --     bag_card_items = {},
-    --     bag_unknown_items = {},
-    --     bag_index ={bag_equ_items={},bag_consum_items = {},bag_mater_items = {},bag_card_items = {},bag_unknown_items = {}},
-    --     bag_ver=0,
-    --     bag_size = 36,
-    -- }
-    bagData.bag_ver = 0
     -- 读取失败或数据为空
     if not success then
         return 1, {}  -- 数据失败，踢玩家下线，防止数据洗白
     end
-    
-    -- 验证玩家ID
-    if not bagData then
-        return 1, {}
+
+    -- 第一次玩家登陆的时候初始化的玩家背包
+    if (bagData.uin and not next(bagData.bag_items or {}) and not next(bagData.bag_index or {}) and bagData.bag_ver == 1001) or
+       (bagData.bag_ver == 1001 and not next(bagData)) then
+        return 0, MCloudDataMgr.bag_init_data_var
     end
+    
+
     -- 恢复物品资源信息
     bagData = MCloudDataMgr.restoreFilteredItemFields(bagData)
-    gg.log("读取并处理背包数据", 'bag' .. uin_, bagData)
     return 0, bagData
 end
 

@@ -234,44 +234,7 @@ function _M:check_monster_spawn()
     end
 end
 
-function _M:check_npc_spawn()
-    local gx_node_ = self:getGX()
-    if gx_node_ then
-        for k, v in pairs(self.npc_spawn_config) do
-            if self.name then
-                self:check_npc_spawn_by_name(k, v, self.name)
-            end
-        end
-    end
-end
 
-function _M:check_npc_spawn_by_name(npc_id, npc_spawn_config, map_name)
-    -- 检查npc的刷点
-    if not self.npc_spawns[npc_id] then
-        if npc_spawn_config and not self.npcs[npc_id] then
-            local npc_args = { 
-                position = npc_spawn_config.position,
-                scene_name = self.name,
-                nickname = npc_spawn_config.name,
-                npc_type   = common_const.NPC_TYPE.NPC,
-                uin = npc_id,
-                lv = npc_spawn_config.lv,
-                model_id = npc_spawn_config.model,
-                profession = npc_spawn_config.profession,
-                rotation = npc_spawn_config.rotation,
-                id = npc_id,
-                plot = npc_spawn_config.plot
-                }
-       
-            local npc_entity = CLNpc.New(npc_args)
-            npc_entity:InitModel()
-            -- npc_entity.scene = self
-            self.npcs[npc_id] = npc_entity
-            self.npc_spawns[npc_id] = npc_spawn_config
-
-        end
-    end
-end
 
 --每一个刷新点  monster_spawn1  monster_spawn2  monster_spawn3
 function _M:check_monster_spawn_by_name(spawn_name_, map_name)
@@ -424,7 +387,6 @@ function _M:update()
     elseif mod_ == 3 then
         self:check_player_alive()
     elseif mod_ == 4 then
-        self:check_npc_spawn()
         self:check_drop()
     else
 

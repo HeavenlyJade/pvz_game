@@ -166,24 +166,23 @@ function UiGameTask.createNpcHighlight(npcId)
         local obj_npc = container_npc[npcIdStr]
         if not obj_npc then
             gg.log("NPC未找到:", npcIdStr)
-            -- goto continue
+        else
+            -- 创建高亮区域
+            local safeArea = SandboxNode.new('Area', obj_npc)
+            local npcSize = obj_npc.Size
+            local centerPos = obj_npc.Position
+            
+            -- 设置区域范围
+            local expand = Vector3.new(25, 10, 150)
+            safeArea.Beg = centerPos - (npcSize/2 + expand)
+            safeArea.End = centerPos + (npcSize/2 + expand)
+            
+            -- 设置区域显示样式
+            safeArea.Show = true
+            safeArea.Color = ColorQuad.new(0, 255, 0, 100)
+            safeArea.EffectWidth = 3        
+            table.insert(safeAreas, safeArea)
         end
-        
-        -- 创建高亮区域
-        local safeArea = SandboxNode.new('Area', obj_npc)
-        local npcSize = obj_npc.Size
-        local centerPos = obj_npc.Position
-        
-        -- 设置区域范围
-        local expand = Vector3.new(25, 10, 150)
-        safeArea.Beg = centerPos - (npcSize/2 + expand)
-        safeArea.End = centerPos + (npcSize/2 + expand)
-        
-        -- 设置区域显示样式
-        safeArea.Show = true
-        safeArea.Color = ColorQuad.new(0, 255, 0, 100)
-        safeArea.EffectWidth = 3        
-        table.insert(safeAreas, safeArea)
     end
     
     return safeAreas

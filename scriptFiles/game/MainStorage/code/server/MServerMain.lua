@@ -256,6 +256,7 @@ function MainServer.player_enter_game(player)
     
     --加载数据 2 玩家历史装备数据
     local ret2_, cloud_player_bag_ = cloudDataMgr.readPlayerBag(uin_)
+    gg.log("ret2_, cloud_player_bag_ ",ret2_, cloud_player_bag_ )
     if ret2_ == 0 then
         gg.log('cloud_player_bag ok:', uin_, cloud_player_bag_.bag_ver)
         gg.network_channel:fireClient(uin_, { cmd="cmd_client_show_msg", txt='加载玩家背包数据成功' })     --飘字

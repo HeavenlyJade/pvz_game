@@ -55,8 +55,7 @@ function MTerrain.create_containers( sceneid, scene_name_ )
         container_monster_.Name  = 'container_monster'
         local container_weapon_  = SandboxNode.new('SandboxNode', parent_ )
         container_weapon_.Name   = 'container_weapon'
-        local container_npc = SandboxNode.new('SandboxNode', parent_ )
-        container_npc.Name   = 'container_npc'
+
 
     end
 
