@@ -62,10 +62,8 @@ function MTerrain.create_containers( sceneid, scene_name_ )
 end
 
 
-
+--初始化大厅地图场景
 function MTerrain.initScene0()
-    gg.log( '初始化大厅地图场景' )
-
     local scene_name_ = 'g0'
     local gx_ = game.WorkSpace.Ground[ scene_name_ ] or MainStorage.Ground[ scene_name_ ]
     if  gx_ then

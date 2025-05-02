@@ -56,13 +56,11 @@ function ItemOperator:addItemToBag(playerData, item, bagId)
     
     -- 添加物品到对应容器
     playerData[containerName][item.uuid] = item
-    
     -- 更新索引，包含类型信息
     playerData.bag_index[bagId] = {
         uuid = item.uuid,
         type = item.itype
     }
-    
     -- 增加版本号
     playerData.bag_ver = playerData.bag_ver + 1
     

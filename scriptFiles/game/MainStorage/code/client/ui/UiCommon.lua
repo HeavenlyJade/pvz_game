@@ -202,16 +202,13 @@ end
 
 --同步玩家的技能cd情况
 function UiCommon.handleCdList(args1_)
-    gg.log('handleCdList====', args1_)
     
     for skill_id_, info_ in pairs(args1_.v) do
         local skill_config_ = common_config.skill_def[skill_id_]
         local cd_max_ = skill_config_.cd
 
         if cd_max_ and cd_max_ > 0 then
-            local cd_left_ = math.max(0, cd_max_ - (args1_.tick - info_.last))
-            gg.log('handleCdList==', skill_id_, '==', cd_left_, ' / ', cd_max_)
-            
+            local cd_left_ = math.max(0, cd_max_ - (args1_.tick - info_.last))            
             -- 更新技能图片cd
             local skill_cd = uiSkillSelect.dict_skill_cd[skill_id_]
             if skill_cd then

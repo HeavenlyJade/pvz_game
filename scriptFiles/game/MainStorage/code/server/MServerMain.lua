@@ -206,12 +206,12 @@ function MainServer.SetCollisionGroup()
     WS:SetCollideInfo(0, 1, false)   --玩家不与怪物碰撞
 end
 
---注册玩家进游戏和出游戏消息
+--注册玩家进游戏和出游戏消息，在玩家进入和离开服务器时候触发对应绑定函数
 function MainServer.register_player_in_out()
     local players = game:GetService("Players")
-    
+
     players.PlayerAdded:Connect(function(player)
-        gg.log('====PlayerAdded', player.UserId)
+        gg.log('玩家进入', player.UserId)
         MainServer.player_enter_game(player)
     end)
     
@@ -223,7 +223,7 @@ end
 
 --玩家进入游戏，数据加载
 function MainServer.player_enter_game(player)
-    gg.log("player enter====", player.UserId, player.Name, player.Nickname)
+    gg.log("玩家数据", player.UserId, player.Name, player.Nickname)
     
     player.DefaultDie = false   --取消默认死亡
     
@@ -315,7 +315,7 @@ end
 
 --建立网络通道
 function MainServer.createNetworkChannel()
-    gg.log('createNetworkChannel server side')
+    -- gg.log('createNetworkChannel server side')
     --begin listen
     gg.network_channel = MainStorage:WaitForChild("NetworkChannel")
     gg.network_channel.OnServerNotify:Connect(MainServer.OnServerNotify)

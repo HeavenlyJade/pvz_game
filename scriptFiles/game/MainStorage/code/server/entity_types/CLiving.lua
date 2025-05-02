@@ -828,11 +828,9 @@ end
 
 
 
---被减速
+--被减数
 function _M:slowDown( tick_, v_ )
     local stat_flags_ = self.stat_flags
-    gg.log( 'slowDown', self.actor.Movespeed, v_ )
-
     stat_flags_.slow_tick = tick_
     stat_flags_.slow = v_
 
