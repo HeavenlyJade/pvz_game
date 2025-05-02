@@ -177,10 +177,6 @@ function PlayerCommands.Execute(command, params, player)
     return executor(params, player)
 end
 
--- 兼容旧版接口
-PlayerCommands.handlers = {}
-for command, executor in pairs(CommandMapping) do
-    PlayerCommands.handlers[command] = executor
-end
+
 
 return PlayerCommands

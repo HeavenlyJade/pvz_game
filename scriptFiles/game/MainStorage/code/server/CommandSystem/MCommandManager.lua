@@ -10,6 +10,7 @@ local QuestCommands = require(MainStorage.code.server.CommandSystem.commands.MQu
 local PlayerCommands = require(MainStorage.code.server.CommandSystem.commands.MPlayerCommands)   ---@type PlayerCommands
 local SkillCommands = require(MainStorage.code.server.CommandSystem.commands.MSkillCommands)     ---@type SkillCommands
 local SystemCommands = require(MainStorage.code.server.CommandSystem.commands.MSystemCommands)   ---@type SystemCommands
+local MailCommands = require(MainStorage.code.server.CommandSystem.commands.MMailCommands)   ---@type MailCommands
 ---@class CommandManager
 local CommandManager = {}
 
@@ -60,7 +61,9 @@ CommandManager.moduleMap = {
     
     -- 系统相关指令映射到系统命令模块
     ["事件"] = SystemCommands,
-    ["地图"] = SystemCommands
+    ["地图"] = SystemCommands,
+        -- 邮件相关指令映射到邮件命令模块
+    ["邮件"] = MailCommands,
 }
 
 -- 初始化命令管理器
@@ -71,10 +74,8 @@ function CommandManager:Init()
             self:RegisterHandlers(category, module.handlers)
         end
     end
-    
     -- 注册条件解析器
     self.conditionParser = ConditionParser
-    
     gg.log("命令系统初始化完成")
     return self
 end

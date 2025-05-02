@@ -65,10 +65,4 @@ function SystemCommands.Execute(command, params, player)
     return executor(params, player)
 end
 
--- 兼容旧版接口
-SystemCommands.handlers = {}
-for command, executor in pairs(CommandMapping) do
-    SystemCommands.handlers[command] = executor
-end
-
 return SystemCommands

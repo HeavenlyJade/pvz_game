@@ -136,10 +136,4 @@ function SkillCommands.Execute(command, params, player)
     return executor(params, player)
 end
 
--- 兼容旧版接口
-SkillCommands.handlers = {}
-for command, executor in pairs(CommandMapping) do
-    SkillCommands.handlers[command] = executor
-end
-
 return SkillCommands

@@ -28,7 +28,6 @@ local function addItem(params, player)
             gg.network_channel:fireClient(player.uin, {
                 cmd = "cmd_client_show_msg",
                 txt = "获得 " .. quality .. " 级别装备 x" .. count,
-                color = ColorQuad.new(0, 255, 0, 255)
             })
             
             return true
@@ -48,7 +47,6 @@ local function addItem(params, player)
                 gg.network_channel:fireClient(player.uin, {
                     cmd = "cmd_client_show_msg",
                     txt = "获得 " .. itemName .. " x" .. count,
-                    color = ColorQuad.new(0, 255, 0, 255)
                 })
                 
                 -- 刷新客户端背包
@@ -81,7 +79,6 @@ local function reduceItem(params, player)
                 gg.network_channel:fireClient(player.uin, {
                     cmd = "cmd_client_show_msg",
                     txt = "物品数量不足",
-                    color = ColorQuad.new(255, 0, 0, 255)
                 })
                 return false
             end
@@ -135,7 +132,6 @@ local function equipItem(params, player)
             gg.network_channel:fireClient(player.uin, {
                 cmd = "cmd_client_show_msg", 
                 txt = "无法装备该物品",
-                color = ColorQuad.new(255, 0, 0, 255)
             })
         end
         
@@ -192,7 +188,6 @@ local function enhanceItem(params, player)
                 gg.network_channel:fireClient(player.uin, {
                     cmd = "cmd_client_show_msg",
                     txt = itemName .. " 强化成功，提升" .. levels .. "级",
-                    color = ColorQuad.new(0, 255, 0, 255)
                 })
                 
                 -- 刷新客户端背包
@@ -207,7 +202,6 @@ local function enhanceItem(params, player)
                 gg.network_channel:fireClient(player.uin, {
                     cmd = "cmd_client_show_msg",
                     txt = "强化失败",
-                    color = ColorQuad.new(255, 0, 0, 255)
                 })
             end
             

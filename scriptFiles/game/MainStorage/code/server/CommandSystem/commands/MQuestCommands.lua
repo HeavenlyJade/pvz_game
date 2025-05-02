@@ -174,10 +174,6 @@ function QuestCommands.Execute(operation, params, player)
     return executor(params, player)
 end
 
--- 兼容旧版接口
-QuestCommands.handlers = {}
-for command, executor in pairs(CommandMapping) do
-    QuestCommands.handlers[command] = executor
-end
+
 
 return QuestCommands

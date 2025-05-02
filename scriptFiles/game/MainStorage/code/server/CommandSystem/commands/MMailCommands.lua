@@ -470,10 +470,5 @@ function MailCommands.Execute(command, params, player)
     return executor(params, player)
 end
 
--- 兼容旧版接口
-MailCommands.handlers = {}
-for command, executor in pairs(CommandMapping) do
-    MailCommands.handlers[command] = executor
-end
 
 return MailCommands
