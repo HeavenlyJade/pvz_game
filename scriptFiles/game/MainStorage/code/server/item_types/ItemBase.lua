@@ -30,12 +30,14 @@ function ItemBase:OnInit(data)
     self.uuid = data.uuid or gg.create_uuid('item')
     self.itype = data.itype
     self.category = data.category
-    self.quality = data.quality or 1
-    self.level = data.level or 1
-    self.name = data.name or ""
-    self.asset = data.asset or ""
-    self.num = data.num or 1
-    self.pos = data.pos or 0  -- 装备位置
+    self.quality = data.quality
+    self.level = data.level
+    self.name = data.name
+    self.asset = data.asset
+    self.num = data.num
+    self.pos = data.pos  -- 物品位置
+    self.maxLevel = data.maxLevel or 100
+    self.enhanceLevel = data.enhanceLevel
 end
 
 --- 获取物品描述
@@ -106,6 +108,122 @@ function ItemBase:serialize()
     
     return data
 end
+
+--- 获取物品属性/统计数据
+---@return table<string, number> 计算后的物品属性
+function ItemBase:GetStat()
+    local stats = {}
+    
+    -- 基类中实现通用逻辑，子类可以覆盖此方法以提供特定实现
+    if self.attrs then
+        for _, attr in pairs(self.attrs) do
+            stats[attr.k] = attr.v
+        end
+    end
+    
+    -- 添加基础战斗属性（如果存在）
+    if self.attack then stats.attack = self.attack end
+    if self.attack2 then stats.attack2 = self.attack2 end
+    if self.defence then stats.defence = self.defence end
+    if self.defence2 then stats.defence2 = self.defence2 end
+    if self.spell then stats.spell = self.spell end
+    if self.spell2 then stats.spell2 = self.spell2 end
+    
+    -- 如果适用，应用强化倍率
+    if self.enhanceLevel and self.enhanceLevel > 0 then
+        local enhanceRate = 0.1 -- 每级10%，根据需要调整
+        local multiplier = 1 + (self.enhanceLevel * enhanceRate)
+        
+        for k, v in pairs(stats) do
+            stats[k] = math.floor(v * multiplier)
+        end
+    end
+    
+    return stats
+end
+
+--- 计算物品战力/分数
+---@return number 物品战力值
+function ItemBase:GetPower()
+    local stats = self:GetStat()
+    local power = 0
+    
+    -- 来自品质和等级的基础战力
+    power = power + ((self.quality or 1) * 10) + ((self.level or 1) * 5)
+    
+    -- 添加属性带来的战力
+    for _, value in pairs(stats) do
+        power = power + value
+    end
+    
+    return math.floor(power)
+end
+
+--- 设置物品强化等级
+---@param level number 要设置的强化等级
+function ItemBase:SetEnhanceLevel(level)
+    -- 基于品质的最大强化等级
+
+    self.enhanceLevel = math.min(math.max(0, level), self.maxLevel)
+    
+    -- 保存对象状态变更
+    return self.enhanceLevel
+end
+
+--- 获取当前强化等级
+---@return number 当前强化等级
+function ItemBase:GetEnhanceLevel()
+    return self.enhanceLevel
+end
+
+--- 获取物品数量
+---@return number 物品数量
+function ItemBase:GetAmount()
+    return self.num
+end
+
+--- 设置物品数量
+---@param amount number 要设置的物品数量
+function ItemBase:SetAmount(amount)
+    self.num = math.max(0, amount)
+end
+
+--- 获取物品唯一标识
+---@return string 物品唯一标识
+function ItemBase:GetUUID()
+    return self.uuid
+end
+
+--- 获取物品品质
+---@return number 物品品质
+function ItemBase:GetQuality()
+    return self.quality
+end
+
+--- 获取物品等级
+---@return number 物品等级
+function ItemBase:GetLevel()
+    return self.level
+end
+
+--- 获取装备位置
+---@return number 装备位置
+function ItemBase:GetPos()
+    return self.pos
+end
+
+--- 获取物品类型
+---@return number 物品类型
+function ItemBase:GetType()
+    return self.itype
+end
+
+--- 获取物品名称
+---@return string 物品名称
+function ItemBase:GetName()
+    return self.name
+end
+
 
 --- 从已存在的物品数据创建物品对象
 ---@param itemData table 物品数据

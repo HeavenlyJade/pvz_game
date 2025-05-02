@@ -37,13 +37,13 @@ function ConsumableItem:OnInit(data)
     ItemBase.OnInit(self, data)
     
     -- 消耗品特有属性
-    self.effect_type = data.effect_type or ConsumableItem.EFFECT_TYPE.HEAL
-    self.effect_value = data.effect_value or 0
-    self.duration = data.duration or 0  -- 0表示立即生效
-    self.cooldown = data.cooldown or 0  -- 使用冷却时间
+    self.effect_type = data.effect_type
+    self.effect_value = data.effect_value 
+    self.duration = data.duration  -- 0表示立即生效
+    self.cooldown = data.cooldown   -- 使用冷却时间
     self.buff_id = data.buff_id         -- 关联的buff ID
-    self.is_instant = data.is_instant ~= false  -- 默认为true，立即生效
-    self.num = data.num or 1
+    self.is_instant = data.is_instant  -- 默认为true，立即生效
+    self.num = data.num
     
     -- 确保分类正确
     self.category = ItemBase.CATEGORY.CONSUMABLE

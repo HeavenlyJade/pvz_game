@@ -36,7 +36,7 @@ function MaterialItem:OnInit(data)
     self.mat_id = data.mat_id or common_const.MAT_ID.FRAGMENT
     self.mat_type = data.mat_type or MaterialItem.MAT_TYPE.FRAGMENT
     self.use_for = data.use_for or {desc = "用于合成与强化装备"}
-    self.num = data.num or 1
+    self.num = data.num 
     
     -- 确保分类正确
     self.category = ItemBase.CATEGORY.MATERIAL

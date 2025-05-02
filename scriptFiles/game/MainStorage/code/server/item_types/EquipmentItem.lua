@@ -10,12 +10,9 @@ local CommonModule = require(MainStorage.code.common.CommonModule)    ---@type C
 local ItemBase = require(MainStorage.code.server.item_types.ItemBase)   ---@type ItemBase
 
 ---@class EquipmentItem : ItemBase
----@field attack number? 攻击力
----@field attack2 number? 攻击上限
+---@field attack number? 物理攻击力
 ---@field defence number? 防御力
----@field defence2 number? 防御上限
----@field spell number? 法术强度
----@field spell2 number? 法术上限
+---@field spell number? 魔法攻击
 ---@field attrs table? 附加属性
 ---@field pos number? 装备位置
 local EquipmentItem = CommonModule.Class("EquipmentItem", ItemBase)
@@ -28,14 +25,9 @@ function EquipmentItem:OnInit(data)
     
     -- 装备特有属性
     self.attack = data.attack or 0
-    self.attack2 = data.attack2 or 0
     self.defence = data.defence or 0
-    self.defence2 = data.defence2 or 0
     self.spell = data.spell or 0
-    self.spell2 = data.spell2 or 0
     self.attrs = data.attrs or {}
-    self.pos = data.pos or 0  -- 装备位置
-    
     -- 确保分类正确
     self.category = ItemBase.CATEGORY.EQUIPMENT
     self.itype = common_const.ITEM_TYPE.EQUIPMENT
