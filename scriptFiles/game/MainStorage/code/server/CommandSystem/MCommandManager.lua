@@ -113,7 +113,7 @@ function CommandManager:ExecuteCommand(commandStr, player)
     end
     
     -- 解析普通命令
-    local category, operation, params = CommandParser:ParseCommand(commandStr, player)
+    local category, operation, params = CommandParser:ParseCommand(commandStr)
     if not category or not operation then
         gg.log("命令解析失败: " .. commandStr)
         return false
