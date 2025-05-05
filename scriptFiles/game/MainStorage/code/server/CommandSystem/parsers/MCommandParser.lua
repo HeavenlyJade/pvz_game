@@ -1,8 +1,6 @@
 --- 命令解析器 - 负责解析指令字符串
 --- V109 miniw-haima
 
-local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 
 ---@class CommandParser
 local CommandParser = {}
@@ -17,6 +15,7 @@ local ParseModes = {
 -- 玩家命令格式解析器
 function CommandParser:ParsePlayerCommand(commandStr)
     -- 使用多个空格分隔
+    -- "玩家 等级 设置 %p 10"    
     local parts = {}
     for part in commandStr:gmatch("%S+") do
         table.insert(parts, part)
@@ -27,46 +26,51 @@ function CommandParser:ParsePlayerCommand(commandStr)
         return nil, nil, nil
     end
     
-    local subcategory = parts[2]
-    local operation = parts[3]
-    
-    -- 解析剩余参数
-    local restParamsStr = table.concat(parts, " ", 4)
-    local params = self:ParseValueParams(restParamsStr)
-    params.subcategory = subcategory
-    
-    return "玩家", operation, params
+    local params = {}
+    params.cmd_type = parts[1]
+    params.subcategory =  parts[2]
+    params.operation =  parts[3]
+    params.obj = parts[4]
+    params.num = parts[5]
+    return "玩家",parts[3], params
 end
 
 -- 物品命令格式解析器
 function CommandParser:ParseItemCommand(commandStr)
     -- 使用多个空格分隔
+    -- "物品 装备 增加 1001 数量 %p 1"           
     local parts = {}
     for part in commandStr:gmatch("%S+") do
         table.insert(parts, part)
     end
     
-    -- 确保至少有四个部分："物品"、itemType、itemId 和 operation
-    if #parts < 4 then
+    -- 确保至少有基本的部分："物品"和物品类型
+    if #parts < 2 then
         return nil, nil, nil
     end
     
-    local itemType = parts[2]
-    local itemId = parts[3]
-    local operation = parts[4]
+    local params = {}
+    params.cmd_type = parts[1]    -- "物品"
+    params.subcategory = parts[2]  -- 物品类型(装备/消耗品/材料/任务物品)
     
-    -- 解析剩余参数
-    local restParamsStr = table.concat(parts, " ", 5)
-    local params = self:ParseValueParams(restParamsStr)
-    params.subcategory = itemType
-    params.id = itemId
-    
-    return "物品", operation, params
+    -- 根据命令格式解析剩余参数
+    if #parts >= 3 then
+        params.operation = parts[3]  -- 操作(增加/减少/设置/强化)
+    end
+    -- 获取物品ID (可能在不同位置)
+    if #parts >= 4 then
+        params.id = parts[4]  -- 物品ID
+    end
+    params.attr_type = parts[5]
+    params.obj = parts[6]
+    params.num = parts[7]
+    return "物品",parts[3], params
 end
 
 -- 任务命令格式解析器
 function CommandParser:ParseQuestCommand(commandStr)
     -- 使用多个空格分隔
+    -- "任务 主线 设置 1001 状态 %p 进行中"
     local parts = {}
     for part in commandStr:gmatch("%S+") do
         table.insert(parts, part)
@@ -77,123 +81,43 @@ function CommandParser:ParseQuestCommand(commandStr)
         return nil, nil, nil
     end
     
-    local questType = parts[2]
-    local operation = parts[3]
-    local questId = parts[4]
-    
-    -- 解析剩余参数
-    local restParamsStr = table.concat(parts, " ", 5)
-    local params = self:ParseQuestParams(restParamsStr)
-    params.subcategory = questType
-    params.id = questId
-    
-    return "任务", operation, params
-end
-
--- 通用命令格式解析器（向后兼容）
-function CommandParser:ParseGenericCommand(commandStr)
-    -- 格式: "类别 操作 参数..."
-    local pattern = "(%w+)%s+(%w+)%s+(.*)"
-    local category, operation, restParams = commandStr:match(pattern)
-    
-    if not category or not operation then
-        return nil, nil, nil
-    end
-    
-    -- 解析剩余参数
-    local params = self:ParseParams(restParams)
-    
-    return category, operation, params
-end
-
--- 解析带有 = 符号的值参数
-function CommandParser:ParseValueParams(paramsStr)
     local params = {}
+    params.cmd_type = parts[1]      -- "任务"
+    params.subcategory = parts[2]   -- 任务类型(主线/支线等)
+    params.operation = parts[3]     -- 操作(设置/增加/完成/解锁等)
+    params.id = parts[4]            -- 任务ID
     
-    -- 解析 "参数 = 值" 格式
-    local paramPart, value = paramsStr:match("(.-)%s*=%s*(.*)")
-    
-    if paramPart and value then
-        -- 替换玩家占位符
-        value = value:gsub("%%p", "")
-        params.value = value
+    -- 处理额外的参数
+    if #parts >= 5 then
+        params.attr_type = parts[5]  -- 属性类型(状态/目标/追踪/步骤/对话)
         
-        -- 可能还有额外参数，继续解析
-        local paramParts = {}
-        for part in paramPart:gmatch("%S+") do
-            table.insert(paramParts, part)
-        end
-        
-        params.id = paramParts[1] or ""
-        params.action = paramParts[2] or ""
-        params.param = paramParts[3] or ""
-    else
-        params.id = paramsStr
-        params.value = ""
-    end
-    
-    return params
-end
-
--- 解析任务特定参数
-function CommandParser:ParseQuestParams(paramsStr)
-    local params = {}
-    
-    -- 任务命令可能的格式：
-    -- "目标 1 进度 = 5"
-    -- "状态 = 进行中"
-    -- "对话 进度 = 2"
-    
-    local targetPart, rest = paramsStr:match("目标%s+(%d+)%s+(.*)")
-    if targetPart and rest then
-        params.action = "目标"
-        params.param = targetPart
-        
-        local progressPart, progressValue = rest:match("进度%s*=%s*(.*)")
-        if progressPart and progressValue then
-            params.value = progressValue:gsub("%%p", "")
-        end
-    else
-        -- 其他格式
-        local action, value = paramsStr:match("(%w+)%s*=%s*(.*)")
-        if action and value then
-            params.action = action
-            params.value = value:gsub("%%p", "")
-        else
-            -- 解析其他可能的参数
-            local parts = {}
-            for part in paramsStr:gmatch("%S+") do
-                table.insert(parts, part)
+        -- 处理目标编号
+        if params.attr_type == "目标" and #parts >= 6 then
+            params.target_id = parts[6]
+            -- 处理进度参数
+            if #parts >= 7 and parts[7] == "进度" then
+                params.progress_type = parts[7]
+                params.obj = parts[8]
+                params.num = parts[9]
+            else
+                params.obj = parts[7]
+                params.num = parts[8]
             end
-            
-            params.action = parts[1] or ""
-            params.param = parts[2] or ""
-            params.value = parts[3] or ""
+        -- 处理对话进度
+        elseif params.attr_type == "对话" and #parts >= 6 and parts[6] == "进度" then
+            params.progress_type = parts[6]
+            params.obj = parts[7]
+            params.num = parts[8]
+        -- 处理其他情况
+        else
+            params.obj = parts[6]
+            params.num = parts[7]
         end
     end
     
-    return params
+    return "任务",parts[3], params
 end
 
--- 通用参数解析器（向后兼容）
-function CommandParser:ParseParams(paramsStr)
-    local params = {}
-    local parts = {}
-    
-    -- 分割参数
-    for part in paramsStr:gmatch("%S+") do
-        table.insert(parts, part)
-    end
-    
-    -- 参数结构根据需要调整
-    params.target = parts[1] or ""
-    params.subtype = parts[2] or ""
-    params.id = parts[3] or ""
-    params.action = parts[4] or ""
-    params.value = parts[5] or ""
-    
-    return params
-end
 
 -- 解析指令字符串 - 主入口
 function CommandParser:ParseCommand(commandStr, player)
@@ -214,8 +138,7 @@ function CommandParser:ParseCommand(commandStr, player)
     elseif parseMode == "QUEST_FORMAT" then
         return self:ParseQuestCommand(commandStr)
     else
-        -- 使用通用格式解析器（向后兼容）
-        return self:ParseGenericCommand(commandStr)
+        return nil, nil,nil
     end
 end
 
