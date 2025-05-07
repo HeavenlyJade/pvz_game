@@ -51,7 +51,7 @@ function MMailManager:Init()
     -- 启动清理任务
     gg.thread_call(cleanupTask)
     
-    gg.log("邮件管理器初始化完成")
+    -- gg.log("邮件管理器初始化完成")
     return self
 end
 

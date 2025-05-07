@@ -113,7 +113,6 @@ local MMailConfig = {
             title = "欢迎来到游戏",
             content = "亲爱的玩家，欢迎加入我们的游戏世界！这里有一些初始道具帮助你开始冒险。",
             attachments = {
-                { type = 2, id = common_const.MAT_ID.FRAGMENT, quantity = 100 },
                 { type = 4, id = "gold", quantity = 1000 }
             },
             importance = 3,

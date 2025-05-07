@@ -58,7 +58,6 @@ function MMailDataMgr:Init()
     -- 加载全局系统邮件
     self:LoadSystemMails()
     
-    gg.log("邮件数据管理器初始化完成")
     return self
 end
 
@@ -111,7 +110,7 @@ function MMailDataMgr:LoadMailIndex()
             version = 1,
             last_update = MMailUtils.getCurrentTimestamp()
         }
-        gg.log("创建默认邮件索引数据")
+        -- gg.log("创建默认邮件索引数据")
     end
 end
 
@@ -527,7 +526,7 @@ function MMailDataMgr:LoadSystemMails()
                 last_update = MMailUtils.getCurrentTimestamp()
             }
         }
-        gg.log("创建默认系统邮件数据")
+        -- gg.log("创建默认系统邮件数据")
     end
 end
 
