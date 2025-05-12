@@ -20,7 +20,7 @@ return {
             },
             ["client_16737.lua"] = "client_16737.lua",
             ["common"] = {
-                ["CommonModule.lua"] = "CommonModule.lua",
+                ["ClassMgr.lua"] = "ClassMgr.lua",
                 ["MConfig.lua"] = "MConfig.lua",
                 ["MConfigAssets.lua"] = "MConfigAssets.lua",
                 ["MConfigMonster.lua"] = "MConfigMonster.lua",

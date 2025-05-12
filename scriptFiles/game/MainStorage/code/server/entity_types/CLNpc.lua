@@ -11,7 +11,7 @@ local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_config     = require(MainStorage.code.common.MConfig)    ---@type common_config
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
-local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 
 
 local CLiving   = require(MainStorage.code.server.entity_types.CLiving)    ---@type CLiving
@@ -35,7 +35,7 @@ local BATTLE_STAT_FIGHT = common_const.BATTLE_STAT.FIGHT
 
 ---@class CLNpc:CLiving    --NPC类 (单个Npc) (管理NPC状态)
 ---@field npc_config any
-local _M = CommonModule.Class('CLNpc', CLiving)        --父类CLiving
+local _M = ClassMgr.Class('CLNpc', CLiving)        --父类CLiving
 function _M:OnInit( info_ )
     
     CLiving:OnInit(info_)    --父类初始化

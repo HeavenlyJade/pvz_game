@@ -16,7 +16,7 @@ local TalkObjective = require(MainStorage.code.server.TaskSystem.objectives.Talk
 local BaseObjective = require(MainStorage.code.server.TaskSystem.objectives.BaseObjective)     ---@type BaseObjective
 
 ---@class TaskSystem
-local TaskSystem = CommonModule.Class("TaskSystem")
+local TaskSystem = ClassMgr.Class("TaskSystem")
 
 --------------------------------------------------
 -- 初始化方法

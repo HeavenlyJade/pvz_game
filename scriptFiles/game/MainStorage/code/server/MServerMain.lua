@@ -8,7 +8,7 @@ local SandboxNode = SandboxNode
 local Vector2  = Vector2
 local Vector3  = Vector3
 local ColorQuad = ColorQuad
-local Enum = Enum  
+local Enum = Enum
 local wait = wait
 local math = math
 local os   = os
@@ -28,6 +28,7 @@ local ServerEventManager = require(MainStorage.code.server.event.ServerEventMana
 local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
 
 
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 -- 总入口
 ---@class MainServer
 local MainServer = {};
@@ -131,7 +132,6 @@ local COMMAND_DISPATCH = {
     cmd_player_input = CommandHandlers.handlePlayerInput,
 	cmd_client_game_task_data = CommandHandlers.handleGetGameTaskData,
     cmd_complete_task = CommandHandlers.handleCompleteTask,
-    cmd_core_ui_settings = CommandHandlers.handleCoreUISettings,
 }
 
 function MainServer.start_server()
@@ -145,14 +145,11 @@ function MainServer.start_server()
     MTerrain.init()                       --地形管理
     MainServer.register_player_in_out()   --玩家进出游戏
     MainServer.createNetworkChannel()     --建立网络通道
-    
+
     MainServer.SetCollisionGroup()        --设置碰撞组
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
 end
-
-
-
 
 
 --设置碰撞组
@@ -167,12 +164,12 @@ end
 --注册玩家进游戏和出游戏消息
 function MainServer.register_player_in_out()
     local players = game:GetService("Players")
-    
+
     players.PlayerAdded:Connect(function(player)
         gg.log('====PlayerAdded', player.UserId)
         MainServer.player_enter_game(player)
     end)
-    
+
     players.PlayerRemoving:Connect(function(player)
         gg.log('====PlayerRemoving', player.UserId)
         MainServer.player_leave_game(player)
@@ -182,25 +179,25 @@ end
 --玩家进入游戏，数据加载
 function MainServer.player_enter_game(player)
     gg.log("player enter====", player.UserId, player.Name, player.Nickname)
-    
+
     player.DefaultDie = false   --取消默认死亡
-    
+
     local uin_ = player.UserId
     if gg.server_players_list[uin_] then
         gg.log('WAINING, Same uin enter game:', uin_)
-        
+
         --强制离开游戏
         if gg.server_players_list[uin_] then
             gg.server_players_list[uin_]:Save()
         end
     end
-    
+
     local actor_ = player.Character
     actor_.Movespeed = 800
     actor_.ModelId = 'sandboxSysId://entity/130034/body.omod'    --默认渔民女
     actor_:AddAttribute("model_type", Enum.AttributeType.String)
     actor_:SetAttribute("model_type", "player")
-    
+
     --加载数据 1 玩家历史等级经验值
     local ret1_, cloud_player_data_ = cloudDataMgr.ReadPlayerData(uin_)
     if ret1_ == 0 then
@@ -211,7 +208,7 @@ function MainServer.player_enter_game(player)
         gg.network_channel:fireClient(uin_, { cmd="cmd_client_show_msg", txt='加载玩家等级数据失败，请退出游戏后重试' })    --飘字
         return   --加载数据网络层失败
     end
-    
+
     -- 玩家信息初始化
     local player_ = CPlayer.New({
         x=600, y=400, z=-3400,      --(617,292,-3419)
@@ -222,7 +219,7 @@ function MainServer.player_enter_game(player)
         level = cloud_player_data_.level,
         exp = cloud_player_data_.exp
     })
-    
+
     --加载数据 2 玩家历史装备数据
     local ret2_, cloud_player_bag_ = cloudDataMgr.ReadPlayerBag(player_)
     if ret2_ == 0 then
@@ -235,19 +232,19 @@ function MainServer.player_enter_game(player)
         return     --加载背包数据失败
     end
     player_.bag = cloud_player_bag_
-    
+
     gg.server_players_list[uin_] = player_
     gg.server_players_name_list[player.Name] = player_
-    
+
     actor_.Size = Vector3.new(120, 160, 120)      --碰撞盒子的大小
     actor_.Center = Vector3.new(0, 80, 0)      --盒子中心位置
-    
+
     player_:setGameActor(actor_)     --player
     player_:changeScence('g0')       --默认g0大厅
-    
+
     player_:equipWeapon(common_config.assets_dict.model.model_sword)
     player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
-    
+
     player_:initSkillData()                 --- 加载玩家技能
     -- player_:initGameTaskData()              --- 加载玩家任务
     player_:RefreshStats()               --重生 --刷新战斗属性
@@ -257,7 +254,7 @@ end
 function MainServer.player_leave_game(player)
     gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)
     local uin_ = player.UserId
-    
+
     if gg.server_players_list[uin_] then
         gg.server_players_list[uin_]:Save()
     end
@@ -278,7 +275,7 @@ function MainServer.OnServerNotify(uin_, args)
     -- 参数校验
     if type(args) ~= 'table' then return end
     if not args.cmd then return end
-    
+
     -- 获取处理器
     local handler = COMMAND_DISPATCH[args.cmd]
     if not handler then
@@ -288,7 +285,7 @@ function MainServer.OnServerNotify(uin_, args)
         ServerEventManager.Publish(args.cmd, args)
         return
     end
-    
+
     -- 执行处理
     local success, err = pcall(handler, uin_, args)
     if not success then
@@ -301,11 +298,11 @@ function MainServer.bind_update_tick()
     -- 一个定时器, 实现tick update
     local timer = SandboxNode.New("Timer", game.WorkSpace)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-    
+
     timer.Name = 'timer_server'
     timer.Delay = 0.1      -- 延迟多少秒开始
     timer.Loop = true      -- 是否循环
-    timer.Interval = 0.1   -- 循环间隔多少秒 (1秒=10帧)
+    timer.Interval = 0.03   -- 循环间隔多少秒 (1秒=20帧)
     timer.Callback = MainServer.update
     timer:Start()     -- 启动定时器
     gg.timer = timer;
@@ -314,13 +311,13 @@ end
 --定时器update
 function MainServer.update()
     gg.tick = gg.tick + 1
-    
+
     --更新场景
     for _, scene_ in pairs(gg.server_scene_list) do
         scene_:update()
     end
-    --更新技能
-    -- skillMgr.update()
+    ServerScheduler.tick = gg.tick  -- 对于服务器端
+    ServerScheduler.update()  -- 对于服务器端
 end
 
 return MainServer;

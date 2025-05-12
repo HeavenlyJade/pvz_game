@@ -7,11 +7,11 @@ local pairs = pairs
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)  ---@type common_config
-local CommonModule = require(MainStorage.code.common.CommonModule)  ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr)  ---@type ClassMgr
 local BaseObjective = require(MainStorage.code.server.TaskSystem.objectives.BaseObjective)  ---@type BaseObjective
 
 ---@class TalkObjective:BaseObjective
-local TalkObjective = CommonModule.Class('TalkObjective', BaseObjective)
+local TalkObjective = ClassMgr.Class('TalkObjective', BaseObjective)
 
 --------------------------------------------------
 -- 初始化方法

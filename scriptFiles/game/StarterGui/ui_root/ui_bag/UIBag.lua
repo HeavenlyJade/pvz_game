@@ -1,5 +1,5 @@
 local MainStorage = game:GetService("MainStorage")
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 
@@ -15,7 +15,7 @@ local uiConfig = {
 }
 
 ---@class UiBag:ViewBase
-local UiBag = CommonModule.Class("UiBag", ViewBase)
+local UiBag = ClassMgr.Class("UiBag", ViewBase)
 
 ---@override
 function UiBag:OnInit(node, config)

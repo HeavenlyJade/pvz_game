@@ -1,12 +1,12 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local TagHandler = require(MainStorage.code.common.config_type.tags.TagHandler) ---@type TagHandler
 local DamageAmplifier = require(MainStorage.code.common.config_type.modifier.DamageAmplifier) ---@type DamageAmplifier
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 
 
 ---@class DamageTag : TagHandler
-local DamageTag = CommonModule.Class("DamageTag", TagHandler)
+local DamageTag = ClassMgr.Class("DamageTag", TagHandler)
 
 function DamageTag:OnInit(data)
     -- 初始化父类
@@ -169,14 +169,14 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
 end
 
 -- AttackTag子类
-local AttackTag = CommonModule.Class("AttackTag", DamageTag)
+local AttackTag = ClassMgr.Class("AttackTag", DamageTag)
 function AttackTag:OnInit(data)
     DamageTag.OnInit(self, data)
     self.m_trigger = self.priority > 10 and "攻击时（判断暴击后）" or "攻击时"
 end
 
 -- AttackedTag子类
-local AttackedTag = CommonModule.Class("AttackedTag", DamageTag)
+local AttackedTag = ClassMgr.Class("AttackedTag", DamageTag)
 function AttackedTag:OnInit(data)
     DamageTag.OnInit(self, data)
     self.m_trigger = self.priority > 10 and "被攻击时（判断暴击后）" or "被攻击时"

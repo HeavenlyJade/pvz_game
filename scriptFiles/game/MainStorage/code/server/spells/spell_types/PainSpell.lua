@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
 local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
 local Battle            = require(MainStorage.code.server.Battle)    ---@type Battle
@@ -12,7 +12,7 @@ local Battle            = require(MainStorage.code.server.Battle)    ---@type Ba
 ---@field elementType string 元素类型
 ---@field damageAmplifiers DamageAmplifier[] 基于释放者的属性增加伤害
 ---@field targetDamageAmplifiers DamageAmplifier[] 基于目标的属性增加伤害
-local PainSpell = CommonModule.Class("PainSpell", Spell)
+local PainSpell = ClassMgr.Class("PainSpell", Spell)
 
 function PainSpell:OnInit(data)
     Spell.OnInit(self, data)

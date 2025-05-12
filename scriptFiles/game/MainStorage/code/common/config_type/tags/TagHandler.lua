@@ -1,9 +1,9 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 
 
 ---@class TagHandler:Class
-local TagHandler = CommonModule.Class("TagHandler")
+local TagHandler = ClassMgr.Class("TagHandler")
 function TagHandler:OnInit( data )
     self.printMessage = data["打印信息"] ---@type boolean
     self.m_tagType = data["m_tagType"] ---@type TagType

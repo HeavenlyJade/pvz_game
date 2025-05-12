@@ -1,5 +1,8 @@
 local MainStorage = game:GetService("MainStorage")
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
+local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+
 
 local displayingUI = {}
 local allUI = {}
@@ -12,10 +15,10 @@ local allUI = {}
 ---@class ViewBase:Class
 ---@field New fun(node: SandboxNode, config: ViewConfig): ViewBase
 ---@field GetUI fun(name: string): ViewBase
-local  ViewBase = CommonModule.Class("ViewBase")
+local  ViewBase = ClassMgr.Class("ViewBase")
 
-ViewBase.UiBag = {} ---@type UiBag
-ViewBase.UIConfirm = {} ---@type UIConfirm
+ViewBase.UiBag = nil ---@type UiBag
+ViewBase.UIConfirm = nil ---@type UIConfirm
 
 ---@generic T : ViewBase
 ---@param name string
@@ -24,15 +27,30 @@ function ViewBase.GetUI(name)
     return allUI[name]
 end
 
----@generic T : UIComponent
----@param path string
+
+---@generic T : ViewComponent
+---@param path string 组件路径
+---@param type T 组件类型
+---@param ... any 额外参数
 ---@return T
-function ViewBase:Get(path)
+function ViewBase:Get(path, type, ...)
     local node = self.node
+    local fullPath = ""
     for part in path:gmatch("[^/]+") do --用/分割字符串
         if part ~= "" then
             node = node[part]
+            if fullPath == "" then
+                fullPath = part
+            else
+                fullPath = fullPath .. "/" .. part
+            end
         end
+    end
+    if type and node then
+        ---@cast type ViewComponent
+        local component = type.New(node, self, ...)
+        component.path = fullPath
+        return component
     end
     return node
 end
@@ -41,15 +59,16 @@ end
 ---@param config ViewConfig
 function ViewBase:OnInit(node, config)
     self.node = node ---@type SandboxNode
-    self.hideOnInit = config.hideOnInit or true
-    self.layer = config.layer or 1
+    self.hideOnInit = config.hideOnInit == nil and true or config.hideOnInit
+    self.layer = config.layer == nil and 1 or config.layer
     self.displaying = false
     self.isOnTop = false
     self.tweeningComponents = {} ---@type table<ViewComponent, boolean>
     self.tweenTaskId = nil
-    allUI[config.uiName] = self
-    ViewBase[config.uiName] = self
+    allUI[self.className] = self
+    ViewBase[self.className] = self
 
+    print("config", self.className, self.hideOnInit)
     if self.hideOnInit then
         self:Close()
     else
@@ -57,15 +76,64 @@ function ViewBase:OnInit(node, config)
     end
 end
 
+
 function ViewBase:RegisterTween(component)
     if not self.tweeningComponents[component] then
         self.tweeningComponents[component] = true
+        
+        if not self.tweenTaskId then
+            self.tweenTaskId = ClientScheduler.add(function()
+                -- local traceback = debug.traceback()
+                -- print("SetVisible traceback:", traceback)
+                local hasActiveTweens = false
+                local componentsToRemove = {}
+                
+                -- Update all tweening components
+                for component, _ in pairs(self.tweeningComponents) do
+                    if component.currentTween then
+                        local isFinished = component.currentTween:Update()
+                        if isFinished then
+                            -- Handle next tween if exists
+                            if component.currentTween.nextTween then
+                                component.currentTween = component.currentTween.nextTween
+                                hasActiveTweens = true
+                            else
+                                -- Mark component for removal
+                                component.currentTween = nil
+                                table.insert(componentsToRemove, component)
+                            end
+                        else
+                            hasActiveTweens = true
+                        end
+                    end
+                end
+                
+                -- Remove finished components
+                for _, component in ipairs(componentsToRemove) do
+                    self.tweeningComponents[component] = nil
+                end
+                
+                -- If no more active tweens, cancel the task
+                if not hasActiveTweens then
+                    if self.tweenTaskId then
+                        ClientScheduler.cancel(self.tweenTaskId)
+                        self.tweenTaskId = nil
+                    end
+                end
+            end, 0, 1, false)
+        end
     end
 end
 
+
+function ViewBase:SetVisible(visible)
+    print("SetVisible", self.node.Name, visible)
+    self.node.Enabled = visible
+    self.node.Visible = visible
+end
+
 function ViewBase:Close()
-    self.node.Enabled = false
-    self.node.Visible = false
+    self:SetVisible(false)
     if displayingUI[self.layer] == self then
         displayingUI[self.layer] = nil
     end
@@ -78,8 +146,7 @@ function ViewBase:Close()
         end
         if displayingUI[maxLayer] then
             local topUI = displayingUI[maxLayer]
-            topUI.Enabled = true
-            topUI.Visible = true
+            topUI:SetVisible(true)
             topUI.isOnTop = true
         end
     end
@@ -88,18 +155,19 @@ end
 
 function ViewBase:Open()
     self.displaying = true
-    self.node.Enabled = true
-    self.node.Visible = true
+    self:SetVisible(true)
     if displayingUI[self.layer] then
         local oldUI = displayingUI[self.layer]
-        oldUI.isOnTop = false
-        oldUI:Close()
+        if oldUI ~= self then
+            oldUI.isOnTop = false
+            oldUI:Close()
+        end
     end
     self.isOnTop = true
     for i = 1, self.layer do
         if displayingUI[i] then
             displayingUI[i].isOnTop = false
-            displayingUI[i].Enabled = false
+            displayingUI[i].node.Enabled = false
         end
     end
     displayingUI[self.layer] = self

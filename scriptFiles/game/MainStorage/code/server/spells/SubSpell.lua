@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
 local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
 local SpellConfig = require(MainStorage.code.common.Config.SpellConfig)
@@ -21,7 +21,7 @@ local Battle            = require(MainStorage.code.server.Battle)    ---@type Ba
 ---@field overrideParams OverrideParam[] 复写参数
 ---@field overrideValues OverrideValue[] 修改数值
 ---@field dynamicTags table<string, EquipingTag[]> 动态词条
-local SubSpell = CommonModule.Class("SubSpell")
+local SubSpell = ClassMgr.Class("SubSpell")
 
 function SubSpell:OnInit( data )
     self.spell = SpellConfig.Get(data["魔法"])

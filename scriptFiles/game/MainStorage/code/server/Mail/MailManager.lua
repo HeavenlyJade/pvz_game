@@ -71,8 +71,8 @@ end
 function MailManager:RegisterNetworkHandlers()
     -- 使用新的邮件前缀命令格式
     ServerEventManager.Subscribe("mail_get_list", function(event)
-        self:HandleGetMailList(event.uin)
-    end)
+                                                self:HandleGetMailList(event.uin)
+                                                end)
     
     ServerEventManager.Subscribe("mail_read", function(event)
         self:HandleReadMail(event.uin, event.mail_id, event.is_global)

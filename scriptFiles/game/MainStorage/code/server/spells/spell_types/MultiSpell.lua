@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
 local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
@@ -8,7 +8,7 @@ local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSp
 ---@field randomOrder boolean 随机顺序
 ---@field castCount number 释放个数
 ---@field isCombo boolean 组合技
-local MultiSpell = CommonModule.Class("MultiSpell", Spell)
+local MultiSpell = ClassMgr.Class("MultiSpell", Spell)
 
 function MultiSpell:OnInit(data)
     Spell.OnInit(self, data)

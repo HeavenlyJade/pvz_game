@@ -4,16 +4,38 @@ local game            = game
 local Enum            = Enum
 local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
 local ViewBase        = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
-local CommonModule    = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr    = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
+local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 ---@class ClientMain
-local ClientMain = CommonModule.Class("ClientMain")
+local ClientMain = ClassMgr.Class("ClientMain")
+local tick = 0
+local lastTickTime = os.clock()
 
 function ClientMain.start_client()
+    ClientMain.tick = 0
     math.randomseed(os.time() + os.clock());
     gg.uuid_start = gg.rand_int_between(100000, 999999);
     ClientMain.handleCoreUISettings()
     ClientMain.createNetworkChannel()
+
+    local timer = SandboxNode.New("Timer", game.StarterGui)
+    timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+    
+    timer.Name = 'timer_client'
+    timer.Delay = 0.1      -- 延迟多少秒开始
+    timer.Loop = true      -- 是否循环
+    timer.Interval = 0.03  -- 循环间隔多少秒 (1秒=20帧)
+    timer.Callback = ClientMain.update
+    timer:Start()     -- 启动定时器
+end
+
+
+--定时器update
+function ClientMain.update()
+    tick = tick + 1
+    ClientScheduler.tick = tick  -- 对于服务器端
+    ClientScheduler.update()  -- 对于服务器端
 end
 
 function ClientMain.createNetworkChannel()

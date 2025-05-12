@@ -1,5 +1,5 @@
 local MainStorage  = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local CMonster     = require(MainStorage.code.server.entity_types.CMonster) ---@type CMonster
 local Vector3      = Vector3
 local gg           = require(MainStorage.code.common.MGlobal) ---@type gg
@@ -12,7 +12,7 @@ local gg           = require(MainStorage.code.common.MGlobal) ---@type gg
 -- StatType 类
 ---@class MobType:Class
 ---@field New fun( data:table ):MobType
-local MobType      = CommonModule.Class("MobType")
+local MobType      = ClassMgr.Class("MobType")
 function MobType:OnInit(data)
     self.data = data
 end

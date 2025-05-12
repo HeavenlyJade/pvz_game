@@ -17,7 +17,7 @@ local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 
-local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 local cloudDataMgr      = require(MainStorage.code.server.MCloudDataMgr)      ---@type MCloudDataMgr
 local Battle            = require(MainStorage.code.server.Battle)    ---@type Battle
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
@@ -57,7 +57,7 @@ local TRIGGER_STAT_TYPES = {
 ---@field target CPlayer | CMonster
 ---@field orgMoveSpeed number
 ---@field New fun( info_:table ):CLiving
-local _M = CommonModule.Class("CLiving")        --父类 (子类： CPlayer, CMonster )
+local _M = ClassMgr.Class("CLiving")        --父类 (子类： CPlayer, CMonster )
 
 -- 新增属性
 function _M:OnInit(info_)

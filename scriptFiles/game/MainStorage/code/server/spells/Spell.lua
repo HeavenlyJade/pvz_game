@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
 
@@ -27,7 +27,7 @@ local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type Cast
 ---@field heightScale number 高度倍率
 ---@field sizeScale number 尺寸倍率
 ---@field New fun( data:table ):Spell
-local Spell = CommonModule.Class("Spell")
+local Spell = ClassMgr.Class("Spell")
 
 function Spell:OnInit( data )
     self.spellName = ""

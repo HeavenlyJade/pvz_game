@@ -1,11 +1,11 @@
 local MainStorage = game:GetService("MainStorage")
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
 local soundPlayer = game:GetService("StarterGui")["UISound"] ---@type Sound
 
 ---@class ViewButton:ViewComponent
----@field New fun(node: SandboxNode): ViewButton
-local  ViewButton = CommonModule.Class("ViewButton", ViewComponent)
+---@field New fun(node: SandboxNode, ui: ViewBase): ViewButton
+local  ViewButton = ClassMgr.Class("ViewButton", ViewComponent)
 
 function ViewButton:OnTouchOut()
     if self.isHover then
@@ -15,18 +15,43 @@ function ViewButton:OnTouchOut()
         self.img.Icon = self.normalImg
         self.img.FillColor = self.normalColor
     end
-    if self.soundRelease then
+    if self.soundRelease and soundPlayer then
         soundPlayer.SoundPath = self.soundRelease
         soundPlayer:PlaySound()
+    end
+    
+    -- Handle child images
+    for child, props in pairs(self.childClickImgs) do
+        if self.isHover then
+            if props.hoverImg then
+                child.Icon = props.hoverImg
+            end
+            if props.hoverColor then
+                child.FillColor = props.hoverColor
+            end
+        else
+            child.Icon = props.normalImg
+            child.FillColor = props.normalColor
+        end
     end
 end
 
 function ViewButton:OnTouchIn()
     self.img.Icon = self.clickImg
     self.img.FillColor = self.clickColor
-    if self.soundPress then
+    if self.soundPress and soundPlayer then
         soundPlayer.SoundPath = self.soundPress
         soundPlayer:PlaySound()
+    end
+    
+    -- Handle child images
+    for child, props in pairs(self.childClickImgs) do
+        if props.clickImg then
+            child.Icon = props.clickImg
+        end
+        if props.clickColor then
+            child.FillColor = props.clickColor
+        end
     end
 end
 
@@ -34,25 +59,43 @@ function ViewButton:OnHoverOut()
     self.isHover = false
     self.img.Icon = self.normalImg
     self.img.FillColor = self.normalColor
+    
+    -- Handle child images
+    for child, props in pairs(self.childClickImgs) do
+        child.Icon = props.normalImg
+        child.FillColor = props.normalColor
+    end
 end
 
 function ViewButton:OnHoverIn()
     self.isHover = true
     self.img.Icon = self.hoverImg
     self.img.FillColor = self.hoverColor
-    if self.soundHover then
+    if self.soundHover and soundPlayer then
         soundPlayer.SoundPath = self.soundHover
         soundPlayer:PlaySound()
+    end
+    
+    -- Handle child images
+    for child, props in pairs(self.childClickImgs) do
+        if props.hoverImg then
+            child.Icon = props.hoverImg
+        end
+        if props.hoverColor then
+            child.FillColor = props.hoverColor
+        end
     end
 end
 
 function ViewButton:OnClick()
     if self.clickCb then
-        self.clickCb()
+        self.clickCb(self.ui, self)
     end
 end
 
-function ViewButton:OnInit(node)
+function ViewButton:OnInit(node, ui)
+    ViewComponent.OnInit(self, node, ui)
+    self.childClickImgs = {    }
     local img = node
     self.img = node ---@type UIImage
     self.clickCb = nil
@@ -102,18 +145,21 @@ function ViewButton:OnInit(node)
         self:OnClick()
     end)
 
-    for _, child in ipairs(img.Children) do
-        if child:IsA("UIImage") and child.GetAttribute("继承按钮") then
-            local clickImg = child:GetAttribute("图片-点击") ---@type string
-            local hoverImg = child:GetAttribute("图片-悬浮") ---@type string
+    for _, child in ipairs(img.Children) do ---@type UIComponent
+        if child:IsA("UIImage") and child:GetAttribute("继承按钮") then
+            self.childClickImgs[child] = {
+                normalImg = child.Icon,---@type string
+                clickImg = child:GetAttribute("图片-点击"),---@type string
+                hoverImg = child:GetAttribute("图片-悬浮"), ---@type string
+                
+                hoverColor = child:GetAttribute("悬浮颜色"), ---@type ColorQuad
+                clickColor = child:GetAttribute("点击颜色"), ---@type ColorQuad
+                normalColor = child.FillColor,
+            }
             child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-                child.Icon = clickImg
-                child.FillColor = hoverImg
                 self:OnTouchIn()
             end)
             child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
-                child.Icon = clickImg
-                child.FillColor = hoverImg
                 self:OnTouchOut()
             end)
             child.Click:Connect(function(node, isClick, vector2, number)

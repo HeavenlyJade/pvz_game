@@ -10,11 +10,11 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)  ---@type common_config
 local common_const = require(MainStorage.code.common.MConst)  ---@type common_const
-local CommonModule = require(MainStorage.code.common.CommonModule)  ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr)  ---@type ClassMgr
 local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
 
 ---@class BaseTask
-local BaseTask = CommonModule.Class('BaseTask')
+local BaseTask = ClassMgr.Class('BaseTask')
 
 --------------------------------------------------
 -- 初始化方法

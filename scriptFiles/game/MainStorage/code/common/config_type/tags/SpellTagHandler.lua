@@ -1,9 +1,9 @@
 -- local MainStorage = game:GetService('MainStorage')
--- local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+-- local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 -- local TagHandler = require(MainStorage.code.battle.TagHandler) ---@type TagHandler
 
 -- ---@class SpellTag : TagHandler
--- local SpellTag = CommonModule.Class("SpellTag", TagHandler)
+-- local SpellTag = ClassMgr.Class("SpellTag", TagHandler)
 
 -- function SpellTag:OnInit(data)
 --     -- 初始化父类
@@ -100,7 +100,7 @@
 --     -- 合并额外修改数值
 --     for key, modifier in pairs(castParam.extraModifiers) do
 --         if not spellParam.extraModifiers[key] then
---             spellParam.extraModifiers[key] = CommonModule.New("Battle", {caster, caster, key})
+--             spellParam.extraModifiers[key] = ClassMgr.New("Battle", {caster, caster, key})
 --         end
 --         spellParam.extraModifiers[key]:AddDamageModifier(self.m_tagType.id, "增加", modifier:GetFinalDamage())
         
@@ -129,7 +129,7 @@
 --         end
         
 --         if not spellParam.extraModifiers[name] then
---             spellParam.extraModifiers[name] = CommonModule.New("Battle", {caster, caster, name})
+--             spellParam.extraModifiers[name] = ClassMgr.New("Battle", {caster, caster, name})
 --         end
         
 --         spellParam.extraModifiers[name]:AddDamageModifier(

@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
 local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
 local Timer = require(MainStorage.code.common.Timer) ---@type Timer
@@ -29,7 +29,7 @@ local CollisionType = {
 ---@field aoeItemCount number AOE效果数量
 ---@field effectID number 效果ID
 ---@field simulateAOEIns RBXScriptConnection|nil 模拟AOE效果的连接
-local AOESpell = CommonModule.Class("AOESpell", Spell)
+local AOESpell = ClassMgr.Class("AOESpell", Spell)
 
 ---@class AOEItem
 ---@field effectTime number 效果剩余时间
@@ -307,7 +307,7 @@ end
 ---@field lastPulseTime number
 ---@field timer Timer
 ---@field actions function[]
-local PulsingAOE = CommonModule.Class("PulsingAOE")
+local PulsingAOE = ClassMgr.Class("PulsingAOE")
 
 function PulsingAOE:OnInit(spell, caster, target, location, param)
     self.spell = spell

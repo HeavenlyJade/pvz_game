@@ -1,7 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local Modifier      = require(MainStorage.code.common.config_type.modifier.Modifier)    ---@type Modifier
-local CommonModule = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 
 
 ---@class ItemRank:Class
@@ -9,7 +9,7 @@ local CommonModule = require(MainStorage.code.common.CommonModule)    ---@type C
 ---@field color ColorQuad 品级颜色
 ---@field priority number 品级优先级
 ---@field New fun( data:table ):ItemRank
-local ItemRank= CommonModule.Class("ItemRank")
+local ItemRank= ClassMgr.Class("ItemRank")
 
 function ItemRank:onInit(data)
     self.name = data["名字"]

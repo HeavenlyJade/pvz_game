@@ -1,5 +1,5 @@
 local MainStorage  = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
 local ItemQualityConfig = require(MainStorage.code.common.config.ItemQualityConfig) ---@type ItemQualityConfig
 
@@ -23,7 +23,7 @@ local ItemQualityConfig = require(MainStorage.code.common.config.ItemQualityConf
 ---@field itype string 物品类型
 ---@field name string 物品名称
 ---@field New fun():Item
-local Item = CommonModule.Class("Item")
+local Item = ClassMgr.Class("Item")
 
 function Item:OnInit()
     self.itemType = nil

@@ -1,9 +1,9 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 
 -- StatType 类
 ---@class StatType
-local StatType = CommonModule.Class("StatType")
+local StatType = ClassMgr.Class("StatType")
 function StatType:OnInit(data)
     self.statName = data["属性名"]
     self.displayName = data["显示名"]

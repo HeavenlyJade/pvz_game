@@ -12,7 +12,7 @@ local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_config     = require(MainStorage.code.common.MConfig)    ---@type common_config
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
-local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local CLiving   = require(MainStorage.code.server.entity_types.CLiving)          ---@type CLiving
@@ -31,7 +31,7 @@ local BATTLE_STAT_WAIT_SPAWN = common_const.BATTLE_STAT.WAIT_SPAWN
 ---@field stat_data table 状态数据
 ---@field target any 目标对象
 ---@field New fun(info_:table):CMonster
-local _M = CommonModule.Class('CMonster', CLiving)
+local _M = ClassMgr.Class('CMonster', CLiving)
 
 --------------------------------------------------
 -- 初始化与基础方法

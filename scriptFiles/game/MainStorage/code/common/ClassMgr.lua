@@ -1,16 +1,15 @@
---- V109 miniw-haima
---- 对class父子继承类的封装
 
-if  _G.CommonModule then
-	--print( 'use cache CommonModule' )
-	return _G.CommonModule
+
+if  _G.ClassMgr then
+	--print( 'use cache ClassMgr' )
+	return _G.ClassMgr
 end
 
----@class CommonModule        对class父子继承类的封装
-local CommonModule = {}
-_G.CommonModule = CommonModule
+---@class ClassMgr        对class父子继承类的封装
+local ClassMgr = {}
+_G.ClassMgr = ClassMgr
 
-function CommonModule.Clone(object)
+function ClassMgr.Clone(object)
 	local lookup_table = {}
 	local function _copy(object)
 		if type(object) ~= "table" then
@@ -29,30 +28,33 @@ function CommonModule.Clone(object)
 end
 
 local s_register_class = {}
-function CommonModule.GetRegisterClass( classname )
+function ClassMgr.GetRegisterClass( classname )
 	return s_register_class[classname]
 end
 
-function CommonModule.RegisterClass( classname, cls)
+function ClassMgr.RegisterClass( classname, cls)
 	assert(s_register_class[classname] == nil, string.format("classname[%s]is exist", classname))
 	s_register_class[classname] = cls
 end
 
 ---@class Class
 ---@field className string 类名
+---@field ToString fun(self:Class) : string
+---@field GetToStringParams fun(self:Class) : table{number, any}
 ---@field New fun(...: any): any 返回本类的实例
 local Class = {}
+
 
 ---@generic T : Class
 ---@param name string 类名
 ---@param ... Class 父类
 ---@return T 返回类定义
-function CommonModule.Class( name, ...)
+function ClassMgr.Class( name, ...)
 	local cls = nil
 	local super = ...
 
 	if super then
-		cls = CommonModule.Clone(super)
+		cls = ClassMgr.Clone(super)
 		cls.super = super
 	else
 		cls = { OnInit = function() end, Destroy = function() end}
@@ -60,10 +62,25 @@ function CommonModule.Class( name, ...)
 
 	cls.__index = cls
 	cls.className = name
+	cls.ToString = function (instance)
+		local gg              = require(game:GetService("MainStorage").code.common.MGlobal) ---@type gg
+		local paramsStr = {}
+		if instance.GetToStringParams then
+			local params = instance:GetToStringParams()
+			for k, param in pairs(params) do
+				if type(param) == "table" and param.className then
+					paramsStr[k] = param:ToString()
+				else
+					paramsStr[k] = tostring(param)
+				end
+			end
+		end
+		return instance.className .. gg.table2str(paramsStr)
+	end
 
 	local create = nil
 	create = function(instance, c, ...)
-		if c.super then
+		if c.super and create then
             create(instance, c.super, ...)
         end
 		c.className = name
@@ -78,7 +95,7 @@ function CommonModule.Class( name, ...)
         return instance
     end
 
-    CommonModule.RegisterClass(name, cls)
+    ClassMgr.RegisterClass(name, cls)
 
     return cls
 end
@@ -90,4 +107,4 @@ function math.clamp(value, min, max)
 	return value
 end
 
-return CommonModule
+return ClassMgr

@@ -1,5 +1,5 @@
 local MainStorage  = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
 local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
 
@@ -27,7 +27,7 @@ local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@field sellableTo string 可售出为的物品ID
 ---@field sellPrice number 售出价格
 ---@field New fun( data:table ):ItemType
-local ItemType = CommonModule.Class("ItemType")
+local ItemType = ClassMgr.Class("ItemType")
 
 function ItemType:OnInit(data)
     self.name = data["名字"] or ""

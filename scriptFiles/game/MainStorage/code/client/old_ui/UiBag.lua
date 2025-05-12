@@ -17,10 +17,10 @@
 -- local common_const      = require(MainStorage.code.common.MConst)    ---@type common_const
 -- local UiYesNo           = require(MainStorage.code.client.ui.UiYesNo)    ---@type UiYesNo
 -- local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
--- local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+-- local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 
 -- ---@class UiBag
--- local  UiBag = CommonModule.Class("UiBag", UI)
+-- local  UiBag = ClassMgr.Class("UiBag", UI)
 
 -- ClientEventManager.Subscribe("SyncInventoryItems", function(evt)
 --     local evt = evt ---@type SyncInventoryItems

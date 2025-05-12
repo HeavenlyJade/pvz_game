@@ -14,7 +14,7 @@ local MainStorage   = game:GetService("MainStorage")
 local gg            = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
 local common_const  = require(MainStorage.code.common.MConst) ---@type common_const
-local CommonModule  = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr  = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local TaskSystem = require(MainStorage.code.server.TaskSystem.MTaskSystem) ---@type TaskSystem
 local CLiving      = require(MainStorage.code.server.entity_types.CLiving) ---@type CLiving
 -- local skillMgr     = require(MainStorage.code.server.skill.MSkillMgr) ---@type SkillMgr
@@ -32,7 +32,7 @@ local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@
 ---@field auto_attack_tick number 攻击间隔
 ---@field auto_wait_tick number 攻击等待计时
 ---@field New fun( info_:table ):   CPlayer
-local _M = CommonModule.Class('CPlayer', CLiving)
+local _M = ClassMgr.Class('CPlayer', CLiving)
 
 --------------------------------------------------
 -- 初始化与基础方法

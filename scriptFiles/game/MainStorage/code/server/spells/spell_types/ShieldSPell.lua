@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
 local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
 local Battle = require(MainStorage.code.server.Battle) ---@type Battle
@@ -9,7 +9,7 @@ local Battle = require(MainStorage.code.server.Battle) ---@type Battle
 ---@field baseMultiplier number 基础倍率
 ---@field damageAmplifiers DamageAmplifier[] 基于释放者的属性增加护盾
 ---@field targetDamageAmplifiers DamageAmplifier[] 基于目标的属性增加护盾
-local ShieldSpell = CommonModule.Class("ShieldSpell", Spell)
+local ShieldSpell = ClassMgr.Class("ShieldSpell", Spell)
 
 function ShieldSpell:OnInit(data)
     Spell.OnInit(self, data)

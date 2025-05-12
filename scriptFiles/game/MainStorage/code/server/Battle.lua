@@ -1,10 +1,10 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager)
 
 ---@class Battle:Class
 ---@field New fun( attacker:CLiving, victim:CLiving, source:string, castParam:CastParam|nil ):Battle
-local Battle = CommonModule.Class("Battle")
+local Battle = ClassMgr.Class("Battle")
 
 -- 静态属性
 Battle.ATTACKER_BATTLE_STATS = {

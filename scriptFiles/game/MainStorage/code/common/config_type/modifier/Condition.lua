@@ -1,6 +1,6 @@
 
 local MainStorage = game:GetService('MainStorage')
-local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 
 local CONDITION = {
     TYPES = {
@@ -16,13 +16,13 @@ local CONDITION = {
 }
 
 ---@class Condition
-local Condition = CommonModule.Class("Condition")
+local Condition = ClassMgr.Class("Condition")
 function Condition:Check(modifier, caster, target)
     return true
 end
 
 ---@class BetweenCondition:Condition
-local BetweenCondition = CommonModule.Class("BetweenCondition", Condition)
+local BetweenCondition = ClassMgr.Class("BetweenCondition", Condition)
 function BetweenCondition:OnInit(data)
     self.minValue = data["最小值"] or 0
     self.maxValue = data["最大值"] or 100
@@ -33,7 +33,7 @@ function BetweenCondition:CheckAmount(modifier, amount)
 end
 
 ---@class HealthCondition:BetweenCondition
-local HealthCondition = CommonModule.Class("HealthCondition", BetweenCondition)
+local HealthCondition = ClassMgr.Class("HealthCondition", BetweenCondition)
 function HealthCondition:OnInit(data)
     BetweenCondition.OnInit(self, data)
     self.isPercentage = data["百分比"] == nil and true or data["百分比"]
@@ -51,7 +51,7 @@ function HealthCondition:Check(modifier, caster, target)
 end
 
 ---@class VariableCondition:BetweenCondition
-local VariableCondition = CommonModule.Class("VariableCondition", BetweenCondition)
+local VariableCondition = ClassMgr.Class("VariableCondition", BetweenCondition)
 function VariableCondition:OnInit(data)
     BetweenCondition.OnInit(self, data)
     self.name = data["名字"]
@@ -64,7 +64,7 @@ function VariableCondition:Check(modifier, caster, target)
 end
 
 ---@class StatCondition:BetweenCondition
-local StatCondition = CommonModule.Class("StatCondition", BetweenCondition)
+local StatCondition = ClassMgr.Class("StatCondition", BetweenCondition)
 function StatCondition:OnInit(data)
     BetweenCondition.OnInit(self, data)
     self.name = data["名字"]
@@ -75,13 +75,13 @@ function StatCondition:Check(modifier, caster, target)
 end
 
 ---@class PositionCondition:BetweenCondition
-local PositionCondition = CommonModule.Class("PositionCondition", BetweenCondition)
+local PositionCondition = ClassMgr.Class("PositionCondition", BetweenCondition)
 function PositionCondition:Check(modifier, caster, target)
     error("InvalidImplementationException")
 end
 
 ---@class ChanceCondition:Condition
-local ChanceCondition = CommonModule.Class("ChanceCondition", Condition)
+local ChanceCondition = ClassMgr.Class("ChanceCondition", Condition)
 function ChanceCondition:OnInit(data)
     self.minValue = data["最小值"] or 0
 end
@@ -91,7 +91,7 @@ function ChanceCondition:Check(modifier, caster, target)
 end
 
 ---@class BuffActiveCondition:BetweenCondition
-local BuffActiveCondition = CommonModule.Class("BuffActiveCondition", BetweenCondition)
+local BuffActiveCondition = ClassMgr.Class("BuffActiveCondition", BetweenCondition)
 function BuffActiveCondition:OnInit(data)
     BetweenCondition.OnInit(self, data)
     self.buffKeyword = data["Buff关键字"]
@@ -118,7 +118,7 @@ function BuffActiveCondition:Check(modifier, caster, target)
 end
 
 ---@class TagLevelCondition:BetweenCondition
-local TagLevelCondition = CommonModule.Class("TagLevelCondition", BetweenCondition)
+local TagLevelCondition = ClassMgr.Class("TagLevelCondition", BetweenCondition)
 function TagLevelCondition:OnInit(data)
     BetweenCondition.OnInit(self, data)
     self.tagName = data["词条名"]
@@ -136,7 +136,7 @@ function TagLevelCondition:Check(modifier, caster, target)
 end
 
 ---@class ShieldCondition:BetweenCondition
-local ShieldCondition = CommonModule.Class("ShieldCondition", BetweenCondition)
+local ShieldCondition = ClassMgr.Class("ShieldCondition", BetweenCondition)
 function ShieldCondition:OnInit(data)
     BetweenCondition.OnInit(self, data)
     self.isPercentage = data["百分比"] == nil and true or data["百分比"]

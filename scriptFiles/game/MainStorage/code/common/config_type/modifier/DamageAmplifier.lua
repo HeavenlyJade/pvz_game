@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 
 ---@class DamageAmplifier:Class
 ---@field statType string 属性类型
@@ -7,7 +7,7 @@ local CommonModule = require(MainStorage.code.common.CommonModule) ---@type Comm
 ---@field addType string 增加类型
 ---@field multiplyBaseValue boolean 是否乘以基础数值
 ---@field New fun( data:table ):DamageAmplifier
-local DamageAmplifier = CommonModule.Class("DamageAmplifier")
+local DamageAmplifier = ClassMgr.Class("DamageAmplifier")
 
 ---@param data table[] 伤害修改器数组
 ---@return DamageAmplifier[] 伤害修改器实例数组

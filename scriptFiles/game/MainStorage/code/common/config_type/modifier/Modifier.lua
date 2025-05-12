@@ -1,15 +1,15 @@
 
 local MainStorage = game:GetService('MainStorage')
-local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 
 ---@class Modifier
-local _M = CommonModule.Class("Modifier")
+local _M = ClassMgr.Class("Modifier")
 
 function _M:OnInit(data)
     -- 处理条件
     if data["条件"] then
         local conditionType = data["条件类型"] or "Variable"
-        local conditionClass = CommonModule.GetRegisterClass(conditionType)
+        local conditionClass = ClassMgr.GetRegisterClass(conditionType)
         if conditionClass then
             self.condition = conditionClass.New(data["条件"])
         end

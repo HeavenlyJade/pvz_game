@@ -1,9 +1,9 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@class CastParam:Class
 ---@field New fun( ...:table ):CastParam
-local CastParam = CommonModule.Class("CastParam")
+local CastParam = ClassMgr.Class("CastParam")
 
 function CastParam:OnInit(...)
     local data = ... or {}

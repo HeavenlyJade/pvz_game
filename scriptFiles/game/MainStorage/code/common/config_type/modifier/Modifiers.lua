@@ -1,10 +1,10 @@
 
 local MainStorage = game:GetService('MainStorage')
-local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 local Modifier = require(MainStorage.code.common.config_type.modifier.Modifier)
 ---@class Modifiers:Class
 ---@field New fun( data: table[] ):Modifiers
-local _M = CommonModule.Class("Modifiers")
+local _M = ClassMgr.Class("Modifiers")
 
 function _M:OnInit(data)
     self.modifiers = {}

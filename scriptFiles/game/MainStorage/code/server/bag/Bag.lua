@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local Item = require(MainStorage.code.server.bag.Item) ---@type Item
@@ -16,7 +16,7 @@ local BagMgr        = require(MainStorage.code.server.bag.BagMgr) ---@type BagMg
 ---@field bag_index table<ItemType, Slot[]> 物品类型索引
 ---@field bag_items table<number, table<number, Item>> 背包物品
 ---@field New fun( player: CPlayer):Bag
-local Bag = CommonModule.Class("Bag")
+local Bag = ClassMgr.Class("Bag")
 
 ---@param player CPlayer 玩家实例
 function Bag:OnInit(player)

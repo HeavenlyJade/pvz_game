@@ -1,10 +1,10 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule = require(MainStorage.code.common.CommonModule) ---@type CommonModule
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local TagHandler = require(MainStorage.code.common.config_type.tags.TagHandler) ---@type TagHandler
 local DamageAmplifier = require(MainStorage.code.common.config_type.modifier.DamageAmplifier) ---@type DamageAmplifier
 
 ---@class AttributeTag : TagHandler
-local AttributeTag = CommonModule.Class("AttributeTag", TagHandler)
+local AttributeTag = ClassMgr.Class("AttributeTag", TagHandler)
 
 function AttributeTag:OnInit(data)
     -- 初始化父类

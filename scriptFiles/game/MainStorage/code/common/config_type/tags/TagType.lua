@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
+local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 local EquipingTag     = require(MainStorage.code.common.config_type.tags.EquipingTag)    ---@type EquipingTag
 
 local tagHandlers = {
@@ -11,7 +11,7 @@ local tagHandlers = {
 -- 词条类型定义
 ---@class TagType
 ---@field New fun( data:table ):TagType
-local TagType = CommonModule.Class("TagType")
+local TagType = ClassMgr.Class("TagType")
 function TagType:OnInit(data)
     self.data = data
     self.id = data["名字"]

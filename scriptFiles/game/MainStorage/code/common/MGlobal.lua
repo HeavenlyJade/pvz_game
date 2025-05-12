@@ -30,6 +30,12 @@ local Players = game:GetService('Players')
 ---@field fireClient fun(self, uin: number, data: table)
 
 ---@class gg      --存放自定义的global全局变量和函数
+---@field tick number 当前tick
+---@field game_stat number 游戏状态
+---@field uuid_start number 当前uuid起始值
+---@field server_players_list table<number, CPlayer> 服务器玩家列表
+---@field server_players_name_list table<string, CPlayer> 服务器玩家名称列表
+---@field equipSlot table<number, table<number, boolean>> 各个装备槽位对应的装备类型
 local gg = {
     VECUP = Vector3.new(0, 1, 0), -- 向上方向 y+
     VECDOWN = Vector3.new(0, -1, 0), -- 向下方向 y-
@@ -91,6 +97,14 @@ local gg = {
     }
 
 }
+
+-- function Vector3:offset(x, y, z)
+--     return Vector3.New(self.x + x, self.y+y, self.z + z)
+-- end
+
+-- function Vector2:offset(x, y)
+--     return Vector2.New(self.x + x, self.y+y)
+-- end
 
 -- 将table以json格式打印
 ---@param t table 要打印的表
@@ -519,7 +533,11 @@ function gg.log(...)
     local tab = {}
     for i, v in ipairs(args) do
         if type(v) == 'table' then
-            tab[i] = gg.table2str(v)
+            if v.className then
+                tab[i] = v:ToString()
+            else
+                tab[i] = gg.table2str(v)
+            end
         else
             tab[i] = tostring(v)
         end
