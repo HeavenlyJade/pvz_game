@@ -55,15 +55,18 @@ function MTerrain.create_containers( sceneid, scene_name_ )
         container_monster_.Name  = 'container_monster'
         local container_weapon_  = SandboxNode.new('SandboxNode', parent_ )
         container_weapon_.Name   = 'container_weapon'
-
+        local container_npc = SandboxNode.new('SandboxNode', parent_ )
+        container_npc.Name   = 'container_npc'
 
     end
 
 end
 
 
---初始化大厅地图场景
+
 function MTerrain.initScene0()
+    gg.log( '初始化大厅地图场景' )
+
     local scene_name_ = 'g0'
     local gx_ = game.WorkSpace.Ground[ scene_name_ ] or MainStorage.Ground[ scene_name_ ]
     if  gx_ then

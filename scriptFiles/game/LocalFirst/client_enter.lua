@@ -7,7 +7,7 @@
 
 print("Client Side enter begin")
 
-local MainClient = require(game:GetService("MainStorage"):WaitForChild('code').client.MClientMain )
+local MainClient = require(game:GetService("MainStorage"):WaitForChild('code').client.ClientMain ).New()
 MainClient.start_client()
 
 print("客户端代码启动完毕")

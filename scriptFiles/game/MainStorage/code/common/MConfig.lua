@@ -16,10 +16,6 @@ local configMonster   = require(MainStorage.code.common.MCEntityConfig.MConfigMo
 
 local buffConfig      = require(MainStorage.code.common.MCSkillBuffConfig.MConfigBuff)  ---@type MConfigBuff
 local configSkill     = require(MainStorage.code.common.MCSkillBuffConfig.MConfigSkill)    ---@type MConfigSkill
-
-local configWeapon    = require(MainStorage.code.common.MCItem.MConfigWeapon)   ---@type MConfigWeapon
-local weaponConfig    = require(MainStorage.code.common.MCItem.MCWeaponConfig)  ---@type MCWeaponConfig
-local equipmentConfig = require(MainStorage.code.common.MCItem.MCEquipmentConfig)  ---@type MCEquipmentConfig
 local gametaskConfig = require(MainStorage.code.common.MCTask.MCGameTaskConfig)  ---@type MCGameTaskConfig
 
 -- 初始化任务目标类型
@@ -80,9 +76,6 @@ local common_config = {
 
     assets_dict  = configAssets,
 
-    common_attr     = configWeapon.common_attr,
-    common_att_dict = configWeapon.common_att_dict,
-
     skill_def   = configSkill.skill_def,       -- InitSkillConfig 里会再次初始化一次数据
     buff_def    =  buffConfig.buff_def,
 
@@ -102,9 +95,6 @@ local common_config = {
 
     -- npc
     dict_npc_config  = {},
-    -- 物品配置
-    weapon_config  = weaponConfig, -- 武器
-    equipment_config = equipmentConfig, --装备
 
     -- 任务配置
     main_line_task_config = gametaskConfig,
@@ -120,18 +110,19 @@ local common_config = {
 
 
 ---------- utils 帮助函数 ----------------
---浅拷贝 不拷贝meta ( 与gg.table_value_copy 一致， 避免再次require文件 )
-function common_config.table_value_copy(ori_tab)
+--浅拷贝 不拷贝meta ( 与gg.clone 一致， 避免再次require文件 )
+function common_config.clone(ori_tab)
     local new_tab = {}
     for i, v in pairs(ori_tab) do
         if  type(v) == "table" then
-            new_tab[i] = common_config.table_value_copy(v)
+            new_tab[i] = common_config.clone(v)
         else
             new_tab[i] = v
         end
     end
     return new_tab
 end
+
 
 
 
@@ -145,7 +136,7 @@ function common_config.Init()
             if  config_[ k ] == nil then
                 --补全没有的基础属性
                 if  type(v) == 'table' then
-                    config_[ k ] = common_config.table_value_copy(v)
+                    config_[ k ] = common_config.clone(v)
                 else
                     config_[ k ] = v
                 end
@@ -161,7 +152,7 @@ function common_config.Init()
         --合并来自 common_config.default_monster_battle_data 的属性
         for k, v in pairs( common_config.default_monster_battle_data ) do     --{ hp=100, mp=100 }
             if  type(v) == 'table' then
-                config_[ k ] = common_config.table_value_copy(v)
+                config_[ k ] = common_config.clone(v)
             else
                 config_[ k ] = v
             end
@@ -172,7 +163,7 @@ function common_config.Init()
             if  config_battle then
                 for k, v in pairs( config_battle ) do
                     if  type(v) == 'table' then
-                        config_[ k ] = common_config.table_value_copy(v)
+                        config_[ k ] = common_config.clone(v)
                     else
                         config_[ k ] = v
                     end

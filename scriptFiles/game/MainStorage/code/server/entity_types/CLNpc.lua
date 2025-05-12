@@ -15,7 +15,7 @@ local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@t
 
 
 local CLiving   = require(MainStorage.code.server.entity_types.CLiving)    ---@type CLiving
-local skillMgr  = require(MainStorage.code.server.skill.MSkillMgr)         ---@type SkillMgr
+-- local skillMgr  = require(MainStorage.code.server.skill.MSkillMgr)         ---@type SkillMgr
 
 
 local BATTLE_STAT_IDLE  = common_const.BATTLE_STAT.IDLE

@@ -1,0 +1,2 @@
+---@class ClientExecuteCommand : C2SEvent
+---@field command string 指令

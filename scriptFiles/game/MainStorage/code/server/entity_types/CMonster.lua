@@ -14,8 +14,9 @@ local common_config     = require(MainStorage.code.common.MConfig)    ---@type c
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
 
+local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local CLiving   = require(MainStorage.code.server.entity_types.CLiving)          ---@type CLiving
-local skillMgr  = require(MainStorage.code.server.skill.MSkillMgr)  ---@type SkillMgr
+-- local skillMgr  = require(MainStorage.code.server.skill.MSkillMgr)  ---@type SkillMgr
 
 local BATTLE_STAT_IDLE  = common_const.BATTLE_STAT.IDLE
 local BATTLE_STAT_FIGHT = common_const.BATTLE_STAT.FIGHT
@@ -29,6 +30,7 @@ local BATTLE_STAT_WAIT_SPAWN = common_const.BATTLE_STAT.WAIT_SPAWN
 ---@field battle_stat number 战斗状态
 ---@field stat_data table 状态数据
 ---@field target any 目标对象
+---@field New fun(info_:table):CMonster
 local _M = CommonModule.Class('CMonster', CLiving)
 
 --------------------------------------------------
@@ -40,16 +42,13 @@ function _M:OnInit(info_)
     CLiving:OnInit(info_)    -- 父类初始化
     self.uuid = gg.create_uuid('m')  -- 唯一ID
     
-    -- 加载怪物配置
-    self.mon_config = common_config.dict_monster_config[info_.id]
-    
-    -- 设置怪物等级
-    if self.mon_config then
-        self.mon_config.level = info_.level
-        CLiving.initBattleData(self, self.mon_config)  -- 初始化战斗数据
-    else
-        gg.log("警告: 怪物配置未找到，ID:", info_.id)
-    end
+end
+
+---@override
+function _M:Die()
+    -- 发布死亡事件
+    ServerEventManager.Publish("MobDeadEvent", { mob = self.mob })
+    CLiving.Die(self)
 end
 
 -- 获取怪物位置

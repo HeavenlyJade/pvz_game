@@ -1,4 +1,4 @@
---- V109
+print("Hello world!")--- V109
 --- 游戏货币系统配置文件
 
 ---@class MCurrencyConfig
@@ -37,8 +37,8 @@ local MCurrencyConfig = {
 
     -- 货币上限设置（0表示无上限）
     CURRENCY_CAPS = {
-        diamond = 0,          -- 钻石无上限
-        energy_bean = 9999999, -- 能量豆上限
+        diamond = 9999999999,          -- 钻石无上限
+        energy_bean = 9999999999, -- 能量豆上限
         sunshine = 9999999999,     -- 阳光上限
         gold_coin = 9999999999   -- 金币上限
     },

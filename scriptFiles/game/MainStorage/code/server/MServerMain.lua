@@ -21,11 +21,10 @@ local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandMan
 local CPlayer       = require(MainStorage.code.server.entity_types.CPlayer)          ---@type CPlayer
 local MTerrain      = require(MainStorage.code.server.MTerrain)         ---@type MTerrain
 --local CScene      = require(MainStorage.code.server.CScene)         ---@type CScene
-local skillMgr      = require(MainStorage.code.server.skill.MSkillMgr)  ---@type SkillMgr
-local buffMgr       = require(MainStorage.code.server.buff.BuffMgr)  ---@type BufferMgr
-local bagMgr        = require(MainStorage.code.server.bag.MBagMgr)          ---@type BagMgr
-local cloudDataMgr  = require(MainStorage.code.server.MDataStorage.MCloudDataMgr)    ---@type MCloudDataMgr
-local battleMgr     = require(MainStorage.code.server.BattleMgr)        ---@type BattleMgr
+-- local buffMgr       = require(MainStorage.code.server.buff.BuffMgr)  ---@type BufferMgr
+local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@type BagMgr
+local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
+local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 -- 总入口
 ---@class MainServer
 local MainServer = {};
@@ -36,11 +35,6 @@ local CommandHandlers = {}
 -- 处理键盘按键
 function CommandHandlers.handleKey(uin_, args)
     -- 键盘按键处理逻辑
-end
-
--- 处理技能按钮
-function CommandHandlers.handleClientBtn(uin_, args)
-    skillMgr.handleClientBtn(uin_, args)
 end
 
 -- 处理使用物品
@@ -58,29 +52,9 @@ function CommandHandlers.handleBtnCompose(uin_, args)
     bagMgr.handleBtnCompose(uin_, args)
 end
 
--- 处理选择角色
-function CommandHandlers.handlePickActor(uin_, args)
-    skillMgr.handlePickActor(uin_, args)
-end
-
 -- 处理心跳
 function CommandHandlers.handleHeartbeat(uin_, args)
     gg.network_channel:fireClient(uin_, { cmd='cmd_heartbeat', msg='ok', uin=uin_ })
-end
-
--- 处理AOE选择位置
-function CommandHandlers.handleAoeSelectPos(uin_, args)
-    skillMgr.handleAoeSelectPos(uin_, args)
-end
-
--- 处理玩家技能请求
-function CommandHandlers.handlePlayerSkillReq(uin_, args)
-    skillMgr.handlePlayerSkillReq(uin_, args)
-end
-
--- 处理选择技能
-function CommandHandlers.handlePlayerSelectSkill(uin_, args)
-    skillMgr.handlePlayerSelectSkill(uin_, args)
 end
 
 -- 处理请求玩家数据
@@ -131,28 +105,6 @@ function CommandHandlers.handleUseAllBox(uin_, args)
     bagMgr.handleUseAllBox(uin_, args)
 end
 
--- 处理分解所有低级装备
-function CommandHandlers.handleDpAllLowEq(uin_, args)
-    bagMgr.handleDpAllLowEq(uin_, args)
-end
-
--- 处理玩家输入
-function CommandHandlers.handlePlayerInput(uin_, args)
-    local t_ = gg.split(args.v, ' ')
-    
-    if t_[1] == '/anim' and t_[2] then
-        gg.server_scene_list.g0:debug_play_animation(t_[2])   --haima test
-    end
-    
-    if t_[1] == '/box' and t_[2] then
-        bagMgr.debugGenBox(uin_, t_[2])
-    end
-    
-    -- 同时发给客户端
-    t_.cmd = 'cmd_player_input'
-    gg.network_channel:fireClient(uin_, t_)
-end
-
 -- 客户端对入参命令表
 local COMMAND_DISPATCH = {
     cmd_key = CommandHandlers.handleKey,
@@ -192,8 +144,6 @@ function MainServer.start_server()
     MainServer.SetCollisionGroup()        --设置碰撞组
     
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
-    skillMgr.InitSkillConfig()            --初始化技能
-    buffMgr.InitBuffConfig()              --初始化加载buff配置
     MainServer.bind_update_tick()         --开始tick
 end
 
@@ -206,12 +156,12 @@ function MainServer.SetCollisionGroup()
     WS:SetCollideInfo(0, 1, false)   --玩家不与怪物碰撞
 end
 
---注册玩家进游戏和出游戏消息，在玩家进入和离开服务器时候触发对应绑定函数
+--注册玩家进游戏和出游戏消息
 function MainServer.register_player_in_out()
     local players = game:GetService("Players")
-
+    
     players.PlayerAdded:Connect(function(player)
-        gg.log('玩家进入', player.UserId)
+        gg.log('====PlayerAdded', player.UserId)
         MainServer.player_enter_game(player)
     end)
     
@@ -223,7 +173,7 @@ end
 
 --玩家进入游戏，数据加载
 function MainServer.player_enter_game(player)
-    gg.log("玩家数据", player.UserId, player.Name, player.Nickname)
+    gg.log("player enter====", player.UserId, player.Name, player.Nickname)
     
     player.DefaultDie = false   --取消默认死亡
     
@@ -233,7 +183,7 @@ function MainServer.player_enter_game(player)
         
         --强制离开游戏
         if gg.server_players_list[uin_] then
-            gg.server_players_list[uin_]:leave_game()
+            gg.server_players_list[uin_]:Save()
         end
     end
     
@@ -244,7 +194,7 @@ function MainServer.player_enter_game(player)
     actor_:SetAttribute("model_type", "player")
     
     --加载数据 1 玩家历史等级经验值
-    local ret1_, cloud_player_data_ = cloudDataMgr.readPlayerData(uin_)
+    local ret1_, cloud_player_data_ = cloudDataMgr.ReadPlayerData(uin_)
     if ret1_ == 0 then
         gg.log('clould_player_data ok:', uin_, cloud_player_data_)
         gg.network_channel:fireClient(uin_, { cmd="cmd_client_show_msg", txt='加载玩家等级数据成功' })     --飘字
@@ -252,27 +202,6 @@ function MainServer.player_enter_game(player)
         gg.log('clould_player_data fail:', uin_, cloud_player_data_)
         gg.network_channel:fireClient(uin_, { cmd="cmd_client_show_msg", txt='加载玩家等级数据失败，请退出游戏后重试' })    --飘字
         return   --加载数据网络层失败
-    end
-    
-    --加载数据 2 玩家历史装备数据
-    local ret2_, cloud_player_bag_ = cloudDataMgr.readPlayerBag(uin_)
-    gg.log("ret2_, cloud_player_bag_ ",ret2_, cloud_player_bag_ )
-    if ret2_ == 0 then
-        gg.log('cloud_player_bag ok:', uin_, cloud_player_bag_.bag_ver)
-        gg.network_channel:fireClient(uin_, { cmd="cmd_client_show_msg", txt='加载玩家背包数据成功' })     --飘字
-    else
-        gg.log('cloud_player_bag fail:', uin_, cloud_player_bag_.bag_ver)
-        gg.network_channel:fireClient(uin_, { cmd="cmd_client_show_msg", txt='加载玩家背包数据失败，请退出游戏后重试' })    --飘字
-        return     --加载背包数据失败
-    end
-    
-    if cloud_player_bag_.bag_ver then
-        --有数据
-        bagMgr.setPlayerBagData(uin_, cloud_player_bag_)
-
-    else
-        --无数据 （初始装备并存盘）
-        bagMgr.genPlayerBagFirstData(uin_)
     end
     
     -- 玩家信息初始化
@@ -286,7 +215,21 @@ function MainServer.player_enter_game(player)
         exp = cloud_player_data_.exp
     })
     
+    --加载数据 2 玩家历史装备数据
+    local ret2_, cloud_player_bag_ = cloudDataMgr.ReadPlayerBag(player_)
+    if ret2_ == 0 then
+        gg.log('cloud_player_bag ok:', uin_)
+        player_:SendHoverText('加载玩家背包数据成功')
+        bagMgr.setPlayerBagData(uin_, cloud_player_bag_)
+    else
+        gg.log('cloud_player_bag fail:', uin_)
+        player_:SendHoverText('加载玩家背包数据失败，请退出游戏后重试')
+        return     --加载背包数据失败
+    end
+    player_.bag = cloud_player_bag_
+    
     gg.server_players_list[uin_] = player_
+    gg.server_players_name_list[player.Name] = player_
     
     actor_.Size = Vector3.new(120, 160, 120)      --碰撞盒子的大小
     actor_.Center = Vector3.new(0, 80, 0)      --盒子中心位置
@@ -297,10 +240,9 @@ function MainServer.player_enter_game(player)
     player_:equipWeapon(common_config.assets_dict.model.model_sword)
     player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
     
-    battleMgr.refreshPlayerAttr(uin_)       --重算战力
     player_:initSkillData()                 --- 加载玩家技能
-    player_:initGameTaskData()              --- 加载玩家任务
-    player_:revive()               --重生 --刷新战斗属性
+    -- player_:initGameTaskData()              --- 加载玩家任务
+    player_:RefreshStats()               --重生 --刷新战斗属性
 end
 
 --玩家离开游戏
@@ -309,13 +251,15 @@ function MainServer.player_leave_game(player)
     local uin_ = player.UserId
     
     if gg.server_players_list[uin_] then
-        gg.server_players_list[uin_]:leave_game()
+        gg.server_players_list[uin_]:Save()
     end
+    gg.server_players_name_list[player.Name] = nil
+    gg.server_players_list[uin_] = nil
 end
 
 --建立网络通道
 function MainServer.createNetworkChannel()
-    -- gg.log('createNetworkChannel server side')
+    gg.log('createNetworkChannel server side')
     --begin listen
     gg.network_channel = MainStorage:WaitForChild("NetworkChannel")
     gg.network_channel.OnServerNotify:Connect(MainServer.OnServerNotify)
@@ -330,7 +274,10 @@ function MainServer.OnServerNotify(uin_, args)
     -- 获取处理器
     local handler = COMMAND_DISPATCH[args.cmd]
     if not handler then
-        gg.log("[WARN] Unhandled command:", args.cmd)
+        local player_ = gg.getPlayerByUin(uin_)
+        gg.log("publish event:", args)
+        args.player = player_
+        ServerEventManager.Publish(args.cmd, args)
         return
     end
     
@@ -365,7 +312,7 @@ function MainServer.update()
         scene_:update()
     end
     --更新技能
-    skillMgr.update()
+    -- skillMgr.update()
 end
 
 return MainServer;

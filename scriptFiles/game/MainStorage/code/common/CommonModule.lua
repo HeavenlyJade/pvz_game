@@ -1,4 +1,3 @@
-
 --- V109 miniw-haima
 --- 对class父子继承类的封装
 
@@ -6,7 +5,6 @@ if  _G.CommonModule then
 	--print( 'use cache CommonModule' )
 	return _G.CommonModule
 end
-
 
 ---@class CommonModule        对class父子继承类的封装
 local CommonModule = {}
@@ -40,8 +38,18 @@ function CommonModule.RegisterClass( classname, cls)
 	s_register_class[classname] = cls
 end
 
-function CommonModule.Class( name, super)
+---@class Class
+---@field className string 类名
+---@field New fun(...: any): any 返回本类的实例
+local Class = {}
+
+---@generic T : Class
+---@param name string 类名
+---@param ... Class 父类
+---@return T 返回类定义
+function CommonModule.Class( name, ...)
 	local cls = nil
+	local super = ...
 
 	if super then
 		cls = CommonModule.Clone(super)
@@ -51,13 +59,14 @@ function CommonModule.Class( name, super)
 	end
 
 	cls.__index = cls
+	cls.className = name
 
 	local create = nil
 	create = function(instance, c, ...)
 		if c.super then
             create(instance, c.super, ...)
         end
-
+		c.className = name
         if c.OnInit then
             c.OnInit(instance, ...)
         end

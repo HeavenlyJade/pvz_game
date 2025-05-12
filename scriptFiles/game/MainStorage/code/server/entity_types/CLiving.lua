@@ -1,5 +1,3 @@
---- V109 miniw-haima
-
 local print        = print
 local setmetatable = setmetatable
 local SandboxNode  = SandboxNode
@@ -17,17 +15,12 @@ local next         = next
 
 local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local common_config     = require(MainStorage.code.common.MConfig)    ---@type common_config
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 
 local CommonModule      = require(MainStorage.code.common.CommonModule)    ---@type CommonModule
-
-local skillMgr          = require(MainStorage.code.server.skill.MSkillMgr)    ---@type SkillMgr
-local eqAttr            = require(MainStorage.code.server.equipment.MEqAttr)  ---@type EqAttr
-local cloudDataMgr      = require(MainStorage.code.server.MDataStorage.MCloudDataMgr)      ---@type MCloudDataMgr
-
-
-
+local cloudDataMgr      = require(MainStorage.code.server.MCloudDataMgr)      ---@type MCloudDataMgr
+local Battle            = require(MainStorage.code.server.Battle)    ---@type Battle
+local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 
 --local StartPlayer = game:GetService("StartPlayer")
 --local MainServer = require( game:GetService("MainStorage"):WaitForChild('code').server.MServerMain )
@@ -39,9 +32,14 @@ local BATTLE_STAT_FIGHT      = common_const.BATTLE_STAT.FIGHT
 local BATTLE_STAT_DEAD_WAIT  = common_const.BATTLE_STAT.DEAD_WAIT
 local BATTLE_STAT_WAIT_SPAWN = common_const.BATTLE_STAT.WAIT_SPAWN
 
+local TRIGGER_STAT_TYPES = {
+    ["生命"] = function(creature, value)
+        creature.SetMaxHealth(value)
+    end,
+    
+}
 
-
----@class CLiving  管理单个场景中的actor实例和有共性的属性，被包含在 player monster boss中
+---@class CLiving :Class  管理单个场景中的actor实例和有共性的属性，被包含在 player monster boss中
 ---@field info any
 ---@field uuid string
 ---@field uin  number
@@ -58,44 +56,58 @@ local BATTLE_STAT_WAIT_SPAWN = common_const.BATTLE_STAT.WAIT_SPAWN
 ---@field actor any
 ---@field target CPlayer | CMonster
 ---@field orgMoveSpeed number
----@field New function      --New=OnInit
+---@field New fun( info_:table ):CLiving
 local _M = CommonModule.Class("CLiving")        --父类 (子类： CPlayer, CMonster )
-function _M:OnInit( info_ )
+
+-- 新增属性
+function _M:OnInit(info_)
     self.info = info_      --{ x,y,z, uin, level, npc_type, owner }
+    self.name = nil
     self.uuid = nil
+    self.isEntity = true
     self.uin  = info_.uin
     self.exp   = 0     --当前经验值
     self.level = 1     --当前等级
     self.drop_items = info_.drop_items  -- 怪物掉落物配置
     self.npc_type   = common_const.NPC_TYPE.INITING   --NPC类型
+    self.stats = {}
 
     self.scene_name = nil           --场景名字 g0 g10 g20
-    --self.pre_scene_name = nil       --准备前往的场景名字
-
     self.scene      = nil           --当前场景
 
     self.actor         = nil        --game_actor
     self.target        = nil        --当前目标 actor
-
     self.orgMoveSpeed  = 0          --common_const.MOVESPEED, --原始速度
-
     self.weapon_speed  = 1          --武器速度，默认1.0
     self.model_weapon  = nil        --武器
-
-    --self.attack_box    = nil      --debug攻击范围
 
     self.bb_title   = nil           --头顶名字和等级 billboard
     self.bb_damage  = nil           --伤害飘字
 
-    self.cd_list = {}               --cd列表
-    --debug_anim_index = 0       --debug
+    -- 冷却系统
+    self.cd_list = {}               --全局冷却列表
+    self.cooldownTarget = {}        --目标相关冷却列表
 
-
+    -- 战斗属性
+    self.health = 0
+    self.maxHealth = 0
+    self.mana = 0
+    self.maxMana = 0
+    self.shield = 0
+    
+    -- 词条系统
+    self.tagHandlers = {}           --词条处理器
+    self.tagIds = {}                --词条ID映射
+    
+    -- BUFF系统
+    self.activeBuffs = {}           --激活的BUFF
+    
+    -- 变量系统
+    self.variables = {}
+    
     self.tick  = 0                   --总tick值(递增)
     self.wait_tick = 0               --等待状态tick值(递减)（剧情使用）
-
     self.last_anim = ''              --最后一个播放的动作
-
 
     self.battle_stat_func = {}                   --状态机函数
     self.battle_stat  = BATTLE_STAT_IDLE         --战斗状态： 空闲 战斗 死亡 复活
@@ -103,52 +115,516 @@ function _M:OnInit( info_ )
     self.stat_data = {     --每个状态下的数据
         idle  = { select=0,   wait=0 },    --monster
         fight = { wait=0 },                --monster
-
         wait_spawn = { wait=0 },
         dead_wait  = { wait=0 },
     }
+end
 
-    self.battlt_config = nil    --战斗配置
-    self.battle_data = {        --战斗数据
-        --(先复制battle_config)
-        --skills
-        --hp mp hp_max mp_max
-        --attack_speed
-    }
-    self.eq_attrs = {}         --所有装备词缀
-    self.temporary_buff ={}    -- 临时的buff的数值
 
-    self.stat_flags  = {        --玩家状态标志位
-        --skill_uuid            --当前技能实例uuid( 释法中 )
-        --cast_time             --技能施法时间
-        --cast_time_max         --技能施法时间最大值
-        --cast_pos              --施法开始时候的位置
-
-        --stun = 1              --晕迷
-        --stun_tick = 10,       --晕迷时间
-        --slow = 1              --减速
-        --slow_tick = 10,       --减速时间
-        --swim = 1              --游泳中
-    }
-
-    if  info_.npc_type then
-        self.npc_type = info_.npc_type      --1=player 2=monster 3=npc 4=ai
-    end
-
-    if  info_.exp then
-        self.exp = info_.exp
-    end
-
-    if  info_.level then
-        self.level = info_.level
-    end
-
-    if  info_.scene_name then
-        self.scene_name = info_.scene_name
-    end
+function _M:RefreshStats()
+    self:ResetStats("EQUIP")
 
 end
 
+-- 词条系统 --------------------------------------------------------
+
+--- 获取词条
+---@param id string 词条ID
+---@return EquipingTag|nil
+function _M:GetTag(id)
+    if self.tagIds[id] then
+        return self.tagIds[id]
+    end
+    
+    -- 模糊匹配
+    for tagId, tag in pairs(self.tagIds) do
+        if string.find(tagId, id) then
+            return tag
+        end
+    end
+    
+    return nil
+end
+
+--- 重建词条处理器
+function _M:RebuildTagHandlers()
+    self.tagHandlers = {}
+    
+    for _, equipingTag in pairs(self.tagIds) do
+        for key, handlers in pairs(equipingTag.handlers) do
+            if not self.tagHandlers[key] then
+                self.tagHandlers[key] = {}
+            end
+            
+            table.insert(self.tagHandlers[key], equipingTag)
+            
+            -- 如果有多个处理器，按优先级排序
+            if #self.tagHandlers[key] > 1 then
+                table.sort(self.tagHandlers[key], function(a, b)
+                    return a.handlers[key][1].priority < b.handlers[key][1].priority
+                end)
+            end
+        end
+    end
+end
+
+--- 添加词条处理器
+---@param equipingTag EquipingTag 词条对象
+function _M:AddTagHandler(equipingTag)
+    if self.tagIds[equipingTag.id] then
+        -- 已存在相同ID的词条，增加等级
+        local existingTag = self.tagIds[equipingTag.id]
+        existingTag.level = existingTag.level + equipingTag.level
+    else
+        self.tagIds[equipingTag.id] = equipingTag
+    end
+    
+    self:RebuildTagHandlers()
+end
+
+--- 移除词条处理器
+---@param id string 词条ID
+function _M:RemoveTagHandler(id)
+    if self.tagIds[id] then
+        local equippingTag = self.tagIds[id]
+        
+        -- 从tagHandlers中移除
+        for key, handlers in pairs(equippingTag.handlers) do
+            if self.tagHandlers[key] then
+                for i, tag in ipairs(self.tagHandlers[key]) do
+                    if tag.id == id then
+                        table.remove(self.tagHandlers[key], i)
+                        break
+                    end
+                end
+                
+                if #self.tagHandlers[key] == 0 then
+                    self.tagHandlers[key] = nil
+                end
+            end
+        end
+        
+        self.tagIds[id] = nil
+    else
+        -- 模糊匹配移除
+        local removedIds = {}
+        for tagId in pairs(self.tagIds) do
+            if string.find(tagId, id) then
+                table.insert(removedIds, tagId)
+            end
+        end
+        
+        for _, tagId in ipairs(removedIds) do
+            self:RemoveTagHandler(tagId)
+        end
+    end
+end
+
+--- 触发词条
+---@param key string 触发键
+---@param target CLiving|Vector3 目标
+---@param castParam CastParam|nil 施法参数
+---@param ... any 额外参数
+function _M:TriggerTags(key, target, castParam, ...)
+    -- 处理动态词条
+    if castParam and castParam.dynamicTags and castParam.dynamicTags[key] then
+        for _, equipingTag in ipairs(castParam.dynamicTags[key]) do
+            for _, tag in ipairs(equipingTag.handlers[key]) do
+                tag:Trigger(self, target, equipingTag, ...)
+            end
+        end
+    end
+    
+    -- 处理普通词条
+    if self.tagHandlers[key] then
+        for _, equipingTag in ipairs(self.tagHandlers[key]) do
+            for _, tag in ipairs(equipingTag.handlers[key]) do
+                tag:Trigger(self, target, equipingTag, ...)
+            end
+        end
+    end
+end
+
+-- BUFF系统 --------------------------------------------------------
+
+--- 添加BUFF
+---@param buff ActiveBuff BUFF对象
+function _M:AddBuff(buff)
+    self.activeBuffs[buff.id] = buff
+end
+
+--- 移除BUFF
+---@param buffId string BUFF ID
+function _M:RemoveBuff(buffId)
+    self.activeBuffs[buffId] = nil
+end
+
+--- 获取BUFF堆叠数
+---@param keyword string BUFF关键字
+---@return number 堆叠数
+function _M:GetBuffStacks(keyword)
+    local stacks = 0
+    
+    if not keyword or keyword == "" then
+        -- 获取所有BUFF的堆叠数
+        for _, buff in pairs(self.activeBuffs) do
+            stacks = stacks + buff.stack
+        end
+    else
+        -- 获取特定关键字的BUFF堆叠数
+        for _, buff in pairs(self.activeBuffs) do
+            if string.find(buff.spell.spellName, keyword) then
+                stacks = stacks + buff.stack
+            end
+        end
+    end
+    
+    return stacks
+end
+
+-- 冷却系统 --------------------------------------------------------
+
+--- 获取冷却时间
+---@param reason string 冷却原因
+---@param target CLiving|nil 目标对象
+---@return number 剩余冷却时间
+function _M:GetCooldown(reason, target)
+    if target then
+        -- 检查目标相关的冷却
+        if self.cooldownTarget[reason] then
+            local targetId = target.actor and target.actor.InstanceID or 0
+            if self.cooldownTarget[reason][targetId] then
+                local remainingTime = self.cooldownTarget[reason][targetId] - os.time()
+                return remainingTime > 0 and remainingTime or 0
+            end
+        end
+    end
+    
+    -- 检查全局冷却
+    if self.cd_list[reason] then
+        local remainingTime = self.cd_list[reason] - os.time()
+        return remainingTime > 0 and remainingTime or 0
+    end
+    
+    return 0
+end
+
+--- 检查是否在冷却中
+---@param reason string 冷却原因
+---@param target CLiving|Vector3|nil 目标对象
+---@return boolean 是否在冷却中
+function _M:IsCoolingdown(reason, target)
+    return self:GetCooldown(reason, target) > 0
+end
+
+--- 设置冷却时间
+---@param reason string 冷却原因
+---@param time number 冷却时间(秒)
+---@param target CLiving|Vector3|nil 目标对象
+function _M:SetCooldown(reason, time, target)
+    if target and target.isEntity then
+        -- 设置目标相关的冷却
+        if not self.cooldownTarget[reason] then
+            self.cooldownTarget[reason] = {}
+        end
+        local targetId = target.actor and target.actor.InstanceID or 0
+        self.cooldownTarget[reason][targetId] = os.time() + time
+    else
+        -- 设置全局冷却
+        self.cd_list[reason] = os.time() + time
+    end
+end
+
+--- 清除目标冷却
+---@param reason string|nil 冷却原因，nil表示清除所有
+function _M:ClearTargetCooldowns(reason)
+    if reason then
+        self.cooldownTarget[reason] = nil
+    else
+        self.cooldownTarget = {}
+    end
+end
+
+-- 变量系统 --------------------------------------------------------
+
+--- 设置变量
+---@param key string 变量名
+---@param value number 变量值
+function _M:SetVariable(key, value)
+    self.variables[key] = value
+end
+
+--- 获取变量
+---@param key string 变量名
+---@return number 变量值
+function _M:GetVariable(key)
+    -- 检查是否是特殊格式的变量名（category#variable）
+    if string.find(key, "#") then
+        local parts = {}
+        for part in string.gmatch(key, "[^#]+") do
+            table.insert(parts, part)
+        end
+        
+        if #parts == 2 then
+            local category = parts[1]
+            local variable = parts[2]
+            
+            -- 创建并发布事件
+            local evt = {
+                __class = "VariableEvent",
+                category = category,
+                variable = variable,
+                value = 0
+            }
+            
+            -- 这里应该触发事件系统，但Lua中可能需要其他实现
+            ServerEventManager.Publish(evt)
+            
+            return evt.value
+        end
+    end
+    
+    -- 如果不是特殊格式或解析失败，返回普通变量值
+    return self.variables[key] or 0
+end
+
+--- 增加变量值
+---@param key string 变量名
+---@param value number 增加值
+function _M:AddVariable(key, value)
+    if not self.variables[key] then
+        self.variables[key] = 0
+    end
+    self.variables[key] = self.variables[key] + value
+end
+
+--- 移除变量
+---@param key string 变量名或部分名
+function _M:RemoveVariable(key)
+    local keysToRemove = {}
+    
+    for k in pairs(self.variables) do
+        if string.find(k, key) then
+            table.insert(keysToRemove, k)
+        end
+    end
+    
+    for _, k in ipairs(keysToRemove) do
+        self.variables[k] = nil
+    end
+end
+
+-- 属性管理系统 ----------------------------------------------------
+
+--- 添加属性
+---@param statName string 属性名
+---@param amount number 属性值
+---@param ... table 参数。 source=string 来源，refresh=boolean 是否刷新
+function _M:AddStat(statName, amount, ...)
+    local params = ... and ... or {}
+    if params.source == nil then
+        params.source = "BASE"
+    end
+    local source = params.source
+    if params.refresh == nil then
+        params.refresh = true
+    end
+    
+    if not self.stats[source] then
+        self.stats[source] = {}
+    end
+    
+    if not self.stats[source][statName] then
+        self.stats[source][statName] = 0
+    end
+    
+    self.stats[source][statName] = self.stats[source][statName] + amount
+    
+    -- 这里应该有触发属性类型逻辑，但需要根据具体游戏逻辑实现
+    if params.refresh and TRIGGER_STAT_TYPES[statName] then
+        TRIGGER_STAT_TYPES[statName](self, self:GetStat(statName))
+    end
+end
+
+--- 获取属性值
+---@param statName string 属性名
+---@param ... table 参数。 sources=string[] 来源列表，triggerTags=boolean 是否触发词条，castParam=CastParam 施法参数
+---@return number 属性值
+function _M:GetStat(statName, ...)
+    local amount = 0
+    local params = ... and ... or {}
+    if params.triggerTags == nil then
+        params.triggerTags = true
+    end
+    
+    -- 遍历所有来源的属性
+    for source, statMap in pairs(self.stats) do
+        if not params.sources or table:contains(params.sources, source) then
+            if statMap[statName] then
+                amount = amount + statMap[statName]
+            end
+        end
+    end
+    
+    -- 触发词条影响属性
+    if params.triggerTags and self.tagHandlers[statName] then
+        local battle = Battle.New(self, self, statName)
+        battle:AddModifier("BASE", "增加", amount)
+        self:TriggerTags(statName, self, params.castParam, battle)
+        amount = battle:GetFinalDamage()
+    end
+    
+    return amount
+end
+
+--- 重置属性
+---@param id string 来源ID
+function _M:ResetStats(id)
+    self.stats[id] = nil
+end
+
+-- 战斗系统 --------------------------------------------------------
+
+--- 攻击目标
+---@param victim CLiving 目标对象
+---@param baseDamage number 基础伤害
+---@param source string|nil 伤害来源
+---@param castParam CastParam|nil 施法参数
+---@return Battle 战斗结果
+function _M:Attack(victim, baseDamage, source, castParam)
+    -- 这里需要Battle类的实现，暂时简化处理
+    local battle = Battle.New(self, victim, source, castParam)
+    battle:AddModifier("BASE", "增加", baseDamage)
+    battle:CalculateBattle()
+    
+    victim:Hurt(battle:GetFinalDamage(), self, battle.isCrit)
+    return battle
+end
+
+--- 受到伤害
+---@param amount number 伤害值
+---@param damager CLiving 伤害来源
+---@param isCrit boolean 是否暴击
+function _M:Hurt(amount, damager, isCrit)
+    if self.battle_stat == BATTLE_STAT_DEAD_WAIT or self.battle_stat == BATTLE_STAT_WAIT_SPAWN then
+        return
+    end
+    
+    -- 先扣除护盾
+    if self.shield > 0 then
+        if self.shield >= amount then
+            self.shield = self.shield - amount
+            amount = 0
+        else
+            amount = amount - self.shield
+            self.shield = 0
+        end
+    end
+    
+    -- 扣除生命值
+    if amount > 0 then
+        self:SetHealth(self.health - amount)
+        
+        -- 显示伤害数字
+        if self.scene then
+            self.scene:showDamage(self, amount, { cr = isCrit and 1 or 0 })
+        end
+    end
+    
+    -- 检查死亡
+    if self.health <= 0 then
+        self:Die()
+    end
+end
+
+--- 治疗
+---@param health number 治疗量
+---@param source string|nil 治疗来源
+function _M:Heal(health, source)
+    self:SetHealth(self.health + health)
+    local maxHealth = self:GetStat("Health")
+    
+    if self.health > maxHealth then
+        self.health = maxHealth
+    end
+end
+
+function _M:SetHealth(health)
+    self.health = health
+    self.actor.Health = health
+end
+
+--- 添加护盾
+---@param amount number 护盾值
+---@param source string|nil 护盾来源
+function _M:AddShield(amount, source)
+    self.shield = self.shield + amount
+    local maxHealth = self:GetStat("Health")
+    
+    if self.shield > maxHealth then
+        self.shield = maxHealth
+    end
+end
+
+--- 死亡处理
+function _M:Die()
+    self:DestroyObject()
+end
+
+function _M:DestroyObject()
+    self.actor:Destroy()
+end
+
+--- 设置最大生命值
+---@param amount number 最大生命值
+function _M:SetMaxHealth(amount)
+    local percentage
+    if self.maxHealth == 0 then
+        percentage = 1
+    else
+        percentage = math.min(1, self.health / self.maxHealth)
+    end
+    
+    self.maxHealth = amount
+    self.health = self.maxHealth * percentage
+    self.actor.MaxHealth = self.maxHealth
+    self.actor.Health = self.health
+end
+
+-- 位置和状态 ------------------------------------------------------
+
+--- 获取位置
+---@return Vector3 位置坐标
+function _M:GetLocation()
+    -- if self.battle_stat == BATTLE_STAT_DEAD_WAIT or self.battle_stat == BATTLE_STAT_WAIT_SPAWN then
+    --     return self.deadPosition or Vector3.new(0, 0, 0)
+    -- end
+    
+    -- -- 如果有偏移量，计算偏移后的位置
+    -- if self.mob and self.mob.mobType.offset then
+    --     local offset = self.mob.mobType.offset
+    --     local scale = self.actor and self.actor.LocalScale or Vector3.new(1, 1, 1)
+    --     return Vector3.new(
+    --         self.actor.Position.x + offset.x * scale.x,
+    --         self.actor.Position.y + offset.y * scale.y,
+    --         self.actor.Position.z
+    --     )
+    -- end
+    
+    return self.actor and self.actor.Position or Vector3.new(0, 0, 0)
+end
+
+--- 是否是生物
+---@return boolean
+function _M:IsCreature()
+    return true
+end
+
+--- 获取生物对象
+---@return CLiving
+function _M:GetCreature()
+    return self
+end
 
 
 --设置游戏场景中使用的actor实例
@@ -158,9 +634,6 @@ function _M:setGameActor( actor_ )
 
     actor_.PhysXRoleType    = Enum.PhysicsRoleType.BOX
 	actor_.IgnoreStreamSync = false
-
-    --self.actor.MaxHealth = 200
-    --self.actor.Health = 100
 
     if  self.orgMoveSpeed == 0 then
         self.orgMoveSpeed = self.actor.Movespeed
@@ -174,9 +647,6 @@ function _M:isPlayer()
     return self.npc_type == common_const.NPC_TYPE.PLAYER
 end
 
-function _M:isNpc()
-    return self.npc_type == common_const.NPC_TYPE.NPC
-end
 
 --玩家切换目标
 ---@param target_ CPlayer | CMonster
@@ -192,16 +662,15 @@ end
 
 
 --同步给客户端当前目标的资料
+---@param target_ CLiving
+---@param with_name_ boolean
 function _M:syncTargetInfo( target_, with_name_ )
     local info_ = {
         cmd    = 'cmd_sync_target_info',
         show = 1,   --0=不显示， 1=显示
 
-        hp     = target_.battle_data.hp,
-        hp_max = target_.battle_data.hp_max,
-
-        mp     = target_.battle_data.mp,
-        mp_max = target_.battle_data.mp_max,
+        hp     = target_.health,
+        hp_max = target_.maxHealth
     }
 
     if  with_name_ then
@@ -250,7 +719,7 @@ function _M:addExp( exp_ )
     self.exp = self.exp + exp_
 
     local save_flag_ = false
-    if  common_config.expLevelUp[ self.level + 1 ] then
+    if common_config.expLevelUp[ self.level + 1 ] then
         --是否升级
         if  self.exp >= common_config.expLevelUp[ self.level + 1 ] then
             self.level = self.level + 1
@@ -265,7 +734,7 @@ function _M:addExp( exp_ )
         end
     end
 
-    cloudDataMgr.savePlayerData( self.uin, save_flag_ )   --加经验存盘
+    cloudDataMgr.SavePlayerData( self.uin, save_flag_ )   --加经验存盘
 end
 
 
@@ -304,11 +773,11 @@ function _M:createTitle( desc_ )
             number_level.ShadowColor = ColorQuad.new( 0, 0, 0, 255 )
         end
 
-        self.bb_title = number_level        
-        if self:isNpc() then else
-            self:createHpBar( name_level_billboard )
-        end
-        -- self:enableAnimateDebugTest();     --是否打开动画测试
+        self.bb_title = number_level
+
+        self:createHpBar( name_level_billboard )
+
+        --self:enableAnimateDebugTest();     --是否打开动画测试
     end
 end
 
@@ -390,6 +859,7 @@ function _M:showDamage( number_, eff_ )
         coroutine.work( long_call, damage_billboard )    --立即返回，long_call转入协程执行
     end
 
+
     if  eff_.dodge == 1 then
         --闪避
         local number_level = gg.createTextLabel( damage_billboard, '闪避' )
@@ -406,6 +876,7 @@ function _M:showDamage( number_, eff_ )
         local number_level = gg.createTextLabel( damage_billboard, '背包已满' )
         number_level.TitleColor = ColorQuad.new( 255, 255, 255, 255 )  --白色字
         wrap_thread( 1 )
+
     else
         -- 伤害值
         local number_level = gg.createTextLabel( damage_billboard, '-' .. number_ )
@@ -420,8 +891,13 @@ function _M:showDamage( number_, eff_ )
                 number_level.TitleColor = ColorQuad.new( 255, 255, 255, 255 )  --白色字
             end
         end
+
         wrap_thread( 1 )
     end
+
+
+
+
 end
 
 
@@ -602,7 +1078,7 @@ function _M:checkAttackSpellConfig( skill_id_, skill_config_ )
             self.cd_list[ skill_id_ ] = { last=-1000 }
         end
 
-        local attack_speed = self:getAttackSpeedTick()
+        local attack_speed = self:GetStat("攻速")
         if  gg.tick - self.cd_list[ skill_id_ ].last > attack_speed then
             --self.cd_list[ skill_id_ ].last = gg.tick
         else
@@ -626,31 +1102,12 @@ function _M:checkAttackSpellConfig( skill_id_, skill_config_ )
 
     --魔法值
     if  skill_config_.mp and skill_config_.mp>0 then
-        if  self.battle_data.mp < skill_config_.mp then
+        if  self.mana < skill_config_.mp then
             return 9   --检查魔法值失败
         end
     end
 
     return 0
-end
-
-
-
---怪物的魔法值耗尽，切换近战技能
-function _M:outOfMana()
-    self.battle_data.skills = {1001}
-end
-
-
-
---获得攻速帧
-function _M:getAttackSpeedTick()
-    --默认攻速都是1.2=12帧   1=10帧
-    if  not self.battle_data.attack_speed then
-        self.battle_data.attack_speed = self.weapon_speed * 10
-        gg.log( 'set AttackSpeedTick:', self.battle_data.attack_speed )
-    end
-    return self.battle_data.attack_speed
 end
 
 
@@ -669,7 +1126,7 @@ function _M:setAttackSpellByConfig( skill_id_, skill_config_ )
 
     --魔法值
     if  skill_config_.mp and skill_config_.mp > 0 then
-        self.battle_data.mp = self.battle_data.mp - skill_config_.mp
+        self.mana = self.mana - skill_config_.mp
         self:refreshHpMpBar()
     end
 end
@@ -688,30 +1145,7 @@ end
 
 --重置所有属性
 function _M:resetBattleData( resethpmp_ )
-    eqAttr.visitAllAttr( self )
-
-    if  self:isPlayer() then
-        -- gg.log( '玩家属性重新计算======', self.uin, self.uuid, self.battle_data )
-        
-    else
-        --怪物血量加成 battle_data_.hp_factor
-        if  self.battle_data.hp_factor then
-            self.battle_data.hp_max = self.battle_data.hp_max * self.battle_data.hp_factor
-        end
-    end
-
-
-    if  resethpmp_ then
-        self.battle_data.hp = self.battle_data.hp_max
-        self.battle_data.mp = self.battle_data.mp_max
-    end
-
-    --控制血量最大值
-    if  self.battle_data.hp > self.battle_data.hp_max then self.battle_data.hp = self.battle_data.hp_max end
-    if  self.battle_data.mp > self.battle_data.mp_max then self.battle_data.mp = self.battle_data.mp_max end
-
-    self:refreshHpMpBar()
-    self:calculateMoveSpeed()
+    --TODO: 刷新属性
 end
 
 
@@ -750,9 +1184,9 @@ function _M:spellHealth( hp_, mp_ )
     --加上法强
     local spell_add_ = gg.rand_int_between(self.battle_data.spell, self.battle_data.spell2 )
 
-    self.battle_data.hp = self.battle_data.hp + hp_ + spell_add_
-    if  self.battle_data.hp > self.battle_data.hp_max then
-        self.battle_data.hp = self.battle_data.hp_max
+    self.health = self.health + hp_ + spell_add_
+    if  self.health > self.maxHealth then
+        self.health = self.maxHealth
     end
     self:refreshHpMpBar()
 
@@ -772,8 +1206,8 @@ function _M:revive()
     self:play_animation( '100100', 1.0, 0 )   --idle
 
     gg.network_channel:fireClient( self.uin, { cmd='cmd_player_actor_stat', v='revive',
-        hp=self.battle_data.hp, hp_max=self.battle_data.hp_max,
-        mp=self.battle_data.mp, mp_max=self.battle_data.mp_max
+        hp=self.health, hp_max=self.maxHealth,
+        mp=self.mana, mp_max=self.maxMana
     } )
 
 end
@@ -828,9 +1262,11 @@ end
 
 
 
---被减数
+--被减速
 function _M:slowDown( tick_, v_ )
     local stat_flags_ = self.stat_flags
+    gg.log( 'slowDown', self.actor.Movespeed, v_ )
+
     stat_flags_.slow_tick = tick_
     stat_flags_.slow = v_
 
@@ -889,140 +1325,49 @@ end
 --stun = 1              --晕迷
 --slow = 1              --减速
 --swim = 1              --游泳中
-function _M:checkAbnormalStatFlags( tick_ )
-    local stat_flags_ = self.stat_flags
+-- function _M:checkAbnormalStatFlags( tick_ )
+--     local stat_flags_ = self.stat_flags
 
-    --始发中
-    if  stat_flags_.skill_uuid then
-        if  stat_flags_.cast_time > 0 then
-            stat_flags_.cast_time = stat_flags_.cast_time - tick_
+--     --始发中
+--     if  stat_flags_.skill_uuid then
+--         if  stat_flags_.cast_time > 0 then
+--             stat_flags_.cast_time = stat_flags_.cast_time - tick_
 
-            if  gg.out_distance( stat_flags_.cast_pos, self.actor.Position, 2 ) then    --distance=2
-                --取消施法
-                stat_flags_.skill_uuid = nil
-                stat_flags_.cast_time  = nil
-                stat_flags_.cast_pos   = nil
-                self:play_animation( '100101', 1.0, 0 )   --walk
-                gg.network_channel:fireClient( self.uin, { cmd='cmd_player_spell', v=0.1, max=0.1 } )
+--             if  gg.out_distance( stat_flags_.cast_pos, self.actor.Position, 2 ) then    --distance=2
+--                 --取消施法
+--                 stat_flags_.skill_uuid = nil
+--                 stat_flags_.cast_time  = nil
+--                 stat_flags_.cast_pos   = nil
+--                 self:play_animation( '100101', 1.0, 0 )   --walk
+--                 gg.network_channel:fireClient( self.uin, { cmd='cmd_player_spell', v=0.1, max=0.1 } )
 
-            else
-                self:play_animation( '100112', 1.0, 0 )   --spell
-            end
+--             else
+--                 self:play_animation( '100112', 1.0, 0 )   --spell
+--             end
 
-        else
-            --施法结束
-            local skill_id_ = stat_flags_.skill_uuid
-            stat_flags_.skill_uuid = nil
-            stat_flags_.cast_time  = nil
-            stat_flags_.cast_pos   = nil
-            skillMgr.castTimeOver( skill_id_ )    --防施法卡死
-        end
-    end
-
-
-    --减速中
-    if  stat_flags_.slow then
-        if  stat_flags_.slow_tick > 0 then
-            stat_flags_.slow_tick = stat_flags_.slow_tick - tick_
-        else
-            stat_flags_.slow      = nil
-            stat_flags_.slow_tick = nil
-            self:calculateMoveSpeed()
-        end
-    end
-
-end
+--         else
+--             --施法结束
+--             local skill_id_ = stat_flags_.skill_uuid
+--             stat_flags_.skill_uuid = nil
+--             stat_flags_.cast_time  = nil
+--             stat_flags_.cast_pos   = nil
+--             skillMgr.castTimeOver( skill_id_ )    --防施法卡死
+--         end
+--     end
 
 
--- 修改玩家的属性
-function _M:applyAttributeModifier(property_name, value, mode)
-    -- 确保battle_data和指定属性存在
-    if not self.battle_data or not self.battle_data[property_name] then
-        return
-    end
-    
-    -- 获取当前属性值
-    local current_value = self.battle_data[property_name]
-    
-    -- 根据模式进行不同的计算
-    if mode == "absolute" then
-        -- 绝对值模式：直接添加数值
-        self.temporary_buff[property_name] = value
-    elseif mode == "percent" then
-        -- 百分比模式：按百分比增加
-        -- value为0.1表示增加10%，value为-0.2表示减少20%
-        local increase = current_value * value
-        self.battle_data[property_name] =increase
-    else
-  
-    end
-end
-function _M:createLootFromConfig(attacker_ ,target_)
-    local drop_items = target_.drop_items -- 掉落物的配置
-    if not drop_items then
-        return
-    else
-        for i, item in ipairs(drop_items) do
-            local rand_value = math.random(1, 10000)/10000
-            if rand_value <= item.drop_rate then
-                -- 掉落成功，调用 dropBox
-                self:dropBox(attacker_, item)
-            end
-        end
-    end
-    
-end
+--     --减速中
+--     if  stat_flags_.slow then
+--         if  stat_flags_.slow_tick > 0 then
+--             stat_flags_.slow_tick = stat_flags_.slow_tick - tick_
+--         else
+--             stat_flags_.slow      = nil
+--             stat_flags_.slow_tick = nil
+--             self:calculateMoveSpeed()
+--         end
+--     end
 
---掉落物品
-function _M:dropBox( attacker_ ,drop_item)
-    --建立模型
-    local drop_box_    = gg.cloneFromTemplate('drop_box')     --克隆（速度更快）
-    drop_box_.Parent   = gg.serverGetContainerMonster( self.scene_name )
-    drop_box_.Name     = 'drop'
-    drop_box_.Visible  = true
-
-    --起始点
-    local pos_ = self.actor.Position
-    drop_box_.Position = Vector3.new( pos_.x + gg.rand_int(50), pos_.y + 50, pos_.z + gg.rand_int(50) )
-    drop_box_.LocalScale = Vector3.new( 0.25, 0.5, 0.5 )
-    drop_box_.Anchored       = false
-    drop_box_.EnableGravity  = true
-    drop_box_.CanCollide     = true
-    drop_box_.CanTouch       = true
-    drop_box_.CollideGroupID = 2  --设置为玩家可以碰撞
-    drop_box_.Friction       = 0.5
-
-
-    local drop_item = { 
-        uuid=gg.create_uuid('box'),
-        itype=common_const.ITEM_TYPE.EQUIPMENT,
-        model=drop_box_,
-        level= gg.rand_int_between(1, self.level), 
-        player_uin = attacker_.uin,
-        quality=gg.rand_qulity(),
-        drop_item = drop_item
-    }
-    if  self.scene then
-        self.scene:addDrop( drop_item )
-    end
-    drop_box_.EnableGravity  = false
-    drop_box_.CanCollide     = false
-    drop_box_.OwnerUin   = attacker_.uin
-    drop_box_.Size       = Vector3.new( 1, 1, 1  )
-    drop_box_.Center     = Vector3.new( 0,   0,  0 )
-    --特效
-    local expl = SandboxNode.new('DefaultEffect', drop_box_ )
-    expl.AssetID = common_config.assets_dict.effect.drop_box_effect
-    expl.LocalPosition = Vector3.new( 0, 50, 0 )
-    expl.LocalScale    = Vector3.new( 2, 2, 2 )
-
-    -- local function touch_func(touch_func)
-    --     gg.log( "掉落物碰撞:", touch_func )
-
-    -- end
-    -- drop_box_.Touched:connect( touch_func )
-
-end
+-- end
 
 
 ---------------------------------------- 状态机 ----------------------------
@@ -1107,86 +1452,8 @@ function _M:initBattleStatFunc()
 
 end
 
--- 在NPC右侧创建任务对话栏
-function _M:createQuestDialogImage(params)
-    local task_billboard = SandboxNode.new( 'UIBillboard', self.actor )
-    task_billboard.Name = 'Task'
-    task_billboard.Billboard = false
-    task_billboard.CanCollide      = false            --避免产生物理碰撞
-    task_billboard.ResolutionLevel = Enum.ResolutionLevel.R4X
-    task_billboard.Size2d          = Vector2.new( 8, 8 )
-    task_billboard.LocalPosition   = Vector3.new(100, 200,0 )
-    local dialog_button= SandboxNode.new('UIButton', task_billboard)
-    local icon_ = params.icon
-    dialog_button.Name = 'Image'
-    dialog_button.Visible = false
-    dialog_button.ClickPass = false   
-    dialog_button.LayoutHRelation = Enum.LayoutHRelation.Middle  
-    dialog_button.LayoutVRelation = Enum.LayoutVRelation.Middle 
-    dialog_button.Alpha =1
-    dialog_button.Pivot = Vector2.new(0.5, -1.5)
-    dialog_button.Size = Vector2.new(params.size[1], params.size[2])
-    dialog_button.Icon = icon_
-    dialog_button.Name = "Dialogue"
-    dialog_button.OutlineEnable= true
-    --设置开启阴影
-    dialog_button.ShadowEnable= true
-    dialog_button.Click:Connect(function(node,  isClick, vector2, int)  
-        gg.log(node,  isClick, vector2, int)
-        gg.log("点击了对话框")
-    end)
-	gg.log("dialog_button",dialog_button)
-   
-    return dialog_button
-end
 
 
-function _M:CreateInteractArea(model)
-    -- 获取区域和模型属性
-    local interactArea = SandboxNode.new('Area', model)
-    local npcSize = model.Size
-    local centerPos = model.Position
-    local expand = Vector3.new(150, 100, 150)
-    
-    -- 设置区域范围
-    interactArea.Beg = centerPos - (npcSize/2 + expand)
-    interactArea.End = centerPos + (npcSize/2 + expand)
-    
-    -- 区域外观（调试用）
-    interactArea.Show = true -- 正式环境设为false
-    interactArea.Color = ColorQuad.new(0, 255, 0, 50)
-    interactArea.EffectWidth = 1
-    
-    -- 确保对话图标初始状态为隐藏
-    if model.name_level.Dialogue then
-        model.name_level.Dialogue.Visible = false
-    end
-    
-    -- 创建客户端事件处理
-    local function handlePlayerInteraction(node, isEntering)
-        -- 在服务器上，我们需要向特定客户端发送消息
-        local userId = node.UserId or node.OwnerUin
-        if userId and node:GetAttribute("model_type") == "player" then
-            -- 向特定客户端发送显示/隐藏对话框的消息
-            gg.network_channel:fireClient(userId, {
-                cmd = "cmd_npc_dialogue_visibility",
-                npc_id = model.Name,
-                visible = isEntering
-            })
-        end
-    end
-    
-    -- 注册区域事件
-    interactArea.EnterNode:connect(function(node)
-        handlePlayerInteraction(node, true) -- 玩家进入
-    end)
-    
-    interactArea.LeaveNode:connect(function(node)
-        handlePlayerInteraction(node, false) -- 玩家离开
-    end)
-    
-    return interactArea
-end
 
 --改变状态
 function _M:setBattleStat( battle_stat_ )
@@ -1229,7 +1496,5 @@ function _M:update()
     end
 
 end
-
-
 
 return _M

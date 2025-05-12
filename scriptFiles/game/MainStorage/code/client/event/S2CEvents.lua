@@ -1,0 +1,2 @@
+---@class SyncInventoryItems : S2CEvent
+---@field items table<Slot, SerializedItem> 背包物品

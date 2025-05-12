@@ -3,8 +3,7 @@
 
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
-local cloudDataMgr = require(MainStorage.code.server.MDataStorage.MCloudDataMgr)  ---@type MCloudDataMgr
-local eqAttr = require(MainStorage.code.server.equipment.MEqAttr)  ---@type EqAttr
+local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr)  ---@type MCloudDataMgr
 
 ---@class PlayerCommands
 local PlayerCommands = {}
@@ -177,6 +176,10 @@ function PlayerCommands.Execute(command, params, player)
     return executor(params, player)
 end
 
-
+-- 兼容旧版接口
+PlayerCommands.handlers = {}
+for command, executor in pairs(CommandMapping) do
+    PlayerCommands.handlers[command] = executor
+end
 
 return PlayerCommands

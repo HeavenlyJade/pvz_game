@@ -2,7 +2,7 @@
 ---@class NpcConfigSpawn
 local NpcConfigSpawn = {
     g0 = {
-        su_yun_tao = {
+        g0_1 = {
             name = "素云涛",
             position = {-1048, 8, 322},
             rotation = {0, 30, 0},
@@ -15,7 +15,7 @@ local NpcConfigSpawn = {
             }
 
         },
-        nu_ding_blacksmith = {
+        g0_2 = {
             name = "诺丁铁匠",
             position = {-943, 7, 892},
             rotation = {0, 30, 0},

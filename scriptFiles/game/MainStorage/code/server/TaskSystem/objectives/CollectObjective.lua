@@ -83,7 +83,7 @@ end
 function CollectObjective:Complete(player)
     -- 如果需要消耗物品，从玩家背包中移除
     if self.consumeOnComplete then
-        player:RemoveItem(self.item_type, self.item_id, self.required)
+        player.bag:RemoveItems({[self.item_type] = self.required})
     end
     
     return true

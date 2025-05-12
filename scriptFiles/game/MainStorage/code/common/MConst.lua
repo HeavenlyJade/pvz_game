@@ -1,4 +1,3 @@
-
 --- V109 miniw-haima
 --- 全局变量中，基本上不会去修改的常量
 
@@ -13,7 +12,12 @@ local  common_const = {
     VECUP   = Vector3.new(0,1,0),     --向上方向 y+
     VECDOWN = Vector3.new(0,-1,0),    --向下方向 y-
 
-    ---@enum NPC_TYPE  --玩家类型
+    ---@class NPC_TYPE NPC类型枚举
+    ---@field INITING NPC_TYPE 初始化状态
+    ---@field PLAYER NPC_TYPE 玩家类型
+    ---@field MONSTER NPC_TYPE 怪物类型
+    ---@field NPC NPC_TYPE NPC类型
+    ---@field AI NPC_TYPE AI机器人类型
     NPC_TYPE = {
         INITING  = 0,   --初始化
         PLAYER   = 1,   --玩家
@@ -23,7 +27,11 @@ local  common_const = {
     },
 
 
-    ---@enum PLAYER_NET_STAT  --玩家网络状态
+    ---@class PLAYER_NET_STAT 玩家网络状态枚举
+    ---@field INITING PLAYER_NET_STAT 初始化状态
+    ---@field LOGIN_IN PLAYER_NET_STAT 服务器初始化完成
+    ---@field CLIENT_OK PLAYER_NET_STAT 客户端连接正常(正常状态)
+    ---@field LOGIN_OUT PLAYER_NET_STAT 玩家退出
     PLAYER_NET_STAT = {
         INITING   = 0,    --初始化
         LOGIN_IN  = 1,    --服务器初始化完成
@@ -32,7 +40,11 @@ local  common_const = {
     },
 
 
-    ---@enum BATTLE_STAT         --玩家或者怪物战斗状态
+    ---@class BATTLE_STAT 战斗状态枚举
+    ---@field IDLE BATTLE_STAT 空闲状态(脱离战斗)
+    ---@field FIGHT BATTLE_STAT 进入战斗状态
+    ---@field DEAD_WAIT BATTLE_STAT 被击败状态(等待重生或者清理)
+    ---@field WAIT_SPAWN BATTLE_STAT 等待重生状态
     BATTLE_STAT = {
         IDLE            = 1,      --空闲(脱离战斗)
         FIGHT           = 2,      --进入战斗
@@ -41,38 +53,16 @@ local  common_const = {
     },
 
 
-    ---@enum ITEM_TYPE       --物品类型 itype
+    ---@class ITEM_TYPE 物品类型枚举
+    ---@field EQUIPMENT ITEM_TYPE 装备类型
+    ---@field BOX ITEM_TYPE 箱子类型
+    ---@field MAT ITEM_TYPE 材料类型
     ITEM_TYPE ={
         EQUIPMENT  = 1,      --装备
         BOX        = 2,      --箱子
         MAT        = 3,      --材料
-        CARD       = 4,      --卡片
-        CONSUMABLE = 5,      --消耗品
-        UNKNOWN    = 99,     --未知
-    },
-
-
-    ---@enum MAT_ID        --可堆叠的mat物品材料类型ID( ITEM_TYPE=MAT )
-    MAT_ID = {
-        FRAGMENT  = 1001,    --碎片
-        HP_POTION = 2001,    --红药水
-        MP_POTION = 2002,    --蓝药水
-        HM_POTION = 2003,    --红蓝药水
     },
 
 }
-
-
-function common_const:getContainerNameByType(itemType)
-    local typeToContainer = {
-        [common_const.ITEM_TYPE.EQUIPMENT] = "bag_equ_items",
-        [common_const.ITEM_TYPE.CONSUMABLE] = "bag_consum_items",
-        [common_const.ITEM_TYPE.BOX] = "bag_consum_items", -- 宝箱也放在消耗品容器
-        [common_const.ITEM_TYPE.MAT] = "bag_mater_items",
-        [common_const.ITEM_TYPE.CARD] = "bag_card_items"
-    }
-    return typeToContainer[itemType] or "bag_equ_items" -- 默认放在装备容器
-end
-
 
 return common_const

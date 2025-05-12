@@ -22,26 +22,28 @@ local common_const  = require(MainStorage.code.common.MConst) ---@type common_co
 local CMonster      = require(MainStorage.code.server.entity_types.CMonster) ---@type CMonster
 local CLNpc         = require(MainStorage.code.server.entity_types.CLNpc) ---@type CLNpc
 
-local bagMgr        = require(MainStorage.code.server.bag.MBagMgr) ---@type BagMgr
+local BagMgr        = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
 
 
 -- 场景类：单个场景实例  g0(入口大厅)
 ---@class CScene
----@field sceneid number
----@field info any
----@field name string
----@field players    CPlayer[]
----@field monsters   CMonster[]
----@field npcs       CLNpc[]
----@field monster_spawns any[]
----@field scene_config any[]
----@field drop_boxs any[]
----@field npc_spawn_config any[]
----@field npc_spawns any[]
+---@field sceneid number 场景ID
+---@field info table 场景信息
+---@field name string 场景名称
+---@field players table<number, CPlayer> 玩家列表
+---@field monsters table<string, CMonster> 怪物列表
+---@field npcs table<string, CLNpc> NPC列表
+---@field monster_spawns table<string, {count: number, config: table}> 刷怪点管理
+---@field drop_boxs table<string, any> 掉落物品列表
+---@field scene_config table 当前地图的节点scene刷怪配置
+---@field npc_spawn_config table 当前地图的NPC刷新点
+---@field tick number 总tick值(递增)
 local _M = {}
 local mt = { __index = _M }
 
-
+---创建新的场景实例
+---@param info_ table 场景信息
+---@return CScene 场景实例
 function _M:new(info_)
     local ins_ = {
         info             = info_, --{ name='g0' }
@@ -75,7 +77,7 @@ function _M:new(info_)
     return ret_
 end
 
---克隆地形
+---初始化地形
 function _M:initTerrain()
     local ground_name_ = self.name
 
@@ -122,14 +124,16 @@ function _M:initTerrain()
     end
 end
 
---玩家离开场景
+---玩家离开场景
+---@param uin_ number 玩家ID
 function _M:player_leave(uin_)
     if self.players[uin_] then
         self.players[uin_] = nil
     end
 end
 
---玩家进入场景
+---玩家进入场景
+---@param uin_ number 玩家ID
 function _M:player_enter(uin_)
     if self.players[uin_] then
         --已经存在
@@ -141,12 +145,14 @@ function _M:player_enter(uin_)
     end
 end
 
---获得本场景的workspace
+---获得本场景的workspace
+---@return Workspace 工作空间
 function _M:GetWorkSpace()
     return game:GetWorkSpace(self.sceneid)
 end
 
---获得场景里的主建筑物gx
+---获得场景里的主建筑物gx
+---@return SandboxNode|nil 主建筑物节点
 function _M:getGX()
     if not self.sceneid then
         gg.log('no sceneid:', self)
@@ -160,7 +166,9 @@ function _M:getGX()
     return nil
 end
 
---按照名字获得功能点的坐标  传送点:'tp0'  怪物出生点:'monster_spawn'
+---按照名字获得功能点的坐标  传送点:'tp0'  怪物出生点:'monster_spawn'
+---@param node_name_ string 节点名称
+---@return Vector3
 function _M:getFunctionPosXYZByName(node_name_)
     local gx_node_ = self:getGX()
     if gx_node_ then
@@ -172,7 +180,9 @@ function _M:getFunctionPosXYZByName(node_name_)
     return 0, 0, 0
 end
 
---直接获得坐标
+---直接获得坐标
+---@param node_name_ string 节点名称
+---@return Vector3|nil 位置向量
 function _M:getFunctionPosByName(node_name_)
     local gx_node_ = self:getGX()
     if gx_node_ then
@@ -184,17 +194,8 @@ function _M:getFunctionPosByName(node_name_)
     return nil
 end
 
--- (测试) 本场景内的所有怪物都播放同一个动作
--- function _M:debug_play_animation( anim_id_ )
---     for _, monster_ in pairs( self.monsters ) do
---         monster_:play_animation( anim_id_, 1, 0 )
---         monster_.bb_title.Title = anim_id_;
---     end
--- end
-
-
-
--- 当一个怪物目标血量变化的时候，更新所有关注它的生物的目标血条
+---当一个怪物目标血量变化的时候，更新所有关注它的生物的目标血条
+---@param uuid_ string 怪物UUID
 function _M:updateTargetHPMPBar(uuid_)
     for uin_, player_ in pairs(self.players) do
         if player_.target and player_.target.uuid == uuid_ then
@@ -212,8 +213,9 @@ function _M:updateTargetHPMPBar(uuid_)
     end
 end
 
---通知目标丢失
-function _M:infoTargetLost(uuid_)
+---通知目标丢失
+---@param uuid_ string 怪物UUID
+function _M:InfoTargetLost(uuid_)
     for uin_, player_ in pairs(self.players) do
         if player_.target and player_.target.uuid == uuid_ then
             local info_ = { cmd = 'cmd_sync_target_info', show = 0, v = 'lost' }
@@ -222,7 +224,7 @@ function _M:infoTargetLost(uuid_)
     end
 end
 
--- 遍历刷怪点 进行刷怪
+---遍历刷怪点 进行刷怪
 function _M:check_monster_spawn()
     local gx_node_ = self:getGX()
     if gx_node_ then
@@ -234,9 +236,53 @@ function _M:check_monster_spawn()
     end
 end
 
+---检查NPC刷新
+function _M:check_npc_spawn()
+    local gx_node_ = self:getGX()
+    if gx_node_ then
+        for k, v in pairs(self.npc_spawn_config) do
+            if self.name then
+                self:check_npc_spawn_by_name(k, v, self.name)
+            end
+        end
+    end
+end
 
+---检查NPC刷新点
+---@param npc_id string NPC ID
+---@param npc_spawn_config table NPC刷新配置
+---@param map_name string 地图名称
+function _M:check_npc_spawn_by_name(npc_id, npc_spawn_config, map_name)
+    -- 检查npc的刷点
+    if not self.npc_spawns[npc_id] then
+        if npc_spawn_config and not self.npcs[npc_id] then
+            local npc_args = { 
+                position = npc_spawn_config.position,
+                scene_name = self.name,
+                nickname = npc_spawn_config.name,
+                npc_type   = common_const.NPC_TYPE.NPC,
+                uin = npc_id,
+                lv = npc_spawn_config.lv,
+                model_id = npc_spawn_config.model,
+                profession = npc_spawn_config.profession,
+                rotation = npc_spawn_config.rotation,
+                id = npc_id,
+                plot = npc_spawn_config.plot
+                }
+       
+            local npc_entity = CLNpc.New(npc_args)
+            npc_entity:InitModel()
+            -- npc_entity.scene = self
+            self.npcs[npc_id] = npc_entity
+            self.npc_spawns[npc_id] = npc_spawn_config
 
---每一个刷新点  monster_spawn1  monster_spawn2  monster_spawn3
+        end
+    end
+end
+
+---每一个刷新点  monster_spawn1  monster_spawn2  monster_spawn3
+---@param spawn_name_ string 刷怪点名称
+---@param map_name string 地图名称
 function _M:check_monster_spawn_by_name(spawn_name_, map_name)
     --- spawn_name_：刷怪点 map_name,地图名字
     if not self.monster_spawns[spawn_name_] then
@@ -282,13 +328,14 @@ function _M:check_monster_spawn_by_name(spawn_name_, map_name)
     end
 end
 
---增加一个掉落物箱
+---增加一个掉落物箱
+---@param item_ table 物品信息
 function _M:addDrop(item_)
     item_.tick = gg.tick --记录tick
     self.drop_boxs[item_.uuid] = item_
 end
 
---判断物品是否被拾取
+---判断物品是否被拾取
 function _M:check_drop()
     if not next(self.drop_boxs) then
         return
@@ -299,12 +346,12 @@ function _M:check_drop()
         for uin_, player_ in pairs(self.players) do
             local pos2_ = player_:getPosition()
             if not gg.fast_out_distance(pos1_, pos2_, 200) and box_info_.player_uin == uin_ then
-                --拾取物品
-                local drop_re = bagMgr.tryGetItem(uin_, box_info_)
+                local player_data_ = BagMgr.GetPlayerBag( uin_ )
+                local drop_re = player_data_:GiveItem(box_info_)
                 gg.log("玩家拾取物品和结果", box_info_, drop_re, uin_)
 
                 if drop_re == 0 then
-                    bagMgr.s2c_PlayerBagItems(uin_, {})   --刷新玩家背包数据
+                    BagMgr.s2c_PlayerBagItems(uin_, {})   --刷新玩家背包数据
                     self.drop_boxs[box_uuid_] = nil
                     box_info_.model:Destroy()
                     break
@@ -314,7 +361,7 @@ function _M:check_drop()
     end
 end
 
---检查怪物是否离开自己的刷新点太远
+---检查怪物是否离开自己的刷新点太远
 function _M:check_monster_alive()
     for _, monster_ in pairs(self.monsters) do
         monster_:checkHPMP() --回红回蓝
@@ -331,7 +378,7 @@ function _M:check_monster_alive()
     end
 end
 
---检查玩家是否离开太远
+---检查玩家是否离开太远
 function _M:check_player_alive()
     for _, player_ in pairs(self.players) do
         player_:checkHPMP() --回红回蓝
@@ -347,7 +394,9 @@ function _M:check_player_alive()
     end
 end
 
---查找附近的一个目标
+---查找附近的一个目标
+---@param pos2_ Vector3 目标位置
+---@return CPlayer|nil 找到的玩家
 function _M:tryGetTarget(pos2_)
     for _, player_ in pairs(self.players) do
         local pos1_ = player_:getPosition()
@@ -358,7 +407,7 @@ function _M:tryGetTarget(pos2_)
     return nil
 end
 
---每一帧更新
+---每一帧更新
 function _M:update()
     if next(self.players) == nil then
         return --场景内没有玩家
@@ -387,6 +436,7 @@ function _M:update()
     elseif mod_ == 3 then
         self:check_player_alive()
     elseif mod_ == 4 then
+        self:check_npc_spawn()
         self:check_drop()
     else
 

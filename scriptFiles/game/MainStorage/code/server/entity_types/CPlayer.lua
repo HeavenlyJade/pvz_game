@@ -15,21 +15,23 @@ local gg            = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
 local common_const  = require(MainStorage.code.common.MConst) ---@type common_const
 local CommonModule  = require(MainStorage.code.common.CommonModule) ---@type CommonModule
-print("playerCommonModule对象",CommonModule)
 local TaskSystem = require(MainStorage.code.server.TaskSystem.MTaskSystem) ---@type TaskSystem
 local CLiving      = require(MainStorage.code.server.entity_types.CLiving) ---@type CLiving
-local skillMgr     = require(MainStorage.code.server.skill.MSkillMgr) ---@type SkillMgr
-local cloudDataMgr = require(MainStorage.code.server.MDataStorage.MCloudDataMgr) ---@type MCloudDataMgr
-
+-- local skillMgr     = require(MainStorage.code.server.skill.MSkillMgr) ---@type SkillMgr
+local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
+local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
+local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
 ---@class CPlayer : CLiving    --玩家类  (单个玩家) (管理玩家状态)
 ---@field dict_btn_skill table 技能按钮映射
 ---@field dict_game_task table 任务数据
 ---@field daily_tasks table 每日任务数据
 ---@field buff_instance table Buff实例
----@field player_net_stat number 玩家网络状态
+---@field player_net_stat PLAYER_NET_STAT 玩家网络状态
 ---@field auto_attack number 自动攻击技能ID
 ---@field auto_attack_tick number 攻击间隔
 ---@field auto_wait_tick number 攻击等待计时
+---@field New fun( info_:table ):   CPlayer
 local _M = CommonModule.Class('CPlayer', CLiving)
 
 --------------------------------------------------
@@ -39,6 +41,8 @@ local _M = CommonModule.Class('CPlayer', CLiving)
 -- 初始化玩家
 function _M:OnInit(info_)
     CLiving:OnInit(info_)                                       -- 父类初始化
+    self.name = info_.nickname
+    self.bag = nil ---@type Bag
     self.uuid             = gg.create_uuid('p')                 -- 唯一ID
     self.auto_attack      = 0                                   -- 自动攻击技能ID
     self.auto_attack_tick = 10                                  -- 攻击间隔
@@ -64,15 +68,28 @@ function _M:getPosition()
     return self.actor and self.actor.Position or Vector3.new(0, 0, 0)
 end
 
--- 获取战斗数据
-function _M:getBattleData()
-    return self.battle_data
-end
-
 -- 设置玩家网络状态
 function _M:setPlayerNetStat(player_net_stat_)
     gg.log('设置玩家网络状态:', self.info.uin, player_net_stat_)
     self.player_net_stat = player_net_stat_
+end
+
+function _M:ExecuteCommands(commands, castParam)
+    for _, command in ipairs(commands) do
+        self:ExecuteCommand(command, castParam)
+    end
+end
+
+---@override
+function _M:Die()
+    -- 发布死亡事件
+    ServerEventManager.Publish("PlayerDeadEvent", { player = self })
+    CLiving.Die(self)
+end
+
+function _M:ExecuteCommand(command, castParam)
+    command = command:gsub("%%p", tostring(self.uin))
+    CommandManager:ExecuteCommand(command, self)
 end
 
 --------------------------------------------------
@@ -96,6 +113,38 @@ function _M:buffer_destory()
     self.buff_instance = {}
 end
 
+function _M:RefreshStats()
+    -- 先重置装备属性
+    self:ResetStats("EQUIP")
+    self:RemoveTagHandler("EQUIP-")
+    
+    -- 直接遍历bag_items，跳过c =0
+    for category, items in pairs(self.bag.bag_items) do
+        if category > 0 then
+            for slot, item in pairs(items) do
+                if item and item.itemType then
+                    -- 遍历装备的所有属性
+                    for statName, amount in pairs(item:GetStat()) do
+                        self:AddStat(statName, amount, {source = "EQUIP", refresh = false})
+                    end
+                    for _, tag in ipairs(item.itemType.boundTags) do
+                        self:AddTagHandler(TagTypeConfig.Get(tag):FactoryEquipingTag("EQUIP-", 1.0))
+                    end
+                end
+            end
+        end
+    end
+    
+    -- -- 刷新生命值和魔法值上限
+    -- local maxHealth = self:GetStat("Health")
+    -- local maxMana = self:GetStat("Mana")
+    -- self:SetMaxHealth(maxHealth)
+    -- self.maxMana = maxMana
+    
+    -- -- 同步到客户端
+    -- self:rsyncData(1)
+end
+
 --------------------------------------------------
 -- 技能系统方法
 --------------------------------------------------
@@ -103,7 +152,7 @@ end
 -- 初始化技能数据
 function _M:initSkillData()
     -- 从云数据读取
-    local ret1_, cloud_data_ = cloudDataMgr.readSkillData(self.uin)
+    local ret1_, cloud_data_ = cloudDataMgr.ReadSkillData(self.uin)
     if ret1_ == 0 and cloud_data_ and cloud_data_.skill then
         self.dict_btn_skill = cloud_data_.skill
     else
@@ -128,7 +177,7 @@ end
 
 -- 保存技能配置
 function _M:saveSkillConfig()
-    cloudDataMgr.saveSkillData(self.uin)
+    cloudDataMgr.SaveSkillData(self.uin)
     self:syncSkillData()
 end
 
@@ -150,7 +199,7 @@ end
 -- 初始化任务数据
 function _M:initGameTaskData()
     -- 从云数据读取
-    local ret1_, cloud_data_ = cloudDataMgr.readGameTaskData(self.uin)
+    local ret1_, cloud_data_ = cloudDataMgr.ReadGameTaskData(self.uin)
     if ret1_ == 0 and cloud_data_ and cloud_data_.dict_game_task then
         self.dict_game_task = cloud_data_.dict_game_task
     else
@@ -446,9 +495,11 @@ function _M:setAutoAttack(id_, speed_time_)
 end
 
 -- 玩家离开游戏
-function _M:leave_game()
-    cloudDataMgr.savePlayerData(self.uin, true)
-    cloudDataMgr.savePlayerBag(self.uin, true)
+function _M:Save()
+    cloudDataMgr.SavePlayerData(self.uin, true)
+    if self.bag.dirtySave then
+        self.bag:Save()
+    end
 end
 
 -- 自动回血蓝
@@ -525,21 +576,35 @@ function _M:updateBuffs()
     end
 end
 
--- 处理自动攻击
-function _M:processAutoAttack()
-    if self.auto_attack <= 0 then return end
-    
-    -- 减少等待时间
-    self.auto_wait_tick = self.auto_wait_tick - 1
-    
-    -- 检查是否可以攻击
-    if self.auto_wait_tick <= 0 and not self.stat_flags.skill_uuid then
-        -- 尝试自动攻击
-        skillMgr.tryAutoAttack(self, self.auto_attack)
-        
-        -- 重设等待时间
-        self.auto_wait_tick = self.auto_attack_tick
+function _M:SendChatText( text, ... )
+    if ... then
+        text = string.format(text, ...)
     end
+    self:SendHoverText(text)
 end
+
+function _M:SendHoverText( text, ... )
+    if ... then
+        text = string.format(text, ...)
+    end
+    gg.network_channel:fireClient(self.uin, { cmd="cmd_client_show_msg", txt=text })
+end
+
+-- 处理自动攻击
+-- function _M:processAutoAttack()
+--     if self.auto_attack <= 0 then return end
+    
+--     -- 减少等待时间
+--     self.auto_wait_tick = self.auto_wait_tick - 1
+    
+--     -- 检查是否可以攻击
+--     if self.auto_wait_tick <= 0 and not self.stat_flags.skill_uuid then
+--         -- 尝试自动攻击
+--         skillMgr.tryAutoAttack(self, self.auto_attack)
+        
+--         -- 重设等待时间
+--         self.auto_wait_tick = self.auto_attack_tick
+--     end
+-- end
 
 return _M

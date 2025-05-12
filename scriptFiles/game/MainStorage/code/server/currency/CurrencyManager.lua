@@ -13,15 +13,12 @@ local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
 local MCurrencyConfig = require(MainStorage.code.common.MCurrency.MCurrencyConfig)   ---@type MCurrencyConfig
 local MCurrencyConst = require(MainStorage.code.common.MCurrency.MCurrencyConst)   ---@type MCurrencyConst
 local MCurrencyUtils = require(MainStorage.code.common.MCurrency.MCurrencyUtils)   ---@type MCurrencyUtils
-local CurrencyStorage = require(MainStorage.code.server.currency.CurrencyStorage)   ---@type CurrencyStorage
 
 ---@class CurrencyManager
 local CurrencyManager = {
     -- 玩家货币数据缓存
     playerCurrencyCache = {},
     
-    -- 货币操作日志缓存
-    transactionLogs = {},
     
     -- 货币变化事件监听器
     changeListeners = {},
@@ -36,33 +33,11 @@ local CurrencyManager = {
     SAVE_INTERVAL = 60
 }
 
---- 初始化货币管理器
-function CurrencyManager:Init()
-    -- 注册网络事件监听
-    -- gg.network_channel.OnServerEvent:Connect(function(player, args)
-    --     if args.cmd == "cmd_currency_operation" then
-    --         self:HandleClientRequest(player.UserId, args)
-    --     elseif args.cmd == "cmd_currency_exchange" then
-    --         self:HandleExchangeRequest(player.UserId, args)
-    --     end
-    -- end)
-    
-    -- 设置定时自动保存
-    -- self:SetupAutoSave()
-    
-    gg.log("货币系统初始化完成")
-    return self
-end
+
 
 --- 设置自动保存定时器
 function CurrencyManager:SetupAutoSave()
-    local function autoSave()
-        self:SaveAllPlayerData(false)
-        wait(self.SAVE_INTERVAL)
-        autoSave()
-    end
     
-    coroutine.wrap(autoSave)()
 end
 
 --- 处理客户端货币操作请求
@@ -171,49 +146,25 @@ function CurrencyManager:CreateDefaultCurrencyData(uin)
     local data = {
         uin = uin,
         currencies = {},
-        dailyStats = {},
         lastResetDate = MCurrencyUtils.getCurrentDate(),
-        exchangeRecord = {}
     }
-    
     -- 初始化所有货币类型
     for currencyType, amount in pairs(MCurrencyConfig.INITIAL_CURRENCY) do
         data.currencies[currencyType] = amount
     end
-    
-    -- 初始化每日统计
-    for currencyType, _ in pairs(MCurrencyConfig.INITIAL_CURRENCY) do
-        data.dailyStats[currencyType] = {
-            gained = 0,
-            consumed = 0,
-            exchanged = 0
-        }
-    end
-    
     return data
 end
 
---- 检查并重置每日数据
+
+
 ---@param uin number 玩家ID
-function CurrencyManager:CheckDailyReset(uin)
-    local currencyData = self:GetPlayerCurrencyData(uin)
-    
-    -- 检查是否需要重置
-    if MCurrencyUtils.shouldResetDaily(currencyData.lastResetDate) then
-        -- 重置每日统计
-        for currencyType, _ in pairs(currencyData.currencies) do
-            currencyData.dailyStats[currencyType] = {
-                gained = 0,
-                consumed = 0,
-                exchanged = 0
-            }
-        end
-        
-        -- 更新重置日期
-        currencyData.lastResetDate = MCurrencyUtils.getCurrentDate()
-        
-        -- 保存更新
-        self:SavePlayerData(uin, true)
+---@param cloudCurrencyData table 服务器的玩家货币
+function CurrencyManager:InitCurrencyData(uin,cloudCurrencyData)
+    if next(cloudCurrencyData) == nil then
+        self.playerCurrencyCache[uin] =self:CreateDefaultCurrencyData(uin)
+    else
+        cloudCurrencyData.lastResetDate = MCurrencyUtils.getCurrentDate()
+        self.playerCurrencyCache[uin] =cloudCurrencyData
     end
 end
 
@@ -230,22 +181,19 @@ function CurrencyManager:AddCurrency(uin, currencyType, amount, source)
     
     -- 获取玩家货币数据
     local currencyData = self:GetPlayerCurrencyData(uin)
-    
-    -- 检查每日重置
-    self:CheckDailyReset(uin)
+
     
     -- 当前货币数量
     local currentAmount = currencyData.currencies[currencyType] or 0
-    
-    -- 检查是否达到每日获取上限
-    if MCurrencyUtils.isDailyCapReached(currencyType, currencyData.dailyStats[currencyType].gained, amount) then
-        return MCurrencyUtils.createOperationResult(
-            false, 
-            MCurrencyConst.RESULT_CODE.DAILY_LIMIT_REACHED, 
-            0, 
-            MCurrencyUtils.getErrorMessage(MCurrencyConst.RESULT_CODE.DAILY_LIMIT_REACHED, currencyType)
-        )
-    end
+    -- -- 检查是否达到每日获取上限
+    -- if MCurrencyUtils.isDailyCapReached(currencyType, currencyData.dailyStats[currencyType].gained, amount) then
+    --     return MCurrencyUtils.createOperationResult(
+    --         false, 
+    --         MCurrencyConst.RESULT_CODE.DAILY_LIMIT_REACHED, 
+    --         0, 
+    --         MCurrencyUtils.getErrorMessage(MCurrencyConst.RESULT_CODE.DAILY_LIMIT_REACHED, currencyType)
+    --     )
+    -- end
     
     -- 检查是否超过上限
     if MCurrencyUtils.isExceedsCap(currencyType, currentAmount, amount) then
@@ -355,8 +303,6 @@ function CurrencyManager:ExchangeCurrency(uin, fromCurrency, toCurrency, amount)
     -- 获取玩家货币数据
     local currencyData = self:GetPlayerCurrencyData(uin)
     
-    -- 检查每日重置
-    self:CheckDailyReset(uin)
     
     -- 检查源货币是否足够
     local currentFromAmount = currencyData.currencies[fromCurrency] or 0
@@ -445,30 +391,30 @@ function CurrencyManager:ExchangeCurrency(uin, fromCurrency, toCurrency, amount)
 end
 
 --- 记录交易日志
----@param uin number 玩家ID
----@param currencyType string 货币类型
----@param operation number 操作类型
----@param amount number 金额
----@param source number 来源/场景
-function CurrencyManager:LogTransaction(uin, currencyType, operation, amount, source)
-    if not self.transactionLogs[uin] then
-        self.transactionLogs[uin] = {}
-    end
+-- ---@param uin number 玩家ID
+-- ---@param currencyType string 货币类型
+-- ---@param operation number 操作类型
+-- ---@param amount number 金额
+-- ---@param source number 来源/场景
+-- function CurrencyManager:LogTransaction(uin, currencyType, operation, amount, source)
+--     if not self.transactionLogs[uin] then
+--         self.transactionLogs[uin] = {}
+--     end
     
-    table.insert(self.transactionLogs[uin], {
-        time = os.time(),
-        currency = currencyType,
-        operation = operation,
-        amount = amount,
-        source = source,
-        id = MCurrencyUtils.generateTransactionId()
-    })
+--     table.insert(self.transactionLogs[uin], {
+--         time = os.time(),
+--         currency = currencyType,
+--         operation = operation,
+--         amount = amount,
+--         source = source,
+--         id = MCurrencyUtils.generateTransactionId()
+--     })
     
-    -- 如果日志太多，清理旧的记录
-    if #self.transactionLogs[uin] > 100 then
-        table.remove(self.transactionLogs[uin], 1)
-    end
-end
+--     -- 如果日志太多，清理旧的记录
+--     if #self.transactionLogs[uin] > 100 then
+--         table.remove(self.transactionLogs[uin], 1)
+--     end
+-- end
 
 --- 触发货币变化事件
 ---@param uin number 玩家ID
@@ -483,28 +429,6 @@ function CurrencyManager:TriggerCurrencyChanged(uin, currencyType, amount, opera
     end
 end
 
---- 注册货币变化监听器
----@param uin number 玩家ID
----@param callback function 回调函数
----@return number 监听器ID
-function CurrencyManager:RegisterChangeListener(uin, callback)
-    if not self.changeListeners[uin] then
-        self.changeListeners[uin] = {}
-    end
-    
-    local listenerId = #self.changeListeners[uin] + 1
-    self.changeListeners[uin][listenerId] = callback
-    return listenerId
-end
-
---- 移除货币变化监听器
----@param uin number 玩家ID
----@param listenerId number 监听器ID
-function CurrencyManager:UnregisterChangeListener(uin, listenerId)
-    if not self.changeListeners[uin] then return end
-    
-    self.changeListeners[uin][listenerId] = nil
-end
 
 --- 同步货币数据到客户端
 ---@param uin number 玩家ID
@@ -540,62 +464,26 @@ function CurrencyManager:GetAllCurrencies(uin)
     return currencyData.currencies
 end
 
---- 获取玩家每日货币统计
----@param uin number 玩家ID
----@param currencyType string 货币类型
----@return table 每日统计数据
-function CurrencyManager:GetDailyStats(uin, currencyType)
-    local currencyData = self:GetPlayerCurrencyData(uin)
-    return currencyData.dailyStats[currencyType]
-end
 
---- 获取玩家交易记录
----@param uin number 玩家ID
----@param count number 记录数量
----@return table 交易记录
-function CurrencyManager:GetTransactionHistory(uin, count)
-    if not self.transactionLogs[uin] then return {} end
+-- --- 获取玩家交易记录
+-- ---@param uin number 玩家ID
+-- ---@param count number 记录数量
+-- ---@return table 交易记录
+-- function CurrencyManager:GetTransactionHistory(uin, count)
+--     if not self.transactionLogs[uin] then return {} end
     
-    local count = count or 10
-    local result = {}
-    local total = #self.transactionLogs[uin]
+--     local count = count or 10
+--     local result = {}
+--     local total = #self.transactionLogs[uin]
     
-    -- 获取最近的记录
-    for i = total, math.max(1, total - count + 1), -1 do
-        table.insert(result, self.transactionLogs[uin][i])
-    end
+--     -- 获取最近的记录
+--     for i = total, math.max(1, total - count + 1), -1 do
+--         table.insert(result, self.transactionLogs[uin][i])
+--     end
     
-    return result
-end
+--     return result
+-- end
 
---- 重置玩家货币数据
----@param uin number 玩家ID
----@param resetType number 重置类型 (1=全部重置, 2=只重置每日统计)
-function CurrencyManager:ResetPlayerData(uin, resetType)
-    if resetType == 1 then
-        -- 全部重置为初始值
-        self.playerCurrencyCache[uin] = self:CreateDefaultCurrencyData(uin)
-    elseif resetType == 2 then
-        -- 只重置每日统计
-        local currencyData = self:GetPlayerCurrencyData(uin)
-        
-        for currencyType, _ in pairs(currencyData.currencies) do
-            currencyData.dailyStats[currencyType] = {
-                gained = 0,
-                consumed = 0,
-                exchanged = 0
-            }
-        end
-        
-        currencyData.lastResetDate = MCurrencyUtils.getCurrentDate()
-    end
-    
-    -- 保存数据
-    self:SavePlayerData(uin, true)
-    
-    -- 同步到客户端
-    self:SyncCurrencyToClient(uin)
-end
 
 --- 保存玩家货币数据
 ---@param uin number 玩家ID
@@ -603,16 +491,10 @@ end
 function CurrencyManager:SavePlayerData(uin, force)
     -- 检查是否需要保存
     local now = os.time()
-    if not force and now - self.lastSaveTime < self.SAVE_INTERVAL then
-        return
-    end
-    
     local currencyData = self.playerCurrencyCache[uin]
     if not currencyData then return end
-    
     -- 调用存储服务保存数据
     CurrencyStorage:SavePlayerCurrencyData(uin, currencyData)
-    
     self.lastSaveTime = now
 end
 
@@ -625,14 +507,11 @@ function CurrencyManager:SaveAllPlayerData(force)
 end
 
 --- 玩家离开游戏时保存数据
----@param uin number 玩家ID
-function CurrencyManager:PlayerLeaveGame(uin)
-    self:SavePlayerData(uin, true)
-    
-    -- 清理内存
-    self.changeListeners[uin] = nil
-    -- 保留transactionLogs以便后续分析
-end
+-- ---@param uin number 玩家ID
+-- function CurrencyManager:PlayerLeaveGame(uin)
+--     self:SavePlayerData(uin, true)
+--     self.changeListeners[uin] = nil
+--     -- 保留transactionLogs以便后续分析
+-- end
 
--- 初始化货币管理器
-return CurrencyManager:Init()
+return CurrencyManager

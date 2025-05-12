@@ -16,14 +16,14 @@ local TalkObjective = require(MainStorage.code.server.TaskSystem.objectives.Talk
 local BaseObjective = require(MainStorage.code.server.TaskSystem.objectives.BaseObjective)     ---@type BaseObjective
 
 ---@class TaskSystem
-local TaskSystem = {}
+local TaskSystem = CommonModule.Class("TaskSystem")
 
 --------------------------------------------------
 -- 初始化方法
 --------------------------------------------------
 
 -- 初始化任务系统
-function TaskSystem:Init()
+function TaskSystem:OnInit()
     gg.log("任务系统初始化...")
     
     self.tasks = {
@@ -34,8 +34,6 @@ function TaskSystem:Init()
     
     -- 从配置加载任务模板
     self:LoadTaskTemplates()
-    
-    return self
 end
 
 -- 加载任务模板
@@ -652,4 +650,4 @@ function TaskSystem:UnlockQuestDialogueBranch(player, questType, questId, branch
     return true
 end
 
-return TaskSystem:Init()
+return TaskSystem
