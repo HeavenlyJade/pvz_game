@@ -25,6 +25,9 @@ local MTerrain      = require(MainStorage.code.server.MTerrain)         ---@type
 local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@type BagMgr
 local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
+
+
 -- 总入口
 ---@class MainServer
 local MainServer = {};
