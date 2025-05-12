@@ -8,7 +8,7 @@ local SandboxNode = SandboxNode
 local Vector2  = Vector2
 local Vector3  = Vector3
 local ColorQuad = ColorQuad
-local Enum = Enum
+local Enum = Enum  
 local wait = wait
 local math = math
 local os   = os
@@ -105,6 +105,7 @@ function CommandHandlers.handleUseAllBox(uin_, args)
     bagMgr.handleUseAllBox(uin_, args)
 end
 
+
 -- 客户端对入参命令表
 local COMMAND_DISPATCH = {
     cmd_key = CommandHandlers.handleKey,
@@ -127,6 +128,7 @@ local COMMAND_DISPATCH = {
     cmd_player_input = CommandHandlers.handlePlayerInput,
 	cmd_client_game_task_data = CommandHandlers.handleGetGameTaskData,
     cmd_complete_task = CommandHandlers.handleCompleteTask,
+    cmd_core_ui_settings = CommandHandlers.handleCoreUISettings,
 }
 
 function MainServer.start_server()
@@ -142,10 +144,13 @@ function MainServer.start_server()
     MainServer.createNetworkChannel()     --建立网络通道
     
     MainServer.SetCollisionGroup()        --设置碰撞组
-    
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
 end
+
+
+
+
 
 --设置碰撞组
 function MainServer.SetCollisionGroup()
