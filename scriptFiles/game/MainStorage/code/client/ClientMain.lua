@@ -7,6 +7,7 @@ local ViewBase        = require(MainStorage.code.client.ui.ViewBase) ---@type Vi
 local ClassMgr    = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
+local ClientInit = require(MainStorage.code.client.event.ClinentInit) ---@type ClientInit
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
 local tick = 0
@@ -16,9 +17,9 @@ function ClientMain.start_client()
     ClientMain.tick = 0
     math.randomseed(os.time() + os.clock());
     gg.uuid_start = gg.rand_int_between(100000, 999999);
-    ClientMain.handleCoreUISettings()
     ClientMain.createNetworkChannel()
-
+    ClientMain.handleCoreUISettings()
+    ClientInit.init()
     local timer = SandboxNode.New("Timer", game.StarterGui)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
     
@@ -43,6 +44,7 @@ function ClientMain.createNetworkChannel()
     gg.network_channel.OnClientNotify:Connect(ClientMain.OnClientNotify)
 
     gg.network_channel:FireServer({ cmd = 'cmd_heartbeat', msg = 'new_client_join' })
+  
     gg.log('网络通道建立结束')
 end
 
@@ -50,11 +52,6 @@ end
 function ClientMain.handleCoreUISettings()
     local CoreUI = game:GetService("CoreUI")
     CoreUI:HideCoreUi(Enum.CoreUiComponent.All )
-    local player_ = game.Players.LocalPlayer
-    gg.log(player_)
-    if player_ and player_.PlayerGui then
-        player_.PlayerGui.DefaultUi.Visible =false
-    end
     -- CoreUI:MicSwitchBtn(false)
     -- CoreUI:HornSwitchBtn(false)
 end

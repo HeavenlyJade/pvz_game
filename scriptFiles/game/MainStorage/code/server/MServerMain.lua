@@ -25,7 +25,6 @@ local MTerrain      = require(MainStorage.code.server.MTerrain)         ---@type
 local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@type BagMgr
 local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 -- 总入口
 ---@class MainServer
@@ -178,7 +177,7 @@ end
 --玩家进入游戏，数据加载
 function MainServer.player_enter_game(player)
     gg.log("player enter====", player.UserId, player.Name, player.Nickname)
-
+    gg.network_channel:fireClient(player.UserId, {cmd = "cmd_update_player_ui",{}})
     player.DefaultDie = false   --取消默认死亡
 
     local uin_ = player.UserId
