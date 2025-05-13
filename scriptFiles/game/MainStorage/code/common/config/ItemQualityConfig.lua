@@ -20,7 +20,6 @@ local ItemQualityConfig= { config = {
     ["普通"] = ItemQuality.New({
         ["名字"] = "普通",
         ["倍率"] = 1,
-        ["比重"] = 1,
         ["优先级"] = 0
     })
 }}

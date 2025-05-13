@@ -1,6 +1,6 @@
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local Modifier      = require(MainStorage.code.common.config_type.modifier.Modifier)    ---@type Modifier
+
 local ClassMgr = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 
 

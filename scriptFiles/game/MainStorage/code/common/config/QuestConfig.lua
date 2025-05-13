@@ -2,8 +2,9 @@
     
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local Modifier      = require(MainStorage.code.common.config_type.modifier.Modifier)    ---@type Modifier
+local Modifiers      = require(MainStorage.code.common.config_type.modifier.Modifiers)    ---@type Modifiers
 local Quest      = require(MainStorage.code.common.config.Quest)    ---@type Quest
+
 
 --- 任务配置文件
 ---@class QuestConfig
@@ -13,11 +14,19 @@ local QuestConfig= { config = {
         ["分类"] = "主线",
         ["简短描述"] = "完成关卡：1-1",
         ["完成数量"] = 1,
+        ["领取条件"] = Modifiers.New({
+            {
+                ["条件类型"] = "HealthCondition",
+                ["条件"] = {
+                    ["百分比"] = true,
+                    ["最小值"] = 50,
+                    ["最大值"] = 100
+                },
+                ["动作"] = "必须"
+            }
+        }),
         ["任务类型"] = 1,
         ["任务变量"] = "level_1-1",
-        ["完成奖励"] = {
-            [""] = 5
-        },
         ["自动领取下一任务"] = "2抽卡",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,

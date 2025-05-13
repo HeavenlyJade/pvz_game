@@ -11,7 +11,7 @@ local os = os
 local math = math
 local tostring = tostring
 local tonumber = tonumber
-
+local bit = bit32
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local CloundMailData = require(MainStorage.code.server.cloundData.CloundMailData)  ---@type CloundMailData
@@ -385,9 +385,9 @@ function MailManager:GetGlobalMailList(uin)
                     send_time = mail.send_time,
                     expire_time = mail.expire_time,
                     status = bitValue,
-                    has_attachment = mail.attachments and #mail.attachments > 0,
-                    is_read = (bitValue & 1) ~= 0,
-                    is_claimed = (bitValue & 2) ~= 0
+                    has_attachment = mail.attachments and #mail.attachments > 0, 
+                    is_read = bit.band(bitValue, 1)  ~= 0,
+                    is_claimed =bit.band(bitValue, 2)  ~= 0,
                 }
                 
                 table.insert(result, mailSummary)
@@ -425,10 +425,10 @@ function MailManager:ReadGlobalMail(uin, mailId)
     -- 获取当前状态
     local bitValue = CloundMailData:GetMailBit(uin, mailId)
     
-    -- 如果未读，则标记为已读
-    if (bitValue & 1) == 0 then
+    -- 如果未读，则标记为已读 bit.band(bitValue, 1)  ~= 0,
+    if bit.band(bitValue, 1)  == 0 then
         -- 设置已读位
-        CloundMailData:SetMailBit(uin, mailId, bitValue | 1)
+        CloundMailData:SetMailBit(uin, mailId, bit.bor(bitValue, 1))  
     end
     
     -- 构建完整邮件信息返回给客户端
@@ -440,7 +440,7 @@ function MailManager:ReadGlobalMail(uin, mailId)
         expire_time = mail.expire_time,
         attachments = mail.attachments,
         is_read = true,
-        is_claimed = (bitValue & 2) ~= 0
+        is_claimed = bit.band(bitValue, 2) ~= 0
     }
     
     return true, "操作成功", mailData
@@ -469,7 +469,7 @@ function MailManager:ClaimGlobalMailAttachment(uin, mailId)
     local bitValue = CloundMailData:GetMailBit(uin, mailId)
     
     -- 检查是否已领取
-    if (bitValue & 2) ~= 0 then
+    if bit.band(bitValue, 2) ~= 0   then
         return false, "附件已领取", nil
     end
     
@@ -507,7 +507,7 @@ function MailManager:DeleteGlobalMail(uin, mailId)
     local bitValue = CloundMailData:GetMailBit(uin, mailId)
     
     -- 检查是否有未领取的附件
-    if mail.attachments and #mail.attachments > 0 and (bitValue & 2) == 0 then
+    if mail.attachments and #mail.attachments > 0 and bit.band(bitValue, 2) == 0 then
         return false, "请先领取附件"
     end
     

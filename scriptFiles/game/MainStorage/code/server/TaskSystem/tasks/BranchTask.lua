@@ -11,7 +11,6 @@ local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)  ---@type common_config
 local common_const = require(MainStorage.code.common.MConst)  ---@type common_const
 local ClassMgr = require(MainStorage.code.common.ClassMgr)  ---@type ClassMgr
-local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
 local BaseTask = require(MainStorage.code.server.TaskSystem.tasks.BaseTask) ---@type BaseTask
 
 ---@class BranchTask:BaseTask
@@ -75,13 +74,13 @@ function BranchTask:Accept(player)
         end
     end
     
-    -- 检查任务前置条件
-    if self.config.unlock_condition then
-        local conditionsMet = CommandManager:ProcessCommands(self.config.unlock_condition, player)
-        if not conditionsMet then
-            return false, "无法接取任务：未满足前置条件"
-        end
-    end
+    -- -- 检查任务前置条件
+    -- if self.config.unlock_condition then
+    --     local conditionsMet = CommandManager:ProcessCommands(self.config.unlock_condition, player)
+    --     if not conditionsMet then
+    --         return false, "无法接取任务：未满足前置条件"
+    --     end
+    -- end
     
     -- 检查前置任务是否完成
     if self.prerequisite then
@@ -249,12 +248,12 @@ function BranchTask:CheckCompletion(player)
     end
     
     -- 检查自定义完成条件
-    if self.config.complete_conditions then
-        local conditionsMet = CommandManager:ProcessCommands(self.config.complete_conditions, player)
-        if not conditionsMet then
-            return false, "任务未完成：未满足完成条件"
-        end
-    end
+    -- if self.config.complete_conditions then
+    --     local conditionsMet = CommandManager:ProcessCommands(self.config.complete_conditions, player)
+    --     if not conditionsMet then
+    --         return false, "任务未完成：未满足完成条件"
+    --     end
+    -- end
     
     -- 更新任务状态为待领取
     self.status = "待领取"
@@ -276,15 +275,15 @@ function BranchTask:Complete(player)
     end
     
     -- 发放任务奖励
-    if self.config.rewards then
-        -- 基础奖励
-        CommandManager:ProcessRewards(self.config.rewards, player)
-    end
+    -- if self.config.rewards then
+    --     -- 基础奖励
+    --     CommandManager:ProcessRewards(self.config.rewards, player)
+    -- end
     
-    -- 如果选择了分支，发放分支特定奖励
-    if self.selectedBranch and self.branches[self.selectedBranch].rewards then
-        CommandManager:ProcessRewards(self.branches[self.selectedBranch].rewards, player)
-    end
+    -- -- 如果选择了分支，发放分支特定奖励
+    -- if self.selectedBranch and self.branches[self.selectedBranch].rewards then
+    --     CommandManager:ProcessRewards(self.branches[self.selectedBranch].rewards, player)
+    -- end
     
     -- 更新任务状态
     self.status = "已完成"
@@ -308,9 +307,9 @@ function BranchTask:Complete(player)
     end
     
     -- 解锁后续任务
-    if self.config.next_quest then
-        CommandManager:ExecuteCommand("任务 支线 设置 " .. self.config.next_quest .. " 状态 = 进行中", player)
-    end
+    -- if self.config.next_quest then
+    --     CommandManager:ExecuteCommand("任务 支线 设置 " .. self.config.next_quest .. " 状态 = 进行中", player)
+    -- end
     
     return true, "任务已完成"
 end

@@ -1,6 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 
 ---@class ViewList : ViewComponent
 ---@field node UIList
@@ -15,11 +16,10 @@ local ViewList = ClassMgr.Class("ViewList", ViewComponent)
 ---@param onAddElementCb fun(child: SandboxNode): ViewComponent
 function ViewList:OnInit(node, ui, onAddElementCb)
     ViewComponent.OnInit(self, node, ui)
-    
     self.childrens = {} ---@type ViewComponent[]
     self.childNameTemplate = nil
     self.onAddElementCb = onAddElementCb 
-    for _, child in ipairs(self.node.Children) do
+    for _, child in pairs(self.node.Children) do
         local childName = child.Name
         local num = childName:match("_([0-9]+)")
         if num then
@@ -37,6 +37,12 @@ function ViewList:OnInit(node, ui, onAddElementCb)
             end
         end
     end
+end
+
+function ViewList:GetToStringParams()
+    local d = ViewComponent.GetToStringParams(self)
+    d["Child"] = self.childrens
+    return d
 end
 
 ---@param index number

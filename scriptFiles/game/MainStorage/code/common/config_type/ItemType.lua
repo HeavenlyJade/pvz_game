@@ -74,6 +74,10 @@ function ItemType:OnInit(data)
     self.showInBag = data["在背包里显示"] or true
     self.isMoney = data["是货币"]
     self.moneyIndex = data["货币序号"] or -1
+    if self.isMoney then
+        local Bag = require(MainStorage.code.server.bag.Bag) ---@type Bag
+        Bag.MoneyType[self.moneyIndex] = self
+    end
 end
 
 function ItemType:ToItem(count)
@@ -82,7 +86,9 @@ function ItemType:ToItem(count)
     item:Load({
         uuid = gg.create_uuid('item'),
         itype = self,
-        amount = count
+        amount = count,
+        el = 0,
+        quality = ""
     })
     return item
 end

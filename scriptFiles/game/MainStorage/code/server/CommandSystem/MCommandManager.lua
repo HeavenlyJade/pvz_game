@@ -1,5 +1,3 @@
---- 命令管理器 - 指令系统的总入口
---- V109 miniw-haima 修改版
 
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
@@ -7,6 +5,7 @@ local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 -- local ConditionParser = require(MainStorage.code.server.CommandSystem.parsers.MConditionParser) ---@type ConditionParser
 local ItemCommands = require(MainStorage.code.server.CommandSystem.commands.MItemCommands)   ---@type ItemCommands
 local MiscCommands = require(MainStorage.code.server.CommandSystem.commands.MiscCommand)   ---@type MiscCommand
+local MobCommand = require(MainStorage.code.server.CommandSystem.commands.MobCommand)   ---@type MobCommand
 -- local QuestCommands = require(MainStorage.code.server.CommandSystem.commands.MQuestCommands)     ---@type QuestCommands
 -- local PlayerCommands = require(MainStorage.code.server.CommandSystem.commands.MPlayerCommands)   ---@type PlayerCommands
 -- local SkillCommands = require(MainStorage.code.server.CommandSystem.commands.MSkillCommands)     ---@type SkillCommands
@@ -25,6 +24,7 @@ CommandManager.handlers = {
     ["invsee"] = ItemCommands.invsee,
     ["clear"] = ItemCommands.clear,
     ["title"] = MiscCommands.title,
+    ["spawnMob"] = MobCommand.spawnMob,
     -- ["装备"] = {},
     
     -- -- 玩家属性相关
@@ -76,6 +76,7 @@ function CommandManager.ExecuteCommand(commandStr, player)
             return false
         end
     end
+    gg.log("执行指令", command, params)
     -- 5. 调用处理器
     local success, result = pcall(handler, params, player)
     if not success then

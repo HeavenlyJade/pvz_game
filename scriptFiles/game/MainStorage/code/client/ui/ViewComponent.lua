@@ -28,13 +28,13 @@ end
 ---@override
 function ViewComponent:GetToStringParams()
     return {
-        node = self.node.Name
+        node = self.path
     }
 end
 
 ---@generic T : ViewComponent
 ---@param path string 相对路径
----@param type T 组件类型
+---@param type? T 组件类型
 ---@param ... any 额外参数
 ---@return T
 function ViewComponent:Get(path, type, ...)

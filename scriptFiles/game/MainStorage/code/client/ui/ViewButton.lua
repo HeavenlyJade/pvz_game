@@ -147,10 +147,15 @@ function ViewButton:OnInit(node, ui)
 
     for _, child in ipairs(img.Children) do ---@type UIComponent
         if child:IsA("UIImage") and child:GetAttribute("继承按钮") then
+            local clickImg = child:GetAttribute("图片-点击")---@type string
+            local hoverImg = child:GetAttribute("图片-悬浮") ---@type string
+            if hoverImg == "" then
+                hoverImg = clickImg
+            end
             self.childClickImgs[child] = {
                 normalImg = child.Icon,---@type string
-                clickImg = child:GetAttribute("图片-点击"),---@type string
-                hoverImg = child:GetAttribute("图片-悬浮"), ---@type string
+                clickImg = clickImg,
+                hoverImg = hoverImg,
                 
                 hoverColor = child:GetAttribute("悬浮颜色"), ---@type ColorQuad
                 clickColor = child:GetAttribute("点击颜色"), ---@type ColorQuad

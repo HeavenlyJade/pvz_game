@@ -10,18 +10,23 @@ local os           = os
 local math         = math
 
 
+print("Start PLAYER 1")
 local MainStorage   = game:GetService("MainStorage")
 local gg            = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
 local common_const  = require(MainStorage.code.common.MConst) ---@type common_const
+print("Start PLAYER 2")
 local ClassMgr  = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local TaskSystem = require(MainStorage.code.server.TaskSystem.MTaskSystem) ---@type TaskSystem
+print("Start PLAYER 3")
+-- local TaskSystem = require(MainStorage.code.server.TaskSystem.MTaskSystem) ---@type TaskSystem
+print("Start PLAYER 4")
 local CLiving      = require(MainStorage.code.server.entity_types.CLiving) ---@type CLiving
 -- local skillMgr     = require(MainStorage.code.server.skill.MSkillMgr) ---@type SkillMgr
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
-local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
+print("Start PLAYER 3")
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
+print("Start PLAYER 4")
 ---@class CPlayer : CLiving    --玩家类  (单个玩家) (管理玩家状态)
 ---@field dict_btn_skill table 技能按钮映射
 ---@field dict_game_task table 任务数据
@@ -88,6 +93,7 @@ function _M:Die()
 end
 
 function _M:ExecuteCommand(command, castParam)
+    local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
     command = command:gsub("%%p", tostring(self.uin))
     CommandManager:ExecuteCommand(command, self)
 end

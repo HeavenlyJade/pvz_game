@@ -2,7 +2,7 @@
     
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local Modifier      = require(MainStorage.code.common.config_type.modifier.Modifier)    ---@type Modifier
+
 local Lottery      = require(MainStorage.code.server.shop.Lottery)    ---@type Lottery
 --- 抽奖配置文件
 ---@class LotteryConfig

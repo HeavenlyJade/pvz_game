@@ -2,7 +2,7 @@
     
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local Modifier      = require(MainStorage.code.common.config_type.modifier.Modifier)    ---@type Modifier
+
 
 --- NPC配置文件
 ---@class NpcConfig

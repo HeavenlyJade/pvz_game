@@ -17,6 +17,7 @@ local BagMgr        = require(MainStorage.code.server.bag.BagMgr) ---@type BagMg
 ---@field bag_items table<number, table<number, Item>> 背包物品
 ---@field New fun( player: CPlayer):Bag
 local Bag = ClassMgr.Class("Bag")
+Bag.MoneyType = {} ---@type table<number, ItemType>
 
 ---@param player CPlayer 玩家实例
 function Bag:OnInit(player)
@@ -143,6 +144,13 @@ function Bag:SyncToClient()
         return
     end
 
+    local moneys = {}
+    for idx, itemType in ipairs(Bag.MoneyType) do
+        moneys[idx] = {
+            it = itemType.name,
+            a = self:GetItemAmount(itemType)
+        }
+    end
     local syncItems = {}
     if self.dirtySyncAll then
         for category, items in pairs(self.bag_items) do
@@ -163,7 +171,8 @@ function Bag:SyncToClient()
 
     local ret = {
         cmd = 'SyncInventoryItems',
-        items = syncItems
+        items = syncItems,
+        moneys = moneys
     }
     gg.network_channel:fireClient(self.player.uin, ret)
 end
@@ -604,6 +613,20 @@ function Bag:PrintContent()
     end
 
     print(table.concat(lines, "\n"))
+end
+
+---@param itemType ItemType 物品类型
+---@return number 物品总数量
+function Bag:GetItemAmount(itemType)
+    local total = 0
+    local slots = self.bag_index[itemType] or {}
+    for _, slot in ipairs(slots) do
+        local item = self:GetItem(slot)
+        if item then
+            total = total + item:GetAmount()
+        end
+    end
+    return total
 end
 
 return Bag

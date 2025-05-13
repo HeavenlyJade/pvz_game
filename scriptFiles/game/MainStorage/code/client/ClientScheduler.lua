@@ -30,18 +30,18 @@ end
 ---Add a new scheduled task
 ---@param func function The function to execute
 ---@param delay number Delay in seconds before first execution
----@param repeatInterval number Repeat interval in seconds (0 for one-time execution)
----@param isInSecond boolean 是否单位是秒
+---@param repeatInterval? number Repeat interval in seconds (0 for one-time execution)
+---@param isInTick? boolean 是否单位是秒
 ---@return number taskId The ID of the created task
-function ClientScheduler.add(func, delay, repeatInterval, isInSecond)
+function ClientScheduler.add(func, delay, repeatInterval, isInTick)
     local taskId = ClientScheduler.nextTaskId
     ClientScheduler.nextTaskId = ClientScheduler.nextTaskId + 1
-    
-    if isInSecond then
+    repeatInterval = repeatInterval or 0
+    if not isInTick then
         delay = math.floor(delay * 30)
         repeatInterval = math.floor(repeatInterval * 30)
     end
-    
+    print("add", delay, repeatInterval)
     local task = {
         func = func,
         delay = delay,

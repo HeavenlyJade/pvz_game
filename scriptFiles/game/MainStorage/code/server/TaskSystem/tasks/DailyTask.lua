@@ -12,7 +12,6 @@ local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)  ---@type common_config
 local common_const = require(MainStorage.code.common.MConst)  ---@type common_const
 local ClassMgr = require(MainStorage.code.common.ClassMgr)  ---@type ClassMgr
-local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
 local BaseTask = require(MainStorage.code.server.TaskSystem.tasks.BaseTask) ---@type BaseTask
 
 ---@class DailyTask:BaseTask

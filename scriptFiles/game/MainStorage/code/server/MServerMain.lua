@@ -13,11 +13,11 @@ local wait = wait
 local math = math
 local os   = os
 
+
 local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_config     = require(MainStorage.code.common.MConfig)    ---@type common_config
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
-local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
 local CPlayer       = require(MainStorage.code.server.entity_types.CPlayer)          ---@type CPlayer
 local MTerrain      = require(MainStorage.code.server.MTerrain)         ---@type MTerrain
 --local CScene      = require(MainStorage.code.server.CScene)         ---@type CScene
@@ -25,8 +25,6 @@ local MTerrain      = require(MainStorage.code.server.MTerrain)         ---@type
 local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@type BagMgr
 local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
-
 
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 -- 总入口
@@ -137,9 +135,9 @@ local COMMAND_DISPATCH = {
 function MainServer.start_server()
     math.randomseed(os.time() + os.clock())
     gg.uuid_start = gg.rand_int_between(100000, 999999)
-    -- local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
 
     gg.log('主服务器开始初始化');
+    local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
     gg.CommandManager = CommandManager  -- 挂载到全局gg对象上以便全局访问
 
     MTerrain.init()                       --地形管理
@@ -149,6 +147,7 @@ function MainServer.start_server()
     MainServer.SetCollisionGroup()        --设置碰撞组
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
+    gg.log("主服务器初始化結束")
 end
 
 
@@ -166,7 +165,7 @@ function MainServer.register_player_in_out()
     local players = game:GetService("Players")
 
     players.PlayerAdded:Connect(function(player)
-        gg.log('====PlayerAdded', player.UserId)
+        gg.log('====PlayerAdded====', player.UserId)
         MainServer.player_enter_game(player)
     end)
 

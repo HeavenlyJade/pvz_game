@@ -461,10 +461,13 @@ end
 
 -- lua-table 转字符串（打印日志使用）
 ---@param tbl table 要转换的表
----@param level_ number 递归层级
----@param visited table 已访问的表
+---@param level_? number 递归层级
+---@param visited? table 已访问的表
 ---@return string 转换后的字符串
 function gg.table2str(tbl, level_, visited)
+    if type(tbl) ~= "table" then
+        return tostring(tbl)
+    end
     level_ = level_ or 0
     if level_ >= 10 then
         gg.log('ERROR table2str level>=10')
@@ -484,7 +487,11 @@ function gg.table2str(tbl, level_, visited)
                 end
             else
                 visited[v] = true -- table作为key等同于tostring(v)
-                tab[#tab + 1] = tostring(k) .. gg.table2str(v, level_ + 1, visited)
+                if v.ToString then
+                    tab[#tab + 1] = tostring(k) .. '=' .. v:ToString()
+                else
+                    tab[#tab + 1] = tostring(k) .. gg.table2str(v, level_ + 1, visited)
+                end
             end
         elseif type(v) == 'function' or type(v) == 'userdata' or type(v) == 'thread' then
             -- 忽略不打印

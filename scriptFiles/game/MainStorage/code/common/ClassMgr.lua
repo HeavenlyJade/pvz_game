@@ -71,7 +71,7 @@ function ClassMgr.Class( name, ...)
 				if type(param) == "table" and param.className then
 					paramsStr[k] = param:ToString()
 				else
-					paramsStr[k] = tostring(param)
+					paramsStr[k] = gg.table2str(param)
 				end
 			end
 		end

@@ -1,7 +1,7 @@
 
 local MainStorage     = game:GetService("MainStorage")
 local game            = game
-local Enum            = Enum
+local Enum            = Enum  ---@type Enum
 local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
 local ViewBase        = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ClassMgr    = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
@@ -50,6 +50,11 @@ end
 function ClientMain.handleCoreUISettings()
     local CoreUI = game:GetService("CoreUI")
     CoreUI:HideCoreUi(Enum.CoreUiComponent.All )
+    local player_ = game.Players.LocalPlayer
+    gg.log(player_)
+    if player_ and player_.PlayerGui then
+        player_.PlayerGui.DefaultUi.Visible =false
+    end
     -- CoreUI:MicSwitchBtn(false)
     -- CoreUI:HornSwitchBtn(false)
 end

@@ -30,10 +30,15 @@ end
 
 ---@generic T : ViewComponent
 ---@param path string 组件路径
----@param type T 组件类型
+---@param type? T 组件类型
 ---@param ... any 额外参数
 ---@return T
 function ViewBase:Get(path, type, ...)
+    local cacheKey = path
+    if self.componentCache[cacheKey] then
+        return self.componentCache[cacheKey]
+    end
+
     local node = self.node
     local fullPath = ""
     for part in path:gmatch("[^/]+") do --用/分割字符串
@@ -46,10 +51,17 @@ function ViewBase:Get(path, type, ...)
             end
         end
     end
-    if type and node then
+    if node then
+        if not type then
+            local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
+            type = ViewComponent
+        end
         ---@cast type ViewComponent
         local component = type.New(node, self, ...)
         component.path = fullPath
+        
+        -- Cache the component
+        self.componentCache[cacheKey] = component
         return component
     end
     return node
@@ -58,6 +70,7 @@ end
 ---@param node SandboxNode
 ---@param config ViewConfig
 function ViewBase:OnInit(node, config)
+    self.componentCache = {}
     self.node = node ---@type SandboxNode
     self.hideOnInit = config.hideOnInit == nil and true or config.hideOnInit
     self.layer = config.layer == nil and 1 or config.layer
@@ -68,7 +81,7 @@ function ViewBase:OnInit(node, config)
     allUI[self.className] = self
     ViewBase[self.className] = self
 
-    print("config", self.className, self.hideOnInit)
+    -- print("config", self.className, self.hideOnInit)
     if self.hideOnInit then
         self:Close()
     else
@@ -120,14 +133,13 @@ function ViewBase:RegisterTween(component)
                         self.tweenTaskId = nil
                     end
                 end
-            end, 0, 1, false)
+            end, 0, 1, true)
         end
     end
 end
 
 
 function ViewBase:SetVisible(visible)
-    print("SetVisible", self.node.Name, visible)
     self.node.Enabled = visible
     self.node.Visible = visible
 end
@@ -156,21 +168,23 @@ end
 function ViewBase:Open()
     self.displaying = true
     self:SetVisible(true)
-    if displayingUI[self.layer] then
-        local oldUI = displayingUI[self.layer]
-        if oldUI ~= self then
-            oldUI.isOnTop = false
-            oldUI:Close()
+    if self.layer > 0 then
+        if displayingUI[self.layer] then
+            local oldUI = displayingUI[self.layer]
+            if oldUI ~= self then
+                oldUI.isOnTop = false
+                oldUI:Close()
+            end
         end
-    end
-    self.isOnTop = true
-    for i = 1, self.layer do
-        if displayingUI[i] then
-            displayingUI[i].isOnTop = false
-            displayingUI[i].node.Enabled = false
+        self.isOnTop = true
+        for i = 1, self.layer do
+            if displayingUI[i] then
+                displayingUI[i].isOnTop = false
+                displayingUI[i].node.Enabled = false
+            end
         end
+        displayingUI[self.layer] = self
     end
-    displayingUI[self.layer] = self
 end
 
 function ViewBase:OnHide()
