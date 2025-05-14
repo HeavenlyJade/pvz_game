@@ -9,6 +9,8 @@ local gg              = require(MainStorage.code.common.MGlobal)   ---@type gg
 local common_const    = require(MainStorage.code.common.MConst)    ---@type common_const
 local cloudDataMgr    = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
 local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+
 -- 所有玩家的背包装备管理，服务器侧
 ---@class BagMgr
 local BagMgr = {
@@ -17,9 +19,6 @@ local BagMgr = {
 }
 
 function SyncAll()
-    if #BagMgr.need_sync_bag == 0 then
-        return
-    end
     for bag, _ in pairs(BagMgr.need_sync_bag) do
         print('SyncAll', bag)
         bag:SyncToClient()
@@ -27,14 +26,8 @@ function SyncAll()
     BagMgr.need_sync_bag = {}
 end
 
-local timer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-timer.Name = 'SYNC_ALL'
-timer.Delay = 0.1
-timer.Loop = true      -- 是否循环
-timer.Interval = 1   -- 循环间隔多少秒 (1秒=10帧)
-timer.Callback = SyncAll
-timer:Start()
+-- 使用ServerScheduler替代Timer
+ServerScheduler.add(SyncAll, 0, 1, true) -- 立即开始，每秒执行一次
 
 ---刷新玩家的背包数据（服务器 to 客户端）
 ---@param uin_ number 玩家ID

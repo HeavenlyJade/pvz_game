@@ -27,7 +27,7 @@
 ---@field ClipResID string 动画资源ID
 ---@field FirstFrame number 首帧Frame
 ---@field LastFrame number 末帧Frame
----@field PlaySpeed number 
+---@field PlaySpeed number
 ---@field WrapMode AnimationWrapMode Wrap模式
 ---@field PlayMode AnimationPlayMode 播放模式
 
@@ -37,11 +37,11 @@
 ---@field Pause boolean 是否暂停
 ---@field SkeletonAsset string 骨骼资源
 ---@field ControllerAsset string 动画控制器资源
----@field Speed number 
----@field SkipSampleRate unumber32_t 
----@field CullingMode number 
----@field FixedTickTime number 
----@field ModelWaitForLoaded boolean 
+---@field Speed number
+---@field SkipSampleRate unumber32_t
+---@field CullingMode number
+---@field FixedTickTime number
+---@field ModelWaitForLoaded boolean
 ---@field Clear fun(self: Animator) void 清空持有的资源
 ---@field IsValid fun(self: Animator) boolean 检测是否已经失效了
 ---@field SetControllerAsset fun(self: Animator, node: SandboxNode) None 设置动画控制器资源
@@ -69,7 +69,7 @@
 ---@field SetBoneModelSpaceRotate fun(self: Animator, boneName: string, pitch: number, yaw: number, roll: number) None 设置骨骼模型空间旋转
 ---@field GetStatePlayedTime fun(self: Animator, stateFullName: string) Number 获取状态的PlayedTime
 ---@field GetCurrentStatePlayedTime fun(self: Animator, layerIdx: number) Number 获取当前层级正在播放的状态的PlayedTime
----@field SetStatePauseAtNormlizedTime fun(self: Animator) boolean 
+---@field SetStatePauseAtNormlizedTime fun(self: Animator) boolean
 ---@field EventNotify fun(self: Animator, statedata: SandboxNode, name: string, layerIndex: number, state: StateMachineMessage) None 发送一个当前状态机消息的通知
 ---@field GetAnimationPostNotify fun(self: Animator) Event 获取动画完成通知
 ---@field GetUpdateAssetNotify fun(self: Animator, url: string, state: boolean) None 获取更新资源通知
@@ -147,7 +147,7 @@
 ---@field CreateState fun(self: AnimatorStateMachineData, name: string) SandboxNode 创建一个状态数据
 ---@field GetState fun(self: AnimatorStateMachineData, name: string) SandboxNode 获取一个状态数据
 ---@field IsEnter fun(self: AnimatorStateMachineData) boolean 检查是否进入状态
----@field GetFullName fun(self: AnimatorStateMachineData) String 
+---@field GetFullName fun(self: AnimatorStateMachineData) String
 ---@field EventNotify fun(self: AnimatorStateMachineData, state: StateMachineMessage) None 发送一个当前状态机消息的通知
 
 
@@ -273,7 +273,7 @@
 ---@field RadialFlashThreshold number 0-1
 ---@field RadialFlashColor ColorQuad 颜色
 ---@field RadialFlashPivot Vector2 vector2
----@field RadialFlashScale Vector2 
+---@field RadialFlashScale Vector2
 ---@field RadialFlashSpeed Vector2 0-1
 ---@field RadialFlashNoiseTexturePath string 噪声贴图路径
 ---@field MaterialListActive boolean PostProcessing材质列表开关
@@ -282,18 +282,18 @@
 
 
 ---@class Ragdoll
----@field Activate boolean 
+---@field Activate boolean
 
 
 
 ---@class RagdollJonumber
----@field MinLimit number 
----@field MaxLimit number 
----@field SwingLimit number 
----@field RadiusScale number 
----@field Density number 
----@field BindJonumberName string 
----@field JonumberType RagdollBoneJonumber 
+---@field MinLimit number
+---@field MaxLimit number
+---@field SwingLimit number
+---@field RadiusScale number
+---@field Density number
+---@field BindJonumberName string
+---@field JonumberType RagdollBoneJonumber
 
 
 
@@ -341,8 +341,8 @@
 ---@field SyncMode NodeSyncMode 同步模式（仅主机能够设置）
 ---@field LocalSyncFlag NodeSyncLocalFlag 本地同步标识（本地属性，不需要同步）
 ---@field IgnoreSafeMode boolean 忽略安全模式
----@field ResourceLoadMode ResourceLoadMode 
----@field FlagDebug unsignedlonglong 
+---@field ResourceLoadMode ResourceLoadMode
+---@field FlagDebug unsignedlonglong
 ---@field ID SandboxNodeID 节点ID
 ---@field Clone fun(self: SandboxNode) SandboxNode 节点克隆，克隆反射属性，自定义属性，以及包含的子对象
 ---@field FindFirstChild fun(self: SandboxNode) SandboxNode 通过节点名找到节点对象
@@ -360,7 +360,7 @@
 ---@field SetReflexLocalSyncFlag fun(self: SandboxNode, rvname: string, flag: NodeSyncLocalFlag) None 设置反射本地同步标记
 ---@field GetReflexLocalSyncFlag fun(self: SandboxNode) NodeSyncLocalFlag 获取反射本地同步标记
 ---@field ManualLoad fun(self: SandboxNode) void 同步
----@field ManualLoadAsync fun(self: SandboxNode) void 
+---@field ManualLoadAsync fun(self: SandboxNode) void
 ---@field ManualUnLoad fun(self: SandboxNode) void 主动卸载
 ---@field AncestryChanged Event<fun(self: SandboxNode, ancestry: SandboxNode)> 祖先节点变化时，会触发一个AncestryChanged通知
 ---@field ParentChanged Event<fun(self: SandboxNode, parent: SandboxNode)> 父节点 fun(或父级节点)变化时，会触发一个ParentChanged通知
@@ -426,8 +426,8 @@
 ---@class PhysXService
 ---@field SetCollideInfo fun(self: PhysXService, groupID0: unumber32_t, groupID1: unumber32_t, b: boolean) boolean 设置碰撞信息
 ---@field GetCollideInfo fun(self: PhysXService, groupID0: unumber32_t, groupID1: unumber32_t) boolean 是否产生碰撞
----@field SetCollideInfo2D fun(self: PhysXService) boolean 
----@field GetCollideInfo2D fun(self: PhysXService) boolean 
+---@field SetCollideInfo2D fun(self: PhysXService) boolean
+---@field GetCollideInfo2D fun(self: PhysXService) boolean
 
 
 ---@class SpringJonumber
@@ -655,7 +655,7 @@
 ---@class CloudKVStore
 ---@field GetTopSync fun(self: CloudKVStore, count: number) Number 获取排行榜Top数据
 ---@field GetBottomSync fun(self: CloudKVStore, count: number) Number 获取排行榜Bottom数据
----@field GetRangeSync fun(self: CloudKVStore) Number 
+---@field GetRangeSync fun(self: CloudKVStore) Number
 ---@field GetOrderDataIndex fun(self: CloudKVStore, bAscend: boolean, nIndex: number) Number 获取排行榜名次
 ---@field CleanOrderDataList fun(self: CloudKVStore) void replace
 ---@field Clean fun(self: CloudKVStore) void 清理排行榜数据
@@ -706,30 +706,30 @@
 ---@field AutoRandomSeed boolean 自动随机种子
 ---@field RandomSeed number 随机种子
 ---@field CullingMode ParticleSystemCullingMode 裁剪模式
----@field RingBufferMode ParticleSystemRingBufferMode 
+---@field RingBufferMode ParticleSystemRingBufferMode
 ---@field LoopRange Vector2 粒子循环生命区间
----@field StartColorGradient ParticleEmitterColorGradient 
----@field TrailMaterial string 
+---@field StartColorGradient ParticleEmitterColorGradient
+---@field TrailMaterial string
 ---@field Brust ParticleEmissionBurst （爆发），产生粒子爆发的效果，通过Time（时间）、Count（数量）、Cycles（周期）、numbererval（间隔）四个参数调整。
----@field EnableSizeOverLifeTime boolean 
----@field OverLifeTimeSize Vector3 
----@field EnableRotationOverLifeTime boolean 
+---@field EnableSizeOverLifeTime boolean
+---@field OverLifeTimeSize Vector3
+---@field EnableRotationOverLifeTime boolean
 ---@field EnableUV boolean 开启uv模块
 ---@field UVMode ParticleSystemUVMode uv模式
 ---@field Tiles Vector2 Y（垂直）方向上划分的区块数量。
 ---@field Animation ParticleSystemUVGridType 动画模式
----@field RowMode ParticleSystemUVRowMode 
----@field CustomRow number 
----@field TimeMode ParticleSystemUVTimeMode 
----@field SpeedRange Vector2 
+---@field RowMode ParticleSystemUVRowMode
+---@field CustomRow number
+---@field TimeMode ParticleSystemUVTimeMode
+---@field SpeedRange Vector2
 ---@field FPS number 根据指定的每秒帧数值对帧进行采样
 ---@field Cycles number 动画序列在粒子生命周期内重复的次数。
 ---@field EnableVelocityOverLifetime boolean 是否开启
----@field VelocityOverLifeTimeSpace ParticleVelocityOverLifetimeSpaceMode 
+---@field VelocityOverLifeTimeSpace ParticleVelocityOverLifetimeSpaceMode
 ---@field EnableLimitVelocityOverLifetime boolean 是否开启
 ---@field EnableSeparateAxes ParticleLimitVelocityOverLifetimeSeparateAxes 分量。
----@field LimitVelocityOverLifeTimeSpace ParticleLimitVelocityOverLifetimeSpaceMode 
----@field LimitVelocityOverLifeTimeDampen number 
+---@field LimitVelocityOverLifeTimeSpace ParticleLimitVelocityOverLifetimeSpaceMode
+---@field LimitVelocityOverLifeTimeDampen number
 ---@field MultiplyBySize boolean 启用此属性后，较大的粒子会更大程度上受到阻力系数的影响。
 ---@field MultiplyByVelocity boolean 启用此属性后，较快的粒子会更大程度上受到阻力系数的影响。
 ---@field TrailsRatio number 随机分配轨迹，因此该值表示概率。
@@ -738,22 +738,22 @@
 ---@field TrailsDieWithParticles boolean 轨迹会在粒子死亡时立即消失
 ---@field TrailsRibbonCount number 选择要在整个粒子系统中渲染的轨迹带数量
 ---@field TrailsSplitSubEmitterRibbons boolean 在用作子发射器的系统上启用此属性时，从同一父系统粒子生成的粒子将共享一个轨迹带
----@field TrailsAttachRibbonsToTransform boolean 
+---@field TrailsAttachRibbonsToTransform boolean
 ---@field TrailsSizeAffectsLifetime boolean 如果启用此属性（选中复选框），则轨迹生命周期受粒子大小影响。
 ---@field TrailsOverLifetimeColorMode ParticleSystemGradientMode 通过一条曲线控制整个轨迹在其附着粒子的整个生命周期内的颜色。
 ---@field TrailsOverMode ParticleSystemGradientMode 通过一条曲线控制轨迹沿其长度的颜色。
 ---@field TrailsOverGradient ParticleEmitterColorGradient 通过一条曲线控制轨迹沿其长度的颜色。。
 ---@field TrailsGenerateLightingData boolean 通过启用此属性（选中复选框），可在构建轨迹几何体时包含法线和切线。这样允许它们使用具有场景光照的材质，例如通过标准着色器，或通过使用自定义着色器。
----@field TrailsShadowBias number 
----@field TrailsAlignment ParticleLineAlignment 
----@field EnableColorBySpeed boolean 
+---@field TrailsShadowBias number
+---@field TrailsAlignment ParticleLineAlignment
+---@field EnableColorBySpeed boolean
 ---@field ColorBySpeedGradient ParticleEmitterColorGradient 在速度范围内定义的粒子的颜色渐变。
 ---@field ColorBySpeedRange Vector2 颜色渐变映射到的速度范围的下限和上限（超出范围的速度将映射到渐变的端点）。。
----@field EnableSizeBySpeed boolean 
+---@field EnableSizeBySpeed boolean
 ---@field SizeBySpeedRange Vector2 大小曲线映射到的速度范围的下限和上限（超出范围的速度将映射到曲线的端点）。
----@field EnableRotationBySpeed boolean 
+---@field EnableRotationBySpeed boolean
 ---@field RotationBySpeedRange Vector2 大小曲线映射到的速度范围的下限和上限（超出范围的速度将映射到曲线的端点）。
----@field EnableNoise boolean 
+---@field EnableNoise boolean
 ---@field NoiseFrequency number 此属性可控制粒子改变行进方向的频率以及方向变化的突然程度。
 ---@field NoiseDamping boolean 启用此属性后，强度与频率成正比。
 ---@field NoiseOctaveCount number 指定组合多少层重叠噪声来产生最终噪声值。
@@ -761,12 +761,12 @@
 ---@field NoiseOctaveScale number 对于每个附加的噪声层，按此乘数调整频率。
 ---@field NoiseQuality ParticleQualityDropdown 较低的质量设置可显著降低性能成本，但也会影响噪声的有趣程度。请使用能为您提供所需行为的最低质量以获得最佳性能。
 ---@field NoiseRemapEnabled boolean 将最终噪声值重新映射到不同的范围。
----@field EnableCustomData boolean 
----@field CustomDataMode1 ParticleCustomDataMode 
----@field CustomDataColorMode1 ParticleSystemGradientMode 
----@field CustomDataMode2 ParticleCustomDataMode 
----@field CustomDataColorMode2 ParticleSystemGradientMode 
----@field EnableShape boolean 
+---@field EnableCustomData boolean
+---@field CustomDataMode1 ParticleCustomDataMode
+---@field CustomDataColorMode1 ParticleSystemGradientMode
+---@field CustomDataMode2 ParticleCustomDataMode
+---@field CustomDataColorMode2 ParticleSystemGradientMode
+---@field EnableShape boolean
 ---@field ShapeType EmitterShape 特效类型
 ---@field ShapeRadius number 形状的圆形半径
 ---@field ShapeRadiusMode ParticleShapeMeshSpawnMode 如何在形状的弧形周围生成粒子
@@ -805,14 +805,14 @@
 ---@field ShapeRadiusSpeedState ParticleSystemCurveMode 发射位置围绕弧形移动的速度
 ---@field ShapeArcSpeedState ParticleSystemCurveMode 发射位置围绕弧形移动的速度
 ---@field ShapeMeshSpawnSpeedState ParticleSystemCurveMode 发射位置围绕弧形移动的速度
----@field CustomDataVectorX1State ParticleSystemCurveMode 
----@field CustomDataVectorY1State ParticleSystemCurveMode 
----@field CustomDataVectorZ1State ParticleSystemCurveMode 
----@field CustomDataVectorW1State ParticleSystemCurveMode 
----@field CustomDataVectorX2State ParticleSystemCurveMode 
----@field CustomDataVectorY2State ParticleSystemCurveMode 
----@field CustomDataVectorZ2State ParticleSystemCurveMode 
----@field CustomDataVectorW2State ParticleSystemCurveMode 
+---@field CustomDataVectorX1State ParticleSystemCurveMode
+---@field CustomDataVectorY1State ParticleSystemCurveMode
+---@field CustomDataVectorZ1State ParticleSystemCurveMode
+---@field CustomDataVectorW1State ParticleSystemCurveMode
+---@field CustomDataVectorX2State ParticleSystemCurveMode
+---@field CustomDataVectorY2State ParticleSystemCurveMode
+---@field CustomDataVectorZ2State ParticleSystemCurveMode
+---@field CustomDataVectorW2State ParticleSystemCurveMode
 ---@field CullLayer CullLayer 消隐层
 ---@field IgnoreStreamSync boolean 忽略流同步
 ---@field ChildAutoPlay boolean 子节点是否自动播放
@@ -827,13 +827,13 @@
 ---@field StartSpeedTwoConstant RangeInfo 开始速度双常量
 ---@field StartSpeedOneCurve FloatCurve
 ---@field StartSpeedTwoCurve RangeFloatCurve 开始速度双曲线
----@field Start3DSizeSeparate boolean 
+---@field Start3DSizeSeparate boolean
 ---@field Start3DSizeState ParticleSystemCurveMode 特效尺寸
 ---@field Start3DSizeXConstant number
 ---@field Start3DSizeXTwoConstant RangeInfo
 ---@field Start3DSizeXCurve numberCurve
 ---@field Start3DSizeXTwoCurve RangeFloatCurve
----@field Start3DSizeYConstant number 
+---@field Start3DSizeYConstant number
 ---@field Start3DSizeYTwoConstant RangeInfo
 ---@field Start3DSizeYCurve numberCurve
 ---@field Start3DSizeYTwoCurve RangeFloatCurve
@@ -841,13 +841,13 @@
 ---@field Start3DSizeZTwoConstant RangeInfo
 ---@field Start3DSizeZCurve numberCurve
 ---@field Start3DSizeZTwoCurve RangeFloatCurve
----@field Start3DRotationSeparate boolean 
+---@field Start3DRotationSeparate boolean
 ---@field Start3DRotationState ParticleSystemCurveMode 特效尺寸
 ---@field Start3DRotationZConstant number
 ---@field Start3DRotationZTwoConstant RangeInfo
 ---@field Start3DRotationZCurve numberCurve
 ---@field Start3DRotationZTwoCurve RangeFloatCurve
----@field Start3DRotationYConstant number 
+---@field Start3DRotationYConstant number
 ---@field Start3DRotationYTwoConstant RangeInfo
 ---@field Start3DRotationYCurve numberCurve
 ---@field Start3DRotationYTwoCurve RangeFloatCurve
@@ -857,221 +857,221 @@
 ---@field Start3DRotationXTwoCurve RangeFloatCurve
 ---@field FlipRotation number
 ---@field StartColorState ParticleSystemGradientMode 粒子颜色方式
----@field StartColorQuad ColorQuad 
----@field StartColorQuad2 ColorQuad 
----@field StartColorGradient2 ParticleEmitterColorGradient 
----@field GravityModifierConstant number 
----@field GravityModifierTwoConstant RangeInfo 
+---@field StartColorQuad ColorQuad
+---@field StartColorQuad2 ColorQuad
+---@field StartColorGradient2 ParticleEmitterColorGradient
+---@field GravityModifierConstant number
+---@field GravityModifierTwoConstant RangeInfo
 ---@field GravityModifierOneCurve FloatCurve
----@field GravityModifierTwoCurve RangeFloatCurve 
----@field RateOverTimeConstant number 
----@field RateOverTimeTwoConstant RangeInfo 
+---@field GravityModifierTwoCurve RangeFloatCurve
+---@field RateOverTimeConstant number
+---@field RateOverTimeTwoConstant RangeInfo
 ---@field RateOverTimeOneCurve FloatCurve
----@field RateOverTimeTwoCurve RangeFloatCurve 
----@field RateOverDistanceConstant number 
----@field RateOverDistanceTwoConstant RangeInfo 
+---@field RateOverTimeTwoCurve RangeFloatCurve
+---@field RateOverDistanceConstant number
+---@field RateOverDistanceTwoConstant RangeInfo
 ---@field RateOverDistanceOneCurve FloatCurve
----@field RateOverDistanceTwoCurve RangeFloatCurve 
----@field ShapeRadiusSpeedConstant number 
----@field ShapeRadiusSpeedTwoConstant RangeInfo 
+---@field RateOverDistanceTwoCurve RangeFloatCurve
+---@field ShapeRadiusSpeedConstant number
+---@field ShapeRadiusSpeedTwoConstant RangeInfo
 ---@field ShapeRadiusSpeedOneCurve FloatCurve
----@field ShapeRadiusSpeedTwoCurve RangeFloatCurve 
----@field ShapeArcSpeedConstant number 
----@field ShapeArcSpeedTwoConstant RangeInfo 
+---@field ShapeRadiusSpeedTwoCurve RangeFloatCurve
+---@field ShapeArcSpeedConstant number
+---@field ShapeArcSpeedTwoConstant RangeInfo
 ---@field ShapeArcSpeedOneCurve FloatCurve
----@field ShapeArcSpeedTwoCurve RangeFloatCurve 
----@field ShapeMeshSpawnSpeedConstant number 
----@field ShapeMeshSpawnSpeedTwoConstant RangeInfo 
+---@field ShapeArcSpeedTwoCurve RangeFloatCurve
+---@field ShapeMeshSpawnSpeedConstant number
+---@field ShapeMeshSpawnSpeedTwoConstant RangeInfo
 ---@field ShapeMeshSpawnSpeedOneCurve FloatCurve
----@field ShapeMeshSpawnSpeedTwoCurve RangeFloatCurve 
----@field VelocityOverLifeTimeLinearConstant Vector3 
----@field VelocityOverLifeTimeLinearTwoConstant Vector3 
+---@field ShapeMeshSpawnSpeedTwoCurve RangeFloatCurve
+---@field VelocityOverLifeTimeLinearConstant Vector3
+---@field VelocityOverLifeTimeLinearTwoConstant Vector3
 ---@field VelocityOverLifeTimeLinearXOneCurve FloatCurve
----@field VelocityOverLifeTimeLinearXTwoCurve RangeFloatCurve 
+---@field VelocityOverLifeTimeLinearXTwoCurve RangeFloatCurve
 ---@field VelocityOverLifeTimeLinearYOneCurve FloatCurve
----@field VelocityOverLifeTimeLinearYTwoCurve RangeFloatCurve 
+---@field VelocityOverLifeTimeLinearYTwoCurve RangeFloatCurve
 ---@field VelocityOverLifeTimeLinearZOneCurve FloatCurve
----@field VelocityOverLifeTimeLinearZTwoCurve RangeFloatCurve 
----@field VelocityOverLifeTimeOrbitalConstant Vector3 
----@field VelocityOverLifeTimeOrbitalTwoConstant Vector3 
+---@field VelocityOverLifeTimeLinearZTwoCurve RangeFloatCurve
+---@field VelocityOverLifeTimeOrbitalConstant Vector3
+---@field VelocityOverLifeTimeOrbitalTwoConstant Vector3
 ---@field VelocityOverLifeTimeOrbitalXOneCurve FloatCurve
----@field VelocityOverLifeTimeOrbitalXTwoCurve RangeFloatCurve 
+---@field VelocityOverLifeTimeOrbitalXTwoCurve RangeFloatCurve
 ---@field VelocityOverLifeTimeOrbitalYOneCurve FloatCurve
----@field VelocityOverLifeTimeOrbitalYTwoCurve RangeFloatCurve 
+---@field VelocityOverLifeTimeOrbitalYTwoCurve RangeFloatCurve
 ---@field VelocityOverLifeTimeOrbitalZOneCurve FloatCurve
----@field VelocityOverLifeTimeOrbitalZTwoCurve RangeFloatCurve 
----@field VelocityOverLifeTimeOffsetConstant Vector3 
----@field VelocityOverLifeTimeOffsetTwoConstant Vector3 
+---@field VelocityOverLifeTimeOrbitalZTwoCurve RangeFloatCurve
+---@field VelocityOverLifeTimeOffsetConstant Vector3
+---@field VelocityOverLifeTimeOffsetTwoConstant Vector3
 ---@field VelocityOverLifeTimeOffsetXOneCurve FloatCurve
----@field VelocityOverLifeTimeOffsetXTwoCurve RangeFloatCurve 
+---@field VelocityOverLifeTimeOffsetXTwoCurve RangeFloatCurve
 ---@field VelocityOverLifeTimeOffsetYOneCurve FloatCurve
----@field VelocityOverLifeTimeOffsetYTwoCurve RangeFloatCurve 
+---@field VelocityOverLifeTimeOffsetYTwoCurve RangeFloatCurve
 ---@field VelocityOverLifeTimeOffsetZOneCurve FloatCurve
----@field VelocityOverLifeTimeOffsetZTwoCurve RangeFloatCurve 
----@field VelocityOverLifeTimeRadialConstant number 
----@field VelocityOverLifeTimeRadialTwoConstant RangeInfo 
+---@field VelocityOverLifeTimeOffsetZTwoCurve RangeFloatCurve
+---@field VelocityOverLifeTimeRadialConstant number
+---@field VelocityOverLifeTimeRadialTwoConstant RangeInfo
 ---@field VelocityOverLifeTimeRadialOneCurve FloatCurve
----@field VelocityOverLifeTimeRadialTwoCurve RangeFloatCurve 
----@field VelocityOverLifeTimeSpeedModifierConstant number 
----@field VelocityOverLifeTimeSpeedModifierTwoConstant RangeInfo 
+---@field VelocityOverLifeTimeRadialTwoCurve RangeFloatCurve
+---@field VelocityOverLifeTimeSpeedModifierConstant number
+---@field VelocityOverLifeTimeSpeedModifierTwoConstant RangeInfo
 ---@field VelocityOverLifeTimeSpeedModifierOneCurve FloatCurve
----@field VelocityOverLifeTimeSpeedModifierTwoCurve RangeFloatCurve 
----@field LimitVelocitySpeedState ParticleSystemCurveMode 
----@field LimitVelocitySpeedConstant number 
----@field LimitVelocitySpeedTwoConstant RangeInfo 
+---@field VelocityOverLifeTimeSpeedModifierTwoCurve RangeFloatCurve
+---@field LimitVelocitySpeedState ParticleSystemCurveMode
+---@field LimitVelocitySpeedConstant number
+---@field LimitVelocitySpeedTwoConstant RangeInfo
 ---@field LimitVelocitySpeedOneCurve FloatCurve
----@field LimitVelocitySpeedTwoCurve RangeFloatCurve 
----@field LimitVelocitySeparateSpeedState ParticleSystemCurveMode 
----@field LimitVelocitySeparateSpeedConstant Vector3 
----@field LimitVelocitySeparateSpeedTwoConstant Vector3 
+---@field LimitVelocitySpeedTwoCurve RangeFloatCurve
+---@field LimitVelocitySeparateSpeedState ParticleSystemCurveMode
+---@field LimitVelocitySeparateSpeedConstant Vector3
+---@field LimitVelocitySeparateSpeedTwoConstant Vector3
 ---@field LimitVelocitySeparateSpeedXOneCurve FloatCurve
----@field LimitVelocitySeparateSpeedXTwoCurve RangeFloatCurve 
+---@field LimitVelocitySeparateSpeedXTwoCurve RangeFloatCurve
 ---@field LimitVelocitySeparateSpeedYOneCurve FloatCurve
----@field LimitVelocitySeparateSpeedYTwoCurve RangeFloatCurve 
+---@field LimitVelocitySeparateSpeedYTwoCurve RangeFloatCurve
 ---@field LimitVelocitySeparateSpeedZOneCurve FloatCurve
----@field LimitVelocitySeparateSpeedZTwoCurve RangeFloatCurve 
----@field LimitVelocityDragState ParticleSystemCurveMode 
----@field LimitVelocityDragConstant number 
----@field LimitVelocityDragTwoConstant RangeInfo 
+---@field LimitVelocitySeparateSpeedZTwoCurve RangeFloatCurve
+---@field LimitVelocityDragState ParticleSystemCurveMode
+---@field LimitVelocityDragConstant number
+---@field LimitVelocityDragTwoConstant RangeInfo
 ---@field LimitVelocityDragOneCurve FloatCurve
----@field LimitVelocityDragTwoCurve RangeFloatCurve 
----@field ColorBySpeedState ParticleSystemGradientMode 
----@field ColorBySpeedQuad ColorQuad 
----@field ColorBySpeedQuad2 ColorQuad 
----@field ColorBySpeedGradient2 ParticleEmitterColorGradient 
----@field SizeOverLifeState ParticleSystemCurveMode 
----@field SizeOverLifeConstant Vector3 
----@field SizeOverLifeTwoConstant Vector3 
+---@field LimitVelocityDragTwoCurve RangeFloatCurve
+---@field ColorBySpeedState ParticleSystemGradientMode
+---@field ColorBySpeedQuad ColorQuad
+---@field ColorBySpeedQuad2 ColorQuad
+---@field ColorBySpeedGradient2 ParticleEmitterColorGradient
+---@field SizeOverLifeState ParticleSystemCurveMode
+---@field SizeOverLifeConstant Vector3
+---@field SizeOverLifeTwoConstant Vector3
 ---@field SizeOverLifeXOneCurve FloatCurve
----@field SizeOverLifeXTwoCurve RangeFloatCurve 
+---@field SizeOverLifeXTwoCurve RangeFloatCurve
 ---@field SizeOverLifeYOneCurve FloatCurve
----@field SizeOverLifeYTwoCurve RangeFloatCurve 
+---@field SizeOverLifeYTwoCurve RangeFloatCurve
 ---@field SizeOverLifeZOneCurve FloatCurve
----@field SizeOverLifeZTwoCurve RangeFloatCurve 
----@field EnableSizeOverLifeSeparateAxes boolean 
----@field SizeBySpeedState ParticleSystemCurveMode 
----@field SizeBySpeedConstant Vector3 
----@field SizeBySpeedTwoConstant Vector3 
+---@field SizeOverLifeZTwoCurve RangeFloatCurve
+---@field EnableSizeOverLifeSeparateAxes boolean
+---@field SizeBySpeedState ParticleSystemCurveMode
+---@field SizeBySpeedConstant Vector3
+---@field SizeBySpeedTwoConstant Vector3
 ---@field SizeBySpeedXOneCurve FloatCurve
----@field SizeBySpeedXTwoCurve RangeFloatCurve 
+---@field SizeBySpeedXTwoCurve RangeFloatCurve
 ---@field SizeBySpeedYOneCurve FloatCurve
----@field SizeBySpeedYTwoCurve RangeFloatCurve 
+---@field SizeBySpeedYTwoCurve RangeFloatCurve
 ---@field SizeBySpeedZOneCurve FloatCurve
----@field SizeBySpeedZTwoCurve RangeFloatCurve 
----@field RotationOverLifeState ParticleSystemCurveMode 
----@field RotationOverLifeConstant Vector3 
----@field RotationOverLifeTwoConstant Vector3 
+---@field SizeBySpeedZTwoCurve RangeFloatCurve
+---@field RotationOverLifeState ParticleSystemCurveMode
+---@field RotationOverLifeConstant Vector3
+---@field RotationOverLifeTwoConstant Vector3
 ---@field RotationOverLifeXOneCurve FloatCurve
----@field RotationOverLifeXTwoCurve RangeFloatCurve 
+---@field RotationOverLifeXTwoCurve RangeFloatCurve
 ---@field RotationOverLifeYOneCurve FloatCurve
----@field RotationOverLifeYTwoCurve RangeFloatCurve 
+---@field RotationOverLifeYTwoCurve RangeFloatCurve
 ---@field RotationOverLifeZOneCurve FloatCurve
----@field RotationOverLifeZTwoCurve RangeFloatCurve 
----@field RotationBySpeedState ParticleSystemCurveMode 
----@field RotationBySpeedConstant Vector3 
----@field RotationBySpeedTwoConstant Vector3 
+---@field RotationOverLifeZTwoCurve RangeFloatCurve
+---@field RotationBySpeedState ParticleSystemCurveMode
+---@field RotationBySpeedConstant Vector3
+---@field RotationBySpeedTwoConstant Vector3
 ---@field RotationBySpeedXOneCurve FloatCurve
----@field RotationBySpeedXTwoCurve RangeFloatCurve 
+---@field RotationBySpeedXTwoCurve RangeFloatCurve
 ---@field RotationBySpeedYOneCurve FloatCurve
----@field RotationBySpeedYTwoCurve RangeFloatCurve 
+---@field RotationBySpeedYTwoCurve RangeFloatCurve
 ---@field RotationBySpeedZOneCurve FloatCurve
----@field RotationBySpeedZTwoCurve RangeFloatCurve 
----@field NoiseStrengthState ParticleSystemCurveMode 
----@field NoiseStrengthConstant Vector3 
----@field NoiseStrengthTwoConstant Vector3 
+---@field RotationBySpeedZTwoCurve RangeFloatCurve
+---@field NoiseStrengthState ParticleSystemCurveMode
+---@field NoiseStrengthConstant Vector3
+---@field NoiseStrengthTwoConstant Vector3
 ---@field NoiseStrengthXOneCurve FloatCurve
----@field NoiseStrengthXTwoCurve RangeFloatCurve 
+---@field NoiseStrengthXTwoCurve RangeFloatCurve
 ---@field NoiseStrengthYOneCurve FloatCurve
----@field NoiseStrengthYTwoCurve RangeFloatCurve 
+---@field NoiseStrengthYTwoCurve RangeFloatCurve
 ---@field NoiseStrengthZOneCurve FloatCurve
----@field NoiseStrengthZTwoCurve RangeFloatCurve 
----@field NoiseScrollSpeedConstant number 
----@field NoiseScrollSpeedTwoConstant RangeInfo 
+---@field NoiseStrengthZTwoCurve RangeFloatCurve
+---@field NoiseScrollSpeedConstant number
+---@field NoiseScrollSpeedTwoConstant RangeInfo
 ---@field NoiseScrollSpeedOneCurve FloatCurve
----@field NoiseScrollSpeedTwoCurve RangeFloatCurve 
----@field NoiseRemapConstant Vector3 
----@field NoiseRemapTwoConstant Vector3 
+---@field NoiseScrollSpeedTwoCurve RangeFloatCurve
+---@field NoiseRemapConstant Vector3
+---@field NoiseRemapTwoConstant Vector3
 ---@field NoiseRemapXOneCurve FloatCurve
----@field NoiseRemapXTwoCurve RangeFloatCurve 
+---@field NoiseRemapXTwoCurve RangeFloatCurve
 ---@field NoiseRemapYOneCurve FloatCurve
----@field NoiseRemapYTwoCurve RangeFloatCurve 
+---@field NoiseRemapYTwoCurve RangeFloatCurve
 ---@field NoiseRemapZOneCurve FloatCurve
----@field NoiseRemapZTwoCurve RangeFloatCurve 
----@field NoisePositionAmountConstant number 
----@field NoisePositionAmountTwoConstant RangeInfo 
+---@field NoiseRemapZTwoCurve RangeFloatCurve
+---@field NoisePositionAmountConstant number
+---@field NoisePositionAmountTwoConstant RangeInfo
 ---@field NoisePositionAmountOneCurve FloatCurve
----@field NoisePositionAmountTwoCurve RangeFloatCurve 
----@field NoiseRotationAmountConstant number 
----@field NoiseRotationAmountTwoConstant RangeInfo 
+---@field NoisePositionAmountTwoCurve RangeFloatCurve
+---@field NoiseRotationAmountConstant number
+---@field NoiseRotationAmountTwoConstant RangeInfo
 ---@field NoiseRotationAmountOneCurve FloatCurve
----@field NoiseRotationAmountTwoCurve RangeFloatCurve 
----@field NoiseSizeAmountConstant number 
----@field NoiseSizeAmountTwoConstant RangeInfo 
+---@field NoiseRotationAmountTwoCurve RangeFloatCurve
+---@field NoiseSizeAmountConstant number
+---@field NoiseSizeAmountTwoConstant RangeInfo
 ---@field NoiseSizeAmountOneCurve FloatCurve
----@field NoiseSizeAmountTwoCurve RangeFloatCurve 
----@field FrameOverTimeConstant number 
----@field FrameOverTimeTwoConstant RangeInfo 
+---@field NoiseSizeAmountTwoCurve RangeFloatCurve
+---@field FrameOverTimeConstant number
+---@field FrameOverTimeTwoConstant RangeInfo
 ---@field FrameOverTimeOneCurve FloatCurve
----@field FrameOverTimeTwoCurve RangeFloatCurve 
----@field UVStartFrameState EnumParticleSystemOnlyConstantCurveMode 
----@field UVStartFrameConstant number 
----@field UVStartFrameTwoConstant RangeInfo 
----@field TrailsLifetimeConstant number 
----@field TrailsLifetimeTwoConstant RangeInfo 
+---@field FrameOverTimeTwoCurve RangeFloatCurve
+---@field UVStartFrameState EnumParticleSystemOnlyConstantCurveMode
+---@field UVStartFrameConstant number
+---@field UVStartFrameTwoConstant RangeInfo
+---@field TrailsLifetimeConstant number
+---@field TrailsLifetimeTwoConstant RangeInfo
 ---@field TrailsLifetimeOneCurve FloatCurve
----@field TrailsLifetimeTwoCurve RangeFloatCurve 
----@field TrailsOverLifetimeColorQuad ColorQuad 
----@field TrailsOverLifetimeColorGradient ParticleEmitterColorGradient 
----@field TrailsOverLifetimeQuad2 ColorQuad 
----@field TrailsOverLifetimeGradient2 ParticleEmitterColorGradient 
----@field WidthOverTrailsConstant number 
----@field WidthOverTrailsTwoConstant RangeInfo 
+---@field TrailsLifetimeTwoCurve RangeFloatCurve
+---@field TrailsOverLifetimeColorQuad ColorQuad
+---@field TrailsOverLifetimeColorGradient ParticleEmitterColorGradient
+---@field TrailsOverLifetimeQuad2 ColorQuad
+---@field TrailsOverLifetimeGradient2 ParticleEmitterColorGradient
+---@field WidthOverTrailsConstant number
+---@field WidthOverTrailsTwoConstant RangeInfo
 ---@field WidthOverTrailsOneCurve FloatCurve
----@field WidthOverTrailsTwoCurve RangeFloatCurve 
----@field TrailsOverQuad ColorQuad 
+---@field WidthOverTrailsTwoCurve RangeFloatCurve
+---@field TrailsOverQuad ColorQuad
 ---@field TrailsOverGradient ParticleEmitterColorGradient 通过一条曲线控制轨迹沿其长度的颜色。。
----@field TrailsOverQuad2 ColorQuad 
----@field TrailsOverGradient2 ParticleEmitterColorGradient 
----@field CustomData1ColorQuad ColorQuad 
----@field CustomData1ColorGradient ParticleEmitterColorGradient 
----@field CustomData1ColorQuad2 ColorQuad 
----@field CustomData1ColorGradient2 ParticleEmitterColorGradient 
----@field CustomData1XConstant number 
----@field CustomData1XTwoConstant RangeInfo 
+---@field TrailsOverQuad2 ColorQuad
+---@field TrailsOverGradient2 ParticleEmitterColorGradient
+---@field CustomData1ColorQuad ColorQuad
+---@field CustomData1ColorGradient ParticleEmitterColorGradient
+---@field CustomData1ColorQuad2 ColorQuad
+---@field CustomData1ColorGradient2 ParticleEmitterColorGradient
+---@field CustomData1XConstant number
+---@field CustomData1XTwoConstant RangeInfo
 ---@field CustomData1XOneCurve FloatCurve
----@field CustomData1XTwoCurve RangeFloatCurve 
----@field CustomData1YConstant number 
----@field CustomData1YTwoConstant RangeInfo 
+---@field CustomData1XTwoCurve RangeFloatCurve
+---@field CustomData1YConstant number
+---@field CustomData1YTwoConstant RangeInfo
 ---@field CustomData1YOneCurve FloatCurve
----@field CustomData1YTwoCurve RangeFloatCurve 
----@field CustomData1ZConstant number 
----@field CustomData1ZTwoConstant RangeInfo 
+---@field CustomData1YTwoCurve RangeFloatCurve
+---@field CustomData1ZConstant number
+---@field CustomData1ZTwoConstant RangeInfo
 ---@field CustomData1ZOneCurve FloatCurve
----@field CustomData1ZTwoCurve RangeFloatCurve 
----@field CustomData1WConstant number 
----@field CustomData1WTwoConstant RangeInfo 
+---@field CustomData1ZTwoCurve RangeFloatCurve
+---@field CustomData1WConstant number
+---@field CustomData1WTwoConstant RangeInfo
 ---@field CustomData1WOneCurve FloatCurve
----@field CustomData1WTwoCurve RangeFloatCurve 
----@field CustomData2ColorQuad ColorQuad 
----@field CustomData2ColorGradient ParticleEmitterColorGradient 
----@field CustomData2ColorQuad2 ColorQuad 
----@field CustomData2ColorGradient2 ParticleEmitterColorGradient 
----@field CustomData2XConstant number 
----@field CustomData2XTwoConstant RangeInfo 
+---@field CustomData1WTwoCurve RangeFloatCurve
+---@field CustomData2ColorQuad ColorQuad
+---@field CustomData2ColorGradient ParticleEmitterColorGradient
+---@field CustomData2ColorQuad2 ColorQuad
+---@field CustomData2ColorGradient2 ParticleEmitterColorGradient
+---@field CustomData2XConstant number
+---@field CustomData2XTwoConstant RangeInfo
 ---@field CustomData2XOneCurve FloatCurve
----@field CustomData2XTwoCurve RangeFloatCurve 
----@field CustomData2YConstant number 
----@field CustomData2YTwoConstant RangeInfo 
+---@field CustomData2XTwoCurve RangeFloatCurve
+---@field CustomData2YConstant number
+---@field CustomData2YTwoConstant RangeInfo
 ---@field CustomData2YOneCurve FloatCurve
----@field CustomData2YTwoCurve RangeFloatCurve 
----@field CustomData2ZConstant number 
----@field CustomData2ZTwoConstant RangeInfo 
+---@field CustomData2YTwoCurve RangeFloatCurve
+---@field CustomData2ZConstant number
+---@field CustomData2ZTwoConstant RangeInfo
 ---@field CustomData2ZOneCurve FloatCurve
----@field CustomData2ZTwoCurve RangeFloatCurve 
----@field CustomData2WConstant number 
----@field CustomData2WTwoConstant RangeInfo 
+---@field CustomData2ZTwoCurve RangeFloatCurve
+---@field CustomData2WConstant number
+---@field CustomData2WTwoConstant RangeInfo
 ---@field CustomData2WOneCurve FloatCurve
----@field CustomData2WTwoCurve RangeFloatCurve 
+---@field CustomData2WTwoCurve RangeFloatCurve
 ---@field Test fun(self: EffectObject) void 测试
 ---@field SetAssetID fun(self: EffectObject, assetID: string, callback: function) None 设置资源id
 ---@field Start fun(self: EffectObject) void 特效开始播放
@@ -1211,20 +1211,20 @@
 ---@field UseMnSkin boolean 使用迷你皮肤
 ---@field Sensitivity number 镜头的是否碰撞
 ---@field AvatarPolicy string policy
----@field WithoutCharacter boolean 
----@field CameraCollide boolean 
+---@field WithoutCharacter boolean
+---@field CameraCollide boolean
 ---@field LoadingCustomPartTime number 自定义加载条超时时间 fun(毫秒)，0表示不开启
 ---@field StartScene EMultiScenesAPI 启动场景
 ---@field LightActor boolean 轻量Actor
----@field PhysicsFrames PhysicsFrames 
+---@field PhysicsFrames PhysicsFrames
 ---@field PlayerIgnoreStream boolean player不启用流式加载
----@field ComputeActornumbereractions boolean 
----@field AvoidnumbereractionsSpeedFactor number 
+---@field ComputeActornumbereractions boolean
+---@field AvoidnumbereractionsSpeedFactor number
 ---@field ShowAssetLoading boolean 显示正在加载的资源
 ---@field GetRunningInEditor fun(self: GameSetting) boolean 是否在编辑器中运行
 ---@field SetLoadingCustomPartFinished fun(self: GameSetting, arg1: boolean) None 设置loading自定义部分加载是否完成
 ---@field SetLoadingCustomPartLog fun(self: GameSetting, arg1: string) None log
----@field OpenAssetPoolGoCache fun(self: GameSetting) None 
+---@field OpenAssetPoolGoCache fun(self: GameSetting) None
 
 
 ---@class Player
@@ -1247,8 +1247,8 @@
 ---@field NameDisplayDistance number 其他Humanoid名称对当前玩家的可见距离。设置为0时将隐藏所有名称
 ---@field TeamId number 玩家的队伍Id
 ---@field ViewRange CoreUIViewRange 玩家视野范围
----@field DefaultDie boolean 
----@field AvatarInfo ReflexTuple 
+---@field DefaultDie boolean
+---@field AvatarInfo ReflexTuple
 ---@field EyePos fun(self: Player, pos: Vector3, dir: Vector3, dist: number) Vector3 校准碰撞视线位置
 ---@field EyePosWithFilter fun(self: Player, pos: Vector3, dir: Vector3, filter: number, dist: number) Vector3 校准碰撞视线位置
 ---@field EquipTool fun(self: Player, node: SandboxNode) None 给玩家装备上指定的道具
@@ -1278,7 +1278,7 @@
 ---@field Neutral boolean 是否隶属与特定队伍，设置为true之后，任意队伍中的任意Player可以在此位置重生
 ---@field AllowTeamChangeOnTouch boolean 是否允许Player通过Touch触摸该Location来加入对应TeamColor的Team队伍
 ---@field TeamColor ColorQuad 队伍颜色 fun(ColorQuad)，跟TeamColor可对应
----@field RandR number 
+---@field RandR number
 ---@field MainSpawn boolean 主城出生点，玩家进入游戏第一次设置的位置
 
 
@@ -1398,7 +1398,7 @@
 ---@field CreatePath fun(self: WorldService, Radius,Heigh,StepOffset,SlopLimit,CollideGroupID: ReflexMap) SandboxNode 创建一个路径基于想要模拟的actor的参数.
 ---@field SetSceneId fun(self: WorldService, id: number) boolean 设置当前worldservice的world的SceneId
 ---@field GetSceneId fun(self: WorldService) Number 获取当前worldservice的world的SceneId
----@field DoGmCmd fun(self: WorldService) None 
+---@field DoGmCmd fun(self: WorldService) None
 
 
 ---@class ClickDetector
@@ -1468,7 +1468,7 @@
 ---@field TouchMoved SandboxNode 触摸移动
 ---@field TouchEnded SandboxNode 触摸结束
 ---@field PickObjects fun(self: UserInputService, mouseX: number, mouseY: number, objects: Table) SandboxNode 从给定的obj列表中，根据传入的2D屏幕坐标，拾取指定对象
----@field PickObjectsEx fun(self: UserInputService) SandboxNode 
+---@field PickObjectsEx fun(self: UserInputService) SandboxNode
 ---@field IsKeyDown fun(self: UserInputService, key: number) boolean 按键是否按下
 ---@field IsRemoteSession fun(self: UserInputService) boolean 识别当前是否是远程桌面模式
 ---@field GetInputObject fun(self: UserInputService, type: UserInputType) SandboxNode 获取输入对象
@@ -1479,15 +1479,15 @@
 
 
 ---@class AssetObject
----@field AssetId string 
----@field AssetResType AssetResType 
+---@field AssetId string
+---@field AssetResType AssetResType
 
 
 
 ---@class Canvas
 ---@field TextureId string 设置模型的材质，即资源id
----@field ShowGridLine boolean 
----@field Visible boolean 
+---@field ShowGridLine boolean
+---@field Visible boolean
 
 
 
@@ -1496,35 +1496,35 @@
 
 
 ---@class CustomConfig
----@field ClassNode NodeLinker 
+---@field ClassNode NodeLinker
 
 
 
 ---@class CylindricalJonumber
----@field LinearLimitsEnable boolean 
----@field LinearLowerlimit number 
----@field LinearRestitution number 
----@field LinearUpperLimit number 
----@field AngleLimitsEnable boolean 
----@field AngleLowerlimit number 
----@field AngleRestitution number 
----@field AngleUpperLimit number 
----@field LinearActuatorType MotorType 
----@field LinearDamping number 
----@field LinearMotorMaxForce number 
----@field LinearVelocity number 
----@field LinearResponsiveness number 
----@field LinearServoMaxForce number 
----@field LinearSpeed number 
----@field TargetPosition number 
----@field AngleActuatorType MotorType 
----@field AngleDamping number 
----@field AngleMotorMaxForce number 
----@field AngleVelocity number 
----@field AngleResponsiveness number 
----@field AngleServoMaxForce number 
----@field AngleSpeed number 
----@field TargetAngle number 
+---@field LinearLimitsEnable boolean
+---@field LinearLowerlimit number
+---@field LinearRestitution number
+---@field LinearUpperLimit number
+---@field AngleLimitsEnable boolean
+---@field AngleLowerlimit number
+---@field AngleRestitution number
+---@field AngleUpperLimit number
+---@field LinearActuatorType MotorType
+---@field LinearDamping number
+---@field LinearMotorMaxForce number
+---@field LinearVelocity number
+---@field LinearResponsiveness number
+---@field LinearServoMaxForce number
+---@field LinearSpeed number
+---@field TargetPosition number
+---@field AngleActuatorType MotorType
+---@field AngleDamping number
+---@field AngleMotorMaxForce number
+---@field AngleVelocity number
+---@field AngleResponsiveness number
+---@field AngleServoMaxForce number
+---@field AngleSpeed number
+---@field TargetAngle number
 
 
 
@@ -1533,14 +1533,14 @@
 
 
 ---@class DebugService
----@field ServerViewRange number 
----@field LocalrViewRange number 
+---@field ServerViewRange number
+---@field LocalrViewRange number
 
 
 
 ---@class DynamicBone
----@field ConfigUrl table 
----@field IsReplace boolean 
+---@field ConfigUrl table
+---@field IsReplace boolean
 
 
 
@@ -1564,9 +1564,9 @@
 
 
 ---@class LocalizationTable
----@field FullStatusSync table 
----@field CSVFile unumberptr_t 
----@field LocaleNum number 
+---@field FullStatusSync table
+---@field CSVFile unumberptr_t
+---@field LocaleNum number
 
 
 
@@ -1583,7 +1583,7 @@
 ---@field Anchored boolean 是否锚定
 ---@field Gravity number 重力
 ---@field Mass number 密度
----@field Density number 
+---@field Density number
 ---@field Restitution number 弹性
 ---@field Friction number 马擦力
 ---@field Velocity Vector2 速度
@@ -1593,10 +1593,10 @@
 ---@field GroupID number 设置碰撞组
 ---@field EnablePhysics boolean 是否生效
 ---@field EnableCCD boolean 会影响性能，所以默认不开启
----@field EnableDrawCollider boolean 
----@field PhysXType PHYSX2D_TYPE 
----@field FlippedX boolean 
----@field FlippedY boolean 
+---@field EnableDrawCollider boolean
+---@field PhysXType PHYSX2D_TYPE
+---@field FlippedX boolean
+---@field FlippedY boolean
 ---@field Touched Event 模型被其他模型碰撞时，会触发一个Touched通知
 ---@field TouchEnded Event 模型被其他模型碰撞结束时，会触发一个TouchEnded通知
 
@@ -1618,12 +1618,12 @@
 
 
 ---@class MotorJonumber
----@field Start boolean 
----@field Clockwise boolean 
----@field MaxAngleSpeed number 
----@field MaxForce number 
----@field Damp number 
----@field Lock boolean 
+---@field Start boolean
+---@field Clockwise boolean
+---@field MaxAngleSpeed number
+---@field MaxForce number
+---@field Damp number
+---@field Lock boolean
 
 
 
@@ -1667,18 +1667,18 @@
 
 
 ---@class PrismaticJonumber
----@field LimitsEnable boolean 
----@field Lowerlimit number 
----@field Restitution number 
----@field UpperLimit number 
----@field ActuatorType MotorType 
----@field MotorMaxAcceleration number 
----@field MotorMaxForce number 
----@field Velocity number 
----@field LinearResponsiveness number 
----@field LinearServoMaxForce number 
----@field Speed number 
----@field TargetPosition number 
+---@field LimitsEnable boolean
+---@field Lowerlimit number
+---@field Restitution number
+---@field UpperLimit number
+---@field ActuatorType MotorType
+---@field MotorMaxAcceleration number
+---@field MotorMaxForce number
+---@field Velocity number
+---@field LinearResponsiveness number
+---@field LinearServoMaxForce number
+---@field Speed number
+---@field TargetPosition number
 
 
 
@@ -1691,18 +1691,18 @@
 ---@field Restitution number 绳子的弹力
 ---@field Thickness number 绳子的粗细
 ---@field Color ColorQuad 模型的颜色
----@field ModelId string 
----@field TextureId string 
+---@field ModelId string
+---@field TextureId string
 
 
 
 ---@class SandboxBallSocketJonumber
----@field LimitsEnable boolean 
----@field Anglelimit number 
----@field Restitution number 
----@field TwistLimitEnable boolean 
----@field TwistLowerAngleLimit number 
----@field TwistUpperAngleLimit number 
+---@field LimitsEnable boolean
+---@field Anglelimit number
+---@field Restitution number
+---@field TwistLimitEnable boolean
+---@field TwistLowerAngleLimit number
+---@field TwistUpperAngleLimit number
 
 
 
@@ -1711,16 +1711,16 @@
 
 
 ---@class SandboxHeadNode
----@field Uin string 
+---@field Uin string
 
 
 
 ---@class SandboxLocalizationService
----@field LocaleIdConfig string 
----@field LocaleIdConfigField unumberptr_t 
----@field LocaleIdNum number 
----@field PlayerLocaleId LocaleId 
----@field PlayerLocaleIdNotify Event 
+---@field LocaleIdConfig string
+---@field LocaleIdConfigField unumberptr_t
+---@field LocaleIdNum number
+---@field PlayerLocaleId LocaleId
+---@field PlayerLocaleIdNotify Event
 
 
 
@@ -1729,10 +1729,10 @@
 
 
 ---@class SandboxSceneMgrService
----@field SceneConfigs table 
+---@field SceneConfigs table
 ---@field CurDefaultStartScene EMultiScenes 动态场景配置
----@field NextDefaultStartScene EMultiScenes 
----@field DynamicSceneConfigs table 
+---@field NextDefaultStartScene EMultiScenes
+---@field DynamicSceneConfigs table
 ---@field SwitchScene nil 切换场景 fun(客户端)切换结果SceneOpResult通知回调
 ---@field AddDynamicScene nil 添加动态场景 fun(服务端)添加结果DynamicSceneOpResultServer通知回调
 ---@field RemoveDynamicScene nil 删除动态场景 fun(服务端)删除结果DynamicSceneOpResultServer通知回调
@@ -1751,22 +1751,22 @@
 
 ---@class Skeleton2D
 ---@field BonesDataAssetID string 骨骼数据资源ID（zip/资源包）
----@field SlotEnum DragonBonesSlot 
----@field SkinEnum DragonBonesSkin 
----@field Armature string 
+---@field SlotEnum DragonBonesSlot
+---@field SkinEnum DragonBonesSkin
+---@field Armature string
 ---@field Animation string 动画名称
 ---@field Skin string 皮肤名称
 ---@field Slot string 插槽名称
----@field DisplayOffset Vector2 
+---@field DisplayOffset Vector2
 ---@field SetBonesDataAssetID fun(self: Skeleton2D, assetID: string, callback: function) None 设置骨骼数据资源ID
 ---@field LoadExtraBonesDataAsset fun(self: Skeleton2D, assetID: string, callback: function) None 加载额外骨骼数据资源ID（不会重复load相同资源）
----@field ReplaceSlotDisplay fun(self: Skeleton2D) None 
+---@field ReplaceSlotDisplay fun(self: Skeleton2D) None
 ---@field SetSlotDisplayIndex fun(self: Skeleton2D, slotName: string, displayIndex: number) None 替换插槽
 ---@field ReplaceSkin fun(self: Skeleton2D, slotName: string) None 替换皮肤
 
 
 ---@class SkeletonPart
----@field SkeletonId string 
+---@field SkeletonId string
 
 
 
@@ -1815,12 +1815,12 @@
 ---@field LocalScale Vector2 局部大小
 ---@field LocalRotation number 局部旋转
 ---@field Visible boolean 是否显示
----@field Order number 
+---@field Order number
 
 
 
 ---@class Translator
----@field LocaleId LocaleId 
+---@field LocaleId LocaleId
 
 
 
@@ -1844,12 +1844,12 @@
 ---@field TargetID number 跟随目标
 ---@field Grayed boolean 置灰
 ---@field Animable boolean 支持动画
----@field Offset Vector3 
+---@field Offset Vector3
 ---@field Alpha number 透明度
 ---@field BMColor Vector3 文本颜色
 ---@field GradientDir BMGradientDirType 渐变色起始色
----@field GradientOrigin Vector3 
----@field GradientTarget Vector3 
+---@field GradientOrigin Vector3
+---@field GradientTarget Vector3
 ---@field GetLabelNum fun(self: UIBMLabel) Number 获取Label数量
 ---@field GetLabel fun(self: UIBMLabel) SandboxNode 获取第N个Label节点
 ---@field SetLoadedCallback fun(self: UIBMLabel, arg1: function) None 纹理字加载完成
@@ -1877,12 +1877,12 @@
 
 
 ---@class UIMiniCoin
----@field IconSize Vector2 
----@field TextLabelSize Vector2 
+---@field IconSize Vector2
+---@field TextLabelSize Vector2
 ---@field Scale Vector2 UI节点缩放倍数
 ---@field Rotation number UI节点旋转度数
 ---@field Position Vector2 UI节点坐标
----@field Distance Vector2 
+---@field Distance Vector2
 ---@field Pivot Vector2 UI节点锚点（0~1），（0.5,0.5）为中点
 ---@field LineColor ColorQuad UI节点边线颜色设置
 ---@field FillColor ColorQuad UI节点填充颜色设置
@@ -1898,7 +1898,7 @@
 
 
 ---@class UIPanel
----@field Round number 
+---@field Round number
 
 
 
@@ -1910,8 +1910,8 @@
 ---@class UIRoot3D
 ---@field Scale Vector2 UI节点缩放倍数
 ---@field Rotation number UI节点旋转度数
----@field UIPosition Vector2 
----@field Mode Mode 
+---@field UIPosition Vector2
+---@field Mode Mode
 ---@field Visible boolean UI容器是否可见
 ---@field CullLayer CullLayer 消隐层
 ---@field IgnoreStreamSync boolean 忽略流同步
@@ -1924,9 +1924,9 @@
 
 
 ---@class UniversalJonumber
----@field LimitsEnable boolean 
----@field Anglelimit number 
----@field Restitution number 
+---@field LimitsEnable boolean
+---@field Anglelimit number
+---@field Restitution number
 
 
 
@@ -1949,10 +1949,10 @@
 ---@field JumpContinueSpeed number 持续按住跳跃键减缓降落速度使用
 ---@field RunSpeedFactor number 给Movespeed加倍
 ---@field RunState boolean 是否为跑步状态
----@field CanPushOthers boolean 
+---@field CanPushOthers boolean
 ---@field MoveDirection Vector3 移动的方向
 ---@field PhysXRoleType PhysicsRoleType 物理类型
----@field StandardSkeleton StandardSkeleton 
+---@field StandardSkeleton StandardSkeleton
 ---@field SetMoveEndTime fun(self: Actor, endtime: number) None 设定移动结束时间
 ---@field MoveTo fun(self: Actor, target: Vector3) None actor朝某个位置进行移动
 ---@field MoveStep fun(self: Actor, vec: Vector3) None actor移动vec向量的位移
@@ -2047,10 +2047,10 @@
 ---@field CanRideOn boolean 能否跟着走
 ---@field DrawPhysicsCollider boolean 显示物理包围盒
 ---@field ReceiveShadow boolean 是否接受投影
----@field CanBePushed boolean 
----@field IsStatic boolean 
+---@field CanBePushed boolean
+---@field IsStatic boolean
 ---@field OutlineActive boolean 是否激活描边
----@field OutlineColorIndex number 
+---@field OutlineColorIndex number
 ---@field PlayAnimation fun(self: Model, id: string, speed: number, loop: number) boolean 播放动画
 ---@field PlayAnimationEx fun(self: Model, id: string, speed: number, loop: number, priority: number, weight: number) boolean 播放动画Ex
 ---@field StopAnimation fun(self: Model, id: string) boolean 停止动画
@@ -2088,11 +2088,11 @@
 ---@field GetBoneNodeByName fun(self: Model, name: string) SandboxNode 按名称获取骨骼节点
 ---@field SetMaterialResId fun(self: Model, materialResId: string) None 设置材质资源实例
 ---@field GetLoadedResType fun(self: Model) 0,1,2 获取已经加载的资源类型
----@field GetAssetContent fun(self: Model) SandboxNode 
----@field SetAssetContent fun(self: Model) boolean 
----@field GetSnapShot fun(self: Model) SandboxNode 
----@field SetRenderersShadow fun(self: Model) None 
----@field SetRendererShadow fun(self: Model) None 
+---@field GetAssetContent fun(self: Model) SandboxNode
+---@field SetAssetContent fun(self: Model) boolean
+---@field GetSnapShot fun(self: Model) SandboxNode
+---@field SetRenderersShadow fun(self: Model) None
+---@field SetRendererShadow fun(self: Model) None
 ---@field Touched fun(self: Model, node: SandboxNode, pos: Vector3, normal: Vector3) None 模型被其他模型碰撞时，会触发一个Touched通知
 ---@field TouchEnded fun(self: Model, node: SandboxNode) None 模型被其他模型碰撞结束时，会触发一个TouchEnded通知
 ---@field AnimationEvent fun(self: Model, a: number, b: number) None 模型触发动画事件时发送一个AnimationEvent通知
@@ -2122,9 +2122,9 @@
 ---@field HideCoreUi fun(self: CoreUI, val: CoreUiComponent) None 屏蔽CoreUi默认组件
 ---@field OpenWareHouse fun(self: CoreUI) void 打开玩家仓库皮肤界面
 ---@field GetSnapshot fun(self: CoreUI, val: number) SandboxNode 获取截屏
----@field DoSnapshot fun(self: CoreUI) None 
+---@field DoSnapshot fun(self: CoreUI) None
 ---@field UiChange fun(self: CoreUI) Event UI发生变化时，会触发一个UiChange通知
----@field SnapshotFinish fun(self: CoreUI) None 
+---@field SnapshotFinish fun(self: CoreUI) None
 
 
 ---@class Decal
@@ -2147,7 +2147,7 @@
 
 ---@class ViewBase
 ---@field RenderIndex number UI渲染层级（值越大，渲染越靠后，越处于上层）
----@field UIVisibleNode boolean 
+---@field UIVisibleNode boolean
 
 
 
@@ -2173,7 +2173,7 @@
 ---@field ResourceSize Vector2 资源尺寸
 ---@field ScaleType ScaleType 按钮图片显示类型：伸缩；裁剪
 ---@field Scale9Grid Vector4 按钮图片九宫格展示
----@field EditAutoSize Button 
+---@field EditAutoSize Button
 ---@field TitleColor ColorQuad 字体颜色
 ---@field TextVAlignment TextVAlignment 上下对齐，有向上、中间和向下对齐
 ---@field TextHAlignment TextHAlignment 左右对齐，有向左、中间和向右对齐
@@ -2200,14 +2200,14 @@
 ---@field LayoutSizeRelation EnumLayoutSizeRelation 宽高关联，包括无关联，宽关联，高关联和全关联，当父节点宽高改变时，UI宽高随之变化
 ---@field SetFullViewSize Button 设置全视图大小
 ---@field Active boolean 是否激活 fun(响应点击时间)
----@field SetLeftAlign Button 
----@field SetRightAlign Button 
----@field SetHorizontalAlign Button 
----@field SetTopAlign Button 
----@field SetBottomAlign Button 
----@field SetVerticalAlign Button 
----@field SetEqualWidth Button 
----@field SetEqualHeight Button 
+---@field SetLeftAlign Button
+---@field SetRightAlign Button
+---@field SetHorizontalAlign Button
+---@field SetTopAlign Button
+---@field SetBottomAlign Button
+---@field SetVerticalAlign Button
+---@field SetEqualWidth Button
+---@field SetEqualHeight Button
 ---@field Grayed boolean 置灰
 ---@field GetGlobalPos fun(self: UIComponent) Vector2 获取UI的全局位置
 ---@field RollOver Event<fun(self: UIComponent, node: SandboxNode, isOver: boolean, vector2: Vector2)> 鼠标进入UI范围
@@ -2229,7 +2229,7 @@
 ---@field RemoveItem fun(self: UIDropDownBox, index: number) None 通过下标移除下拉框中某项item
 ---@field GetItemByIndex fun(self: UIDropDownBox, index: number) String 通过下标获取下拉框中某项item的key
 ---@field GetValueByIndex fun(self: UIDropDownBox, index: number) String 通过下标获取下拉框中某项item的value
----@field GetIndexByItem fun(self: UIDropDownBox) Number 
+---@field GetIndexByItem fun(self: UIDropDownBox) Number
 ---@field SelectIndexChange fun(self: UIDropDownBox, node: SandboxNode, index: number) None 索引切换事件
 
 
@@ -2247,9 +2247,9 @@
 ---@field AutoTranslator boolean 是否开启自动翻译
 ---@field BlurFilter boolean 是否开启高斯模糊
 ---@field BlurSigma number 高斯模糊sigma fun(取值范围1-5)
----@field UIMaskMode boolean 
----@field EditAutoSize Button 
----@field TextureRect Vector4 
+---@field UIMaskMode boolean
+---@field EditAutoSize Button
+---@field TextureRect Vector4
 
 
 
@@ -2264,14 +2264,14 @@
 ---@field VerticalAlign TextVAlignment 垂直对齐方式
 ---@field AutoResizeItem boolean 自动调整列表项目大小，如果勾选:列表布局为单列，则列表项目的宽度自动设置为列表显示区域的宽度；列表布局为单行，则列表项目的高度自动设置为列表显示区域的高度；列表布局为水平流动，且设置了列数时，则每行内的列表项目的宽度自动调整使行宽与列表显示区域的宽度相等；列表布局为垂直流动，且设置了行数时，则每列内的项目的高度自动调整使行高与列表显示区域的高度相等；列表布局为分页，则3、4规则均适用;
 ---@field Padding Vector4 边界值
----@field ScrollPercent Vector2 
+---@field ScrollPercent Vector2
 ---@field FoldInvisibleItems boolean Item隐藏时是否取消预留空位
----@field Bounceback boolean 
+---@field Bounceback boolean
 ---@field ContentSize Vector2 获取内容大小
 ---@field ScrollItemToViewOnClick boolean 点击item是否显示全
 ---@field SetVirtual fun(self: UIList, arg1: SandboxNode) boolean 设置虚拟列表，只为可视范围内的item创建实体对象（不可取消）
 ---@field SetVirtualAndLoop fun(self: UIList) void 设置循环列表（同时也是虚拟列表），头尾相接（不可取消）
----@field SetVirtualItemNum fun(self: UIList) void 
+---@field SetVirtualItemNum fun(self: UIList) void
 ---@field ScrollToTop fun(self: UIList, ani: boolean) None 滚动到顶部（允许垂直滚动时可用）
 ---@field ScrollToBottom fun(self: UIList, ani: boolean) None 滚动到底部（允许垂直滚动时可用）
 ---@field ScrollToLeft fun(self: UIList, ani: boolean) None 滚动到最左边（允许水平滚动时可用）
@@ -2354,25 +2354,25 @@
 ---@field ChromaticAberrationIterationStep number 0.01-10
 ---@field ChromaticAberrationIterationSamples number 1-8
 ---@field DisEnableDefaultLight boolean 是否关闭默认光照
----@field SkyLight string 
----@field SkyLightCubeAssetID string 
----@field SkyLightnumberensity number 
----@field SkyLightColor ColorQuad 
----@field SkyLightBlendAmount number 
----@field SkyLightAmbientSkyColor ColorQuad 
----@field SkyLightAmbientEquatorColor ColorQuad 
----@field SkyLightAmbientGroundColor ColorQuad 
----@field SkyLightAmbientColor ColorQuad 
----@field FogType MODELVIEW_FogType 
----@field FogColor ColorQuad 
----@field FogStart number 
----@field FogEnd number 
----@field Atmosphere number 
----@field LightEuler Vector3 
----@field Lightnumberensity number 
----@field LightActive boolean 
----@field EnableShadow boolean 
----@field SkyLightType UIMODLEVIEW_SkyLightType 
+---@field SkyLight string
+---@field SkyLightCubeAssetID string
+---@field SkyLightnumberensity number
+---@field SkyLightColor ColorQuad
+---@field SkyLightBlendAmount number
+---@field SkyLightAmbientSkyColor ColorQuad
+---@field SkyLightAmbientEquatorColor ColorQuad
+---@field SkyLightAmbientGroundColor ColorQuad
+---@field SkyLightAmbientColor ColorQuad
+---@field FogType MODELVIEW_FogType
+---@field FogColor ColorQuad
+---@field FogStart number
+---@field FogEnd number
+---@field Atmosphere number
+---@field LightEuler Vector3
+---@field Lightnumberensity number
+---@field LightActive boolean
+---@field EnableShadow boolean
+---@field SkyLightType UIMODLEVIEW_SkyLightType
 ---@field ResetCamera fun(self: UIModelView) void 重置相机
 
 
@@ -2395,7 +2395,7 @@
 ---@field MaxLength number 限制输入文本长度
 ---@field FontSize number 字体大小
 ---@field Title string 输入的文本内容
----@field Input InputMode 
+---@field Input InputMode
 ---@field Return Event 输入完成时触发
 
 
@@ -2438,7 +2438,7 @@
 
 
 ---@class CustomFunction
----@field OnInvoke function 
+---@field OnInvoke function
 
 
 
@@ -2534,9 +2534,9 @@
 ---@field ReserveServer fun(self: CloudService, uin: number, mapid: longlong, serverData: MNJsonVal, teleportData: MNJsonVal, reportData: ReflexMap) boolean 开启并跳转到新房间
 ---@field GetServerRoomType fun(self: CloudService) MNJsonVal any
 ---@field GetServerID fun(self: CloudService) String 获取服务ID
----@field GetPlayerTeleportInfo fun(self: CloudService) MNJsonVal 
+---@field GetPlayerTeleportInfo fun(self: CloudService) MNJsonVal
 ---@field GetServerPlayerTeleportInfo fun(self: CloudService, uin: number) MNJsonVal 获取玩家进入房间时伴随的自定义数据（如果有）
----@field SetForbidJoin fun(self: CloudService) boolean 
+---@field SetForbidJoin fun(self: CloudService) boolean
 ---@field SetDataListByKey fun(self: CloudService, name: string, key: string, value: LuaArguments) Number 存储带表名name得kv
 ---@field SetDataListByKeyAsync fun(self: CloudService, name: string, key: string, value: LuaArguments, func: function) Number 存储带表名name得kv
 ---@field GetDataListByKey fun(self: CloudService, name: string, key: string) Number 获取表名name，键值k存储得值
@@ -2581,7 +2581,7 @@
 ---@field BuyGoods fun(self: DeveloperStoreService, goodsid: number, goodsdesc: string, goodsnum: number, extraDesc: string) None 弹出购买弹窗
 ---@field MiniCoinRecharge fun(self: DeveloperStoreService) void 打开Mini币充值弹窗
 ---@field GetPlayerDeveloperSingleProducts fun(self: DeveloperStoreService) void 查询指定玩家的购买单个商品信息
----@field ServiceGetPlayerDeveloperSingleProducts fun(self: DeveloperStoreService) void 
+---@field ServiceGetPlayerDeveloperSingleProducts fun(self: DeveloperStoreService) void
 ---@field GetAllStoreItems fun(self: DeveloperStoreService) void 查询所有仓库内商品
 ---@field GetStoreItemsByID fun(self: DeveloperStoreService) void 按ID查询仓库内商品的数量
 ---@field DeleteStoreItems fun(self: DeveloperStoreService) void 删除仓库ID位置的物品
@@ -2660,10 +2660,10 @@
 
 
 ---@class SandboxSceneMgrService
----@field SceneConfigs table 
+---@field SceneConfigs table
 ---@field CurDefaultStartScene EMultiScenes 动态场景配置
----@field NextDefaultStartScene EMultiScenes 
----@field DynamicSceneConfigs table 
+---@field NextDefaultStartScene EMultiScenes
+---@field DynamicSceneConfigs table
 ---@field SwitchScene fun(self: SandboxSceneMgrService) void 切换场景 fun(客户端)切换结果SceneOpResult通知回调
 ---@field AddDynamicScene fun(self: SandboxSceneMgrService) void 添加动态场景 fun(服务端)添加结果DynamicSceneOpResultServer通知回调
 ---@field AddDynamicSceneWithoutBlock fun(self: SandboxSceneMgrService) void 添加动态场景 fun(服务端)添加结果DynamicSceneOpResultServer通知回调
@@ -2712,27 +2712,27 @@
 ---@field GeneralTaskReported fun(self: UtilService, arg1: number, arg2: number, arg3: number, arg4: number, arg5: number) None 通用任务分发方法
 ---@field SetJumpToTownValue fun(self: UtilService, arg1: string, arg2: boolean) None 设置跳转城镇bool
 ---@field GetJumpToTownValue fun(self: UtilService, arg1: string) boolean 获取跳转城镇bool
----@field CallMiniWorldfunction fun(self: UtilService) None 
----@field CallMiniWorldfunctionRet fun(self: UtilService) ReflexMap 
----@field CallMiniWoldfunctionWithClassName fun(self: UtilService) None 
+---@field CallMiniWorldfunction fun(self: UtilService) None
+---@field CallMiniWorldfunctionRet fun(self: UtilService) ReflexMap
+---@field CallMiniWoldfunctionWithClassName fun(self: UtilService) None
 ---@field GetPlayerLikeMapState fun(self: UtilService) None bool
----@field GetPlayerCollectedMapStateByUin fun(self: UtilService) None 
+---@field GetPlayerCollectedMapStateByUin fun(self: UtilService) None
 ---@field GetPlayerProfileByUin fun(self: UtilService, uin: number) None 获取玩家信息
----@field UploadAllCloudAsset fun(self: UtilService) None 
----@field SyncAllCloudAsset fun(self: UtilService) None 
----@field QueryAllCloudAsset fun(self: UtilService) None 
+---@field UploadAllCloudAsset fun(self: UtilService) None
+---@field SyncAllCloudAsset fun(self: UtilService) None
+---@field QueryAllCloudAsset fun(self: UtilService) None
 ---@field GameVibrateWithTimeAmplitude fun(self: UtilService, time: number, amplitude: number) None 手机振动
 ---@field GameVibrateStop fun(self: UtilService) None 停止手机振动
 ---@field OpenFriendsUIWithParams fun(self: UtilService) None 打开好友界面UI
 ---@field GetPlayerHeadInfoAndProfileByUin fun(self: UtilService) None 获取指定玩家的头像,avatar,profile信息
----@field SetCustomPlanarReflectionEnable fun(self: UtilService) None 
----@field GetCustomPlanarReflectionEnable fun(self: UtilService) boolean 
----@field SetCustomPlanarReflectionTextureSize fun(self: UtilService) None 
----@field GetCustomPlanarReflectionTextureSize fun(self: UtilService) Number 
----@field SetCustomPlanarReflectionHeight fun(self: UtilService) None 
----@field GetCustomPlanarReflectionHeight fun(self: UtilService) Number 
----@field SetCustomPlanarReflectionCameraLayer fun(self: UtilService) None 
----@field GetCustomPlanarReflectionCameraLayer fun(self: UtilService) Number 
+---@field SetCustomPlanarReflectionEnable fun(self: UtilService) None
+---@field GetCustomPlanarReflectionEnable fun(self: UtilService) boolean
+---@field SetCustomPlanarReflectionTextureSize fun(self: UtilService) None
+---@field GetCustomPlanarReflectionTextureSize fun(self: UtilService) Number
+---@field SetCustomPlanarReflectionHeight fun(self: UtilService) None
+---@field GetCustomPlanarReflectionHeight fun(self: UtilService) Number
+---@field SetCustomPlanarReflectionCameraLayer fun(self: UtilService) None
+---@field GetCustomPlanarReflectionCameraLayer fun(self: UtilService) Number
 
 
 ---@class DefaultSound
@@ -3028,11 +3028,11 @@
 ---@field AnimBlendTree AssetResType 18 动画混合树
 ---@field NodePacket AssetResType 19 节点包
 ---@field Gif AssetResType 20 Gif图
----@field Mesh AssetResType 21 
----@field ModelData AssetResType 22 
----@field Font AssetResType 23 
----@field DynamicBoneConfig AssetResType 24 
----@field DragonBone AssetResType 25 
+---@field Mesh AssetResType 21
+---@field ModelData AssetResType 22
+---@field Font AssetResType 23
+---@field DynamicBoneConfig AssetResType 24
+---@field DragonBone AssetResType 25
 
 
 ---@class AttributeType :Enum
@@ -3079,11 +3079,11 @@
 
 
 ---@class BlockCollide :Enum
----@field Air BlockCollide 1 
----@field Solid BlockCollide 2 
----@field Liquid BlockCollide 3 
----@field NoProjectile BlockCollide 4 
----@field NoActor BlockCollide 5 
+---@field Air BlockCollide 1
+---@field Solid BlockCollide 2
+---@field Liquid BlockCollide 3
+---@field NoProjectile BlockCollide 4
+---@field NoActor BlockCollide 5
 
 
 ---@class BlockPlaceType :Enum
@@ -3093,15 +3093,15 @@
 
 
 ---@class BMGradientDirType :Enum
----@field NONE BMGradientDirType 1 
----@field VERTICAL BMGradientDirType 2 
----@field HORIZONTAL BMGradientDirType 3 
+---@field NONE BMGradientDirType 1
+---@field VERTICAL BMGradientDirType 2
+---@field HORIZONTAL BMGradientDirType 3
 
 
 ---@class BrowserType :Enum
----@field NativeBrowser BrowserType 1 
----@field BuiltinWebView BrowserType 2 
----@field PersistWebView BrowserType 3 
+---@field NativeBrowser BrowserType 1
+---@field BuiltinWebView BrowserType 2
+---@field PersistWebView BrowserType 3
 
 
 ---@class CameraModel :Enum
@@ -3329,26 +3329,26 @@
 
 
 ---@class EMultiScenes :Enum
----@field WorkSpace EMultiScenes 1 
+---@field WorkSpace EMultiScenes 1
 
 
 ---@class EMultiScenesAPI :Enum
----@field SelectedScene EMultiScenesAPI 1 
+---@field SelectedScene EMultiScenesAPI 1
 
 
 ---@class EnumParticleSystemOnlyConstantCurveMode
----@field Constant EnumParticleSystemOnlyConstantCurveMode 1 
----@field RandomBetweenTwoConstants EnumParticleSystemOnlyConstantCurveMode 2 
+---@field Constant EnumParticleSystemOnlyConstantCurveMode 1
+---@field RandomBetweenTwoConstants EnumParticleSystemOnlyConstantCurveMode 2
 
 
 ---@class EnumUIType
----@field Default EnumUIType 1 
----@field UIMain EnumUIType 2 
----@field Rocker EnumUIType 3 
----@field RockerDot EnumUIType 4 
----@field SetBtn EnumUIType 5 
----@field ChatFrame EnumUIType 6 
----@field MiniMap EnumUIType 7 
+---@field Default EnumUIType 1
+---@field UIMain EnumUIType 2
+---@field Rocker EnumUIType 3
+---@field RockerDot EnumUIType 4
+---@field SetBtn EnumUIType 5
+---@field ChatFrame EnumUIType 6
+---@field MiniMap EnumUIType 7
 
 
 ---@class ExplosionType :Enum
@@ -3448,10 +3448,10 @@
 
 
 ---@class numbereractMethod :Enum
----@field Union numbereractMethod 1 
----@field numberersect numbereractMethod 2 
----@field Hollow numbereractMethod 3 
----@field SimplyUnion numbereractMethod 4 
+---@field Union numbereractMethod 1
+---@field numberersect numbereractMethod 2
+---@field Hollow numbereractMethod 3
+---@field SimplyUnion numbereractMethod 4
 
 
 ---@class KeyCode :Enum
@@ -3500,215 +3500,215 @@
 ---@field Caret KeyCode 43 Caret
 ---@field Underscore KeyCode 44 Underscore
 ---@field Backquote KeyCode 45 Backquote
----@field A KeyCode 46 
----@field B KeyCode 47 
----@field C KeyCode 48 
----@field D KeyCode 49 
----@field E KeyCode 50 
----@field F KeyCode 51 
----@field G KeyCode 52 
----@field H KeyCode 53 
----@field I KeyCode 54 
----@field J KeyCode 55 
----@field K KeyCode 56 
----@field L KeyCode 57 
----@field M KeyCode 58 
----@field N KeyCode 59 
----@field O KeyCode 60 
----@field P KeyCode 61 
----@field Q KeyCode 62 
----@field R KeyCode 63 
----@field S KeyCode 64 
----@field T KeyCode 65 
----@field U KeyCode 66 
----@field V KeyCode 67 
----@field W KeyCode 68 
----@field X KeyCode 69 
----@field Y KeyCode 70 
----@field Z KeyCode 71 
----@field LeftCurly KeyCode 72 
----@field Pipe KeyCode 73 
----@field RightCurly KeyCode 74 
----@field Tilde KeyCode 75 
----@field Delete KeyCode 76 
----@field KeypadZero KeyCode 77 
----@field KeypadOne KeyCode 78 
----@field KeypadTwo KeyCode 79 
----@field KeypadThree KeyCode 80 
----@field KeypadFour KeyCode 81 
----@field KeypadFive KeyCode 82 
----@field KeypadSix KeyCode 83 
----@field KeypadSeven KeyCode 84 
----@field KeypadEight KeyCode 85 
----@field KeypadNine KeyCode 86 
----@field KeypadPeriod KeyCode 87 
----@field KeypadDivide KeyCode 88 
----@field KeypadMultiply KeyCode 89 
----@field KeypadMinus KeyCode 90 
----@field KeypadPlus KeyCode 91 
----@field KeypadEnter KeyCode 92 
----@field KeypadEquals KeyCode 93 
----@field Up KeyCode 94 
----@field Down KeyCode 95 
----@field Right KeyCode 96 
----@field Left KeyCode 97 
----@field Insert KeyCode 98 
----@field Home KeyCode 99 
----@field End KeyCode 100 
----@field PageUp KeyCode 101 
----@field PageDown KeyCode 102 
----@field LeftShift KeyCode 103 
----@field RightShift KeyCode 104 
----@field LeftMeta KeyCode 105 
----@field RightMeta KeyCode 106 
----@field LeftAlt KeyCode 107 
----@field RightAlt KeyCode 108 
----@field LeftControl KeyCode 109 
----@field RightControl KeyCode 110 
----@field CapsLock KeyCode 111 
----@field NumLock KeyCode 112 
----@field ScrollLock KeyCode 113 
----@field LeftSuper KeyCode 114 
----@field RightSuper KeyCode 115 
----@field Mode KeyCode 116 
----@field Compose KeyCode 117 
----@field Help KeyCode 118 
----@field Prnumber KeyCode 119 
----@field SysReq KeyCode 120 
----@field Break KeyCode 121 
----@field Menu KeyCode 122 
----@field Power KeyCode 123 
----@field Euro KeyCode 124 
----@field Undo KeyCode 125 
----@field F1 KeyCode 126 
----@field F2 KeyCode 127 
----@field F3 KeyCode 128 
----@field F4 KeyCode 129 
----@field F5 KeyCode 130 
----@field F6 KeyCode 131 
----@field F7 KeyCode 132 
----@field F8 KeyCode 133 
----@field F9 KeyCode 134 
----@field F10 KeyCode 135 
----@field F11 KeyCode 136 
----@field F12 KeyCode 137 
----@field F13 KeyCode 138 
----@field F14 KeyCode 139 
----@field F15 KeyCode 140 
----@field World0 KeyCode 141 
----@field World1 KeyCode 142 
----@field World2 KeyCode 143 
----@field World3 KeyCode 144 
----@field World4 KeyCode 145 
----@field World5 KeyCode 146 
----@field World6 KeyCode 147 
----@field World7 KeyCode 148 
----@field World8 KeyCode 149 
----@field World9 KeyCode 150 
----@field World10 KeyCode 151 
----@field World11 KeyCode 152 
----@field World12 KeyCode 153 
----@field World13 KeyCode 154 
----@field World14 KeyCode 155 
----@field World15 KeyCode 156 
----@field World16 KeyCode 157 
----@field World17 KeyCode 158 
----@field World18 KeyCode 159 
----@field World19 KeyCode 160 
----@field World20 KeyCode 161 
----@field World21 KeyCode 162 
----@field World22 KeyCode 163 
----@field World23 KeyCode 164 
----@field World24 KeyCode 165 
----@field World25 KeyCode 166 
----@field World26 KeyCode 167 
----@field World27 KeyCode 168 
----@field World28 KeyCode 169 
----@field World29 KeyCode 170 
----@field World30 KeyCode 171 
----@field World31 KeyCode 172 
----@field World32 KeyCode 173 
----@field World33 KeyCode 174 
----@field World34 KeyCode 175 
----@field World35 KeyCode 176 
----@field World36 KeyCode 177 
----@field World37 KeyCode 178 
----@field World38 KeyCode 179 
----@field World39 KeyCode 180 
----@field World40 KeyCode 181 
----@field World41 KeyCode 182 
----@field World42 KeyCode 183 
----@field World43 KeyCode 184 
----@field World44 KeyCode 185 
----@field World45 KeyCode 186 
----@field World46 KeyCode 187 
----@field World47 KeyCode 188 
----@field World48 KeyCode 189 
----@field World49 KeyCode 190 
----@field World50 KeyCode 191 
----@field World51 KeyCode 192 
----@field World52 KeyCode 193 
----@field World53 KeyCode 194 
----@field World54 KeyCode 195 
----@field World55 KeyCode 196 
----@field World56 KeyCode 197 
----@field World57 KeyCode 198 
----@field World58 KeyCode 199 
----@field World59 KeyCode 200 
----@field World60 KeyCode 201 
----@field World61 KeyCode 202 
----@field World62 KeyCode 203 
----@field World63 KeyCode 204 
----@field World64 KeyCode 205 
----@field World65 KeyCode 206 
----@field World66 KeyCode 207 
----@field World67 KeyCode 208 
----@field World68 KeyCode 209 
----@field World69 KeyCode 210 
----@field World70 KeyCode 211 
----@field World71 KeyCode 212 
----@field World72 KeyCode 213 
----@field World73 KeyCode 214 
----@field World74 KeyCode 215 
----@field World75 KeyCode 216 
----@field World76 KeyCode 217 
----@field World77 KeyCode 218 
----@field World78 KeyCode 219 
----@field World79 KeyCode 220 
----@field World80 KeyCode 221 
----@field World81 KeyCode 222 
----@field World82 KeyCode 223 
----@field World83 KeyCode 224 
----@field World84 KeyCode 225 
----@field World85 KeyCode 226 
----@field World86 KeyCode 227 
----@field World87 KeyCode 228 
----@field World88 KeyCode 229 
----@field World89 KeyCode 230 
----@field World90 KeyCode 231 
----@field World91 KeyCode 232 
----@field World92 KeyCode 233 
----@field World93 KeyCode 234 
----@field World94 KeyCode 235 
----@field World95 KeyCode 236 
----@field ButtonX KeyCode 237 
----@field ButtonY KeyCode 238 
----@field ButtonA KeyCode 239 
----@field ButtonB KeyCode 240 
----@field ButtonR1 KeyCode 241 
----@field ButtonL1 KeyCode 242 
----@field ButtonR2 KeyCode 243 
----@field ButtonL2 KeyCode 244 
----@field ButtonR3 KeyCode 245 
----@field ButtonL3 KeyCode 246 
----@field ButtonStart KeyCode 247 
----@field ButtonSelect KeyCode 248 
----@field DPadLeft KeyCode 249 
----@field DPadRight KeyCode 250 
----@field DPadUp KeyCode 251 
----@field DPadDown KeyCode 252 
----@field Thumbstick1 KeyCode 253 
----@field Thumbstick2 KeyCode 254 
+---@field A KeyCode 46
+---@field B KeyCode 47
+---@field C KeyCode 48
+---@field D KeyCode 49
+---@field E KeyCode 50
+---@field F KeyCode 51
+---@field G KeyCode 52
+---@field H KeyCode 53
+---@field I KeyCode 54
+---@field J KeyCode 55
+---@field K KeyCode 56
+---@field L KeyCode 57
+---@field M KeyCode 58
+---@field N KeyCode 59
+---@field O KeyCode 60
+---@field P KeyCode 61
+---@field Q KeyCode 62
+---@field R KeyCode 63
+---@field S KeyCode 64
+---@field T KeyCode 65
+---@field U KeyCode 66
+---@field V KeyCode 67
+---@field W KeyCode 68
+---@field X KeyCode 69
+---@field Y KeyCode 70
+---@field Z KeyCode 71
+---@field LeftCurly KeyCode 72
+---@field Pipe KeyCode 73
+---@field RightCurly KeyCode 74
+---@field Tilde KeyCode 75
+---@field Delete KeyCode 76
+---@field KeypadZero KeyCode 77
+---@field KeypadOne KeyCode 78
+---@field KeypadTwo KeyCode 79
+---@field KeypadThree KeyCode 80
+---@field KeypadFour KeyCode 81
+---@field KeypadFive KeyCode 82
+---@field KeypadSix KeyCode 83
+---@field KeypadSeven KeyCode 84
+---@field KeypadEight KeyCode 85
+---@field KeypadNine KeyCode 86
+---@field KeypadPeriod KeyCode 87
+---@field KeypadDivide KeyCode 88
+---@field KeypadMultiply KeyCode 89
+---@field KeypadMinus KeyCode 90
+---@field KeypadPlus KeyCode 91
+---@field KeypadEnter KeyCode 92
+---@field KeypadEquals KeyCode 93
+---@field Up KeyCode 94
+---@field Down KeyCode 95
+---@field Right KeyCode 96
+---@field Left KeyCode 97
+---@field Insert KeyCode 98
+---@field Home KeyCode 99
+---@field End KeyCode 100
+---@field PageUp KeyCode 101
+---@field PageDown KeyCode 102
+---@field LeftShift KeyCode 103
+---@field RightShift KeyCode 104
+---@field LeftMeta KeyCode 105
+---@field RightMeta KeyCode 106
+---@field LeftAlt KeyCode 107
+---@field RightAlt KeyCode 108
+---@field LeftControl KeyCode 109
+---@field RightControl KeyCode 110
+---@field CapsLock KeyCode 111
+---@field NumLock KeyCode 112
+---@field ScrollLock KeyCode 113
+---@field LeftSuper KeyCode 114
+---@field RightSuper KeyCode 115
+---@field Mode KeyCode 116
+---@field Compose KeyCode 117
+---@field Help KeyCode 118
+---@field Prnumber KeyCode 119
+---@field SysReq KeyCode 120
+---@field Break KeyCode 121
+---@field Menu KeyCode 122
+---@field Power KeyCode 123
+---@field Euro KeyCode 124
+---@field Undo KeyCode 125
+---@field F1 KeyCode 126
+---@field F2 KeyCode 127
+---@field F3 KeyCode 128
+---@field F4 KeyCode 129
+---@field F5 KeyCode 130
+---@field F6 KeyCode 131
+---@field F7 KeyCode 132
+---@field F8 KeyCode 133
+---@field F9 KeyCode 134
+---@field F10 KeyCode 135
+---@field F11 KeyCode 136
+---@field F12 KeyCode 137
+---@field F13 KeyCode 138
+---@field F14 KeyCode 139
+---@field F15 KeyCode 140
+---@field World0 KeyCode 141
+---@field World1 KeyCode 142
+---@field World2 KeyCode 143
+---@field World3 KeyCode 144
+---@field World4 KeyCode 145
+---@field World5 KeyCode 146
+---@field World6 KeyCode 147
+---@field World7 KeyCode 148
+---@field World8 KeyCode 149
+---@field World9 KeyCode 150
+---@field World10 KeyCode 151
+---@field World11 KeyCode 152
+---@field World12 KeyCode 153
+---@field World13 KeyCode 154
+---@field World14 KeyCode 155
+---@field World15 KeyCode 156
+---@field World16 KeyCode 157
+---@field World17 KeyCode 158
+---@field World18 KeyCode 159
+---@field World19 KeyCode 160
+---@field World20 KeyCode 161
+---@field World21 KeyCode 162
+---@field World22 KeyCode 163
+---@field World23 KeyCode 164
+---@field World24 KeyCode 165
+---@field World25 KeyCode 166
+---@field World26 KeyCode 167
+---@field World27 KeyCode 168
+---@field World28 KeyCode 169
+---@field World29 KeyCode 170
+---@field World30 KeyCode 171
+---@field World31 KeyCode 172
+---@field World32 KeyCode 173
+---@field World33 KeyCode 174
+---@field World34 KeyCode 175
+---@field World35 KeyCode 176
+---@field World36 KeyCode 177
+---@field World37 KeyCode 178
+---@field World38 KeyCode 179
+---@field World39 KeyCode 180
+---@field World40 KeyCode 181
+---@field World41 KeyCode 182
+---@field World42 KeyCode 183
+---@field World43 KeyCode 184
+---@field World44 KeyCode 185
+---@field World45 KeyCode 186
+---@field World46 KeyCode 187
+---@field World47 KeyCode 188
+---@field World48 KeyCode 189
+---@field World49 KeyCode 190
+---@field World50 KeyCode 191
+---@field World51 KeyCode 192
+---@field World52 KeyCode 193
+---@field World53 KeyCode 194
+---@field World54 KeyCode 195
+---@field World55 KeyCode 196
+---@field World56 KeyCode 197
+---@field World57 KeyCode 198
+---@field World58 KeyCode 199
+---@field World59 KeyCode 200
+---@field World60 KeyCode 201
+---@field World61 KeyCode 202
+---@field World62 KeyCode 203
+---@field World63 KeyCode 204
+---@field World64 KeyCode 205
+---@field World65 KeyCode 206
+---@field World66 KeyCode 207
+---@field World67 KeyCode 208
+---@field World68 KeyCode 209
+---@field World69 KeyCode 210
+---@field World70 KeyCode 211
+---@field World71 KeyCode 212
+---@field World72 KeyCode 213
+---@field World73 KeyCode 214
+---@field World74 KeyCode 215
+---@field World75 KeyCode 216
+---@field World76 KeyCode 217
+---@field World77 KeyCode 218
+---@field World78 KeyCode 219
+---@field World79 KeyCode 220
+---@field World80 KeyCode 221
+---@field World81 KeyCode 222
+---@field World82 KeyCode 223
+---@field World83 KeyCode 224
+---@field World84 KeyCode 225
+---@field World85 KeyCode 226
+---@field World86 KeyCode 227
+---@field World87 KeyCode 228
+---@field World88 KeyCode 229
+---@field World89 KeyCode 230
+---@field World90 KeyCode 231
+---@field World91 KeyCode 232
+---@field World92 KeyCode 233
+---@field World93 KeyCode 234
+---@field World94 KeyCode 235
+---@field World95 KeyCode 236
+---@field ButtonX KeyCode 237
+---@field ButtonY KeyCode 238
+---@field ButtonA KeyCode 239
+---@field ButtonB KeyCode 240
+---@field ButtonR1 KeyCode 241
+---@field ButtonL1 KeyCode 242
+---@field ButtonR2 KeyCode 243
+---@field ButtonL2 KeyCode 244
+---@field ButtonR3 KeyCode 245
+---@field ButtonL3 KeyCode 246
+---@field ButtonStart KeyCode 247
+---@field ButtonSelect KeyCode 248
+---@field DPadLeft KeyCode 249
+---@field DPadRight KeyCode 250
+---@field DPadUp KeyCode 251
+---@field DPadDown KeyCode 252
+---@field Thumbstick1 KeyCode 253
+---@field Thumbstick2 KeyCode 254
 
 
 ---@class LayerIndexDesc :Enum
@@ -3781,20 +3781,20 @@
 
 
 ---@class MODELVIEW_FogType :Enum
----@field Disable MODELVIEW_FogType 1 
+---@field Disable MODELVIEW_FogType 1
 
 
 ---@class ModifierKey :Enum
----@field Shift ModifierKey 1 
----@field Ctrl ModifierKey 2 
----@field Alt ModifierKey 3 
----@field Meta ModifierKey 4 
+---@field Shift ModifierKey 1
+---@field Ctrl ModifierKey 2
+---@field Alt ModifierKey 3
+---@field Meta ModifierKey 4
 
 
 ---@class MotorType :Enum
 ---@field NONE MotorType 1 无
 ---@field MOTOR MotorType 2 电动机
----@field SERVO MotorType 3 
+---@field SERVO MotorType 3
 
 
 ---@class MouseBehavior :Enum
@@ -3841,77 +3841,77 @@
 
 
 ---@class ParticleCustomDataMode :Enum
----@field Disabled ParticleCustomDataMode 1 
----@field Vector ParticleCustomDataMode 2 
----@field Color ParticleCustomDataMode 3 
+---@field Disabled ParticleCustomDataMode 1
+---@field Vector ParticleCustomDataMode 2
+---@field Color ParticleCustomDataMode 3
 
 
 ---@class ParticleLimitVelocityOverLifetimeSeparateAxes :Enum
----@field Enable ParticleLimitVelocityOverLifetimeSeparateAxes 1 
----@field Disable ParticleLimitVelocityOverLifetimeSeparateAxes 2 
+---@field Enable ParticleLimitVelocityOverLifetimeSeparateAxes 1
+---@field Disable ParticleLimitVelocityOverLifetimeSeparateAxes 2
 
 
 ---@class ParticleLimitVelocityOverLifetimeSpaceMode :Enum
----@field Local ParticleLimitVelocityOverLifetimeSpaceMode 1 
----@field World ParticleLimitVelocityOverLifetimeSpaceMode 2 
+---@field Local ParticleLimitVelocityOverLifetimeSpaceMode 1
+---@field World ParticleLimitVelocityOverLifetimeSpaceMode 2
 
 
 ---@class ParticleLineAlignment :Enum
----@field View ParticleLineAlignment 1 
----@field TransformZ ParticleLineAlignment 2 
+---@field View ParticleLineAlignment 1
+---@field TransformZ ParticleLineAlignment 2
 
 
 ---@class ParticleQualityDropdown :Enum
----@field Low ParticleQualityDropdown 1 
----@field Medium ParticleQualityDropdown 2 
----@field High ParticleQualityDropdown 3 
+---@field Low ParticleQualityDropdown 1
+---@field Medium ParticleQualityDropdown 2
+---@field High ParticleQualityDropdown 3
 
 
 ---@class ParticleRenderMode :Enum
----@field Billboard ParticleRenderMode 1 
----@field Stretch3D ParticleRenderMode 2 
----@field BillboardFixedHorizontal ParticleRenderMode 3 
----@field BillboardFixedVertical ParticleRenderMode 4 
----@field Mesh ParticleRenderMode 5 
----@field None ParticleRenderMode 6 
+---@field Billboard ParticleRenderMode 1
+---@field Stretch3D ParticleRenderMode 2
+---@field BillboardFixedHorizontal ParticleRenderMode 3
+---@field BillboardFixedVertical ParticleRenderMode 4
+---@field Mesh ParticleRenderMode 5
+---@field None ParticleRenderMode 6
 
 
 ---@class ParticleRenderSpace :Enum
----@field View ParticleRenderSpace 1 
----@field World ParticleRenderSpace 2 
----@field Local ParticleRenderSpace 3 
----@field Facing ParticleRenderSpace 4 
----@field Velocity ParticleRenderSpace 5 
+---@field View ParticleRenderSpace 1
+---@field World ParticleRenderSpace 2
+---@field Local ParticleRenderSpace 3
+---@field Facing ParticleRenderSpace 4
+---@field Velocity ParticleRenderSpace 5
 
 
 ---@class ParticleShapeBoxType :Enum
----@field Volume ParticleShapeBoxType 1 
----@field Shell ParticleShapeBoxType 2 
----@field Edge ParticleShapeBoxType 3 
+---@field Volume ParticleShapeBoxType 1
+---@field Shell ParticleShapeBoxType 2
+---@field Edge ParticleShapeBoxType 3
 
 
 ---@class ParticleShapeConeType :Enum
----@field Base ParticleShapeConeType 1 
----@field Volume ParticleShapeConeType 2 
+---@field Base ParticleShapeConeType 1
+---@field Volume ParticleShapeConeType 2
 
 
 ---@class ParticleShapeMeshSpawnMode :Enum
----@field Random ParticleShapeMeshSpawnMode 1 
----@field Loop ParticleShapeMeshSpawnMode 2 
----@field PingPong ParticleShapeMeshSpawnMode 3 
+---@field Random ParticleShapeMeshSpawnMode 1
+---@field Loop ParticleShapeMeshSpawnMode 2
+---@field PingPong ParticleShapeMeshSpawnMode 3
 
 
 ---@class ParticleShapeMeshType :Enum
----@field Vertex ParticleShapeMeshType 1 
----@field Edge ParticleShapeMeshType 2 
----@field Triangle ParticleShapeMeshType 3 
+---@field Vertex ParticleShapeMeshType 1
+---@field Edge ParticleShapeMeshType 2
+---@field Triangle ParticleShapeMeshType 3
 
 
 ---@class ParticleSortMode :Enum
----@field None ParticleSortMode 1 
----@field ByDistance ParticleSortMode 2 
----@field OldestInFront ParticleSortMode 3 
----@field YoungestInFront ParticleSortMode 4 
+---@field None ParticleSortMode 1
+---@field ByDistance ParticleSortMode 2
+---@field OldestInFront ParticleSortMode 3
+---@field YoungestInFront ParticleSortMode 4
 
 
 ---@class ParticleSystemCullingMode :Enum
@@ -3922,18 +3922,18 @@
 
 
 ---@class ParticleSystemCurveMode :Enum
----@field Constant ParticleSystemCurveMode 1 
----@field Curve ParticleSystemCurveMode 2 
----@field RandomBetweenTwoConstants ParticleSystemCurveMode 3 
----@field RandomBetweenTwoCurves ParticleSystemCurveMode 4 
+---@field Constant ParticleSystemCurveMode 1
+---@field Curve ParticleSystemCurveMode 2
+---@field RandomBetweenTwoConstants ParticleSystemCurveMode 3
+---@field RandomBetweenTwoCurves ParticleSystemCurveMode 4
 
 
 ---@class ParticleSystemGradientMode :Enum
 ---@field Color ParticleSystemGradientMode 1 对MinMaxGradient使用单个颜色
 ---@field Gradient ParticleSystemGradientMode 2 对MinMaxGradient使用单个颜色渐变
----@field RandomBetweenTwoColors ParticleSystemGradientMode 3 
----@field RandomBetweenGradients ParticleSystemGradientMode 4 
----@field RandomColor ParticleSystemGradientMode 5 
+---@field RandomBetweenTwoColors ParticleSystemGradientMode 3
+---@field RandomBetweenGradients ParticleSystemGradientMode 4
+---@field RandomColor ParticleSystemGradientMode 5
 
 
 ---@class ParticleSystemRingBufferMode :Enum
@@ -3955,30 +3955,30 @@
 
 
 ---@class ParticleSystemUVGridType :Enum
----@field WholeSheet ParticleSystemUVGridType 1 
----@field SingleRow ParticleSystemUVGridType 2 
+---@field WholeSheet ParticleSystemUVGridType 1
+---@field SingleRow ParticleSystemUVGridType 2
 
 
 ---@class ParticleSystemUVMode :Enum
----@field Grid ParticleSystemUVMode 1 
----@field Sprites ParticleSystemUVMode 2 
+---@field Grid ParticleSystemUVMode 1
+---@field Sprites ParticleSystemUVMode 2
 
 
 ---@class ParticleSystemUVRowMode :Enum
----@field Custom ParticleSystemUVRowMode 1 
----@field Random ParticleSystemUVRowMode 2 
----@field MeshIndex ParticleSystemUVRowMode 3 
+---@field Custom ParticleSystemUVRowMode 1
+---@field Random ParticleSystemUVRowMode 2
+---@field MeshIndex ParticleSystemUVRowMode 3
 
 
 ---@class ParticleSystemUVTimeMode :Enum
----@field Lifetime ParticleSystemUVTimeMode 1 
----@field Speed ParticleSystemUVTimeMode 2 
----@field FPS ParticleSystemUVTimeMode 3 
+---@field Lifetime ParticleSystemUVTimeMode 1
+---@field Speed ParticleSystemUVTimeMode 2
+---@field FPS ParticleSystemUVTimeMode 3
 
 
 ---@class ParticleVelocityOverLifetimeSpaceMode :Enum
----@field Local ParticleVelocityOverLifetimeSpaceMode 1 
----@field World ParticleVelocityOverLifetimeSpaceMode 2 
+---@field Local ParticleVelocityOverLifetimeSpaceMode 1
+---@field World ParticleVelocityOverLifetimeSpaceMode 2
 
 
 ---@class PartType :Enum
@@ -3998,8 +3998,8 @@
 
 
 ---@class PhysicsFrames :Enum
----@field 30Hz PhysicsFrames 1 
----@field 60Hz PhysicsFrames 2 
+---@field 30Hz PhysicsFrames 1
+---@field 60Hz PhysicsFrames 2
 
 
 ---@class PhysicsRoleType :Enum
@@ -4076,9 +4076,9 @@
 
 
 ---@class ResourceLoadMode :Enum
----@field Default ResourceLoadMode 1 
----@field Manual ResourceLoadMode 2 
----@field Dynamic ResourceLoadMode 3 
+---@field Default ResourceLoadMode 1
+---@field Manual ResourceLoadMode 2
+---@field Dynamic ResourceLoadMode 3
 
 
 ---@class RollOffMode :Enum
@@ -4181,43 +4181,43 @@
 
 
 ---@class SUBSTAGE_INIT :Enum
----@field READY SUBSTAGE_INIT 1 
+---@field READY SUBSTAGE_INIT 1
 
 
 ---@class SUBSTAGE_LOADED :Enum
----@field READY SUBSTAGE_LOADED 1 
----@field REMOTE_READYNODECREATE SUBSTAGE_LOADED 2 
----@field HOST_LOADNODES SUBSTAGE_LOADED 3 
----@field REMOTE_ASSETCONFIG SUBSTAGE_LOADED 4 
----@field CLIENT_LOCALPLAYER SUBSTAGE_LOADED 5 
----@field REMOTE_SYNCFINISH SUBSTAGE_LOADED 6 
----@field REMOTE_ALLSCRIPTS SUBSTAGE_LOADED 7 
+---@field READY SUBSTAGE_LOADED 1
+---@field REMOTE_READYNODECREATE SUBSTAGE_LOADED 2
+---@field HOST_LOADNODES SUBSTAGE_LOADED 3
+---@field REMOTE_ASSETCONFIG SUBSTAGE_LOADED 4
+---@field CLIENT_LOCALPLAYER SUBSTAGE_LOADED 5
+---@field REMOTE_SYNCFINISH SUBSTAGE_LOADED 6
+---@field REMOTE_ALLSCRIPTS SUBSTAGE_LOADED 7
 
 
 ---@class SUBSTAGE_READY :Enum
----@field READY SUBSTAGE_READY 1 
----@field REMOTE_PREPARE SUBSTAGE_READY 2 
----@field REMOTE_HOSTREADY SUBSTAGE_READY 3 
----@field CLIENT_ASSETOBJ SUBSTAGE_READY 4 
+---@field READY SUBSTAGE_READY 1
+---@field REMOTE_PREPARE SUBSTAGE_READY 2
+---@field REMOTE_HOSTREADY SUBSTAGE_READY 3
+---@field CLIENT_ASSETOBJ SUBSTAGE_READY 4
 
 
 ---@class SUBSTAGE_RUN :Enum
----@field READY SUBSTAGE_RUN 1 
----@field HOST_GAMEMODE SUBSTAGE_RUN 2 
----@field REMOTE_HOSTREADY SUBSTAGE_RUN 3 
----@field SURVIVEGAME SUBSTAGE_RUN 4 
+---@field READY SUBSTAGE_RUN 1
+---@field HOST_GAMEMODE SUBSTAGE_RUN 2
+---@field REMOTE_HOSTREADY SUBSTAGE_RUN 3
+---@field SURVIVEGAME SUBSTAGE_RUN 4
 
 
 ---@class Surface :Enum
----@field FACE1 Surface 1 
----@field FACE2 Surface 2 
----@field FACE3 Surface 3 
----@field FACE4 Surface 4 
----@field FACE5 Surface 5 
----@field FACE6 Surface 6 
----@field FACE7 Surface 7 
----@field FACE8 Surface 8 
----@field FACE9 Surface 9 
+---@field FACE1 Surface 1
+---@field FACE2 Surface 2
+---@field FACE3 Surface 3
+---@field FACE4 Surface 4
+---@field FACE5 Surface 5
+---@field FACE6 Surface 6
+---@field FACE7 Surface 7
+---@field FACE8 Surface 8
+---@field FACE9 Surface 9
 
 
 ---@class TextHAlignment :Enum
@@ -4280,52 +4280,52 @@
 
 
 ---@class UIMODLEVIEW_SkyLightType :Enum
----@field Skybox UIMODLEVIEW_SkyLightType 1 
----@field Color UIMODLEVIEW_SkyLightType 2 
----@field Gradient UIMODLEVIEW_SkyLightType 3 
+---@field Skybox UIMODLEVIEW_SkyLightType 1
+---@field Color UIMODLEVIEW_SkyLightType 2
+---@field Gradient UIMODLEVIEW_SkyLightType 3
 
 
 ---@class UserInputKeyCode :Enum
----@field KeyCodeUnknown UserInputKeyCode 1 
----@field KeyCodeA UserInputKeyCode 2 
----@field KeyCodeD UserInputKeyCode 3 
----@field KeyCodeS UserInputKeyCode 4 
----@field KeyCodeW UserInputKeyCode 5 
+---@field KeyCodeUnknown UserInputKeyCode 1
+---@field KeyCodeA UserInputKeyCode 2
+---@field KeyCodeD UserInputKeyCode 3
+---@field KeyCodeS UserInputKeyCode 4
+---@field KeyCodeW UserInputKeyCode 5
 
 
 ---@class UserInputState :Enum
----@field InputBegin UserInputState 1 
----@field InputChange UserInputState 2 
----@field InputEnd UserInputState 3 
----@field InputCancel UserInputState 4 
+---@field InputBegin UserInputState 1
+---@field InputChange UserInputState 2
+---@field InputEnd UserInputState 3
+---@field InputCancel UserInputState 4
 
 
 ---@class UserInputType :Enum
----@field MouseButton1 UserInputType 1 
----@field MouseButton2 UserInputType 2 
----@field MouseButton3 UserInputType 3 
----@field MouseWheel UserInputType 4 
----@field MouseMovement UserInputType 5 
----@field MouseOut UserInputType 6 
----@field MouseIn UserInputType 7 
----@field Touch UserInputType 8 
----@field MouseIdle UserInputType 9 
----@field MouseDelta UserInputType 10 
----@field Keyboard UserInputType 11 
----@field ACCELEROMETER UserInputType 12 
----@field GYRO UserInputType 13 
----@field GamePad1 UserInputType 14 
----@field GamePad2 UserInputType 15 
----@field GamePad3 UserInputType 16 
----@field GamePad4 UserInputType 17 
----@field GamePad5 UserInputType 18 
----@field GamePad6 UserInputType 19 
----@field GamePad7 UserInputType 20 
----@field GamePad8 UserInputType 21 
----@field GetFocus UserInputType 22 
----@field LostFocus UserInputType 23 
----@field TextInput UserInputType 24 
----@field WinSize UserInputType 25 
+---@field MouseButton1 UserInputType 1
+---@field MouseButton2 UserInputType 2
+---@field MouseButton3 UserInputType 3
+---@field MouseWheel UserInputType 4
+---@field MouseMovement UserInputType 5
+---@field MouseOut UserInputType 6
+---@field MouseIn UserInputType 7
+---@field Touch UserInputType 8
+---@field MouseIdle UserInputType 9
+---@field MouseDelta UserInputType 10
+---@field Keyboard UserInputType 11
+---@field ACCELEROMETER UserInputType 12
+---@field GYRO UserInputType 13
+---@field GamePad1 UserInputType 14
+---@field GamePad2 UserInputType 15
+---@field GamePad3 UserInputType 16
+---@field GamePad4 UserInputType 17
+---@field GamePad5 UserInputType 18
+---@field GamePad6 UserInputType 19
+---@field GamePad7 UserInputType 20
+---@field GamePad8 UserInputType 21
+---@field GetFocus UserInputType 22
+---@field LostFocus UserInputType 23
+---@field TextInput UserInputType 24
+---@field WinSize UserInputType 25
 
 
 ---@class VerticalAlignment :Enum

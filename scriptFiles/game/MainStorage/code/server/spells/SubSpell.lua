@@ -24,7 +24,7 @@ local SubSpell = ClassMgr.Class("SubSpell")
 function SubSpell:OnInit( data )
     self.spellCache = nil
     self.spellName = data["魔法"]
-    
+
     -- 初始化复写参数
     self.overrideParams = {}
     if data["复写参数"] then
@@ -36,7 +36,7 @@ function SubSpell:OnInit( data )
             })
         end
     end
-    
+
     -- 初始化修改数值
     self.overrideValues = {}
     if data["修改数值"] then
@@ -53,7 +53,7 @@ function SubSpell:OnInit( data )
             })
         end
     end
-    
+
     self.dynamicTags = {}
 end
 
@@ -67,18 +67,18 @@ function SubSpell:Cast(caster, target, param)
         param = CastParam.New()
     end
     local spellParam = param:Clone()
-    
+
     -- 合并本地的dynamicTags到spellParam的dynamicTags
     if self.dynamicTags then
         if not spellParam.dynamicTags then
             spellParam.dynamicTags = {}
         end
-        
+
         for key, tags in pairs(self.dynamicTags) do
             if not spellParam.dynamicTags[key] then
                 spellParam.dynamicTags[key] = {}
             end
-            
+
             for _, tag in ipairs(tags) do
                 -- 检查是否已存在相同ID的词条
                 local existingTag = nil
@@ -88,7 +88,7 @@ function SubSpell:Cast(caster, target, param)
                         break
                     end
                 end
-                
+
                 if existingTag then
                     -- 如果存在相同ID的词条，增加其等级
                     existingTag.level = existingTag.level + tag.level
@@ -99,7 +99,7 @@ function SubSpell:Cast(caster, target, param)
             end
         end
     end
-    
+
     -- 处理修改数值
     if self.overrideValues then
         for _, modifier in ipairs(self.overrideValues) do
@@ -110,11 +110,11 @@ function SubSpell:Cast(caster, target, param)
                 else
                     name = modifier.objectName .. "." .. modifier.paramName
                 end
-                
+
                 if not spellParam.extraModifiers[name] then
                     spellParam.extraModifiers[name] = Battle.New(caster, caster, name)
                 end
-                
+
                 spellParam.extraModifiers[name]:AddModifier(
                     self.spell.spellName,
                     modifier.paramValue.addType,
@@ -123,7 +123,7 @@ function SubSpell:Cast(caster, target, param)
             end
         end
     end
-    
+
     -- 处理复写参数
     if self.overrideParams then
         for _, modifier in ipairs(self.overrideParams) do
@@ -134,12 +134,12 @@ function SubSpell:Cast(caster, target, param)
                 else
                     name = modifier.objectName .. "." .. modifier.paramName
                 end
-                
+
                 spellParam.extraParams[name] = modifier.value
             end
         end
     end
-    
+
     if not self.spellCache then
         local SpellConfig = require(MainStorage.code.common.Config.SpellConfig)
         self.spellCache = SpellConfig.Get(self.spellName)

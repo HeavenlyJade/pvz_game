@@ -34,27 +34,13 @@ function _M:OnInit(npcData, actor)
     self.interactIcon      = npcData["互动图标"]
     self.uuid              = gg.create_uuid('npc')
     self.target            = nil
-    actor.Size             = Vector3.new(120, 160, 120) --touch盒子的大小
-    actor.Center           = Vector3.new(0, 80, 0)     --盒子中心位置
     actor.CubeBorderEnable = true                      --debug显示碰撞方块
-    
-    -- 初始化gg.npcs如果不存在
-    if not gg.npcs then
-        gg.npcs = {}
-    end
-    
-    -- 将当前NPC实例存储到全局表中
-    gg.npcs[self.uuid] = self
-    
     gg.log("Npc初始化", self.name, self.uuid)
     gg.log("Npc对象", actor)
-    actor.Size    = Vector3.new(120, 160, 120)         --touch盒子的大小
-    actor.Center  = Vector3.new(0, 80, 0)              --盒子中心位置
-    local npcSize = actor.Size
-    -- 创建交互触发器
+    self:setupNpcInteraction(actor, self.name)
     -- local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox
     -- -- 获取NPC模型尺寸
-    -- local npcSize         = actor.Size
+    local npcSize         = actor.Size
 
     -- -- 设置触发器尺寸，在NPC模型周围扩展一定范围
     -- trigger.LocalPosition = actor.Center
@@ -93,6 +79,7 @@ function _M:OnInit(npcData, actor)
     ServerEventManager.Subscribe("InteractWithNpc", function(evt)
         local player = evt.player
         local npcId = evt.npcId
+        gg.log("InteractWithNpc", self.name, self.uuid, player.name, player.uuid)
         -- 查找NPC
         if self.uuid == npcId then
             -- 检查玩家是否在NPC附近
@@ -103,13 +90,10 @@ function _M:OnInit(npcData, actor)
             end
         end
     end)
-    self:createTitle(npcSize[1])
-
-
+    self:createTitle(npcSize.y)
 end
 
-function _M:setupNpcInteraction(actor,npcInstance)
-    local npc_name = self.name
+function _M:setupNpcInteraction(actor, npc_name)
     gg.log('NP区域', npc_name, actor)
     actor.CubeBorderEnable = true --debug显示碰撞方块
     -- 获取区域和模型属性
@@ -126,34 +110,31 @@ function _M:setupNpcInteraction(actor,npcInstance)
     interactArea.EffectWidth = 1
 
     -- 创建客户端事件处理
-    gg.log("NPC实例", npcInstance)
-    local function handlePlayerInteraction(node, isEntering)
+    local function handlePlayerInteraction(node, isEntering,self)
+        print("玩家进入/离开区域", node, isEntering)
         if node and node.UserId then
             local player = gg.getPlayerByUin(node.UserId)
             if player then
-                -- 详细的日志输出，用于调试
-                
                 if isEntering then
-                    npcInstance:SetTarget(player)
+                    self:SetTarget(player)
                     -- 将NPC添加到玩家的附近NPC列表中
-                    player:AddNearbyNpc(npcInstance)
+                    player:AddNearbyNpc(self)
                 else
-                    if npcInstance.target == player then
-                        npcInstance:SetTarget(nil)
-                    end
-                    player:RemoveNearbyNpc(npcInstance)
+                    self:SetTarget(nil)
+                    player:RemoveNearbyNpc(self)
                 end
             end
         end
+
     end
 
     -- 注册区域事件
     interactArea.EnterNode:connect(function(node)
-        handlePlayerInteraction(node, true) -- 玩家进入
+        handlePlayerInteraction(node, true,self) -- 玩家进入
     end)
 
     interactArea.LeaveNode:connect(function(node)
-        handlePlayerInteraction(node, false) -- 玩家离开
+        handlePlayerInteraction(node, false,self) -- 玩家离开
     end)
 
     return interactArea
@@ -162,7 +143,6 @@ end
 ---设置NPC的目标
 ---@param target Player|nil
 function _M:SetTarget(target)
-    -- gg.log("NPC设置目标", self.name, self.uuid, target and target.name or "nil")
     self.target = target
 end
 
@@ -170,13 +150,13 @@ end
 function _M:update_npc()
     -- 如果有目标，持续看向目标
     if self.target then
-        -- gg.log("NPC看向目标", self.name, self.target.name,self.target.actor,self.target.position)
-        -- self.actor:LookAtObject(self.target.position)
+        self.actor:LookAt(self.target:GetPosition(), true)
     end
 end
 
 -- 处理NPC交互
 function _M:HandleInteraction(player)
+    gg.log("HandleInteraction", self.name, self.uuid, player.name, player.uuid)
     -- 检查交互条件
     if self.interactCondition then
         local param = self.interactCondition:Check(player, self)
@@ -186,9 +166,7 @@ function _M:HandleInteraction(player)
     end
     -- 执行交互指令
     if self.interactCommands then
-        for _, command in ipairs(self.interactCommands) do
-            player:ExecuteCommand(command)
-        end
+        player:ExecuteCommands(self.interactCommands)
     end
 
     -- 发布NPC交互事件

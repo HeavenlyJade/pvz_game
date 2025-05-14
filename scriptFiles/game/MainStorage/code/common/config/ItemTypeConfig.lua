@@ -74,7 +74,7 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = true,
-        ["货币序号"] = 3
+        ["货币序号"] = 4
     }),
     ["水晶"] = ItemType.New({
         ["名字"] = "水晶",
@@ -126,7 +126,6 @@ end
 ---@param itemType string
 ---@return ItemType
 function ItemTypeConfig.Get(itemType)
-    print("Get", loaded)
     if not loaded then
         LoadConfig()
     end

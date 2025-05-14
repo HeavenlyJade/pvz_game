@@ -25,6 +25,13 @@ local ItemQualityConfig = require(MainStorage.code.common.config.ItemQualityConf
 ---@field New fun():Item
 local Item = ClassMgr.Class("Item")
 
+function Item:GetToStringParams()
+    return {
+        name = self.itemType.name,
+        amount = self.amount
+    }
+end
+
 function Item:OnInit()
     self.itemType = nil
     self.amount = 0

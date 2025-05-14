@@ -4,7 +4,7 @@ local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type
 local soundPlayer = game:GetService("StarterGui")["UISound"] ---@type Sound
 
 ---@class ViewButton:ViewComponent
----@field New fun(node: SandboxNode, ui: ViewBase): ViewButton
+---@field New fun(node: SandboxNode, ui: ViewBase, path: string): ViewButton
 local  ViewButton = ClassMgr.Class("ViewButton", ViewComponent)
 
 function ViewButton:OnTouchOut()
@@ -93,8 +93,8 @@ function ViewButton:OnClick()
     end
 end
 
-function ViewButton:OnInit(node, ui)
-    ViewComponent.OnInit(self, node, ui)
+function ViewButton:OnInit(node, ui, path)
+    ViewComponent.OnInit(self, node, ui, path)
     self.childClickImgs = {    }
     local img = node
     self.img = node ---@type UIImage

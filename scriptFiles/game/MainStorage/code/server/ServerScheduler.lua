@@ -42,12 +42,12 @@ end
 function ServerScheduler.add(func, delay, repeatInterval, isInSecond)
     local taskId = ServerScheduler.nextTaskId
     ServerScheduler.nextTaskId = ServerScheduler.nextTaskId + 1
-    
+
     if isInSecond then
         delay = math.floor(delay * 30)
         repeatInterval = math.floor(repeatInterval * 30)
     end
-    
+
     local task = {
         func = func,
         delay = delay,
@@ -55,10 +55,10 @@ function ServerScheduler.add(func, delay, repeatInterval, isInSecond)
         remaining = delay,
         taskId = taskId
     }
-    
+
     ServerScheduler.tasks[taskId] = task
     addToPriorityQueue(task)
-    
+
     return taskId
 end
 
@@ -92,7 +92,7 @@ function ServerScheduler.update()
             if not success then
                 gg.log("[ERROR] Scheduled task failed:", err)
             end
-            
+
             -- Handle repeat
             if task.repeatInterval > 0 then
                 task.remaining = task.repeatInterval
@@ -116,7 +116,7 @@ function ServerScheduler.update()
                     if not success then
                         gg.log("[ERROR] Scheduled task failed:", err)
                     end
-                    
+
                     if task.repeatInterval > 0 then
                         task.remaining = task.repeatInterval
                         table.insert(toRequeue, task)
@@ -143,7 +143,7 @@ function ServerScheduler.update()
                     if not success then
                         gg.log("[ERROR] Scheduled task failed:", err)
                     end
-                    
+
                     if task.repeatInterval > 0 then
                         task.remaining = task.repeatInterval
                         table.insert(toRequeue, task)
@@ -168,7 +168,7 @@ function ServerScheduler.update()
                     if not success then
                         gg.log("[ERROR] Scheduled task failed:", err)
                     end
-                    
+
                     if task.repeatInterval > 0 then
                         task.remaining = task.repeatInterval
                         table.insert(toRequeue, task)

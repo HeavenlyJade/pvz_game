@@ -28,21 +28,21 @@ CommandManager.handlers = {
     ["spawnMob"] = MobCommand.spawnMob,
     ["cast"] = SpellCommand.cast,
     -- ["装备"] = {},
-    
+
     -- -- 玩家属性相关
     -- ["等级"] = {},
     -- ["经验"] = {},
     -- ["属性"] = {},
     -- ["金币"] = {},
     -- ["声望"] = {},
-    
+
     -- -- 任务相关
     -- ["任务"] = {},
-    
+
     -- -- 技能相关
     -- ["技能"] = {},
     -- ["武魂"] = {},
-    
+
     -- -- 系统相关
     -- ["事件"] = {},
     -- ["地图"] = {}
@@ -54,21 +54,21 @@ end)
 
 function CommandManager.ExecuteCommand(commandStr, player)
     if not commandStr then return false end
-    
+
     -- 1. 分割命令和参数
     local command, jsonStr = commandStr:match("^(%S+)%s+(.+)$")
     if not command then
         gg.log("命令格式错误: " .. commandStr)
         return false
     end
-    
+
     -- 2. 查找命令处理器
     local handler = CommandManager.handlers[command]
     if not handler then
         gg.log("未知命令: " .. command)
         return false
     end
-    
+
     -- 3. 解析JSON参数
     local params = json.decode(jsonStr)
     if params["玩家"] then
@@ -85,7 +85,7 @@ function CommandManager.ExecuteCommand(commandStr, player)
         gg.log("命令执行错误: " .. command .. ", " .. tostring(result))
         return false
     end
-    
+
     return result
 end
 
@@ -94,21 +94,21 @@ end
 --     -- 物品相关指令映射到物品命令模块
 --     ["物品"] = ItemCommands,
 --     ["装备"] = ItemCommands,
-    
+
 --     -- 玩家属性相关指令映射到玩家命令模块
 --     ["等级"] = PlayerCommands,
 --     ["经验"] = PlayerCommands,
 --     ["属性"] = PlayerCommands,
 --     ["金币"] = PlayerCommands,
 --     ["声望"] = PlayerCommands,
-    
+
 --     -- 任务相关指令映射到任务命令模块
 --     ["任务"] = QuestCommands,
-    
+
 --     -- 技能相关指令映射到技能命令模块
 --     ["技能"] = SkillCommands,
 --     ["武魂"] = SkillCommands,
-    
+
 --     -- 系统相关指令映射到系统命令模块
 --     ["事件"] = SystemCommands,
 --     ["地图"] = SystemCommands
@@ -122,10 +122,10 @@ end
 --             self:RegisterHandlers(category, module.handlers)
 --         end
 --     end
-    
+
 --     -- 注册条件解析器
 --     self.conditionParser = ConditionParser
-    
+
 --     gg.log("命令系统初始化完成")
 --     return self
 -- end
@@ -135,7 +135,7 @@ end
 --     if not self.handlers[category] then
 --         self.handlers[category] = {}
 --     end
-    
+
 --     for operation, handler in pairs(handlers) do
 --         if self.handlers[category][operation] then
 --             gg.log("警告: 操作'" .. category .. "." .. operation .. "'已存在，将被覆盖")
@@ -161,14 +161,14 @@ end
 --             return false
 --         end
 --     end
-    
+
 --     -- 解析普通命令
 --     local category, operation, params = CommandParser:ParseCommand(commandStr, player)
 --     if not category or not operation then
 --         gg.log("命令解析失败: " .. commandStr)
 --         return false
 --     end
-    
+
 --     -- 执行对应的处理器
 --     if self.handlers[category] and self.handlers[category][operation] then
 --         local handler = self.handlers[category][operation]
@@ -198,19 +198,19 @@ end
 -- -- 批量执行命令
 -- function CommandManager:ProcessCommands(commands, player)
 --     if not commands then return true end
-    
+
 --     local allSuccess = true
 --     for _, command in ipairs(commands) do
 --         -- 替换%p为玩家ID
 --         command = command:gsub("%%p", player.uin or "")
-        
+
 --         local success = self:ExecuteCommand(command, player)
 --         if not success then
 --             allSuccess = false
 --             gg.log("命令执行失败: " .. command)
 --         end
 --     end
-    
+
 --     return allSuccess
 -- end
 

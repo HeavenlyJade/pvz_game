@@ -55,7 +55,7 @@ function Spell:OnInit( data )
     -- 直接使用配置中的Modifiers实例
     self.selfConditions = data["自身条件"] or {}
     self.targetConditions = data["目标条件"] or {}
-    
+
     -- 初始化子魔法数组
     self.subSpells = {}
     if data["子魔法"] then
@@ -65,7 +65,7 @@ function Spell:OnInit( data )
             table.insert(self.subSpells, subSpell)
         end
     end
-    
+
     self.preCastEffects = data["特效_前摇释放"] or {}
     self.preTargetEffects = data["特效_前摇目标"] or {}
     self.castEffects = data["特效_释放"] or {}
@@ -82,7 +82,7 @@ function Spell:Cast(caster, target, param)
         param = CastParam.New()
     end
     param.realTarget = target
-    
+
     if not caster then
         return false
     end
@@ -109,9 +109,9 @@ function Spell:Cast(caster, target, param)
             return false
         end
     end
-    
+
     param.power = param.power * param:GetValue(self, "基础威力", self.basePower)
-    
+
     local log = {}
     if not self:CanCast(caster, target, param, log) then
         if self.printInfo then
@@ -119,7 +119,7 @@ function Spell:Cast(caster, target, param)
         end
         return false
     end
-    
+
     caster:TriggerTags("castSpell", target, param, self, param)
     if param.cancelled then
         if self.printInfo then
@@ -128,7 +128,7 @@ function Spell:Cast(caster, target, param)
         end
         return false
     end
-    
+
     if target and target.isEntity then
         target:TriggerTags("beCastSpell", caster, param, param)
     end
@@ -139,11 +139,11 @@ function Spell:Cast(caster, target, param)
         end
         return false
     end
-    
+
     if param:GetParam(self, "释放给自己", self.castOnSelf) then
         target = caster
     end
-    
+
     local cd = param:GetValue(self, "冷却", self.cooldown)
     if cd > 0 then
         cd = cd / param:GetValue(self, "冷却加速", self.cooldownSpeed)
@@ -152,7 +152,7 @@ function Spell:Cast(caster, target, param)
             log[#log + 1] = string.format("%s：设置冷却%.1f秒", self.spellName, cd)
         end
     end
-    
+
     local targetCd = param:GetValue(self, "各目标冷却", self.targetCooldown)
     if targetCd > 0 and target and target.isEntity then
         caster:SetCooldown(self.spellName, targetCd, target:GetEntity())
@@ -160,10 +160,10 @@ function Spell:Cast(caster, target, param)
             log[#log + 1] = string.format("%s：设置对该目标冷却%.1f秒", self.spellName, targetCd)
         end
     end
-    
+
     self:PlayEffect(self.preCastEffects, param.realTarget, caster, param)
     self:PlayEffect(self.preTargetEffects, caster, param.realTarget, param)
-    
+
     local delay = param:GetValue(self, "延迟", self.delay)
     if delay > 0 then
         if self.printInfo then
@@ -221,42 +221,42 @@ function Spell:CanCast(caster, target, param, log)
         end
         return false
     end
-    
+
     if self.targetCooldown > 0 and target.isEntity and caster:IsCoolingdown(self.spellName, target) then
         if log then
             log[#log + 1] = string.format("%s：对该目标冷却中", self.spellName)
         end
         return false
     end
-    
+
     if #self.selfConditions > 0 then
         for _, condition in ipairs(self.selfConditions) do
             local stop = condition:Check(caster, caster, param)
             if stop then break end
         end
     end
-    
+
     if param.cancelled then
         if log then
             log[#log + 1] = string.format("%s：自身条件不满足", self.spellName)
         end
         return false
     end
-    
+
     if #self.targetConditions > 0 then
         for _, condition in ipairs(self.targetConditions) do
             local stop = condition:Check(caster, target, param)
             if stop then break end
         end
     end
-    
+
     if param.cancelled then
         if log then
             log[#log + 1] = string.format("%s：目标条件不满足", self.spellName)
         end
         return false
     end
-    
+
     return true
 end
 

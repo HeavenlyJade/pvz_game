@@ -5,12 +5,12 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 
 ---@class ViewComponent:Class
 ---@field node UIComponent
----@field New fun(node: SandboxNode, ui: ViewBase, ...): ViewComponent
+---@field New fun(node: SandboxNode, ui: ViewBase, path:string,  ...): ViewComponent
 ---@field path string 组件的绝对路径
 local  ViewComponent = ClassMgr.Class("ViewComponent")
 
 
-function ViewComponent:OnInit(node, ui)
+function ViewComponent:OnInit(node, ui, path)
     if node.className then
         self.node = node.node
     else
@@ -22,7 +22,7 @@ function ViewComponent:OnInit(node, ui)
     self.currentTween = nil
     self.ui = ui ---@type ViewBase
     self.index = 0
-    self.path = node.Name
+    self.path = path
 end
 
 ---@override

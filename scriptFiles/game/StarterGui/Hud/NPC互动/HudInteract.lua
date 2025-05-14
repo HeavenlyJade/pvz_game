@@ -14,6 +14,7 @@ local uiConfig = {
     uiName = "HudInteract",
     layer = 0,
     hideOnInit = false, -- 初始隐藏，当玩家靠近NPC时显示
+    initHudInteract = false
 }
 
 ---@param viewButton ViewButton
@@ -32,35 +33,53 @@ end
 function HudInteract:OnInit(node, config)
     ViewBase.OnInit(self, node, config)
     self.currentOptions = {} -- 存储当前可交互的NPC选项
+
+    -- 添加日志以确认节点状态
+    gg.log("HudInteract初始化 - 节点:", node, "交互列表:", node:FindFirstChild("交互列表"))
+
+    -- 初始化交互列表
     self.interactList = self:Get("交互列表", ViewList, function(n)
         local button = ViewButton.New(n, self)
         button.clickCb = OnInteractClick
         return button
-    end) ---@type ViewList<ViewButton>
+    end)
+
+    -- 检查交互列表是否成功初始化
+    if not self.interactList then
+        gg.log("错误: 交互列表初始化失败!")
+        return
+    end
+
+    -- 先隐藏交互界面
+    self:HideInteract()
+
+    -- 确保UI完全初始化后再订阅事件（可以使用延迟）
+    wait(0.1) -- 延迟一小段时间确保UI组件已完全准备好
 
     -- 监听NPC交互更新事件
     ClientEventManager.Subscribe("NPCInteractionUpdate", function(evt)
         local evt = evt ---@type NPCInteractionUpdate
-        if #evt.interactOptions > 0 then
+        if evt and evt.interactOptions and #evt.interactOptions > 0 then
             self:ShowInteract(evt.interactOptions)
         else
             self:HideInteract()
         end
     end)
-    self:HideInteract()
 end
 
 ---显示交互界面
 ---@param interactOptions NPCInteractionOption[] 交互选项列表
 function HudInteract:ShowInteract(interactOptions)
     -- 保存当前选项
+    gg.log("显示交互界面", interactOptions)
     self.currentOptions = interactOptions
     -- 设置交互选项数量
     self.interactList:SetElementSize(#interactOptions)
-    
+    gg.log("设置交互选项数量", #interactOptions)
     -- 更新交互选项
     for i, option in ipairs(interactOptions) do
         local button = self.interactList:GetChild(i) ---@cast button ViewButton
+        gg.log("更新交互选项", i, option,button)
         button:Get("Text").node.Title = option.npcName
         button:Get("Icon").node.Icon = option.icon
         button.index = i

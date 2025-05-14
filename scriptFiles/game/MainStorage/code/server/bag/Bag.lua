@@ -349,11 +349,11 @@ end
 
 ---@return Item|nil
 function Bag:GetItem(slot)
-    local items = self.bag_items[slot.category]
+    local items = self.bag_items[slot.c]
     if not items then
         return nil
     end
-    return items[slot.slot]
+    return items[slot.s]
 end
 
 ---@param slot Slot 格子序号
@@ -589,8 +589,8 @@ function Bag:PrintContent()
                 if item then
                     table.insert(categoryItems, {
                         item = item,
-                        slot = slot,
-                        category = category
+                        s = slot,
+                        c = category
                     })
                 end
             end
@@ -608,7 +608,7 @@ function Bag:PrintContent()
         end
         first = false
         for _, itemInfo in ipairs(items) do
-            table.insert(lines, string.format("[%d:%d] %s", itemInfo.category, itemInfo.slot, itemInfo.item:PrintContent()))
+            table.insert(lines, string.format("[%d:%d] %s", itemInfo.c, itemInfo.s, itemInfo.item:PrintContent()))
         end
     end
 

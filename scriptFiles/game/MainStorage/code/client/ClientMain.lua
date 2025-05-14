@@ -21,10 +21,11 @@ function ClientMain.start_client()
     ClientMain.createNetworkChannel()
     ClientMain.handleCoreUISettings()
     ClientInit.init()
+    ClientMain.initButton()
     Controller.init()
     local timer = SandboxNode.New("Timer", game.StarterGui)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-    
+
     timer.Name = 'timer_client'
     timer.Delay = 0.1      -- 延迟多少秒开始
     timer.Loop = true      -- 是否循环
@@ -46,7 +47,7 @@ function ClientMain.createNetworkChannel()
     gg.network_channel.OnClientNotify:Connect(ClientMain.OnClientNotify)
 
     gg.network_channel:FireServer({ cmd = 'cmd_heartbeat', msg = 'new_client_join' })
-  
+
     gg.log('网络通道建立结束')
 end
 
@@ -58,6 +59,12 @@ function ClientMain.handleCoreUISettings()
     -- CoreUI:HornSwitchBtn(false)
 end
 
+
+function ClientMain.initButton()
+    local UiSettingBut = require(MainStorage.code.client.UiClient.SysUi.SettingBut) ---@type UiSettingBut
+    UiSettingBut.OnInit()
+
+end
 function ClientMain.OnClientNotify(args)
     if type(args) ~= 'table' then return end
     if not args.cmd then return end

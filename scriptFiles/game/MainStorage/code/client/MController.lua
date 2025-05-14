@@ -52,7 +52,7 @@ function Controller.init()
     -- wheelControl.ShowView(true)
     -- uiMap.init_map()
     UiSettingBut.OnInit()
-    NpcClient.init_npc()
+    -- NpcClient.init_npc()
 
 end
 

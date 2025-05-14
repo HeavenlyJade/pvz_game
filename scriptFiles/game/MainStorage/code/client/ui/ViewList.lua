@@ -8,17 +8,17 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@field childrens ViewComponent[] 子元素列表
 ---@field childNameTemplate string|nil 子元素名称模板
 ---@field onAddElementCb fun(child: SandboxNode): ViewComponent 添加元素时的回调函数
----@field New fun(node: UIComponent|ViewComponent, ui: ViewBase, onAddElementCb: fun(child: SandboxNode): ViewComponent): ViewList
+---@field New fun(node: UIComponent|ViewComponent, ui: ViewBase, path: string, onAddElementCb: fun(child: SandboxNode): ViewComponent): ViewList
 local ViewList = ClassMgr.Class("ViewList", ViewComponent)
 
 ---@param node SandboxNode
 ---@param ui SandboxNode
 ---@param onAddElementCb fun(child: SandboxNode): ViewComponent
-function ViewList:OnInit(node, ui, onAddElementCb)
-    ViewComponent.OnInit(self, node, ui)
+function ViewList:OnInit(node, ui, path, onAddElementCb)
+    ViewComponent.OnInit(self, node, ui, path)
     self.childrens = {} ---@type ViewComponent[]
     self.childNameTemplate = nil
-    self.onAddElementCb = onAddElementCb 
+    self.onAddElementCb = onAddElementCb
     for _, child in pairs(self.node.Children) do
         local childName = child.Name
         local num = childName:match("_([0-9]+)")
@@ -29,6 +29,8 @@ function ViewList:OnInit(node, ui, onAddElementCb)
             end
             local button = self.onAddElementCb(child)
             if button then
+                print("ViewList", ui.Name, self.path, child.Name)
+                button.path = self.path .. "/" .. child.Name
                 local idx = tonumber(num)
                 if idx then
                     self.childrens[idx] = button
@@ -66,6 +68,7 @@ function ViewList:SetElementSize(size)
             if self.onAddElementCb then
                 local button = self.onAddElementCb(child)
                 if button then
+                    button.path = self.path .. "/" .. child.Name
                     child.index = i
                     self.childrens[i] = button
                 end

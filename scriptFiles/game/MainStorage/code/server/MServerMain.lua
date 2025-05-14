@@ -171,6 +171,11 @@ function MainServer.register_player_in_out()
     end)
 end
 
+function MainServer.initEventRelease()
+    local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
+    MailManager:Init()
+end
+
 --玩家进入游戏，数据加载
 function MainServer.player_enter_game(player)
     gg.log("player enter====", player.UserId, player.Name, player.Nickname)

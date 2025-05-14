@@ -10,20 +10,24 @@ local ClientInit = ClassMgr.Class("ClientInit")
 -- 客户端初始化函数
 function ClientInit.init()
     gg.log("客户端初始化开始")
-    
+
     -- 注册事件处理器
     ClientInit.registerEventHandlers()
-    
+
     gg.log("客户端初始化完成")
 end
 
 -- 注册所有服务端到客户端的事件处理器
 function ClientInit.registerEventHandlers()
-    
+
     ClientEventManager.Subscribe("cmd_update_player_ui", function(player_data)
         -- 处理转发后的本地事件
         ClientInit.updatePlayerUI(player_data)
     end)
+end
+
+function ClientInit.initHudInteract()
+
 end
 
 function ClientInit.updatePlayerUI(player_data)

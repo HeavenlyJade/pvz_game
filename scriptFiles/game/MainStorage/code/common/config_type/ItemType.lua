@@ -29,6 +29,12 @@ local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@field New fun( data:table ):ItemType
 local ItemType = ClassMgr.Class("ItemType")
 
+function ItemType:GetToStringParams()
+    return {
+        name = self.name
+    }
+end
+
 function ItemType:OnInit(data)
     self.name = data["名字"] or ""
     self.description = data["描述"] or ""

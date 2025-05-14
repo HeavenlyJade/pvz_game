@@ -66,7 +66,7 @@ end
 function _M:ExecuteCommand(command, castParam)
     local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
     command = command:gsub("%%p", tostring(self.uin))
-    CommandManager:ExecuteCommand(command, self)
+    CommandManager.ExecuteCommand(command, self)
 end
 
 --------------------------------------------------
@@ -81,7 +81,7 @@ end
 -- 销毁玩家的所有Buff
 function _M:buffer_destory()
     if not self.buff_instance then return end
-    
+
     for key, buff in pairs(self.buff_instance) do
         if buff.DestroyBuff then
             buff:DestroyBuff()
@@ -94,7 +94,7 @@ function _M:RefreshStats()
     -- 先重置装备属性
     self:ResetStats("EQUIP")
     self:RemoveTagHandler("EQUIP-")
-    
+
     -- 直接遍历bag_items，跳过c =0
     for category, items in pairs(self.bag.bag_items) do
         if category > 0 then
@@ -111,13 +111,13 @@ function _M:RefreshStats()
             end
         end
     end
-    
+
     -- -- 刷新生命值和魔法值上限
     -- local maxHealth = self:GetStat("Health")
     -- local maxMana = self:GetStat("Mana")
     -- self:SetMaxHealth(maxHealth)
     -- self.maxMana = maxMana
-    
+
     -- -- 同步到客户端
     -- self:rsyncData(1)
 end
@@ -138,7 +138,7 @@ function _M:initSkillData()
             [1] = 1001,
             [2] = 0,
         }
-        
+
         -- 从玩家配置加载技能
         local player_config = common_config.dict_player_config[1]
         if player_config and player_config.skills then
@@ -147,7 +147,7 @@ function _M:initSkillData()
             end
         end
     end
-    
+
     -- 同步到客户端
     self:syncSkillData()
 end
@@ -161,11 +161,11 @@ end
 -- 同步技能数据到客户端
 function _M:syncSkillData()
     if not self.dict_btn_skill then return end
-    
-    gg.network_channel:fireClient(self.uin, { 
-        cmd = 'cmd_sync_player_skill', 
-        uin = self.uin, 
-        skill = self.dict_btn_skill 
+
+    gg.network_channel:fireClient(self.uin, {
+        cmd = 'cmd_sync_player_skill',
+        uin = self.uin,
+        skill = self.dict_btn_skill
     })
 end
 
@@ -190,7 +190,7 @@ function _M:initGameTaskData()
 
         TaskSystem:InitDefaultTasks(self)
     end
-    
+
     -- 同步到客户端
     self:syncGameTaskData()
 end
@@ -198,7 +198,7 @@ end
 -- 初始化任务目标
 function _M:initObjectivesFromConfig(questConfig)
     local objectives_data = {}
-    
+
     if questConfig.objectives then
         for i, objective in ipairs(questConfig.objectives) do
             objectives_data[i] = {
@@ -211,14 +211,14 @@ function _M:initObjectivesFromConfig(questConfig)
             }
         end
     end
-    
+
     return objectives_data
 end
 
 -- 初始化默认任务
 function _M:initDefaultTasks()
     if not common_config.main_line_task_config then return end
-    
+
     for chapter_key, chapter_data in pairs(common_config.main_line_task_config) do
         if chapter_data.quests then
             for _, quest in ipairs(chapter_data.quests) do
@@ -244,10 +244,10 @@ end
 -- 同步任务数据到客户端
 function _M:syncGameTaskData()
     if not self.dict_game_task then return end
-        gg.network_channel:fireClient(self.uin, { 
-        cmd = 'cmd_sync_player_game_task', 
-        uin = self.uin, 
-        task_data = self.dict_game_task 
+        gg.network_channel:fireClient(self.uin, {
+        cmd = 'cmd_sync_player_game_task',
+        uin = self.uin,
+        task_data = self.dict_game_task
     })
 end
 
@@ -257,23 +257,23 @@ function _M:handleCompleteTask(taskId)
     if not self.dict_game_task.main_line.pending_pickup[taskId] then
         return false
     end
-    
+
     -- 修改任务状态
     self.dict_game_task.main_line.pending_pickup[taskId] = nil
     self.dict_game_task.main_line.finish[taskId] = true
-    
-  
+
+
     TaskSystem:GiveTaskReward(self, taskId)
-    
+
     -- 同步数据
     self:syncGameTaskData()
-    
+
     -- 发送成功消息
     gg.network_channel:fireClient(self.uin, {
         cmd = "cmd_client_show_msg",
         msg = "任务完成，奖励已发放！"
     })
-    
+
     return true
 end
 
@@ -292,7 +292,7 @@ function _M:SetQuestStatus(questType, questId, field, value)
             finish = {}
         }
     end
-    
+
     -- 移除旧状态
     local oldStatus = self:GetQuestStatus(questType, questId)
     if oldStatus == "进行中" then
@@ -302,7 +302,7 @@ function _M:SetQuestStatus(questType, questId, field, value)
     elseif oldStatus == "已完成" then
         self.dict_game_task[questType].finish[questId] = nil
     end
-    
+
     -- 设置新状态
     if value == "进行中" then
         self.dict_game_task[questType].progress[questId] = {
@@ -314,10 +314,10 @@ function _M:SetQuestStatus(questType, questId, field, value)
     elseif value == "已完成" then
         self.dict_game_task[questType].finish[questId] = true
     end
-    
+
     -- 同步到客户端
     self:syncGameTaskData()
-    
+
     -- 保存到云端
     cloudDataMgr.saveGameTaskData(self.uin)
 end
@@ -325,7 +325,7 @@ end
 -- 获取任务数据
 function _M:GetQuestData(questType, questId)
     if not self.dict_game_task[questType] then return nil end
-    
+
     if self.dict_game_task[questType].progress[questId] then
         return {
             status = "进行中",
@@ -336,7 +336,7 @@ function _M:GetQuestData(questType, questId)
     elseif self.dict_game_task[questType].finish[questId] then
         return { status = "已完成" }
     end
-    
+
     return nil
 end
 
@@ -346,7 +346,7 @@ function _M:GetQuestObjectiveProgress(questType, questId, targetIndex)
     if not questData or questData.status ~= "进行中" or not questData.data.objectives then
         return 0
     end
-    
+
     return questData.data.objectives[targetIndex] or 0
 end
 
@@ -361,19 +361,19 @@ function _M:UpdateQuestObjectiveProgress(questType, questId, targetIndex, newPro
     if not questData or questData.status ~= "进行中" then
         return false
     end
-    
+
     if not questData.data.objectives then
         questData.data.objectives = {}
     end
-    
+
     questData.data.objectives[targetIndex] = newProgress
-    
+
     -- 同步到客户端
     self:syncGameTaskData()
-    
+
     -- 保存到云端
     cloudDataMgr.saveGameTaskData(self.uin)
-    
+
     return true
 end
 
@@ -394,7 +394,7 @@ function _M:GetQuestConfig(questId)
             end
         end
     end
-    
+
     return nil
 end
 
@@ -412,18 +412,18 @@ end
 function _M:SetQuestTracking(questType, questId, isTracking)
     local questData = self:GetQuestData(questType, questId)
     if not questData then return false end
-    
+
     if questData.status == "进行中" then
         if not questData.data.tracking then
             questData.data.tracking = {}
         end
         questData.data.tracking.active = isTracking and true or false
-        
+
         -- 同步到客户端
         self:syncGameTaskData()
         return true
     end
-    
+
     return false
 end
 
@@ -450,14 +450,14 @@ function _M:rsyncData(op_)
         user_name = self.name,
         uin       = self.uin,
     }
-    
+
     if op_ == 1 then
         ret_.battle_data = self.battle_data
     end
-    
-    gg.network_channel:fireClient(self.uin, { 
-        cmd = "cmd_rsync_player_data", 
-        v = ret_ 
+
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "cmd_rsync_player_data",
+        v = ret_
     })
 end
 
@@ -483,7 +483,7 @@ end
 function _M:update_player()
     -- 调用父类更新
     self:update()
-    
+
     -- 更新Buff
     self:updateBuffs()
 end
@@ -492,26 +492,26 @@ end
 -- 更新Buff状态
 function _M:updateBuffs()
     if not self.buff_instance then return end
-    
+
     local current_time = os.time()
     local keys_to_remove = {}
-    
+
     -- 检查所有Buff
     for key, buff_instance in pairs(self.buff_instance) do
         local buff_create_time = buff_instance.create_time or 0
         local duration_time = buff_instance.duration_time or 60
-        
+
         -- 检查Buff是否过期
         if current_time > buff_create_time + duration_time then
             table.insert(keys_to_remove, key)
-            
+
             -- 调用销毁方法
             if buff_instance.DestroyBuff then
                 buff_instance:DestroyBuff()
             end
         end
     end
-    
+
     -- 移除过期Buff
     for _, key in ipairs(keys_to_remove) do
         self.buff_instance[key] = nil
@@ -535,8 +535,8 @@ end
 -- 添加附近的NPC
 ---@param npc Npc
 function _M:AddNearbyNpc(npc)
+    gg.log("AddNearbyNpc", npc, npc.uuid)
     if not self.nearbyNpcs[npc.uuid] then
-		gg.log("玩家附件的NPC",npc)
         self.nearbyNpcs[npc.uuid] = npc
         self:UpdateNearbyNpcsToClient()
     end
@@ -555,7 +555,7 @@ end
 function _M:UpdateNearbyNpcsToClient()
     local interactOptions = {}
     local npcList = {}
-    
+
     -- 收集NPC信息并计算距离
     for _, npc in pairs(self.nearbyNpcs) do
         local distance = (npc.actor.LocalPosition - self.actor.LocalPosition).Magnitude
@@ -564,12 +564,12 @@ function _M:UpdateNearbyNpcsToClient()
             distance = distance
         })
     end
-    
+
     -- 按距离排序
     table.sort(npcList, function(a, b)
         return a.distance < b.distance
     end)
-    
+
     -- 构建排序后的交互选项列表
     for _, data in ipairs(npcList) do
         table.insert(interactOptions, {
@@ -578,7 +578,7 @@ function _M:UpdateNearbyNpcsToClient()
             icon = data.npc.interactIcon
         })
     end
-    
+
     gg.network_channel:fireClient(self.uin, {
         cmd = "NPCInteractionUpdate",
         interactOptions = interactOptions

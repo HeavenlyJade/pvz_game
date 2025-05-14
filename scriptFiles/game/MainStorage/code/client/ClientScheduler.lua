@@ -49,10 +49,10 @@ function ClientScheduler.add(func, delay, repeatInterval, isInTick)
         remaining = delay,
         taskId = taskId
     }
-    
+
     ClientScheduler.tasks[taskId] = task
     addToPriorityQueue(task)
-    
+
     return taskId
 end
 
@@ -86,7 +86,7 @@ function ClientScheduler.update()
             if not success then
                 gg.log("[ERROR_1] Scheduled task failed:", err)
             end
-            
+
             -- Handle repeat
             if task.repeatInterval > 0 then
                 task.remaining = task.repeatInterval
@@ -110,7 +110,7 @@ function ClientScheduler.update()
                     if not success then
                         gg.log("[ERROR_2] Scheduled task failed:", err)
                     end
-                    
+
                     if task.repeatInterval > 0 then
                         task.remaining = task.repeatInterval
                         table.insert(toRequeue, task)
@@ -137,7 +137,7 @@ function ClientScheduler.update()
                     if not success then
                         gg.log("[ERROR_3] Scheduled task failed:", err)
                     end
-                    
+
                     if task.repeatInterval > 0 then
                         task.remaining = task.repeatInterval
                         table.insert(toRequeue, task)
@@ -162,7 +162,7 @@ function ClientScheduler.update()
                     if not success then
                         gg.log("[ERROR_4] Scheduled task failed:", err)
                     end
-                    
+
                     if task.repeatInterval > 0 then
                         task.remaining = task.repeatInterval
                         table.insert(toRequeue, task)
