@@ -1,5 +1,3 @@
-
-    
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 
@@ -16,27 +14,41 @@ end
 
 --- 物品品质配置文件
 ---@class ItemQualityConfig
-local ItemQualityConfig= { config = {
+local ItemQualityConfig = {}
+local loaded = false
+
+local function LoadConfig()
+    ItemQualityConfig.config ={
     ["普通"] = ItemQuality.New({
         ["名字"] = "普通",
         ["倍率"] = 1,
         ["优先级"] = 0
     })
-}}
+}loaded = true
+end
 
 ---@param itemQuality string
 ---@return ItemQuality
 function ItemQualityConfig.Get(itemQuality)
+    if not loaded then
+        LoadConfig()
+    end
     return ItemQualityConfig.config[itemQuality]
 end
 
 ---@return ItemType[]
 function ItemQualityConfig.GetAll()
+    if not loaded then
+        LoadConfig()
+    end
     return ItemQualityConfig.config
 end
 
 ---@return ItemQuality 随机品质
 function ItemQualityConfig:GetRandomQuality()
+    if not loaded then
+        LoadConfig()
+    end
     if #self.config == 0 then
         return nil
     end

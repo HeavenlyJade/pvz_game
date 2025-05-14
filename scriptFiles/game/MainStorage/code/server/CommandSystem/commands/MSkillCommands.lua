@@ -39,7 +39,7 @@ function CommandExecutors.UnlockSkill(params, player)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "技能栏已满，请先移除一个技能",
-            color = ColorQuad.new(255, 0, 0, 255)
+            color = ColorQuad.New(255, 0, 0, 255)
         })
         return false
     end
@@ -52,7 +52,7 @@ function CommandExecutors.UnlockSkill(params, player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "解锁技能: " .. common_config.skill_def[skillId].name,
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     return true
@@ -80,7 +80,7 @@ function CommandExecutors.SetSkillLevel(params, player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = common_config.skill_def[skillId].name .. " 等级提升至 " .. level,
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     return true
@@ -98,7 +98,7 @@ function CommandExecutors.AddSoulWeapon(params, player)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "获得随机武魂!",
-            color = ColorQuad.new(0, 255, 0, 255)
+            color = ColorQuad.New(0, 255, 0, 255)
         })
         
         return true
@@ -111,7 +111,7 @@ function CommandExecutors.AddSoulWeapon(params, player)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "获得武魂: " .. soulType,
-            color = ColorQuad.new(0, 255, 0, 255)
+            color = ColorQuad.New(0, 255, 0, 255)
         })
         
         return true

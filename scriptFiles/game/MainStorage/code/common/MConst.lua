@@ -9,8 +9,8 @@ local  common_const = {
 
     MOVESPEED = 400,      --玩家和人物行走速度
 
-    VECUP   = Vector3.new(0,1,0),     --向上方向 y+
-    VECDOWN = Vector3.new(0,-1,0),    --向下方向 y-
+    VECUP   = Vector3.New(0,1,0),     --向上方向 y+
+    VECDOWN = Vector3.New(0,-1,0),    --向下方向 y-
 
     ---@class NPC_TYPE NPC类型枚举
     ---@field INITING NPC_TYPE 初始化状态

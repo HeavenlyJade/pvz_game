@@ -2,7 +2,7 @@
 ---@field __class Class 事件类型
 
 ---@class C2SEvent : SEvent
----@field player CPlayer
+---@field player Player
 
 ---@class ServerEventManager
 local ServerEventManager = {

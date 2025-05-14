@@ -274,7 +274,7 @@ function Controller.handleAoePos( args_ )
         aoe_box_.ReceiveShadow = false
 
         --aoe_box_.Top.BaseMaterial   = Enum.MaterialTemplate.LambertBlend
-       --aoe_box_.Top.RimColor         = ColorQuad.new( 255, 255, 255, 128 )
+       --aoe_box_.Top.RimColor         = ColorQuad.New( 255, 255, 255, 128 )
 
         gg.client_aoe_cylinder = aoe_box_
 
@@ -285,10 +285,10 @@ function Controller.handleAoePos( args_ )
 
 
     local size_ = args_.size * 0.01
-    gg.client_aoe_cylinder.LocalScale = Vector3.new( size_, 0.01, size_ )
+    gg.client_aoe_cylinder.LocalScale = Vector3.New( size_, 0.01, size_ )
 
     local pos_ = gg.getClientLocalPlayer().Position
-    gg.client_aoe_cylinder.LocalPosition = Vector3.new( pos_.x, pos_.y+1, pos_.z )
+    gg.client_aoe_cylinder.LocalPosition = Vector3.New( pos_.x, pos_.y+1, pos_.z )
     gg.client_aoe_range = args_.range
 
 end
@@ -351,17 +351,17 @@ function Controller.tryAoeRayGround( x, y )
             --距离是否太远
             if  gg.out_distance( pos1_, pos2_, gg.client_aoe_range ) then
                 --距离太远
-                --gg.client_aoe_cylinder.Color    = ColorQuad.new( 255, 0, 0, 128 )
+                --gg.client_aoe_cylinder.Color    = ColorQuad.New( 255, 0, 0, 128 )
                 --计算点
                 local dir_ = pos1_ - pos2_
                 Vector3.Normalize( dir_ )
                 local range_ = gg.client_aoe_range
-                local pos3_ = Vector3.new( pos2_.x+dir_.x*range_, pos2_.y+dir_.y*range_+2, pos2_.z+dir_.z*range_ )
+                local pos3_ = Vector3.New( pos2_.x+dir_.x*range_, pos2_.y+dir_.y*range_+2, pos2_.z+dir_.z*range_ )
                 gg.client_aoe_cylinder.Position = pos3_
 
             else
-                --gg.client_aoe_cylinder.Color    = ColorQuad.new( 255, 255, 255, 128 )
-                gg.client_aoe_cylinder.Position = Vector3.new( pos1_.x, pos1_.y+1, pos1_.z )
+                --gg.client_aoe_cylinder.Color    = ColorQuad.New( 255, 255, 255, 128 )
+                gg.client_aoe_cylinder.Position = Vector3.New( pos1_.x, pos1_.y+1, pos1_.z )
             end
         end
 

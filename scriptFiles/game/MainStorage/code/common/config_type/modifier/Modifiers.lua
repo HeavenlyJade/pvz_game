@@ -8,6 +8,9 @@ local _M = ClassMgr.Class("Modifiers")
 
 function _M:OnInit(data)
     self.modifiers = {}
+    if not data then
+        return
+    end
     for _, condition in ipairs(data) do
         table.insert(self.modifiers, Modifier.New(condition))
     end

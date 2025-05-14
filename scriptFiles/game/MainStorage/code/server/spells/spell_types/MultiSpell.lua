@@ -18,8 +18,8 @@ function MultiSpell:OnInit(data)
 end
 
 --- 实际执行魔法
----@param caster CLiving 施法者
----@param target CLiving 目标
+---@param caster Entity 施法者
+---@param target Entity 目标
 ---@param param CastParam 参数
 ---@return boolean 是否成功释放
 function MultiSpell:CastReal(caster, target, param)

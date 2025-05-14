@@ -62,7 +62,7 @@
     
 --     -- 处理被释放魔法时的情况，交换施法者和目标
 --     if self.m_trigger == "被释放魔法时" then
---         if not target:IsCreature() then return false end
+--         if not target.isEntity then return false end
 --         local temp = caster
 --         caster = target:GetCreature()
 --         target = temp

@@ -1,12 +1,14 @@
-
-    
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 
 
 --- 商品配置文件
 ---@class ShopConfig
-local ShopConfig= { config = {
+local ShopConfig = {}
+local loaded = false
+
+local function LoadConfig()
+    ShopConfig.config ={
     ["抽奖1"] = {
         ["商品名"] = "抽奖1",
         ["价格"] = {
@@ -118,16 +120,23 @@ local ShopConfig= { config = {
             ["ticks"] = 0
         }
     }
-}}
+}loaded = true
+end
 
 ---@param shopName string
 ---@return Shop
 function ShopConfig.Get(shopName)
+    if not loaded then
+        LoadConfig()
+    end
     return ShopConfig.config[shopName]
 end
 
 ---@return Shop[]
 function ShopConfig.GetAll()
+    if not loaded then
+        LoadConfig()
+    end
     return ShopConfig.config
 end
 return ShopConfig

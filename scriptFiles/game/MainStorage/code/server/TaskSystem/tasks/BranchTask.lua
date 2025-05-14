@@ -106,7 +106,7 @@ function BranchTask:Accept(player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "已接取支线任务：" .. self.name,
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     -- 如果有时间限制，开始计时
@@ -133,7 +133,7 @@ function BranchTask:StartTimeLimit(player)
             gg.network_channel:fireClient(player.uin, {
                 cmd = "cmd_client_show_msg",
                 txt = "任务失败：时间已用尽！",
-                color = ColorQuad.new(255, 0, 0, 255)
+                color = ColorQuad.New(255, 0, 0, 255)
             })
             
             -- 同步任务状态
@@ -169,7 +169,7 @@ function BranchTask:UpdateObjective(player, objectiveIndex, progress)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "支线任务目标已完成！",
-            color = ColorQuad.new(0, 255, 0, 255)
+            color = ColorQuad.New(0, 255, 0, 255)
         })
         
         -- 检查所有必须目标是否完成
@@ -217,7 +217,7 @@ function BranchTask:SelectBranch(player, branchId)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "已选择分支：" .. self.branches[branchId].name,
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     -- 同步任务状态
@@ -262,7 +262,7 @@ function BranchTask:CheckCompletion(player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "支线任务已完成，请返回领取奖励！",
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     return true, "任务已完成"
@@ -294,7 +294,7 @@ function BranchTask:Complete(player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "支线任务已完成，奖励已发放！",
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     -- 如果是可重复任务，设置冷却时间
@@ -327,7 +327,7 @@ function BranchTask:StartCooldown(player)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "支线任务 " .. self.name .. " 已重置，可以再次接取！",
-            color = ColorQuad.new(0, 255, 0, 255)
+            color = ColorQuad.New(0, 255, 0, 255)
         })
         
         -- 同步任务状态

@@ -2,6 +2,7 @@ local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 
 
 
@@ -53,8 +54,8 @@ function Spell:OnInit( data )
 end
 
 --- 执行魔法
----@param caster CLiving 施法者
----@param target CLiving|Vector3 目标
+---@param caster Entity 施法者
+---@param target Entity|Vector3 目标
 ---@param param CastParam 参数
 ---@return boolean 是否成功释放
 function Spell:Cast(caster, target, param)
@@ -63,8 +64,27 @@ function Spell:Cast(caster, target, param)
     end
     param.realTarget = target
     
-    if not caster or not target then
+    if not caster then
         return false
+    end
+    if not target then
+        -- 获取施法者面前的敌人
+        local ray = {
+            Origin = caster:GetLocation(),
+            Direction = caster.actor.Forward
+        }
+        local WorldService = game:GetService( 'WorldService' )
+        local ret_table = WorldService:RaycastClosest(ray.Origin, ray.Direction, 12800, true, {2})
+        if ret_table and ret_table.Hit then
+            local hitObject = ret_table.HitObject
+            if hitObject and hitObject.Parent then
+                local hitEntity = hitObject.Parent:FindFirstChild("Entity")
+                if hitEntity then
+                    target = hitEntity.Value
+                    param.realTarget = target
+                end
+            end
+        end
     end
     
     param.power = param.power * param:GetValue(self, "basePower", self.basePower)
@@ -86,7 +106,7 @@ function Spell:Cast(caster, target, param)
         return false
     end
     
-    if target.isEntity then
+    if target and target.isEntity then
         target:TriggerTags("beCastSpell", caster, param, param)
     end
     if param.cancelled then
@@ -111,8 +131,8 @@ function Spell:Cast(caster, target, param)
     end
     
     local targetCd = param:GetValue(self, "targetCooldown", self.targetCooldown)
-    if targetCd > 0 and target.isEntity then
-        caster:SetCooldown(self.spellName, targetCd, target:GetCLiving())
+    if targetCd > 0 and target and target.isEntity then
+        caster:SetCooldown(self.spellName, targetCd, target:GetEntity())
         if self.printInfo then
             log[#log + 1] = string.format("%s：设置对该目标冷却%.1f秒", self.spellName, targetCd)
         end
@@ -127,9 +147,9 @@ function Spell:Cast(caster, target, param)
             log[#log + 1] = string.format("%s：延迟%.1f秒后释放", self.spellName, delay)
             print(table.concat(log, "\n"))
         end
-        Timer.Register(delay, function()
+        ServerScheduler.Add(function()
             self:CastReal(caster, target, param)
-        end)
+        end, delay)
         return true
     else
         if self.printInfo and #log > 0 then
@@ -141,8 +161,8 @@ end
 
 --- 播放特效
 ---@param effects Graphic[] 特效数组
----@param playFrom CLiving|Vector3 播放起点
----@param playAt CLiving|Vector3 播放终点
+---@param playFrom Entity|Vector3 播放起点
+---@param playAt Entity|Vector3 播放终点
 ---@param param CastParam 参数
 ---@return Action[]|nil 特效动作数组
 function Spell:PlayEffect(effects, playFrom, playAt, param)
@@ -157,8 +177,8 @@ function Spell:PlayEffect(effects, playFrom, playAt, param)
 end
 
 --- 实际执行魔法
----@param caster CLiving 施法者
----@param target CLiving|Vector3 目标
+---@param caster Entity 施法者
+---@param target Entity|Vector3 目标
 ---@param param CastParam 参数
 ---@return boolean 是否成功释放
 function Spell:CastReal(caster, target, param)
@@ -166,8 +186,8 @@ function Spell:CastReal(caster, target, param)
 end
 
 --- 检查是否可以释放魔法
----@param caster CLiving 施法者
----@param target CLiving|Vector3 目标
+---@param caster Entity 施法者
+---@param target Entity|Vector3 目标
 ---@param param CastParam 参数
 ---@param log string[] 日志数组
 ---@return boolean 是否可以释放

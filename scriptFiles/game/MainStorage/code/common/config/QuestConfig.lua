@@ -1,5 +1,3 @@
-
-    
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local Modifiers      = require(MainStorage.code.common.config_type.modifier.Modifiers)    ---@type Modifiers
@@ -8,7 +6,11 @@ local Quest      = require(MainStorage.code.common.config.Quest)    ---@type Que
 
 --- 任务配置文件
 ---@class QuestConfig
-local QuestConfig= { config = {
+local QuestConfig = {}
+local loaded = false
+
+local function LoadConfig()
+    QuestConfig.config ={
     ["1完成关卡1-1"] = Quest.New({
         ["名字"] = "1完成关卡1-1",
         ["分类"] = "主线",
@@ -19,10 +21,11 @@ local QuestConfig= { config = {
                 ["条件类型"] = "HealthCondition",
                 ["条件"] = {
                     ["百分比"] = true,
-                    ["最小值"] = 50,
+                    ["最小值"] = 0,
                     ["最大值"] = 100
                 },
-                ["动作"] = "必须"
+                ["动作"] = "威力增加",
+                ["数量"] = "1.0"
             }
         }),
         ["任务类型"] = 1,
@@ -637,16 +640,23 @@ local QuestConfig= { config = {
         ["刷新时自动领取"] = true,
         ["显示完成进度"] = true
     })
-}}
+}loaded = true
+end
 
 ---@param questName string
 ---@return Quest
 function QuestConfig.Get(questName)
+    if not loaded then
+        LoadConfig()
+    end
     return QuestConfig.config[questName]
 end
 
 ---@return Quest[]
 function QuestConfig.GetAll()
+    if not loaded then
+        LoadConfig()
+    end
     return QuestConfig.config
 end
 return QuestConfig

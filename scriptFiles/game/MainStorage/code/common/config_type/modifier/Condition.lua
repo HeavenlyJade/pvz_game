@@ -39,7 +39,7 @@ function HealthCondition:OnInit(data)
     self.isPercentage = data["百分比"] == nil and true or data["百分比"]
 end
 function HealthCondition:Check(modifier, caster, target)
-    if target == nil or not target:IsCreature() then return false end
+    if target == nil or not target.isEntity then return false end
     local amount
     local creature = target:GetCreature()
     if self.isPercentage then
@@ -57,7 +57,7 @@ function VariableCondition:OnInit(data)
     self.name = data["名字"]
 end
 function VariableCondition:Check(modifier, caster, target)
-    if not target:IsCreature() then return false end
+    if not target.isEntity then return false end
     local creature = target:GetCreature()
     local amount = creature:GetVariable(self.name)
     return self:CheckAmount(modifier, amount)
@@ -97,7 +97,7 @@ function BuffActiveCondition:OnInit(data)
     self.buffKeyword = data["Buff关键字"]
 end
 function BuffActiveCondition:Check(modifier, caster, target)
-    if not target:IsCreature() then return false end
+    if not target.isEntity then return false end
     local creature = target:GetCreature()
     
     if self.buffKeyword == nil or self.buffKeyword == "" then
@@ -124,7 +124,7 @@ function TagLevelCondition:OnInit(data)
     self.tagName = data["词条名"]
 end
 function TagLevelCondition:Check(modifier, caster, target)
-    if target == nil or not target:IsCreature() then return false end
+    if target == nil or not target.isEntity then return false end
     local targetCreature = target:GetCreature()
     print(string.format("TagLevelCondition %s %s %s", targetCreature.name, self.tagName, table.concat(targetCreature.tagIds, ",")))
     local tag = targetCreature:GetTag(self.tagName)
@@ -142,7 +142,7 @@ function ShieldCondition:OnInit(data)
     self.isPercentage = data["百分比"] == nil and true or data["百分比"]
 end
 function ShieldCondition:Check(modifier, caster, target)
-    if target == nil or not target:IsCreature() then return false end
+    if target == nil or not target.isEntity then return false end
     local amount
     local creature = target:GetCreature()
     if self.isPercentage then

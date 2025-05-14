@@ -168,7 +168,7 @@ function UiCommon.openTextInput(visible_)
         tmp_button.Name = 'cmd_input_ok'
         tmp_button.Title = 'debug'
         tmp_button.Icon = common_config.assets_dict.btn_press1
-        tmp_button.FillColor = ColorQuad.new(0, 0, 0, 0)
+        tmp_button.FillColor = ColorQuad.New(0, 0, 0, 0)
         tmp_button.DownEffect = Enum.DownEffect.ColorEffect
         tmp_button.LayoutHRelation = Enum.LayoutHRelation.Right
         tmp_button.LayoutVRelation = Enum.LayoutVRelation.Bottom
@@ -243,15 +243,15 @@ function UiCommon.ShowMsg(pps_)
 
     txt_msg_.FontSize = pps_.FontSize or 32
     txt_msg_.ShadowEnable = true
-    txt_msg_.ShadowOffset = Vector2.new(2, 2)
-    txt_msg_.ShadowColor = ColorQuad.new(0, 0, 0, 255)
-    txt_msg_.Position = Vector2.new(ui_size.x * 0.5, ui_size.y * 0.4)
+    txt_msg_.ShadowOffset = Vector2.New(2, 2)
+    txt_msg_.ShadowColor = ColorQuad.New(0, 0, 0, 255)
+    txt_msg_.Position = Vector2.New(ui_size.x * 0.5, ui_size.y * 0.4)
 
     local duration = pps_.t or 2
     local txt_msg_weenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, nil, 0, 0)
     
     local goal = {
-        Position = Vector2.new(ui_size.x * 0.5, ui_size.y * 0.3)
+        Position = Vector2.New(ui_size.x * 0.5, ui_size.y * 0.3)
     }
     
     local tween = TweenService:Create(txt_msg_, txt_msg_weenInfo, goal)

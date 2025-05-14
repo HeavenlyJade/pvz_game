@@ -62,12 +62,12 @@ function UiSkillSelect.handleSyncPlayerSkill( args1_ )
 
                     --cd 创建冷却背景
                     local cd_mask_ = gg.createImage( btn_, common_config.assets_dict.skill_cd_mask )
-                    cd_mask_.FillColor = ColorQuad.new( 255, 255, 0, 128 )
+                    cd_mask_.FillColor = ColorQuad.New( 255, 255, 0, 128 )
                     cd_mask_.Name     = 'cd_mask'
 
-                    cd_mask_.Size     = Vector2.new( btn_.Size.x-2, btn_.Size.y-2)
-                    cd_mask_.Position = Vector2.new(1, 1)
-                    cd_mask_.Pivot    = Vector2.new(0, 0)
+                    cd_mask_.Size     = Vector2.New( btn_.Size.x-2, btn_.Size.y-2)
+                    cd_mask_.Position = Vector2.New(1, 1)
+                    cd_mask_.Pivot    = Vector2.New(0, 0)
                     cd_mask_.Active   = false
                     --cd_mask_.FillMethod = Enum.FillMethod.Radial360
                     cd_mask_.FillMethod = Enum.FillMethod.Vertical
@@ -134,8 +134,8 @@ function UiSkillSelect.create()
     bg_.Size  = Vector2.New(ui_size.x*0.9, ui_size.y*0.78)
     bg_.Icon  = common_config.assets_dict.skill_bg
 
-    --bg_.Pivot = Vector2.new(0.5, 0.5)
-    bg_.Position = Vector2.new( ui_size.x*0.5, ui_size.y*0.45 )
+    --bg_.Pivot = Vector2.New(0.5, 0.5)
+    bg_.Position = Vector2.New( ui_size.x*0.5, ui_size.y*0.45 )
     UiSkillSelect.bg = bg_
 
     ----- 技能框 右下两排
@@ -144,7 +144,7 @@ function UiSkillSelect.create()
         tmp_button.Name  = 'btn_skill_' .. i
         tmp_button.Icon  =  common_config.assets_dict.btn_empty_frame   --空框
         gg.formatButton( tmp_button )
-        --tmp_button.Pivot = Vector2.new(0.5, 0.5)
+        --tmp_button.Pivot = Vector2.New(0.5, 0.5)
 
         if  i <= 2 then
             tmp_button.Size = Vector2.New( 80, 80 )
@@ -158,8 +158,8 @@ function UiSkillSelect.create()
         tmp_button.Click:Connect(function()
             UiSkillSelect.selector_btn_id = i
             UiSkillSelect.btn_pointer.Parent   = tmp_button
-            UiSkillSelect.btn_pointer.Size     = Vector2.new( tmp_button.Size.x+10, tmp_button.Size.y+10 )
-            UiSkillSelect.btn_pointer.Position = Vector2.new(-5, -5)
+            UiSkillSelect.btn_pointer.Size     = Vector2.New( tmp_button.Size.x+10, tmp_button.Size.y+10 )
+            UiSkillSelect.btn_pointer.Position = Vector2.New(-5, -5)
         end)
 
         UiSkillSelect.btn_list[ i ] = tmp_button
@@ -208,19 +208,19 @@ function UiSkillSelect.create()
         -- 增加文字描述
         local skill_name_ = gg.createTextLabel(tmp_button, skill_data.name)  -- 使用 skill_data
         skill_name_.FontSize = 22
-        skill_name_.Size = Vector2.new(100, 30)
-        skill_name_.Position = Vector2.new(36, 90)
-        skill_name_.TitleColor = ColorQuad.new(0, 0, 255, 255)
+        skill_name_.Size = Vector2.New(100, 30)
+        skill_name_.Position = Vector2.New(36, 90)
+        skill_name_.TitleColor = ColorQuad.New(0, 0, 255, 255)
     end
 
     --技能提示
     local  skill_tip_ = gg.createTextLabel( bg_, '点选技能进行设置：' )
     skill_tip_.Name   = 'skill_tip'
     skill_tip_.FontSize   = 20
-    skill_tip_.Size       = Vector2.new( ui_size.x*0.4, 30 )
-    skill_tip_.Pivot      = Vector2.new( 0, 0 )
-    skill_tip_.Position   = Vector2.new( ui_size.x*0.05, ui_size.y*0.05 )
-    skill_tip_.TitleColor = ColorQuad.new( 0, 0, 255, 255 )
+    skill_tip_.Size       = Vector2.New( ui_size.x*0.4, 30 )
+    skill_tip_.Pivot      = Vector2.New( 0, 0 )
+    skill_tip_.Position   = Vector2.New( ui_size.x*0.05, ui_size.y*0.05 )
+    skill_tip_.TitleColor = ColorQuad.New( 0, 0, 255, 255 )
     skill_tip_.TextHAlignment = Enum.TextHAlignment.Left   --Left Right
 
 
@@ -228,10 +228,10 @@ function UiSkillSelect.create()
     local  skill_desc_ = gg.createTextLabel( bg_, '' )
     skill_desc_.Name   = 'skill_desc'
     skill_desc_.FontSize   = 20
-    skill_desc_.Size       = Vector2.new( ui_size.x*0.25, 70 )
-    skill_desc_.Position   = Vector2.new( ui_size.x*0.65, ui_size.y*0.15 )
-    skill_desc_.TitleColor = ColorQuad.new( 0, 0, 255, 255 )
-    skill_tip_.Pivot       = Vector2.new( 0, 0 )
+    skill_desc_.Size       = Vector2.New( ui_size.x*0.25, 70 )
+    skill_desc_.Position   = Vector2.New( ui_size.x*0.65, ui_size.y*0.15 )
+    skill_desc_.TitleColor = ColorQuad.New( 0, 0, 255, 255 )
+    skill_tip_.Pivot       = Vector2.New( 0, 0 )
     skill_desc_.TextVAlignment = Enum.TextVAlignment.Top    --Top  Bottom
     skill_desc_.TextHAlignment = Enum.TextHAlignment.Left   --Left Right
 
@@ -242,11 +242,11 @@ function UiSkillSelect.create()
         image_.Name      = 'btn_pointer'
         image_.Active    = false   --不能点击
         image_.ClickPass = true
-        image_.Pivot    = Vector2.new(0, 0)
-        image_.Position = Vector2.new(-5, -5)
-        image_.Size     = Vector2.new(bt_size_.x+10, bt_size_.y+10)
+        image_.Pivot    = Vector2.New(0, 0)
+        image_.Position = Vector2.New(-5, -5)
+        image_.Size     = Vector2.New(bt_size_.x+10, bt_size_.y+10)
         image_.RenderIndex = 2
-        image_.FillColor   = ColorQuad.new( 0, 255, 0, 255 )
+        image_.FillColor   = ColorQuad.New( 0, 255, 0, 255 )
         UiSkillSelect.btn_pointer = image_
 
     end

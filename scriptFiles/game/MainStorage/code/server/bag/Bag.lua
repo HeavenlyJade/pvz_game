@@ -11,17 +11,17 @@ local BagMgr        = require(MainStorage.code.server.bag.BagMgr) ---@type BagMg
 ---@field s number 背包格子
 
 ---@class Bag : Class
----@field player CPlayer 玩家实例
+---@field player Player 玩家实例
 ---@field uin number 玩家ID
 ---@field bag_index table<ItemType, Slot[]> 物品类型索引
 ---@field bag_items table<number, table<number, Item>> 背包物品
----@field New fun( player: CPlayer):Bag
+---@field New fun( player: Player):Bag
 local Bag = ClassMgr.Class("Bag")
 Bag.MoneyType = {} ---@type table<number, ItemType>
 
----@param player CPlayer 玩家实例
+---@param player Player 玩家实例
 function Bag:OnInit(player)
-    self.player = player ---@type CPlayer
+    self.player = player ---@type Player
     self.uin = player.uin
     self.bag_index = {} ---@type table<ItemType, Slot[]>
     self.bag_items = {} ---@type table<number, table<number, Item>>
@@ -361,9 +361,9 @@ end
 function Bag:SetItem(slot, item)
     -- 1. 处理旧物品的索引移除
     local oldItem = nil
-    local items = self.bag_items[slot.category]
+    local items = self.bag_items[slot.c]
     if items then
-        oldItem = items[slot.slot]
+        oldItem = items[slot.s]
     end
     if oldItem then
         local oldType = oldItem:GetItemType()
@@ -384,9 +384,9 @@ function Bag:SetItem(slot, item)
             return
         end
         items = {}
-        self.bag_items[slot.category] = items
+        self.bag_items[slot.c] = items
     end
-    items[slot.slot] = item
+    items[slot.s] = item
 
     -- 3. 处理新物品的索引添加
     if item then
@@ -403,11 +403,11 @@ function Bag:SetItem(slot, item)
             if v then hasItem = true break end
         end
         if not hasItem then
-            self.bag_items[slot.category] = nil
+            self.bag_items[slot.c] = nil
         end
     end
 
-    if slot.category > 0 then
+    if slot.c > 0 then
         self.player:RefreshStats()
     end
     self:MarkDirty(slot)

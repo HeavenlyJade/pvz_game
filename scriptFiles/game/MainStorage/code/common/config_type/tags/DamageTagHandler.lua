@@ -80,7 +80,7 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
     
     -- 处理被攻击时的情况，交换施法者和目标
     if string.find(self.m_trigger, "Attacked") then
-        if not target:IsCreature() then return false end
+        if not target.isEntity then return false end
         local temp = caster
         caster = target:GetCreature()
         target = temp

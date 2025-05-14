@@ -34,12 +34,12 @@ return {
             ["common_16738.lua"] = "common_16738.lua",
             ["server"] = {
                 ["BattleMgr.lua"] = "BattleMgr.lua",
-                ["CLiving.lua"] = "CLiving.lua",
-                ["CMonster.lua"] = "CMonster.lua",
-                ["CScene"] = {
-                    ["CPlayer_16770.lua"] = "CPlayer_16770.lua",
+                ["Entity.lua"] = "Entity.lua",
+                ["Monster.lua"] = "Monster.lua",
+                ["Scene"] = {
+                    ["Player_16770.lua"] = "Player_16770.lua",
                 },
-                ["CScene.lua"] = "CScene.lua",
+                ["Scene.lua"] = "Scene.lua",
                 ["equipment"] = {
                     ["MEqAttr.lua"] = "MEqAttr.lua",
                     ["MEqGen.lua"] = "MEqGen.lua",

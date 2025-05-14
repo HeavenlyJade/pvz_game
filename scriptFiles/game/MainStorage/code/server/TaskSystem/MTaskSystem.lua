@@ -356,7 +356,7 @@ function TaskSystem:CheckQuestCompletion(player, questType, questId)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "任务目标已全部完成，请回到发布者处领取奖励",
-            color = ColorQuad.new(0, 255, 0, 255)
+            color = ColorQuad.New(0, 255, 0, 255)
         })
         
         return true
@@ -475,7 +475,7 @@ function TaskSystem:HandleMonsterKilled(player, monsterId, dropItems)
                                     gg.network_channel:fireClient(player.uin, {
                                         cmd = "cmd_client_show_msg",
                                         txt = "目标已完成: 击杀 " .. (objective.target_name or "怪物"),
-                                        color = ColorQuad.new(0, 255, 0, 255)
+                                        color = ColorQuad.New(0, 255, 0, 255)
                                     })
                                 end
                             end

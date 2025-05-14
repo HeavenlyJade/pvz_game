@@ -24,7 +24,7 @@ function CommandExecutors.TriggerSystemEvent(params, player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "触发事件: " .. eventType,
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     return true
@@ -42,7 +42,7 @@ function CommandExecutors.UnlockMapArea(params, player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "解锁地图: " .. mapName,
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     return true

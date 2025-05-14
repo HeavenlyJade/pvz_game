@@ -18,7 +18,7 @@ local gg                = require(MainStorage.code.common.MGlobal)    ---@type g
 local common_config     = require(MainStorage.code.common.MConfig)    ---@type common_config
 --local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 
-local CScene   = require(MainStorage.code.server.CScene)           ---@type CScene
+local Scene   = require(MainStorage.code.server.Scene)           ---@type Scene
 
 local SceneMgr     = game:GetService("SceneMgr")
 
@@ -40,38 +40,13 @@ end
 
 
 
---初始化怪物和武器容器
-function MTerrain.create_containers( sceneid, scene_name_ )
-    local workspace
-    if  sceneid == 0 then
-        workspace = game.WorkSpace
-    else
-        workspace = game:GetWorkSpace( sceneid )
-    end
-
-    local parent_ = workspace:WaitForChild( "Ground" ):WaitForChild( scene_name_ )
-    if  parent_ then
-        local container_monster_ = SandboxNode.new('SandboxNode', parent_ )
-        container_monster_.Name  = 'container_monster'
-        local container_weapon_  = SandboxNode.new('SandboxNode', parent_ )
-        container_weapon_.Name   = 'container_weapon'
-        local container_npc = SandboxNode.new('SandboxNode', parent_ )
-        container_npc.Name   = 'container_npc'
-
-    end
-
-end
-
-
-
 function MTerrain.initScene0()
     gg.log( '初始化大厅地图场景' )
 
     local scene_name_ = 'g0'
     local gx_ = game.WorkSpace.Ground[ scene_name_ ] or MainStorage.Ground[ scene_name_ ]
     if  gx_ then
-        local scene_ = CScene:new( { name=scene_name_, sceneid=0 } )
-        MTerrain.create_containers( 0, scene_name_ )
+        local scene_ = Scene.New( scene_name_, 0 )
         MTerrain.initTeleportBackG0( scene_ )       --初始化回城
         gg.server_scene_list[ scene_name_ ] = scene_
     end
@@ -87,8 +62,8 @@ function MTerrain.initG0base()
             local base_new_ = base_.base_copy:Clone()
             base_new_.Name = 'base_' .. xx .. '_' .. zz
             base_new_.Parent        = base_
-            base_new_.LocalPosition = Vector3.new( xx*100, 0, zz*100 )
-            base_new_.LocalScale    = Vector3.new( 1, 1, 1 )
+            base_new_.LocalPosition = Vector3.New( xx*100, 0, zz*100 )
+            base_new_.LocalScale    = Vector3.New( 1, 1, 1 )
         end
     end
 end
@@ -106,7 +81,7 @@ function MTerrain.initTeleportBackG0( scene_ )
             -- 传送门特效
             local expl = SandboxNode.new('DefaultEffect', gx_.tp0 )
             expl.AssetID = common_config.assets_dict.effect.end_table_effect
-            expl.LocalPosition = Vector3.new( 50, 150, 50 );        --位置
+            expl.LocalPosition = Vector3.New( 50, 150, 50 );        --位置
 
             local function touch_func(node, pos, normal)
                 local g0_ = game.WorkSpace.Ground.g0
@@ -134,9 +109,8 @@ function MTerrain.listenDynamicSceneOp()
                 local scene_name_ = MTerrain.create_task_list[1].name
                 local gx_ = game.WorkSpace.Ground[ scene_name_ ] or MainStorage.Ground[ scene_name_ ]
                 if  gx_ then
-                    local scene_ = CScene:new( { name=scene_name_, sceneid=workspaceid } )
+                    local scene_ = Scene:new( { name=scene_name_, sceneid=workspaceid } )
                     scene_:initTerrain()                       --克隆地形
-                    MTerrain.create_containers( workspaceid, scene_name_ )
                     MTerrain.initTeleportBackG0( scene_ )      --初始化回城
                     gg.server_scene_list[ scene_name_ ] = scene_
 
@@ -161,7 +135,7 @@ function MTerrain.listenDynamicSceneOp()
                 local pos_
                 if  player_.pre_scene_name == 'g0' then
                     --pos_ = scene_:WaitForChild( "SpawnLocation1" ).Position
-                    pos_ = Vector3.new( -776, 800, 1000 )
+                    pos_ = Vector3.New( -776, 800, 1000 )
                 else
                     pos_ = workspace:WaitForChild( "Ground" ):WaitForChild( player_.pre_scene_name ).Position
                 end
@@ -189,9 +163,8 @@ function MTerrain.changeMap( uin_, scene_name_ )
 
 		local scence_ = gg.server_scene_list[ scene_name_ ]
 		if  not scence_ then
-            local scene_ = CScene:new( { name=scene_name_, sceneid=0 } )   --都在0号workspace
+            local scene_ = Scene:new( { name=scene_name_, sceneid=0 } )   --都在0号workspace
             scene_:initTerrain()                       --克隆地形
-            MTerrain.create_containers( 0, scene_name_ )
             MTerrain.initTeleportBackG0( scene_ )      --初始化回城
             gg.server_scene_list[ scene_name_ ] = scene_
         end
@@ -251,7 +224,7 @@ function MTerrain.handleChangeWorkSpaceOk( uin_, sceneId_ )
     if  sceneId_ == 0 then
         local player_ = gg.server_players_list[ uin_ ]
         if  player_ then
-            player_:changeScence( player_.pre_scene_name )
+            player_:ChangeScene( player_.pre_scene_name )
         end
     end
 end

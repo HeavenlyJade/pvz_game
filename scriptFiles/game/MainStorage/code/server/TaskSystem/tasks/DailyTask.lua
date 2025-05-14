@@ -150,7 +150,7 @@ function DailyTask:Complete(player)
             gg.network_channel:fireClient(player.uin, {
                 cmd = "cmd_client_show_msg",
                 txt = "日常任务已重置，还可完成" .. (self.maxCompletions - self.timesCompleted) .. "次",
-                color = ColorQuad.new(0, 255, 0, 255)
+                color = ColorQuad.New(0, 255, 0, 255)
             })
         end
     end

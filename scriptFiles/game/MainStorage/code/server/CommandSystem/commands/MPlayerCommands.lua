@@ -31,7 +31,7 @@ function CommandExecutors.SetPlayerAttribute(params, player)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "等级已设置为 " .. level,
-            color = ColorQuad.new(0, 255, 0, 255)
+            color = ColorQuad.New(0, 255, 0, 255)
         })
         
         return true
@@ -82,7 +82,7 @@ function CommandExecutors.AddPlayerAttribute(params, player)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "获得经验值 +" .. exp,
-            color = ColorQuad.new(0, 255, 0, 255)
+            color = ColorQuad.New(0, 255, 0, 255)
         })
         
         return true
@@ -95,7 +95,7 @@ function CommandExecutors.AddPlayerAttribute(params, player)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "获得金币 +" .. gold,
-            color = ColorQuad.new(255, 215, 0, 255)
+            color = ColorQuad.New(255, 215, 0, 255)
         })
         
         return true
@@ -121,7 +121,7 @@ function CommandExecutors.ModifyPlayerAttribute(params, player)
                 gg.network_channel:fireClient(player.uin, {
                     cmd = "cmd_client_show_msg",
                     txt = attrName .. " +" .. amount,
-                    color = ColorQuad.new(0, 255, 0, 255)
+                    color = ColorQuad.New(0, 255, 0, 255)
                 })
                 
                 return true
@@ -136,7 +136,7 @@ function CommandExecutors.ModifyPlayerAttribute(params, player)
                 gg.network_channel:fireClient(player.uin, {
                     cmd = "cmd_client_show_msg",
                     txt = attrName .. " -" .. amount,
-                    color = ColorQuad.new(255, 0, 0, 255)
+                    color = ColorQuad.New(255, 0, 0, 255)
                 })
                 
                 return true

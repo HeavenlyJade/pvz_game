@@ -140,7 +140,7 @@ function AOESpell:AddAOE(centerPos, fullSize, nodes, endFunc)
             effectSize = direction * fullSize * (1.0 - distance / fullSize)
         else
             -- 在中心区域
-            direction = Vector3.new(0, 1, 0)
+            direction = Vector3.New(0, 1, 0)
             effectSize = direction * fullSize
         end
         
@@ -174,9 +174,9 @@ end
 
 --- 获取命中目标
 ---@param loc Vector3 位置
----@param caster CLiving 施法者
+---@param caster Entity 施法者
 ---@param param CastParam 参数
----@return CLiving|nil 命中的目标
+---@return Entity|nil 命中的目标
 function AOESpell:GetHitTargets(loc, caster, param)
     local sizeScale = param:GetValue(self, "sizeScale", 1)
     local widthScale = param:GetValue(self, "widthScale", 1)
@@ -209,8 +209,8 @@ function AOESpell:GetHitTargets(loc, caster, param)
 end
 
 --- 实际执行魔法
----@param caster CLiving 施法者
----@param target CLiving 目标
+---@param caster Entity 施法者
+---@param target Entity 目标
 ---@param param CastParam 参数
 ---@return boolean 是否成功释放
 function AOESpell:CastReal(caster, target, param)
@@ -299,11 +299,11 @@ end
 
 ---@class PulsingAOE
 ---@field spell AOESpell
----@field caster CLiving
----@field target CLiving
+---@field caster Entity
+---@field target Entity
 ---@field location Vector3
 ---@field param CastParam
----@field hitCreatures table<CLiving, boolean>
+---@field hitCreatures table<Entity, boolean>
 ---@field lastPulseTime number
 ---@field timer Timer
 ---@field actions function[]

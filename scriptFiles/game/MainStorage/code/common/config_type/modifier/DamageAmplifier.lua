@@ -29,7 +29,7 @@ function DamageAmplifier:OnInit(data)
     self.multiplyBaseValue = data["乘以基础数值"] ---@type boolean
 end
 
----@param caster CLiving 施法者
+---@param caster Entity 施法者
 ---@param baseValue number 基础数值
 ---@param multiplier number 倍率
 ---@param castParam CastParam 施法参数

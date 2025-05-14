@@ -1,12 +1,14 @@
-
-    
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-
 local Lottery      = require(MainStorage.code.server.shop.Lottery)    ---@type Lottery
+
 --- 抽奖配置文件
 ---@class LotteryConfig
-local LotteryConfig={ config = {
+local LotteryConfig = {}
+local loaded = false
+
+local function LoadConfig()
+    LotteryConfig.config ={
     ["普通宝石"] = Lottery.New({
         ["奖池名"] = "普通宝石",
         ["普通品级概率"] = 50,
@@ -211,16 +213,23 @@ local LotteryConfig={ config = {
             }
         }
     })
-}}
+}loaded = true
+end
 
 ---@param lotteryName string
 ---@return Lottery
 function LotteryConfig.Get(lotteryName)
+    if not loaded then
+        LoadConfig()
+    end
     return LotteryConfig.config[lotteryName]
 end
 
 ---@return Lottery[]
 function LotteryConfig.GetAll()
+    if not loaded then
+        LoadConfig()
+    end
     return LotteryConfig.config
 end
 return LotteryConfig

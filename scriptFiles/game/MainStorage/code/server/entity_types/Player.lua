@@ -1,33 +1,15 @@
---- V109 miniw-haima
---- 玩家类  (单个玩家) (管理玩家状态)
-
-local print        = print
-local setmetatable = setmetatable
-local game         = game
-local pairs        = pairs
-local table        = table
-local os           = os
-local math         = math
-
-
-print("Start PLAYER 1")
 local MainStorage   = game:GetService("MainStorage")
 local gg            = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
 local common_const  = require(MainStorage.code.common.MConst) ---@type common_const
-print("Start PLAYER 2")
 local ClassMgr  = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-print("Start PLAYER 3")
 -- local TaskSystem = require(MainStorage.code.server.TaskSystem.MTaskSystem) ---@type TaskSystem
-print("Start PLAYER 4")
-local CLiving      = require(MainStorage.code.server.entity_types.CLiving) ---@type CLiving
+local Entity      = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 -- local skillMgr     = require(MainStorage.code.server.skill.MSkillMgr) ---@type SkillMgr
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
-print("Start PLAYER 3")
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
-print("Start PLAYER 4")
----@class CPlayer : CLiving    --玩家类  (单个玩家) (管理玩家状态)
+---@class Player : Entity    --玩家类  (单个玩家) (管理玩家状态)
 ---@field dict_btn_skill table 技能按钮映射
 ---@field dict_game_task table 任务数据
 ---@field daily_tasks table 每日任务数据
@@ -36,8 +18,9 @@ print("Start PLAYER 4")
 ---@field auto_attack number 自动攻击技能ID
 ---@field auto_attack_tick number 攻击间隔
 ---@field auto_wait_tick number 攻击等待计时
----@field New fun( info_:table ):   CPlayer
-local _M = ClassMgr.Class('CPlayer', CLiving)
+---@field nearbyNpcs table<Npc> 附近的NPC列表
+---@field New fun( info_:table ):   Player
+local _M = ClassMgr.Class('Player', Entity)
 
 --------------------------------------------------
 -- 初始化与基础方法
@@ -45,8 +28,9 @@ local _M = ClassMgr.Class('CPlayer', CLiving)
 
 -- 初始化玩家
 function _M:OnInit(info_)
-    CLiving:OnInit(info_)                                       -- 父类初始化
+    Entity:OnInit(info_)                                       -- 父类初始化
     self.name = info_.nickname
+    self.isPlayer = true
     self.bag = nil ---@type Bag
     self.uuid             = gg.create_uuid('p')                 -- 唯一ID
     self.auto_attack      = 0                                   -- 自动攻击技能ID
@@ -57,25 +41,12 @@ function _M:OnInit(info_)
     self.buff_instance    = {}                                  -- Buff实例
     self.dict_game_task   = {}                                  -- 任务数据
     self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
-    
-    -- 初始化玩家配置
-    self.player_config = common_config.dict_player_config[info_.id]
-    if self.player_config then
-        self.player_config.level = info_.level
-        CLiving.initBattleData(self, self.player_config)  -- 初始化战斗数据
-    else
-        gg.log("警告: 玩家配置未找到，ID:", info_.id)
-    end
-end
-
--- 获取玩家位置
-function _M:getPosition()
-    return self.actor and self.actor.Position or Vector3.new(0, 0, 0)
+    self.nearbyNpcs       = {}                                  -- 附近的NPC列表
 end
 
 -- 设置玩家网络状态
 function _M:setPlayerNetStat(player_net_stat_)
-    gg.log('设置玩家网络状态:', self.info.uin, player_net_stat_)
+    gg.log('设置玩家网络状态:', self.uin, player_net_stat_)
     self.player_net_stat = player_net_stat_
 end
 
@@ -89,7 +60,7 @@ end
 function _M:Die()
     -- 发布死亡事件
     ServerEventManager.Publish("PlayerDeadEvent", { player = self })
-    CLiving.Die(self)
+    Entity.Die(self)
 end
 
 function _M:ExecuteCommand(command, castParam)
@@ -476,8 +447,8 @@ function _M:rsyncData(op_)
     local ret_ = {
         level     = self.level,
         exp       = self.exp,
-        user_name = self.info.nickname,
-        uin       = self.info.uin,
+        user_name = self.name,
+        uin       = self.uin,
     }
     
     if op_ == 1 then
@@ -503,41 +474,8 @@ end
 -- 玩家离开游戏
 function _M:Save()
     cloudDataMgr.SavePlayerData(self.uin, true)
-    if self.bag.dirtySave then
+if self.bag.dirtySave then
         self.bag:Save()
-    end
-end
-
--- 自动回血蓝
-function _M:checkHPMP()
-    -- 只在玩家存活时处理
-    if self.battle_data.hp <= 0 then
-        return
-    end
-    
-    local change_ = 0
-    
-    -- 回血
-    if self.battle_data.hp < self.battle_data.hp_max then
-        self.battle_data.hp = self.battle_data.hp + 1
-        change_ = 1
-    end
-    
-    -- 回蓝
-    if self.battle_data.mp < self.battle_data.mp_max then
-        self.battle_data.mp = self.battle_data.mp + 2
-        change_ = 1
-    end
-    
-    -- 发送更新通知
-    if change_ == 1 and (self.tick % 2 == 1) then
-        gg.network_channel:fireClient(self.uin, {
-            cmd = 'cmd_player_hpmp',
-            hp = self.battle_data.hp,
-            hp_max = self.battle_data.hp_max,
-            mp = self.battle_data.mp,
-            mp_max = self.battle_data.mp_max
-        })
     end
 end
 
@@ -548,10 +486,8 @@ function _M:update_player()
     
     -- 更新Buff
     self:updateBuffs()
-    
-    -- 处理自动攻击
-    self:processAutoAttack()
 end
+
 
 -- 更新Buff状态
 function _M:updateBuffs()
@@ -596,21 +532,56 @@ function _M:SendHoverText( text, ... )
     gg.network_channel:fireClient(self.uin, { cmd="cmd_client_show_msg", txt=text })
 end
 
--- 处理自动攻击
--- function _M:processAutoAttack()
---     if self.auto_attack <= 0 then return end
+-- 添加附近的NPC
+---@param npc Npc
+function _M:AddNearbyNpc(npc)
+    if not self.nearbyNpcs[npc.uuid] then
+        self.nearbyNpcs[npc.uuid] = npc
+        self:UpdateNearbyNpcsToClient()
+    end
+end
+
+-- 移除附近的NPC
+---@param npc Npc
+function _M:RemoveNearbyNpc(npc)
+    if self.nearbyNpcs[npc.uuid] then
+        self.nearbyNpcs[npc.uuid] = nil
+        self:UpdateNearbyNpcsToClient()
+    end
+end
+
+-- 更新附近的NPC列表到客户端
+function _M:UpdateNearbyNpcsToClient()
+    local interactOptions = {}
+    local npcList = {}
     
---     -- 减少等待时间
---     self.auto_wait_tick = self.auto_wait_tick - 1
+    -- 收集NPC信息并计算距离
+    for _, npc in pairs(self.nearbyNpcs) do
+        local distance = (npc.actor.LocalPosition - self.actor.LocalPosition).Magnitude
+        table.insert(npcList, {
+            npc = npc,
+            distance = distance
+        })
+    end
     
---     -- 检查是否可以攻击
---     if self.auto_wait_tick <= 0 and not self.stat_flags.skill_uuid then
---         -- 尝试自动攻击
---         skillMgr.tryAutoAttack(self, self.auto_attack)
-        
---         -- 重设等待时间
---         self.auto_wait_tick = self.auto_attack_tick
---     end
--- end
+    -- 按距离排序
+    table.sort(npcList, function(a, b)
+        return a.distance < b.distance
+    end)
+    
+    -- 构建排序后的交互选项列表
+    for _, data in ipairs(npcList) do
+        table.insert(interactOptions, {
+            npcName = data.npc.name,
+            npcId = data.npc.uuid,
+            icon = data.npc.interactIcon
+        })
+    end
+    
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "NPCInteractionUpdate",
+        interactOptions = interactOptions
+    })
+end
 
 return _M

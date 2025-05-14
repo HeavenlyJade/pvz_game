@@ -1,14 +1,14 @@
-
-    
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local TagType      = require(MainStorage.code.common.config_type.tags.TagType)    ---@type TagType
+
 --- 词条配置文件
 ---@class TagTypeConfig
+local TagTypeConfig = {}
+local loaded = false
 
-
---默认数值模板
-local TagTypeConfig= { config = {
+local function LoadConfig()
+    TagTypeConfig.config ={
     ["词条2"] = TagType.New({
         ["名字"] = "词条2",
         ["最高等级"] = 1,
@@ -31,16 +31,23 @@ local TagTypeConfig= { config = {
             }
         }
     })
-}}
+}loaded = true
+end
 
 ---@param tagTypeName string
 ---@return TagType
 function TagTypeConfig.Get(tagTypeName)
+    if not loaded then
+        LoadConfig()
+    end
     return TagTypeConfig.config[tagTypeName]
 end
 
 ---@return TagType[]
 function TagTypeConfig.GetAll()
+    if not loaded then
+        LoadConfig()
+    end
     return TagTypeConfig.config
 end
 return TagTypeConfig

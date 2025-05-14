@@ -58,16 +58,16 @@ function UiSelectDiff.create()
     bg_.Name = "diff_bg"
     bg_.Visible = false   --hide first
     bg_.Size     = Vector2.New( ui_size.x*0.6, ui_size.y*0.8 )
-    bg_.Position = Vector2.new( ui_size.x*0.5, ui_size.y*0.5 )
+    bg_.Position = Vector2.New( ui_size.x*0.5, ui_size.y*0.5 )
     UiSelectDiff.bg = bg_
 
 
     --文字描述
     local text_ = gg.createTextLabel( bg_, '世界传送点' )
     text_.Name       = 'diff_comment'
-    text_.TitleColor = ColorQuad.new( 255, 128, 0, 255 )
+    text_.TitleColor = ColorQuad.New( 255, 128, 0, 255 )
     text_.FontSize   = 28
-    text_.Position   = Vector2.new( ui_size.x*0.3, ui_size.y*0.1 )
+    text_.Position   = Vector2.New( ui_size.x*0.3, ui_size.y*0.1 )
 
 
     --四个难度按钮
@@ -79,7 +79,7 @@ function UiSelectDiff.create()
         tmp_button.Title     = gg.getDiffString(i)
         tmp_button.TitleSize = 24
         local color_ = i*64 - 1
-        tmp_button.IconColor = ColorQuad.new( color_, 255-color_ , 0, 255 )
+        tmp_button.IconColor = ColorQuad.New( color_, 255-color_ , 0, 255 )
         tmp_button.Size     = Vector2.New( ui_size.x*0.2,   ui_size.x*0.04 )
         tmp_button.Position = Vector2.New( ui_size.x*0.3,   ui_size.y*0.1 + ui_size.y*0.13 * i )
 

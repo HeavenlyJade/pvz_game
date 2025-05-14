@@ -58,7 +58,7 @@ function NPCInteraction.setupNPCInteraction(npcIds, task)
         local centerPos = obj_npc.Position
         
         -- 设置区域范围
-        local expand = Vector3.new(15, 5, 15)
+        local expand = Vector3.New(15, 5, 15)
         interactArea.Beg = centerPos - (npcSize/2 + expand)
         interactArea.End = centerPos + (npcSize/2 + expand)
         

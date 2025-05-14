@@ -175,13 +175,13 @@ function UiGameTask.createNpcHighlight(npcId)
         local centerPos = obj_npc.Position
         
         -- 设置区域范围
-        local expand = Vector3.new(25, 10, 150)
+        local expand = Vector3.New(25, 10, 150)
         safeArea.Beg = centerPos - (npcSize/2 + expand)
         safeArea.End = centerPos + (npcSize/2 + expand)
         
         -- 设置区域显示样式
         safeArea.Show = true
-        safeArea.Color = ColorQuad.new(0, 255, 0, 100)
+        safeArea.Color = ColorQuad.New(0, 255, 0, 100)
         safeArea.EffectWidth = 3        
         table.insert(safeAreas, safeArea)
     end
@@ -194,7 +194,7 @@ function UiGameTask.setupNavigation(taskButton, location, safeAreas)
     if not location then return end
     
     taskButton.Click:Connect(function()
-        local targetPos = Vector3.new(location[1], location[2], location[3])
+        local targetPos = Vector3.New(location[1], location[2], location[3])
         local actor_ = gg.getClientLocalPlayer()
         
         if UiGameTask.isNavigating then
@@ -236,10 +236,10 @@ function UiGameTask.createTaskButton(taskConfig, statusValue, questData)
     task_desc_.Title = taskConfig.description
     
     -- 设置任务按钮
-    textLabel_.Size = Vector2.new(148, 30)
-    textLabel_.Pivot = Vector2.new(0.5, 0)
-    textLabel_.Position = Vector2.new(76, 0 + UiGameTask.task_index * 30)
-    textLabel_.FillColor = ColorQuad.new(0, 0, 0, 0)
+    textLabel_.Size = Vector2.New(148, 30)
+    textLabel_.Pivot = Vector2.New(0.5, 0)
+    textLabel_.Position = Vector2.New(76, 0 + UiGameTask.task_index * 30)
+    textLabel_.FillColor = ColorQuad.New(0, 0, 0, 0)
     textLabel_.TitleSize = 20
     textLabel_.Name = "task" .. taskConfig.id
     textLabel_.Title = taskConfig.name
@@ -255,9 +255,9 @@ function UiGameTask.createTaskButton(taskConfig, statusValue, questData)
     
     -- 如果任务正在追踪中，显示导航标记
     if questData and questData.tracking and questData.tracking.active then
-        textLabel_.TitleColor = ColorQuad.new(0, 255, 0, 255) -- 绿色表示正在追踪
+        textLabel_.TitleColor = ColorQuad.New(0, 255, 0, 255) -- 绿色表示正在追踪
     else
-        textLabel_.TitleColor = ColorQuad.new(255, 255, 255, 255) -- 白色表示未追踪
+        textLabel_.TitleColor = ColorQuad.New(255, 255, 255, 255) -- 白色表示未追踪
     end
     
     UiGameTask.task_index = UiGameTask.task_index + 1
@@ -276,12 +276,12 @@ function UiGameTask.processTaskItem(taskConfig, taskElement, mainLine, isFirst, 
     
     -- 设置任务位置
     if not isFirst then
-        taskElement.Position = Vector2.new(
+        taskElement.Position = Vector2.New(
             taskElement.Position.x, 
             taskElement.Position.y + (index - 1) * taskElement.Size.y
         )
     else
-        taskElement.Position = Vector2.new(
+        taskElement.Position = Vector2.New(
             taskElement.Position.x,
             taskElement.Position.y - 230
         )

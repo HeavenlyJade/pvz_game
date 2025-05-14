@@ -168,7 +168,7 @@
 --                 if  UiBag.dict_btn_bag[ bag_id_ ] then
 --                     UiBag.bag_pointer.Visible  = true
 --                     UiBag.bag_pointer.Parent   = UiBag.dict_btn_bag[ bag_id_ ].btn
---                     UiBag.bag_pointer.Position = Vector2.new(-5, -5)
+--                     UiBag.bag_pointer.Position = Vector2.New(-5, -5)
 --                 end
 
 
@@ -179,7 +179,7 @@
 --                             if  UiBag.dict_btn_bag[ info_.pos ] then
 --                                 UiBag.eqp_pointer.Visible  = true
 --                                 UiBag.eqp_pointer.Parent   = UiBag.dict_btn_bag[ info_.pos ].btn
---                                 UiBag.eqp_pointer.Position = Vector2.new(-5, -5)
+--                                 UiBag.eqp_pointer.Position = Vector2.New(-5, -5)
 
 --                                 --显示【当前装备详情】
 --                                 if  gg.client_bag_index[ info_.pos ] then
@@ -327,7 +327,7 @@
 --     tmp_button.Icon = common_config.assets_dict.btn_empty_frame
 --     gg.formatButton(tmp_button)
 --     tmp_button.Size = Vector2.New(64, 64)
---     tmp_button.Pivot = Vector2.new(0, 0)
+--     tmp_button.Pivot = Vector2.New(0, 0)
 --     tmp_button.Position = Vector2.New(x, y)
     
 --     tmp_button.Click:Connect(function()
@@ -390,8 +390,8 @@
 --         image_.Name = 'item_icon'
 --         image_.Active = false
 --         image_.ClickPass = true
---         image_.Pivot = Vector2.new(0, 0)
---         image_.Position = Vector2.new(0, 0)
+--         image_.Pivot = Vector2.New(0, 0)
+--         image_.Position = Vector2.New(0, 0)
 --         image_.Size = btn.Size
         
 --         -- 质量星号
@@ -399,14 +399,14 @@
 --         text_.Name = 'star'
 --         text_.TitleColor = gg.getQualityColor(item_.quality)
 --         text_.FontSize = 28
---         text_.Position = Vector2.new(10, 10)
+--         text_.Position = Vector2.New(10, 10)
         
 --         -- 数量
 --         if item_.num then
 --             local text_num_ = gg.createTextLabel(image_, '' .. item_.num)
 --             text_num_.Name = 'num'
 --             text_num_.FontSize = 18
---             text_num_.Position = Vector2.new(btn.Size.x * 0.5, btn.Size.y - 10)
+--             text_num_.Position = Vector2.New(btn.Size.x * 0.5, btn.Size.y - 10)
 --         end
 --     else
 --         -- 更新现有图标
@@ -419,7 +419,7 @@
 --                 local text_num_ = gg.createTextLabel(btn.item_icon, '' .. item_.num)
 --                 text_num_.Name = 'num'
 --                 text_num_.FontSize = 18
---                 text_num_.Position = Vector2.new(btn.Size.x * 0.5, btn.Size.y - 10)
+--                 text_num_.Position = Vector2.New(btn.Size.x * 0.5, btn.Size.y - 10)
 --             else
 --                 btn.item_icon.num.Title = '' .. item_.num
 --             end
@@ -439,12 +439,12 @@
 --     image_.Name = 'eqp_pointer'
 --     image_.Active = false
 --     image_.ClickPass = true
---     image_.Pivot = Vector2.new(0, 0)
---     image_.Position = Vector2.new(-5, -5)
+--     image_.Pivot = Vector2.New(0, 0)
+--     image_.Position = Vector2.New(-5, -5)
 --     local size_ = eqp_btn.Size
---     image_.Size = Vector2.new(size_.x + 10, size_.y + 10)
+--     image_.Size = Vector2.New(size_.x + 10, size_.y + 10)
 --     image_.RenderIndex = 1
---     image_.FillColor = ColorQuad.new(255, 64, 64, 255)
+--     image_.FillColor = ColorQuad.New(255, 64, 64, 255)
 --     UiBag.eqp_pointer = image_
 --     UiBag.eqp_pointer.Visible = false
     
@@ -454,12 +454,12 @@
 --     image2_.Name = 'bag_pointer'
 --     image2_.Active = false
 --     image2_.ClickPass = true
---     image2_.Pivot = Vector2.new(0, 0)
---     image2_.Position = Vector2.new(-5, -5)
+--     image2_.Pivot = Vector2.New(0, 0)
+--     image2_.Position = Vector2.New(-5, -5)
 --     local size2_ = bag_btn.Size
---     image2_.Size = Vector2.new(size2_.x + 10, size2_.y + 10)
+--     image2_.Size = Vector2.New(size2_.x + 10, size2_.y + 10)
 --     image2_.RenderIndex = 1
---     image2_.FillColor = ColorQuad.new(0, 255, 0, 255)
+--     image2_.FillColor = ColorQuad.New(0, 255, 0, 255)
 --     UiBag.bag_pointer = image2_
 --     UiBag.bag_pointer.Visible = false
 -- end
@@ -567,10 +567,10 @@
 --     image.Name = name
 --     image.Active = false
 --     image.ClickPass = true
---     image.Pivot = Vector2.new(0, 0)
---     image.Position = Vector2.new(0, 0)
+--     image.Pivot = Vector2.New(0, 0)
+--     image.Position = Vector2.New(0, 0)
 --     local size = parent.Size
---     image.Size = Vector2.new(10 + size.x, 10 + size.y)
+--     image.Size = Vector2.New(10 + size.x, 10 + size.y)
 --     image.RenderIndex = 1
 --     image.FillColor = color
 --     return image
@@ -583,7 +583,7 @@
 --         if equipBtn then
 --             UiBag.eqp_pointer.Visible = true
 --             UiBag.eqp_pointer.Parent = equipBtn.btn
---             UiBag.eqp_pointer.Position = Vector2.new(-5, -5)
+--             UiBag.eqp_pointer.Position = Vector2.New(-5, -5)
             
 --             -- 显示当前装备详情
 --             UiBag.updateEquippedItemInfo(info.pos)
@@ -611,8 +611,8 @@
 --         image.Name = 'item_icon'
 --         image.Active = false
 --         image.ClickPass = true
---         image.Pivot = Vector2.new(0, 0)
---         image.Position = Vector2.new(0, 0)
+--         image.Pivot = Vector2.New(0, 0)
+--         image.Position = Vector2.New(0, 0)
 --         image.Size = button.Size
         
 --         -- 质量星号
@@ -620,14 +620,14 @@
 --         text.Name = 'star'
 --         text.TitleColor = gg.getQualityColor(quality)
 --         text.FontSize = 28
---         text.Position = Vector2.new(10, 10)
+--         text.Position = Vector2.New(10, 10)
         
 --         -- 数量
 --         if num then
 --             local textNum = gg.createTextLabel(image, tostring(num))
 --             textNum.Name = 'num'
 --             textNum.FontSize = 18
---             textNum.Position = Vector2.new(button.Size.x * 0.5, button.Size.y - 10)
+--             textNum.Position = Vector2.New(button.Size.x * 0.5, button.Size.y - 10)
 --         end
 --     else
 --         -- 更新现有图标
@@ -644,7 +644,7 @@
 --                 local textNum = gg.createTextLabel(button.item_icon, tostring(num))
 --                 textNum.Name = 'num'
 --                 textNum.FontSize = 18
---                 textNum.Position = Vector2.new(button.Size.x * 0.5, button.Size.y - 10)
+--                 textNum.Position = Vector2.New(button.Size.x * 0.5, button.Size.y - 10)
 --             else
 --                 button.item_icon.num.Title = tostring(num)
 --             end

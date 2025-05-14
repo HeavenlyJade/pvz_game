@@ -1,13 +1,8 @@
 local MainStorage  = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local CMonster     = require(MainStorage.code.server.entity_types.CMonster) ---@type CMonster
+local Monster     = require(MainStorage.code.server.entity_types.Monster) ---@type Monster
 local Vector3      = Vector3
 local gg           = require(MainStorage.code.common.MGlobal) ---@type gg
-
----@class Vector3
----@field x number
----@field y number
----@field z number
 
 -- StatType 类
 ---@class MobType:Class
@@ -18,16 +13,16 @@ function MobType:OnInit(data)
 end
 
 ---@param position Vector3
----@param scene CScene
----@return CMonster
+---@param scene Scene
+---@return Monster
 function MobType:Spawn(position, level, scene)
-    local monster_ = CMonster.New({ ---@type CMonster
+    local monster_ = Monster.New({ ---@type Monster
         position = position,
         mobType  = self,
-        level = level
+        level = level,
     })
-    monster_:createModel()
-    monster_.scene = scene
+    monster_:ChangeScene(scene)
+    monster_:CreateModel()
     scene.monsters[monster_.uuid] = monster_
     return monster_
 end
@@ -36,27 +31,20 @@ end
 ---@param level number
 ---@return number
 function MobType:GetStatAtLevel(statType, level)
-    if self.data["属性公式"][statType] then
-        local expr = self.data["属性公式"][statType]:gsub("LVL", tostring(level))
-        if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
-            print(string.format("怪物%s的属性%s包含非法字符: %s", self["名字"], statType, expr))
-            return 0
-        end
-    
-        local func, err = load("return " .. expr)
-        if not func then
-            print(string.format("怪物%s的属性%s表达式语法错误: %s", self["名字"], statType, expr))
-            return 0
-        end
-    
-        local success, result = pcall(func)
-        if not success then
-            print(string.format("怪物%s的属性%s计算错误: %s", self["名字"], statType, result))
-            return 0
-        end
-        return result
+    if not self.data["属性公式"][statType] then
+        return 0
     end
-    return 0
+
+    local expr = self.data["属性公式"][statType]:gsub("LVL", tostring(level))
+    if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
+        print(string.format("怪物%s的属性%s包含非法字符: %s", self["名字"], statType, expr))
+        return 0
+    end
+
+    local result = gg.eval(expr)
+    print("calc result:", expr, result)
+
+    return result
 end
 
 return MobType

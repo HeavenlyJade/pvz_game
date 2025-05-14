@@ -83,7 +83,7 @@ function MainLineTask:Accept(player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "已接取任务：" .. self.name,
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     return true, "成功接取任务"
@@ -113,7 +113,7 @@ function MainLineTask:UpdateObjective(player, objectiveIndex, progress)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "目标已完成！",
-            color = ColorQuad.new(0, 255, 0, 255)
+            color = ColorQuad.New(0, 255, 0, 255)
         })
         
         -- 检查所有目标是否完成
@@ -152,7 +152,7 @@ function MainLineTask:CheckCompletion(player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "任务已完成，请返回领取奖励！",
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     return true, "任务已完成"
@@ -177,7 +177,7 @@ function MainLineTask:Complete(player)
     gg.network_channel:fireClient(player.uin, {
         cmd = "cmd_client_show_msg",
         txt = "任务已完成，奖励已发放！",
-        color = ColorQuad.new(0, 255, 0, 255)
+        color = ColorQuad.New(0, 255, 0, 255)
     })
     
     -- 解锁后续任务

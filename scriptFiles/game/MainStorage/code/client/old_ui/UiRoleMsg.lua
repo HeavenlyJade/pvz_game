@@ -70,7 +70,7 @@ function UiRoleMsg.update_msg_panel()
                 attr_info.Parent  = UiRoleMsg.bg.attribute
                 attr_info.Name    = Name
                 attr_info.Visible = true
-                attr_info.Position  = Vector2.new( attr_title_Position.x, attr_title_Position.y+y_offset )
+                attr_info.Position  = Vector2.New( attr_title_Position.x, attr_title_Position.y+y_offset )
             end
         end
         local battle_data_ = gg.client_player_data.battle_data

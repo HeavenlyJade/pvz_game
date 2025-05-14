@@ -55,7 +55,7 @@ function BaseObjective:Update(player, progress)
         gg.network_channel:fireClient(player.uin, {
             cmd = "cmd_client_show_msg",
             txt = "目标已完成！",
-            color = ColorQuad.new(0, 255, 0, 255)
+            color = ColorQuad.New(0, 255, 0, 255)
         })
     end
     

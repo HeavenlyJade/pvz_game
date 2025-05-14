@@ -22,8 +22,11 @@ end
 ---@field Get fun(itemRank: string):ItemRank 获取品级
 ---@field GetAll fun():ItemRank[] 获取所有品级
 
---默认数值模板
-local ItemRankConfig = { config = {
+local ItemRankConfig = {}
+local loaded = false
+
+function LoadConfig()
+    ItemRankConfig.config ={
     ["传说"] = ItemRank.New({
         ["名字"] = "传说",
         ["颜色"] = {
@@ -74,17 +77,23 @@ local ItemRankConfig = { config = {
         },
         ["优先级"] = 3
     })
-}}
-
+}loaded = true
+end
 
 ---@param itemRank string
 ---@return ItemRank
 function ItemRankConfig.Get(itemRank)
+    if not loaded then
+        LoadConfig()
+    end
     return ItemRankConfig.config[itemRank]
 end
 
 ---@return ItemType[]
 function ItemRankConfig.GetAll()
+    if not loaded then
+        LoadConfig()
+    end
     return ItemRankConfig.config
 end
 return ItemRankConfig

@@ -71,7 +71,7 @@
 ---@field GetCurrentStatePlayedTime fun(self: Animator, layerIdx: number) Number 获取当前层级正在播放的状态的PlayedTime
 ---@field SetStatePauseAtNormlizedTime fun(self: Animator) boolean 
 ---@field EventNotify fun(self: Animator, statedata: SandboxNode, name: string, layerIndex: number, state: StateMachineMessage) None 发送一个当前状态机消息的通知
----@field GetAnimationPostNotify fun(self: Animator) SBXSignal 获取动画完成通知
+---@field GetAnimationPostNotify fun(self: Animator) Event 获取动画完成通知
 ---@field GetUpdateAssetNotify fun(self: Animator, url: string, state: boolean) None 获取更新资源通知
 ---@field UpdateAssetNotify fun(self: Animator, url: string, state: boolean) None 更新资源通知
 ---@field ClipsEventNotify fun(self: Animator, function: string, variant: ReflexVariant) None 动画切片事件通知
@@ -378,7 +378,7 @@
 
 
 
----@class Transform
+---@class Transform:SandboxNode
 ---@field Position Vector3 全局坐标
 ---@field Euler Vector3 全局欧拉角
 ---@field Rotation Quaternion 全局旋转
@@ -399,7 +399,7 @@
 ---@field SetWorldScale fun(self: Transform, x: number, y: number, z: number) None 设置全局缩放
 ---@field SetWorldEuler fun(self: Transform, x: number, y: number, z: number) None 设置全局欧拉角
 ---@field LookAt fun(self: Transform, x: Vector3, y: boolean) None 看向指定位置
----@field LookAtObject fun(self: Transform, x: SceneTransObject, y: boolean) None 看向指定位置
+---@field LookAtObject fun(self: Transform, x: SceneTransObject, y?: boolean) None 看向指定位置
 
 
 ---@class BindAttachment
@@ -1148,8 +1148,8 @@
 ---@field Show boolean 是否显示
 ---@field ShowMode SceneEffectFrameShowMode 显示模式的枚举
 ---@field Color ColorQuad 区域颜色
----@field EnterNode SBXSignal 节点进入该区域时触发
----@field LeaveNode SBXSignal 节点离开该区域时触发
+---@field EnterNode Event 节点进入该区域时触发
+---@field LeaveNode Event 节点离开该区域时触发
 
 
 
@@ -1303,8 +1303,8 @@
 ---@class Team
 ---@field AutoAssignable boolean 此属性用来决定加入游戏的Player是否允许自动分配到该队伍
 ---@field TeamColor ColorQuad  fun(ColorQuad)
----@field PlayerAdded SBXSignal 新增一个玩家
----@field PlayerRemoved SBXSignal 移除一个玩家
+---@field PlayerAdded Event 新增一个玩家
+---@field PlayerRemoved Event 移除一个玩家
 
 
 
@@ -1314,8 +1314,8 @@
 
 ---@class TeleportService
 ---@field Teleport fun(self: TeleportService, playernode: SandboxNode, pos: Vector3) None 地图内将玩家传送到指定位置
----@field TeleportSuccess fun(self: TeleportService) SBXSignal 玩家传送成功触发，会触发一个TeleportSuccess通知
----@field TeleportFail fun(self: TeleportService) SBXSignal 玩家传送失败，会触发一个TeleportFail通知
+---@field TeleportSuccess fun(self: TeleportService) Event 玩家传送成功触发，会触发一个TeleportSuccess通知
+---@field TeleportFail fun(self: TeleportService) Event 玩家传送失败，会触发一个TeleportFail通知
 
 
 ---@class Tool
@@ -1328,25 +1328,25 @@
 ---@field ActivationOnly boolean 仅激活
 ---@field Activate fun(self: Tool) boolean 已装备的的工具，模拟点击使用，会触发Activated事件。
 ---@field Deactivate fun(self: Tool) boolean 模拟工具的结束使用。
----@field Activated fun(self: Tool) SBXSignal 玩家已装备工具，点击鼠标左键时触发
----@field Deactivated fun(self: Tool) SBXSignal 当鼠标左键松开时触发
----@field Equipped fun(self: Tool) SBXSignal 当装备道具时触发
----@field Unequipped fun(self: Tool) SBXSignal 当卸载道具时触发。
+---@field Activated fun(self: Tool) Event 玩家已装备工具，点击鼠标左键时触发
+---@field Deactivated fun(self: Tool) Event 当鼠标左键松开时触发
+---@field Equipped fun(self: Tool) Event 当装备道具时触发
+---@field Unequipped fun(self: Tool) Event 当卸载道具时触发。
 
 
----@class TriggerBox
+---@class TriggerBox:Transform
 ---@field Size Vector3 触发器包围盒尺寸
 ---@field KinematicAble boolean 运动能力
 ---@field GravityAble boolean 重力能力
----@field Touched SBXSignal 触发器被触碰时，触发通知
----@field TouchEnded SBXSignal 触发器被触碰结束时，触发通知
+---@field Touched Event 触发器被触碰时，触发通知
+---@field TouchEnded Event 触发器被触碰结束时，触发通知
 
 
 
 ---@class VoiceChannel
 ---@field ChannelID string 语音频道ID。它是一个只读属性
----@field JoinChannel SBXSignal 加入某语音频道
----@field LeaveChannel SBXSignal 退出语音频道
+---@field JoinChannel Event 加入某语音频道
+---@field LeaveChannel Event 退出语音频道
 
 
 
@@ -1599,8 +1599,8 @@
 ---@field PhysXType PHYSX2D_TYPE 
 ---@field FlippedX boolean 
 ---@field FlippedY boolean 
----@field Touched SBXSignal 模型被其他模型碰撞时，会触发一个Touched通知
----@field TouchEnded SBXSignal 模型被其他模型碰撞结束时，会触发一个TouchEnded通知
+---@field Touched Event 模型被其他模型碰撞时，会触发一个Touched通知
+---@field TouchEnded Event 模型被其他模型碰撞结束时，会触发一个TouchEnded通知
 
 
 
@@ -1610,8 +1610,8 @@
 ---@field Materials table 材质
 ---@field Meshs table 网格
 ---@field Materials table 材质
----@field LoadAssetNotify SBXSignal 单个资源加载事件完成，触发通知事件
----@field LoadAssetFinishNotify SBXSignal 材质是否全部加载完成，触发通知事件
+---@field LoadAssetNotify Event 单个资源加载事件完成，触发通知事件
+---@field LoadAssetFinishNotify Event 材质是否全部加载完成，触发通知事件
 
 
 
@@ -1722,7 +1722,7 @@
 ---@field LocaleIdConfigField unumberptr_t 
 ---@field LocaleIdNum number 
 ---@field PlayerLocaleId LocaleId 
----@field PlayerLocaleIdNotify SBXSignal 
+---@field PlayerLocaleIdNotify Event 
 
 
 
@@ -1739,15 +1739,15 @@
 ---@field AddDynamicScene nil 添加动态场景 fun(服务端)添加结果DynamicSceneOpResultServer通知回调
 ---@field RemoveDynamicScene nil 删除动态场景 fun(服务端)删除结果DynamicSceneOpResultServer通知回调
 ---@field DynamicSwitchScene nil 切换结果DynamicSceneOpResultServer通知回调
----@field SceneSwitchStart SBXSignal 切换场景开始通知 fun(客户端)
----@field SceneOpResult SBXSignal 场景操作结果通知 fun(客户端)
----@field DynamicSceneOpResultServer SBXSignal 动态场景操作结果通知 fun(服务端)
+---@field SceneSwitchStart Event 切换场景开始通知 fun(客户端)
+---@field SceneOpResult Event 场景操作结果通知 fun(客户端)
+---@field DynamicSceneOpResultServer Event 动态场景操作结果通知 fun(服务端)
 
 
 
 ---@class SandboxUISnapshotNode
 ---@field IsSnapFinish boolean 是否截屏完毕
----@field OnSnapFinish SBXSignal 截屏完毕时，触发一个OnSnapFinish通知
+---@field OnSnapFinish Event 截屏完毕时，触发一个OnSnapFinish通知
 
 
 
@@ -1803,7 +1803,7 @@
 ---@field IsPlaying fun(self: TimelinePlayer) boolean 是否播放中
 ---@field Pause fun(self: TimelinePlayer) boolean 记录当前播放进度
 ---@field Stop fun(self: TimelinePlayer) boolean 丢失当前播放进度.
----@field StopPlaying fun(self: TimelinePlayer) SBXSignal 停止或者中断播放时触发
+---@field StopPlaying fun(self: TimelinePlayer) Event 停止或者中断播放时触发
 
 
 ---@class TimelineTrack
@@ -1936,7 +1936,7 @@
 
 
 
----@class Actor
+---@class Actor: Model, Transform
 ---@field Movespeed number 生物的移动速度
 ---@field MaxHealth number 生物的最大血量
 ---@field Health number 生物的当前血量
@@ -1987,12 +1987,12 @@
 
 ---@class AITaskEntry
 ---@field CanRun boolean 是否可以继续
----@field Run SBXSignal lua任务运行时触发
----@field Start SBXSignal lua任务开始执行时触发
----@field Ready SBXSignal lua任务完成时触发
----@field Tick SBXSignal lua任务循环时触发
----@field Reset SBXSignal lua任务重置时触发
----@field Destroy SBXSignal lua任务销毁时触发
+---@field Run Event lua任务运行时触发
+---@field Start Event lua任务开始执行时触发
+---@field Ready Event lua任务完成时触发
+---@field Tick Event lua任务循环时触发
+---@field Reset Event lua任务重置时触发
+---@field Destroy Event lua任务销毁时触发
 
 
 
@@ -2125,7 +2125,7 @@
 ---@field OpenWareHouse fun(self: CoreUI) void 打开玩家仓库皮肤界面
 ---@field GetSnapshot fun(self: CoreUI, val: number) SandboxNode 获取截屏
 ---@field DoSnapshot fun(self: CoreUI) None 
----@field UiChange fun(self: CoreUI) SBXSignal UI发生变化时，会触发一个UiChange通知
+---@field UiChange fun(self: CoreUI) Event UI发生变化时，会触发一个UiChange通知
 ---@field SnapshotFinish fun(self: CoreUI) None 
 
 
@@ -2189,6 +2189,7 @@
 ---@field Scale Vector2 UI节点缩放倍数
 ---@field Rotation number UI节点旋转度数
 ---@field Position Vector2 UI节点坐标
+---@field RenderIndex number UI渲染层级（值越大，渲染越靠后，越处于上层）
 ---@field Pivot Vector2 UI节点锚点（0~1），（0.5,0.5）为中点
 ---@field IsKeepPosWhenPivotChange boolean 更新锚点时是否保持位置不变
 ---@field IsNotifyEventStop boolean 是否将触摸事件传递给父节点（为true时不传递）
@@ -2397,7 +2398,7 @@
 ---@field FontSize number 字体大小
 ---@field Title string 输入的文本内容
 ---@field Input InputMode 
----@field Return SBXSignal 输入完成时触发
+---@field Return Event 输入完成时触发
 
 
 
@@ -2559,15 +2560,15 @@
 ---@field GetTagged fun(self: CollectionService, tag: string) SandboxNode 获取该标签的所有节点
 ---@field GetTags fun(self: CollectionService, node: SandboxNode) Table 获取该节点的所有标签
 ---@field HasTag fun(self: CollectionService, node: SandboxNode, tag: string) boolean 该节点是否有标签
----@field GetNodeAddedSignal fun(self: CollectionService, tag: string) SBXSignal 获取该标签新增的沙盒信号
----@field GetNodeRemovedSignal fun(self: CollectionService, tag: string) SBXSignal 获取该标签移除的沙盒信号
+---@field GetNodeAddedSignal fun(self: CollectionService, tag: string) Event 获取该标签新增的沙盒信号
+---@field GetNodeRemovedSignal fun(self: CollectionService, tag: string) Event 获取该标签移除的沙盒信号
 
 
 ---@class ContentService
 ---@field RequestQueueSize number 请求队列的大小
 ---@field PreloadAsync fun(self: ContentService, func: function, reflexTuple: ReflexTuple) None 异步预加载
 ---@field GetAssetFetchStatus fun(self: ContentService, assetid: string) AssetFetchStatus 获取资源加载状态
----@field GetAssetFetchStatusChangedSignal fun(self: ContentService, assetid: string) SBXSignal 资源加载状态变更的信号
+---@field GetAssetFetchStatusChangedSignal fun(self: ContentService, assetid: string) Event 资源加载状态变更的信号
 ---@field GetAssetStatusInfo fun(self: ContentService, assetid: string) String 获取资源加载状态信息
 ---@field NotifyAssetFetchStatus fun(self: ContentService, assetid: string, status: AssetFetchStatus) None 资源加载状态变更时，会触发一个NotifyAssetFetchStatus通知
 ---@field NotifyAssetStatusLoading fun(self: ContentService, assetid: string, curNum: number, maxNum: number) None 资源加载Loading时通知
@@ -2656,8 +2657,8 @@
 ---@field GetCurMapUpdateTimestamp fun(self: RunService) Number 获取当前地图更新时间（上传时间）
 ---@field HeartBeat fun(self: RunService, time: double) None 心跳事件
 ---@field RenderStepped fun(self: RunService, step: double) None 渲染步幅事件，每次Update触发RenderStepped事件
----@field Stepped fun(self: RunService) SBXSignal 步幅事件，每次Tick触发Stepped事件
----@field SystemStepped fun(self: RunService) SBXSignal 步幅事件，每次系统Tick触发SystemStepped事件
+---@field Stepped fun(self: RunService) Event 步幅事件，每次Tick触发Stepped事件
+---@field SystemStepped fun(self: RunService) Event 步幅事件，每次系统Tick触发SystemStepped事件
 
 
 ---@class SandboxSceneMgrService
@@ -2670,7 +2671,7 @@
 ---@field AddDynamicSceneWithoutBlock fun(self: SandboxSceneMgrService) void 添加动态场景 fun(服务端)添加结果DynamicSceneOpResultServer通知回调
 ---@field RemoveDynamicScene fun(self: SandboxSceneMgrService) void 删除动态场景 fun(服务端)删除结果DynamicSceneOpResultServer通知回调
 ---@field DynamicSwitchScene fun(self: SandboxSceneMgrService) void 切换结果DynamicSceneOpResultServer通知回调
----@field SceneSwitchStart fun(self: SandboxSceneMgrService) SBXSignal 切换场景开始通知 fun(客户端)
+---@field SceneSwitchStart fun(self: SandboxSceneMgrService) Event 切换场景开始通知 fun(客户端)
 ---@field SceneOpResult fun(self: SandboxSceneMgrService, type: unsignedchar, sceneid: number, result: number) None 场景操作结果通知 fun(客户端)
 ---@field DynamicSceneOpResultServer fun(self: SandboxSceneMgrService, type: unsignedchar, sceneid: number, result: number, uid: number) None 动态场景操作结果通知 fun(服务端)
 
@@ -2700,7 +2701,7 @@
 ---@field DotSliceCenter Vector4 点切片中心
 ---@field JumpIcon string 跳转图标
 ---@field JumpIconShow boolean 跳转图标显示
----@field NotifyRockerChange SBXSignal 摇杆切换会触发一个事件
+---@field NotifyRockerChange Event 摇杆切换会触发一个事件
 
 
 
@@ -2889,7 +2890,7 @@
 
 
 
----@class SBXSignal
+---@class Event
 
 
 
@@ -4388,6 +4389,10 @@ Vector4 = {} ---@type Vector4
 ---@field NodeSyncLocalFlag NodeSyncLocalFlag
 ---@field UserInputType UserInputType
 ---@field KeyCode KeyCode
+---@field ResolutionLevel ResolutionLevel
+---@field LayoutHRelation LayoutHRelation
+---@field LayoutVRelation LayoutVRelation
+---@field FillMethod FillMethod
 Enum = {} ---@type Enum
 
 Quaternion = {} ---@type Quaternion

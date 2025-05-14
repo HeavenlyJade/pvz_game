@@ -10,28 +10,29 @@ local pairs        = pairs
 
 local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local common_config     = require(MainStorage.code.common.MConfig)    ---@type common_config
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
+local BattleState   = require(MainStorage.code.server.entity_types.BattleState) ---@type BattleState
 
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local CLiving   = require(MainStorage.code.server.entity_types.CLiving)          ---@type CLiving
+local Entity   = require(MainStorage.code.server.entity_types.Entity)          ---@type Entity
 -- local skillMgr  = require(MainStorage.code.server.skill.MSkillMgr)  ---@type SkillMgr
 
-local BATTLE_STAT_IDLE  = common_const.BATTLE_STAT.IDLE
-local BATTLE_STAT_FIGHT = common_const.BATTLE_STAT.FIGHT
-local BATTLE_STAT_DEAD_WAIT = common_const.BATTLE_STAT.DEAD_WAIT
-local BATTLE_STAT_WAIT_SPAWN = common_const.BATTLE_STAT.WAIT_SPAWN
+local BATTLE_STAT_IDLE  = BattleState.BATTLE_STAT_IDLE
+local BATTLE_STAT_FIGHT = BattleState.BATTLE_STAT_FIGHT
+local BATTLE_STAT_DEAD_WAIT = BattleState.BATTLE_STAT_DEAD_WAIT
+local BATTLE_STAT_WAIT_SPAWN = BattleState.BATTLE_STAT_WAIT_SPAWN
 
----@class CMonster:CLiving    --怪物类 (单个怪物) (管理怪物状态)
----@field mon_config table 怪物配置数据
+---@class Monster:Entity    --怪物类 (单个怪物) (管理怪物状态)
 ---@field name string 怪物名称
 ---@field scene_name string 所在场景名称
 ---@field battle_stat number 战斗状态
 ---@field stat_data table 状态数据
 ---@field target any 目标对象
----@field New fun(info_:table):CMonster
-local _M = ClassMgr.Class('CMonster', CLiving)
+---@field mobType MobType 怪物类型
+---@field level number 怪物等级
+---@field New fun(info_:table):Monster
+local _M = ClassMgr.Class('Monster', Entity)
 
 --------------------------------------------------
 -- 初始化与基础方法
@@ -39,21 +40,36 @@ local _M = ClassMgr.Class('CMonster', CLiving)
 
 -- 初始化怪物
 function _M:OnInit(info_)
-    CLiving:OnInit(info_)    -- 父类初始化
+    Entity:OnInit(info_)    -- 父类初始化
     self.uuid = gg.create_uuid('m')  -- 唯一ID
     
+    -- 设置怪物类型和等级
+    self.mobType = info_.mobType
+    self.level = info_.level or self.mobType.data["基础等级"] or 1
+    
+    for statName, _ in pairs(self.mobType.data["属性公式"]) do
+        self:AddStat(statName, self.mobType:GetStatAtLevel(statName, self.level))
+    end
+    -- 初始化状态数据
+    self.stat_data = {
+        idle = {
+            wait = 0,
+            select = 0
+        },
+        fight = {
+            wait = 0
+        }
+    }
+    
+    -- 设置初始战斗状态
+    self:setBattleStat(BATTLE_STAT_IDLE)
 end
 
 ---@override
 function _M:Die()
     -- 发布死亡事件
     ServerEventManager.Publish("MobDeadEvent", { mob = self.mob })
-    CLiving.Die(self)
-end
-
--- 获取怪物位置
-function _M:getPosition()
-    return self.actor and self.actor.Position or Vector3.new(0, 0, 0)
+    Entity.Die(self)
 end
 
 --------------------------------------------------
@@ -61,21 +77,20 @@ end
 --------------------------------------------------
 
 -- 创建怪物模型
-function _M:createModel()
-    local info_ = self.info
-    self.name = self.mon_config.name
+function _M:CreateModel()
+    self.name = self.mobType.data["显示名"]
     
     -- 创建Actor
-    local container = gg.serverGetContainerMonster(self.scene_name)
+    local container = game.WorkSpace["Ground"][self.scene.name]["怪物"]
     local actor_monster = SandboxNode.new('Actor', container)
     
     -- 设置模型和属性
-    actor_monster.ModelId = 'sandboxSysId://entity/' .. self.mon_config.id .. '/body.omod'
+    actor_monster.ModelId = self.mobType.data["模型"]
     actor_monster.Name = self.uuid
     
     -- 设置初始位置
-    if info_.x then
-        actor_monster.LocalPosition = Vector3.new(info_.x, info_.y, info_.z)
+    if self.spawnPos then
+        actor_monster.LocalPosition = self.spawnPos
     end
     
     -- 关联到对象
@@ -83,47 +98,34 @@ function _M:createModel()
     
     -- 加载完成事件处理
     actor_monster.LoadFinish:connect(function(ret)
-        -- 设置碰撞盒
-        actor_monster.Size = Vector3.new(120, 160, 120)  -- 碰撞盒大小
-        actor_monster.Center = Vector3.new(0, 80, 0)     -- 碰撞盒中心
-        
         -- 创建头顶标题
-        self:createTitle({
-            name = self.mon_config.name,
-            level = self.level,
-            high = self.mon_config.high
-        })
+        self:createTitle(actor_monster.Size[1])
     end)
+    self:SetHealth(self:GetStat("生命"))
 end
 
 --------------------------------------------------
 -- 战斗相关方法
 --------------------------------------------------
 
--- 自动回血蓝
-function _M:checkHPMP()
-    if self.battle_data.hp <= 0 then
-        return
-    end
-    
-    -- 回血
-    if self.battle_data.hp < self.battle_data.hp_max then
-        self.battle_data.hp = self.battle_data.hp + 1
-    end
-    
-    -- 回蓝
-    if self.battle_data.mp < self.battle_data.mp_max then
-        self.battle_data.mp = self.battle_data.mp + 2
-    end
-end
-
 -- 尝试获取目标玩家
 function _M:tryGetTargetPlayer()
     -- 在场景中寻找目标
-    local player_ = self.scene and self.scene:tryGetTarget(self:getPosition())
+    local player_ = self.scene and self.scene:tryGetTarget(self:GetPosition())
     
     if player_ then
-        self:been_hit(player_)  -- 被击中/仇恨处理
+        self:SetTarget(player_)  -- 被击中/仇恨处理
+    end
+end
+
+function _M:SetTarget(target)
+    self.target = target
+end
+
+function _M:Hurt(amount, damager, isCrit)
+    Entity.Hurt(self, amount, damager, isCrit)
+    if not self.target then
+        self:SetTarget(damager)
     end
 end
 
@@ -133,22 +135,18 @@ end
 
 -- 检查怪物是否距离刷新点太远
 function _M:checkTooFarFromPos()
-    if not self.info or not self.info.x then return end
+    if not self.spawnPos then return end
     
-    local spawnPos = Vector3.new(self.info.x, self.info.y, self.info.z)
-    local currentPos = self:getPosition()
+    local currentPos = self:GetPosition()
     
     -- 如果距离超过80单位(80*80=6400)则重新刷新
-    if gg.fast_out_distance(spawnPos, currentPos, 6400) then
+    if gg.fast_out_distance(self.spawnPos, currentPos, 6400) then
         self:spawnRandomPos(500, 100, 500)  -- 重新刷回出生点附近
     end
 end
 
 -- 在指定范围内随机刷新位置
 function _M:spawnRandomPos(rangeX, rangeY, rangeZ)
-    if not self.info or not self.actor then return end
-    
-    local spawnPos = self.info
     local randomOffset = {
         x = gg.rand_int_both(rangeX),
         y = gg.rand_int(rangeY),
@@ -156,10 +154,10 @@ function _M:spawnRandomPos(rangeX, rangeY, rangeZ)
     }
     
     -- 设置新位置
-    self.actor.Position = Vector3.new(
-        spawnPos.x + randomOffset.x,
-        spawnPos.y + randomOffset.y,
-        spawnPos.z + randomOffset.z
+    self.actor.Position = Vector3.New(
+        self.spawnPos.x + randomOffset.x,
+        self.spawnPos.y + randomOffset.y,
+        self.spawnPos.z + randomOffset.z
     )
 end
 
@@ -186,14 +184,13 @@ function _M:checkIdle(ticks, idle_data_)
     elseif idle_data_.select == 1 then
         -- 随机漫步
         idle_data_.wait = 60 + gg.rand_int(10)
-        local pos_ = self.info  -- 出生点
         
         -- 设置移动速度和导航到随机位置
-        self.actor.Movespeed = self.orgMoveSpeed
-        self.actor:NavigateTo(Vector3.new(
-            pos_.x + gg.rand_int_both(1600),
-            pos_.y,
-            pos_.z + gg.rand_int_both(1600)
+        self.actor.Movespeed = self:GetStat("速度")
+        self.actor:NavigateTo(self:GetPosition() + Vector3.New(
+            gg.rand_int_both(1600),
+            0,
+            gg.rand_int_both(1600)
         ))
         self:play_animation('100101', 1.0, 0)  -- 行走动画
         
@@ -229,34 +226,34 @@ function _M:checkFight(ticks, fight_data_)
     end
     
     -- 获取目标位置
-    local targetPos = self.target:getPosition()
+    local targetPos = self.target:GetPosition()
     
     -- 计算靠近目标的位置（带随机偏移）
-    local dir = self:getPosition() - targetPos
-    local dirWithRandomOffset = Vector3.new(
+    local dir = self:GetPosition() - targetPos
+    local dirWithRandomOffset = Vector3.New(
         dir.x + gg.rand_int_both(16),
         0,
         dir.z + gg.rand_int_both(16)
     )
-    Vector3.Normalize(dirWithRandomOffset)
+    dirWithRandomOffset:Normalize()
     
     -- 获取技能和攻击范围
     local skill, attackRange = self:getSkill1AndRange()
-    local approachPos = Vector3.new(
+    local approachPos = Vector3.New(
         targetPos.x + dirWithRandomOffset.x * 32,
         targetPos.y,
         targetPos.z + dirWithRandomOffset.z * 32
     )
     
     -- 判断是移动还是攻击
-    if gg.out_distance(self:getPosition(), approachPos, attackRange * 0.9) then
+    if gg.out_distance(self:GetPosition(), approachPos, attackRange * 0.9) then
         -- 目标不在攻击范围内，导航接近
         self.actor:NavigateTo(approachPos)
         self:play_animation('100101', 1.0, 0)  -- 行走动画
     else
         -- 目标在攻击范围内，停止移动并攻击
         self.actor:StopNavigate()
-        skillMgr.tryAttackSpell(self, skill)  -- 使用技能攻击
+        self:Attack(self.target, 0, "entity_attack")
     end
     
     -- 设置下次更新时间
@@ -286,6 +283,39 @@ function _M:checkMonStat(ticks)
     end
 end
 
+---@override
+function _M:createHpBar( root_ )
+    if self.mobType["显示血条"] then
+        local bg_  = SandboxNode.new( "UIImage", root_ )
+        local bar_ = SandboxNode.new( "UIImage", root_ )
+
+        bg_.Name = 'spell_bg'
+        bar_.Name = 'spell_bar'
+
+        bg_.Icon  = "RainbowId&filetype=5://246821862532780032"
+        bar_.Icon = "RainbowId&filetype=5://246821862532780032"
+
+        bg_.FillColor  = ColorQuad.New( 255, 255, 255, 255 )
+        bar_.FillColor = ColorQuad.New( 255, 0, 0, 255 )
+
+        bg_.LayoutHRelation = Enum.LayoutHRelation.Middle
+        bg_.LayoutVRelation = Enum.LayoutVRelation.Bottom
+
+        bar_.LayoutHRelation = Enum.LayoutHRelation.Middle
+        bar_.LayoutVRelation = Enum.LayoutVRelation.Bottom
+
+        bg_.Size   = Vector2.New(256, 32)
+        bar_.Size  = Vector2.New(256, 32)
+
+        bg_.Pivot  = Vector2.New(0.5, -1.5)
+        bar_.Pivot = Vector2.New(0.5, -1.5)
+
+        bar_.FillMethod = Enum.FillMethod.Horizontal
+        bar_.FillAmount = 1
+        self.hp_bar = bar_
+    end
+end
+
 -- 主更新函数
 function _M:update_monster()
     -- 调用父类更新
@@ -297,11 +327,6 @@ function _M:update_monster()
     -- 检查怪物是否离开刷新点太远
     if self.tick % 50 == 0 then  -- 每50帧检查一次
         self:checkTooFarFromPos()
-    end
-    
-    -- 检查自动回血
-    if self.tick % 10 == 0 then  -- 每10帧恢复一次
-        self:checkHPMP()
     end
     
     -- 在空闲状态下寻找目标

@@ -3,7 +3,7 @@ local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type Clas
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager)
 
 ---@class Battle:Class
----@field New fun( attacker:CLiving, victim:CLiving, source:string, castParam:CastParam|nil ):Battle
+---@field New fun( attacker:Entity, victim:Entity, source:string, castParam:CastParam|nil ):Battle
 local Battle = ClassMgr.Class("Battle")
 
 -- 静态属性

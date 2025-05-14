@@ -7,15 +7,16 @@ local MobTypeConfig = require(MainStorage.code.common.config.MobTypeConfig)  ---
 ---@class MobCommand
 local MobCommand = {}
 
----@param player CPlayer
+---@param player Player
 function MobCommand.spawnMob(params, player)
-    local mobType = MobTypeConfig.Get(params["怪物ID"])
+    local mobType = MobTypeConfig.Get(params["怪物"])
     if not mobType then
-        player:SendChatText("不存在的怪物", params["怪物ID"])
+        player:SendChatText("不存在的怪物", params["怪物"])
         return false
     end
     local level = tonumber(params["等级"] or "1")
-    mobType:Spawn(player:GetLocation(), level, player.scene)
+    local mob = mobType:Spawn(player:GetLocation(), level, player.scene)
+    mob:SetTarget(player)
     return true
 end
 

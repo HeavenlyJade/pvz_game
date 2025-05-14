@@ -33,12 +33,12 @@ local Players = game:GetService('Players')
 ---@field tick number 当前tick
 ---@field game_stat number 游戏状态
 ---@field uuid_start number 当前uuid起始值
----@field server_players_list table<number, CPlayer> 服务器玩家列表
----@field server_players_name_list table<string, CPlayer> 服务器玩家名称列表
+---@field server_players_list table<number, Player> 服务器玩家列表
+---@field server_players_name_list table<string, Player> 服务器玩家名称列表
 ---@field equipSlot table<number, table<number, boolean>> 各个装备槽位对应的装备类型
 local gg = {
-    VECUP = Vector3.new(0, 1, 0), -- 向上方向 y+
-    VECDOWN = Vector3.new(0, -1, 0), -- 向下方向 y-
+    VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
+    VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
 
     CommandManager = nil, -- 命令管理器
     network_channel = nil, ---@type NetworkChannel
@@ -47,8 +47,8 @@ local gg = {
 
     uuid_start = math.random(100000, 999999),
 
-    server_players_list = {}, ---@type table<number, CPlayer>
-    server_players_name_list = {}, ---@type table<string, CPlayer>
+    server_players_list = {}, ---@type table<number, Player>
+    server_players_name_list = {}, ---@type table<string, Player>
 
     equipSlot = { -- 各个装备槽位对应的装备类型
         [2] = {
@@ -161,7 +161,7 @@ end
 
 -- 获得player实例
 ---@param uin_ number 玩家ID
----@return CPlayer|nil 玩家实例
+---@return Player|nil 玩家实例
 function gg.getPlayerByUin(uin_)
     if gg.server_players_list[uin_] then
         return gg.server_players_list[uin_];
@@ -171,7 +171,7 @@ end
 
 -- 使用uuid查找一个怪物 m10002 m20003
 ---@param uuid_ string 怪物UUID
----@return CMonster|nil 找到的怪物实例
+---@return Monster|nil 找到的怪物实例
 function gg.findMonsterByUuid(uuid_)
     for scene_name, scene in pairs(gg.server_scene_list) do
         if next(scene.players) then
@@ -187,9 +187,9 @@ end
 -- 使用uuid查找一个怪物 m10002 m20003，client端
 ---@param scene_name_ string 场景名称
 ---@param uuid_ string 怪物UUID
----@return CMonster|nil 找到的怪物实例
+---@return Monster|nil 找到的怪物实例
 function gg.findMonsterClientContainer(scene_name_, uuid_)
-    local contain_ = game.WorkSpace.Ground[scene_name_].container_monster
+    local contain_ = game.WorkSpace["Ground"][scene_name_].container_monster
     if contain_ then
         return contain_[uuid_]
     end
@@ -221,40 +221,40 @@ end
 ---@param scene_name_ string 场景名称
 ---@return SandboxNode Npc容器
 function gg.serverGetContainerNpc(scene_name_)
-    return game.WorkSpace.Ground[scene_name_].container_npc
+    return game.WorkSpace["Ground"][scene_name_].container_npc
 end
 
 -- 客户端获得Npc容器
 ---@return SandboxNode Npc容器
 function gg.clentGetContainerNpc()
-    return game.WorkSpace.Ground[gg.client_scene_name].container_npc
+    return game.WorkSpace["Ground"][gg.client_scene_name].container_npc
 end
 
 -- 服务器获得怪物容器
 ---@param scene_name_ string 场景名称
 ---@return SandboxNode 怪物容器
 function gg.serverGetContainerMonster(scene_name_)
-    return game.WorkSpace.Ground[scene_name_].container_monster
+    return game.WorkSpace["Ground"][scene_name_].container_monster
 end
 
 ---客户端获得Npc容器
 ---@param scene_name string 场景名称
 ---@return SandboxNode Npc容器
 function gg.clientGetContainerNpc(scene_name)
-    return game.WorkSpace.Ground[scene_name].container_npc
+    return game.WorkSpace["Ground"][scene_name].container_npc
 end
 
 -- 客户端获得怪物容器
 ---@return SandboxNode 怪物容器
 function gg.clentGetContainerMonster()
-    return game.WorkSpace.Ground[gg.client_scene_name].container_monster
+    return game.WorkSpace["Ground"][gg.client_scene_name].container_monster
 end
 
 -- 获得武器法术效果容器
 ---@param scene_name_ string 场景名称
 ---@return SandboxNode 武器容器
 function gg.serverGetContainerWeapon(scene_name_)
-    return game.WorkSpace.Ground[scene_name_].container_weapon
+    return game.WorkSpace["Ground"][scene_name_].container_weapon
 end
 
 -- 获得当前玩家（客户端侧）
@@ -351,7 +351,7 @@ end
 ---@param button_ UIButton 要格式化的按钮
 function gg.formatButton(button_)
     -- 设置按钮填充颜色为完全透明（R:0 G:0 B:0 A:0 透明黑）
-    button_.FillColor = ColorQuad.new(0, 0, 0, 0)
+    button_.FillColor = ColorQuad.New(0, 0, 0, 0)
 
     -- 设定按钮按下时颜色改变效果（区别于缩放效果）        -¬-
     button_.DownEffect = Enum.DownEffect.ColorEffect
@@ -633,14 +633,14 @@ function gg.teleportToPosition(node_, pos_, scene_name_)
         wait(0.01)
         local player_ = gg.getPlayerByUin(node_.OwnerUin)
         if player_ then
-            player_:changeScence(scene_name_)
+            player_:ChangeScene(scene_name_)
         end
-        node_.Position = Vector3.new(pos_.x, pos_.y + 300, pos_.z)
+        node_.Position = Vector3.New(pos_.x, pos_.y + 300, pos_.z)
     end
 end
 
 -- 传送到一个坐标，传入参数是玩家
----@param player_ CPlayer 玩家对象
+---@param player_ Player 玩家对象
 ---@param pos_ Vector3 目标位置
 ---@param scene_name_ string 场景名称
 function gg.playerTeleportToPostion(player_, pos_, scene_name_)
@@ -653,7 +653,7 @@ function gg.playerTeleportToPostion(player_, pos_, scene_name_)
             gg.log("nessesary_obj LoadFinish:", ret, nessesary_base_obj_)
             listener:disconnect()
             listener = nil
-            player_.actor.Position = Vector3.new(pos_.x, pos_.y + 300, pos_.z)
+            player_.actor.Position = Vector3.New(pos_.x, pos_.y + 300, pos_.z)
         end)
     else
         gg.log('nessesary_base_obj_ not exist')
@@ -663,8 +663,8 @@ function gg.playerTeleportToPostion(player_, pos_, scene_name_)
     for i = 1, 3 do
         wait(0.01)
         if player_ then
-            player_:changeScence(scene_name_)
-            player_.actor.Position = Vector3.new(pos_.x, pos_.y + 300, pos_.z)
+            player_:ChangeScene(scene_name_)
+            player_.actor.Position = Vector3.New(pos_.x, pos_.y + 300, pos_.z)
         end
     end
 
@@ -823,7 +823,7 @@ end
 ---@return Vector3 欧拉角
 function gg.getEulerByPositonY0(pos1_, pos2_)
     local dir_ = pos1_ - pos2_
-    local dir_y0_ = Vector3.new(dir_.x, 0, dir_.z)
+    local dir_y0_ = Vector3.New(dir_.x, 0, dir_.z)
     Vector3.Normalize(dir_y0_)
 
     local _, rot = Quaternion.LookAt(dir_y0_, gg.VECUP)
@@ -851,18 +851,18 @@ end
 ---@return UITextLabel 创建的文本标签
 function gg.createTextLabel(root_, title_)
     local textLabel_ = SandboxNode.new('UITextLabel', root_)
-    textLabel_.Size = Vector2.new(640, 360)
-    textLabel_.Pivot = Vector2.new(0.5, 0.5)
+    textLabel_.Size = Vector2.New(640, 360)
+    textLabel_.Pivot = Vector2.New(0.5, 0.5)
 
     textLabel_.FontSize = 64
 
-    textLabel_.TitleColor = ColorQuad.new(255, 255, 255, 255)
-    textLabel_.FillColor = ColorQuad.new(0, 0, 0, 0)
+    textLabel_.TitleColor = ColorQuad.New(255, 255, 255, 255)
+    textLabel_.FillColor = ColorQuad.New(0, 0, 0, 0)
 
     textLabel_.TextVAlignment = Enum.TextVAlignment.Center -- Top  Bottom
     textLabel_.TextHAlignment = Enum.TextHAlignment.Center -- Left Right
 
-    -- textLabel_.Position   = Vector2.new( 0,  0 )
+    -- textLabel_.Position   = Vector2.New( 0,  0 )
     textLabel_.Title = title_
 
     return textLabel_
@@ -928,7 +928,7 @@ function gg.createImage(root_, icon_)
     -- image_.ClickPass = true
 
     -- image_.Size  = Vector2.New(100, 100)
-    -- image_.Pivot = Vector2.new(0.5, 0.5)  --默认
+    -- image_.Pivot = Vector2.New(0.5, 0.5)  --默认
 
     -- imgTouchBg.LayoutHRelation = Enum.LayoutHRelation.Left
     -- imgTouchBg.LayoutVRelation = Enum.LayoutVRelation.Top
@@ -936,7 +936,7 @@ function gg.createImage(root_, icon_)
     -- bar_.FillMethod = Enum.FillMethod.Horizontal
     -- bar_.FillAmount = 1
 
-    -- bar_.FillColor = ColorQuad.new( 255,0,0,255 )
+    -- bar_.FillColor = ColorQuad.New( 255,0,0,255 )
 
     return image_
 end
@@ -1024,14 +1024,92 @@ end
 
 -- 获得质量颜色
 local const_quality_color = {
-    [1] = ColorQuad.new(255, 255, 255, 255), -- 白色
-    [2] = ColorQuad.new(0, 0, 255, 255), -- 蓝色
-    [3] = ColorQuad.new(255, 255, 0, 255), -- 黄金
-    [4] = ColorQuad.new(255, 0, 255, 255), -- 粉色
-    [5] = ColorQuad.new(255, 0, 0, 255) -- 红色
+    [1] = ColorQuad.New(255, 255, 255, 255), -- 白色
+    [2] = ColorQuad.New(0, 0, 255, 255), -- 蓝色
+    [3] = ColorQuad.New(255, 255, 0, 255), -- 黄金
+    [4] = ColorQuad.New(255, 0, 255, 255), -- 粉色
+    [5] = ColorQuad.New(255, 0, 0, 255) -- 红色
 }
 function gg.getQualityColor(quality_)
-    return const_quality_color[quality_] or ColorQuad.new(0, 0, 0, 255)
+    return const_quality_color[quality_] or ColorQuad.New(0, 0, 0, 255)
+end
+
+function gg.eval(expr)
+    expr = expr:gsub("%s+", "")  -- 移除空格
+    local pos = 1
+
+    -- 先声明所有函数（避免未定义错误）
+    local parseExpr, parseMulDiv, parsePower, parseAtom, parseNumber
+
+    parseNumber = function()
+        local start = pos
+        if expr:sub(pos, pos) == "-" then pos = pos + 1 end
+        while pos <= #expr and (expr:sub(pos, pos):match("%d") or expr:sub(pos, pos) == ".") do
+            pos = pos + 1
+        end
+        return tonumber(expr:sub(start, pos - 1))
+    end
+
+    parseAtom = function()
+        if expr:sub(pos, pos) == "(" then
+            pos = pos + 1
+            local val = parseExpr()  -- 调用 parseExpr（此时已定义）
+            if expr:sub(pos, pos) ~= ")" then error("Missing closing parenthesis") end
+            pos = pos + 1
+            return val
+        else
+            return parseNumber()
+        end
+    end
+
+    parsePower = function()
+        local left = parseAtom()
+        while pos <= #expr and expr:sub(pos, pos) == "^" do
+            pos = pos + 1
+            left = left ^ parseAtom()  -- 右结合（如 2^3^2 = 2^(3^2)）
+        end
+        return left
+    end
+
+    parseMulDiv = function()
+        local left = parsePower()
+        while pos <= #expr do
+            local op = expr:sub(pos, pos)
+            if op == "*" or op == "/" then
+                pos = pos + 1
+                local right = parsePower()
+                if op == "*" then
+                    left = left * right
+                else
+                    left = left / right
+                end
+            else
+                break
+            end
+        end
+        return left
+    end
+
+    parseExpr = function()
+        local left = parseMulDiv()
+        while pos <= #expr do
+            local op = expr:sub(pos, pos)
+            if op == "+" or op == "-" then
+                pos = pos + 1
+                local right = parseMulDiv()
+                if op == "+" then
+                    left = left + right
+                else
+                    left = left - right
+                end
+            else
+                break
+            end
+        end
+        return left
+    end
+
+    return parseExpr()
 end
 
 return gg;

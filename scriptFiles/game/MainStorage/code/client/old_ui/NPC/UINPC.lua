@@ -35,7 +35,7 @@ function UiNpc.init_npc(args_)
     local scene_name_ = args_["scene_name_"]
     npc_model.Parent  =game.WorkSpace.Ground[ scene_name_ ]
     npc_model.Visible = true
-    npc_model.Position = Vector3.new( ncp_position[1], ncp_position[2], ncp_position[3] )
+    npc_model.Position = Vector3.New( ncp_position[1], ncp_position[2], ncp_position[3] )
     UiNpc.npc_model =npc_model
     
 end
