@@ -536,6 +536,7 @@ end
 ---@param npc Npc
 function _M:AddNearbyNpc(npc)
     if not self.nearbyNpcs[npc.uuid] then
+		gg.log("玩家附件的NPC",npc)
         self.nearbyNpcs[npc.uuid] = npc
         self:UpdateNearbyNpcsToClient()
     end

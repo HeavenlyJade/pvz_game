@@ -11,11 +11,11 @@ local function LoadConfig()
     MobTypeConfig.config ={
     ["野人"] = MobType.New({
         ["怪物ID"] = "野人",
-        ["显示名"] = "野人",
+        ["显示名"] = "岩浆徘行者",
         ["描述"] = "地心魔物，步履熔岩，所过皆烬",
         ["尺寸"] = {
-            1,
-            3
+            0,
+            0
         },
         ["模型"] = "sandboxSysId://entity/100063/body.omod",
         ["是首领"] = true,
@@ -27,7 +27,8 @@ local function LoadConfig()
         },
         ["图鉴击杀数"] = 146,
         ["图鉴完成奖励"] = nil,
-        ["图鉴完成奖励数量"] = 50
+        ["图鉴完成奖励数量"] = 50,
+        ["拥有血条"] = true
     })
 }loaded = true
 end

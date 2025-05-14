@@ -6,6 +6,7 @@ local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local ItemCommands = require(MainStorage.code.server.CommandSystem.commands.MItemCommands)   ---@type ItemCommands
 local MiscCommands = require(MainStorage.code.server.CommandSystem.commands.MiscCommand)   ---@type MiscCommand
 local MobCommand = require(MainStorage.code.server.CommandSystem.commands.MobCommand)   ---@type MobCommand
+local SpellCommand = require(MainStorage.code.server.CommandSystem.commands.SpellCommand)   ---@type SpellCommand
 -- local QuestCommands = require(MainStorage.code.server.CommandSystem.commands.MQuestCommands)     ---@type QuestCommands
 -- local PlayerCommands = require(MainStorage.code.server.CommandSystem.commands.MPlayerCommands)   ---@type PlayerCommands
 -- local SkillCommands = require(MainStorage.code.server.CommandSystem.commands.MSkillCommands)     ---@type SkillCommands
@@ -25,6 +26,7 @@ CommandManager.handlers = {
     ["clear"] = ItemCommands.clear,
     ["title"] = MiscCommands.title,
     ["spawnMob"] = MobCommand.spawnMob,
+    ["cast"] = SpellCommand.cast,
     -- ["装备"] = {},
     
     -- -- 玩家属性相关

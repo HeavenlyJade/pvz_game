@@ -1,5 +1,3 @@
-
-
 ---@class MobDeadEvent : SEvent
 ---@field mob Monster 死亡的怪物
 
@@ -20,3 +18,7 @@
 ---@field category string 变量类别
 ---@field variable string 变量名
 ---@field value number 变量值
+
+---@class NpcInteractionEvent : SEvent
+---@field player Player 交互的玩家
+---@field npc Npc 被交互的NPC

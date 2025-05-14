@@ -49,7 +49,7 @@ local TRIGGER_STAT_TYPES = {
 ---@field battle_stat BATTLE_STAT
 ---@field stat_data any
 ---@field model_weapon any
----@field actor any
+---@field actor Actor
 ---@field target Entity
 ---@field New fun( info_:table ):Entity
 local _M = ClassMgr.Class("Entity") -- 父类 (子类： Player, Monster )

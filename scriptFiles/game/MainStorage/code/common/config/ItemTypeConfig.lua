@@ -74,7 +74,7 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = true,
-        ["货币序号"] = 4
+        ["货币序号"] = 3
     }),
     ["水晶"] = ItemType.New({
         ["名字"] = "水晶",

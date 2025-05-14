@@ -49,9 +49,11 @@ function _M:initNpcs()
     for npc_name, npc_data in pairs(all_npcs) do
         if npc_data["场景"] == self.name then
             local sceneNode = self.node["NPC"]
-            if sceneNode and sceneNode[npc_data["节点"]] then
-                local actor = sceneNode[npc_data["节点"]]
-                local npc = Npc.New(npc_data, actor)
+            gg.log("--服务端NPC面板数据", npc_name, npc_data["场景"], self.name, self.node["NPC"], sceneNode[npc_data["节点名"]])
+            if sceneNode and sceneNode[npc_data["节点名"]] then
+                local actor = sceneNode[npc_data["节点名"]]
+                local npc = Npc.New(npc_data, actor)  ---@type Npc
+                npc:setupNpcInteraction(actor,npc)
                 self.npcs[npc.uuid] = npc
             end
         end

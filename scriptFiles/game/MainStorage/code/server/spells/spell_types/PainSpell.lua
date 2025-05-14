@@ -1,7 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
-local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local Battle            = require(MainStorage.code.server.Battle)    ---@type Battle
 
 
@@ -16,12 +16,12 @@ local PainSpell = ClassMgr.Class("PainSpell", Spell)
 
 function PainSpell:OnInit(data)
     Spell.OnInit(self, data)
-    self.baseDamage = data.baseDamage or 0
-    self.baseMultiplier = data.baseMultiplier or 1
-    self.extraStats = data.extraStats or {}
-    self.elementType = data.elementType or "无"
-    self.damageAmplifiers = data.damageAmplifiers or {}
-    self.targetDamageAmplifiers = data.targetDamageAmplifiers or {}
+    self.baseDamage = data["基础伤害"] or 0
+    self.baseMultiplier = data["基础倍率"] or 1
+    self.extraStats = data["额外属性"] or {}
+    self.elementType = data["元素类型"] or "无"
+    self.damageAmplifiers = data["属性增伤"] or {}
+    self.targetDamageAmplifiers = data["目标属性增伤"] or {}
 end
 
 --- 实际执行魔法

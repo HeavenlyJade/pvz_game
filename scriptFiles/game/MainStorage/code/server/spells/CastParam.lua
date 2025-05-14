@@ -34,7 +34,7 @@ end
 ---@param def number
 ---@return number
 function CastParam:GetValue(spell, v, def)
-    return self:GetValueByName(spell["魔法名"], v, def)
+    return self:GetValueByName(spell.spellName, v, def)
 end
 
 ---@param name string
@@ -65,7 +65,7 @@ end
 ---@param def T
 ---@return T
 function CastParam:GetParam(spell, v, def)
-    return self:GetParamByName(spell["魔法名"], v, def)
+    return self:GetParamByName(spell.spellName, v, def)
 end
 
 ---@generic T
@@ -74,6 +74,7 @@ end
 ---@param def T
 ---@return T
 function CastParam:GetParamByName(name, v, def)
+    -- gg.log("GetParamByName", name, v, def)
     local value = self.extraParams[name .. "." .. v] or self.extraParams[v]
     if value == nil then
         return def

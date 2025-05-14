@@ -85,6 +85,7 @@ function _M:CreateModel()
     local actor_monster = SandboxNode.new('Actor', container)
     
     -- 设置模型和属性
+    print("model".. self.mobType.data["模型"])
     actor_monster.ModelId = self.mobType.data["模型"]
     actor_monster.Name = self.uuid
     

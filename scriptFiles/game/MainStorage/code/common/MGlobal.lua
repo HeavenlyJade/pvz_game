@@ -221,13 +221,18 @@ end
 ---@param scene_name_ string 场景名称
 ---@return SandboxNode Npc容器
 function gg.serverGetContainerNpc(scene_name_)
-    return game.WorkSpace["Ground"][scene_name_].container_npc
+    return game.WorkSpace["Ground"][scene_name_].NPC
+end
+
+
+function gg.get_player_gui()
+    return game:GetService('Players').LocalPlayer:WaitForChild('PlayerGui')
 end
 
 -- 客户端获得Npc容器
 ---@return SandboxNode Npc容器
 function gg.clentGetContainerNpc()
-    return game.WorkSpace["Ground"][gg.client_scene_name].container_npc
+    return game.WorkSpace["Ground"][gg.client_scene_name].NPC
 end
 
 -- 服务器获得怪物容器

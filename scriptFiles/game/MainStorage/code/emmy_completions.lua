@@ -481,24 +481,24 @@
 
 
 ---@class BlockService
----@field DropBlockAsItem fun(self: BlockService, workspace: SandboxNode_Ref, pos: SandboxVector3, droptype: number, chance: number, useToolId: number) None 将方块从道具栏丢弃
----@field SetBlock fun(self: BlockService, workspace: SandboxNode_Ref, pos: SandboxVector3, blockid: number, dir: number) None 修改方块朝向
----@field ReplaceBlock fun(self: BlockService, workspace: SandboxNode_Ref, pos: SandboxVector3, srcId: number, destId: number) None 替换方块
----@field DestroyBlock fun(self: BlockService, workspace: SandboxNode_Ref, pos: SandboxVector3, bDropItem: boolean) None 销毁方块
+---@field DropBlockAsItem fun(self: BlockService, workspace: SandboxNode_Ref, pos: Vector3, droptype: number, chance: number, useToolId: number) None 将方块从道具栏丢弃
+---@field SetBlock fun(self: BlockService, workspace: SandboxNode_Ref, pos: Vector3, blockid: number, dir: number) None 修改方块朝向
+---@field ReplaceBlock fun(self: BlockService, workspace: SandboxNode_Ref, pos: Vector3, srcId: number, destId: number) None 替换方块
+---@field DestroyBlock fun(self: BlockService, workspace: SandboxNode_Ref, pos: Vector3, bDropItem: boolean) None 销毁方块
 ---@field SetBlockAttrState fun(self: BlockService, workspace: SandboxNode_Ref, blockid: number, attrType: number, bActive: boolean) None 设置方块属性状态
----@field SetFunctionBlockTrigger fun(self: BlockService, workspace: SandboxNode_Ref, pos: SandboxVector3, bActive: boolean) None 设置功能方块触发器（区域笔刷）
+---@field SetFunctionBlockTrigger fun(self: BlockService, workspace: SandboxNode_Ref, pos: Vector3, bActive: boolean) None 设置功能方块触发器（区域笔刷）
 ---@field AreaFillBlock fun(self: BlockService, workspace: SandboxNode_Ref, areaNode: SandboxNode_Ref, blockid: number) None 区域内填充方块
 ---@field AreaClearBlock fun(self: BlockService, workspace: SandboxNode_Ref, areaNode: SandboxNode_Ref) None 区域内删除方块
 ---@field AreaReplaceBlock fun(self: BlockService, workspace: SandboxNode_Ref, areaNode: SandboxNode_Ref, srcId: number, destId: number) None 区域替换方块
----@field AreaCopyBlock fun(self: BlockService, workspace: SandboxNode_Ref, areaNode: SandboxNode_Ref, destPos: SandboxVector3) None 区域拷贝方块
+---@field AreaCopyBlock fun(self: BlockService, workspace: SandboxNode_Ref, areaNode: SandboxNode_Ref, destPos: Vector3) None 区域拷贝方块
 ---@field SetBlockSettingAttState fun(self: BlockService, workspace: SandboxNode_Ref, blockid: number, attr: number, bOpen: boolean) None 设置方块的属性设置状态
----@field GetRayBlock fun(self: BlockService, workspace: SandboxNode_Ref, vector3: SandboxVector3, face: number, distance: number) Number 获取方块光线
----@field IsSolidBlock fun(self: BlockService, workspace: SandboxNode_Ref, vector3: SandboxVector3) boolean 是否固体方块
----@field IsLiquidBlock fun(self: BlockService, workspace: SandboxNode_Ref, vector3: SandboxVector3) boolean 是否液体方块
----@field IsAirBlock fun(self: BlockService, workspace: SandboxNode_Ref, vector3: SandboxVector3) boolean 是否空气方块
----@field GetBlockData fun(self: BlockService, workspace: SandboxNode_Ref, vector3: SandboxVector3) Number 获取方块朝向数据
----@field GetBlockMaterial fun(self: BlockService, workspace: SandboxNode_Ref, vector3: SandboxVector3) SandboxNode_Ref 获取方块材质
----@field GetBlockNode fun(self: BlockService, workspace: SandboxNode_Ref, vector3: SandboxVector3) SandboxNode_Ref 获取方块节点
+---@field GetRayBlock fun(self: BlockService, workspace: SandboxNode_Ref, vector3: Vector3, face: number, distance: number) Number 获取方块光线
+---@field IsSolidBlock fun(self: BlockService, workspace: SandboxNode_Ref, vector3: Vector3) boolean 是否固体方块
+---@field IsLiquidBlock fun(self: BlockService, workspace: SandboxNode_Ref, vector3: Vector3) boolean 是否液体方块
+---@field IsAirBlock fun(self: BlockService, workspace: SandboxNode_Ref, vector3: Vector3) boolean 是否空气方块
+---@field GetBlockData fun(self: BlockService, workspace: SandboxNode_Ref, vector3: Vector3) Number 获取方块朝向数据
+---@field GetBlockMaterial fun(self: BlockService, workspace: SandboxNode_Ref, vector3: Vector3) SandboxNode_Ref 获取方块材质
+---@field GetBlockNode fun(self: BlockService, workspace: SandboxNode_Ref, vector3: Vector3) SandboxNode_Ref 获取方块节点
 
 
 ---@class BluePrnumber
@@ -1336,8 +1336,6 @@
 
 ---@class TriggerBox:Transform
 ---@field Size Vector3 触发器包围盒尺寸
----@field KinematicAble boolean 运动能力
----@field GravityAble boolean 重力能力
 ---@field Touched Event 触发器被触碰时，触发通知
 ---@field TouchEnded Event 触发器被触碰结束时，触发通知
 
@@ -1381,14 +1379,14 @@
 ---@field PrnumberLog fun(self: WorldService, szLog: string) None 打印日志
 ---@field GetRangeXZ fun(self: WorldService) ReflexTuple 的坐标
 ---@field GetUIScale fun(self: WorldService) Vector2 获取UI布局的缩放尺寸
----@field RaycastClosest fun(self: WorldService, origin: SandboxVector3, unitDir: SandboxVector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 射线段检测，返回最近的碰撞物
----@field RaycastAll fun(self: WorldService, origin: SandboxVector3, unitDir: SandboxVector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 射线段检测，返回所有碰撞物，最多128个
----@field SweepBoxAll fun(self: WorldService, center: SandboxVector3, shape: SandboxVector3, direction: SandboxVector3, angle: SandboxVector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描全部
----@field SweepCapsuleAll fun(self: WorldService, radius: number, p0: SandboxVector3, p1: SandboxVector3, dir: SandboxVector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描胶囊全部
----@field SweepSphereAll fun(self: WorldService, radius: number, center: SandboxVector3, direction: SandboxVector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描球全部
----@field OverlapBox fun(self: WorldService, shape: SandboxVector3, pos: SandboxVector3, angle: SandboxVector3, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 重叠框
----@field OverlapCapsule fun(self: WorldService, radius: number, p0: SandboxVector3, p1: SandboxVector3, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 重叠胶囊
----@field OverlapSphere fun(self: WorldService, radius: number, pos: SandboxVector3, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 重叠球体
+---@field RaycastClosest fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 射线段检测，返回最近的碰撞物
+---@field RaycastAll fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 射线段检测，返回所有碰撞物，最多128个
+---@field SweepBoxAll fun(self: WorldService, center: Vector3, shape: Vector3, direction: Vector3, angle: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描全部
+---@field SweepCapsuleAll fun(self: WorldService, radius: number, p0: Vector3, p1: Vector3, dir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描胶囊全部
+---@field SweepSphereAll fun(self: WorldService, radius: number, center: Vector3, direction: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描球全部
+---@field OverlapBox fun(self: WorldService, shape: Vector3, pos: Vector3, angle: Vector3, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 重叠框
+---@field OverlapCapsule fun(self: WorldService, radius: number, p0: Vector3, p1: Vector3, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 重叠胶囊
+---@field OverlapSphere fun(self: WorldService, radius: number, pos: Vector3, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 重叠球体
 ---@field SetMainFrameShow fun(self: WorldService, isShow: boolean) None 用于隐藏显示游戏内置UI
 ---@field GetUISize fun(self: WorldService) Vector2 获取UI布局的尺寸
 ---@field EmitMiniGameESCKey fun(self: WorldService) Number 流程
@@ -1396,7 +1394,7 @@
 ---@field SetActorHp fun(self: WorldService, actornode: SandboxNode, hp: number) None 设置生物血量
 ---@field SetActorMotion fun(self: WorldService, actornode: SandboxNode, motion: Vector3) None 设置生物动作
 ---@field AttackTarget fun(self: WorldService, actornode: SandboxNode) None 设置攻击目标
----@field NavigateTo fun(self: WorldService, size: SandboxVector3, src: SandboxVector3, target: SandboxVector3) Table 自动寻路至指定位置，会自动寻找最佳路径移动至指定点 fun(接口已经废弃,请用CreatePath)
+---@field NavigateTo fun(self: WorldService, size: Vector3, src: Vector3, target: Vector3) Table 自动寻路至指定位置，会自动寻找最佳路径移动至指定点 fun(接口已经废弃,请用CreatePath)
 ---@field CreatePath fun(self: WorldService, Radius,Heigh,StepOffset,SlopLimit,CollideGroupID: ReflexMap) SandboxNode 创建一个路径基于想要模拟的actor的参数.
 ---@field SetSceneId fun(self: WorldService, id: number) boolean 设置当前worldservice的world的SceneId
 ---@field GetSceneId fun(self: WorldService) Number 获取当前worldservice的world的SceneId

@@ -1,8 +1,9 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
-local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
+local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 
 
 
@@ -30,33 +31,51 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 ---@field New fun( data:table ):Spell
 local Spell = ClassMgr.Class("Spell")
 
+function Spell.Load( data )
+    local class = require(MainStorage.code.server.spells.spell_types[data["类型"]])
+    return class.New(data)
+end
+
 function Spell:OnInit( data )
-    self.spellName = ""
-    self.printInfo = false
-    self.comment = ""
-    self.cooldown = 0
-    self.cooldownSpeed = 1
-    self.targetCooldown = 0
-    self.targetCooldownRate = 0
-    self.basePower = 1
-    self.castOnSelf = false
-    self.delay = 0
-    self.selfConditions = {}
-    self.targetConditions = {}
+    -- 从配置中读取基础属性
+    self.spellName = data["魔法名"] or ""
+    self.printInfo = data["打印信息"] or false
+    self.comment = data["注释"] or ""
+    self.cooldown = data["冷却"] or 0
+    self.cooldownSpeed = data["冷却加速"] or 1
+    self.targetCooldown = data["各目标冷却"] or 0
+    self.targetCooldownRate = data["各目标冷却倍率"] or 0
+    self.basePower = data["基础威力"] or 1
+    self.castOnSelf = data["释放给自己"] or false
+    self.delay = data["延迟"] or 0
+    self.widthScale = data["宽度倍率"] or 1
+    self.heightScale = data["高度倍率"] or 1
+    self.sizeScale = data["尺寸倍率"] or 1
+
+    -- 直接使用配置中的Modifiers实例
+    self.selfConditions = data["自身条件"] or {}
+    self.targetConditions = data["目标条件"] or {}
+    
+    -- 初始化子魔法数组
     self.subSpells = {}
-    self.preCastEffects = {}
-    self.preTargetEffects = {}
-    self.castEffects = {}
-    self.targetEffects = {}
-    self.widthScale = 1
-    self.heightScale = 1
-    self.sizeScale = 1
+    if data["子魔法"] then
+        for _, subSpellData in ipairs(data["子魔法"]) do
+            local subSpell = SubSpell.New(subSpellData)
+            gg.log("SubSpell", subSpell)
+            table.insert(self.subSpells, subSpell)
+        end
+    end
+    
+    self.preCastEffects = data["特效_前摇释放"] or {}
+    self.preTargetEffects = data["特效_前摇目标"] or {}
+    self.castEffects = data["特效_释放"] or {}
+    self.targetEffects = data["特效_目标"] or {}
 end
 
 --- 执行魔法
 ---@param caster Entity 施法者
----@param target Entity|Vector3 目标
----@param param CastParam 参数
+---@param target Entity|Vector3|nil 目标
+---@param param? CastParam 参数
 ---@return boolean 是否成功释放
 function Spell:Cast(caster, target, param)
     if not param then
@@ -69,25 +88,29 @@ function Spell:Cast(caster, target, param)
     end
     if not target then
         -- 获取施法者面前的敌人
-        local ray = {
-            Origin = caster:GetLocation(),
-            Direction = caster.actor.Forward
-        }
-        local WorldService = game:GetService( 'WorldService' )
-        local ret_table = WorldService:RaycastClosest(ray.Origin, ray.Direction, 12800, true, {2})
-        if ret_table and ret_table.Hit then
-            local hitObject = ret_table.HitObject
-            if hitObject and hitObject.Parent then
-                local hitEntity = hitObject.Parent:FindFirstChild("Entity")
-                if hitEntity then
-                    target = hitEntity.Value
-                    param.realTarget = target
+        local casterPos = caster:GetLocation()
+        local WorldService = game:GetService('WorldService') ---@type WorldService
+        local ret_table = WorldService:OverlapSphere(5000, casterPos, true, {1, 2, 3})
+        gg.log("ret_table", ret_table)
+        if ret_table and #ret_table > 0 then
+            for _, hit in pairs(ret_table) do
+                if hit.obj and hit.obj.Parent then
+                    local hitEntity = hit.obj.Parent:FindFirstChild("Entity")
+                    if hitEntity then
+                        target = hitEntity.Value
+                        param.realTarget = target
+                        break
+                    end
                 end
             end
         end
+        if not target then
+            print(self.spellName .. ": 找不到目标")
+            return false
+        end
     end
     
-    param.power = param.power * param:GetValue(self, "basePower", self.basePower)
+    param.power = param.power * param:GetValue(self, "基础威力", self.basePower)
     
     local log = {}
     if not self:CanCast(caster, target, param, log) then
@@ -117,20 +140,20 @@ function Spell:Cast(caster, target, param)
         return false
     end
     
-    if param:GetParam(self, "castOnSelf", self.castOnSelf) then
+    if param:GetParam(self, "释放给自己", self.castOnSelf) then
         target = caster
     end
     
-    local cd = param:GetValue(self, "cooldown", self.cooldown)
+    local cd = param:GetValue(self, "冷却", self.cooldown)
     if cd > 0 then
-        cd = cd / param:GetValue(self, "cooldownSpeed", self.cooldownSpeed)
+        cd = cd / param:GetValue(self, "冷却加速", self.cooldownSpeed)
         caster:SetCooldown(self.spellName, cd)
         if self.printInfo then
             log[#log + 1] = string.format("%s：设置冷却%.1f秒", self.spellName, cd)
         end
     end
     
-    local targetCd = param:GetValue(self, "targetCooldown", self.targetCooldown)
+    local targetCd = param:GetValue(self, "各目标冷却", self.targetCooldown)
     if targetCd > 0 and target and target.isEntity then
         caster:SetCooldown(self.spellName, targetCd, target:GetEntity())
         if self.printInfo then
@@ -141,7 +164,7 @@ function Spell:Cast(caster, target, param)
     self:PlayEffect(self.preCastEffects, param.realTarget, caster, param)
     self:PlayEffect(self.preTargetEffects, caster, param.realTarget, param)
     
-    local delay = param:GetValue(self, "delay", self.delay)
+    local delay = param:GetValue(self, "延迟", self.delay)
     if delay > 0 then
         if self.printInfo then
             log[#log + 1] = string.format("%s：延迟%.1f秒后释放", self.spellName, delay)

@@ -1,7 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
-local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local Battle = require(MainStorage.code.server.Battle) ---@type Battle
 
 ---@class ShieldSpell:Spell

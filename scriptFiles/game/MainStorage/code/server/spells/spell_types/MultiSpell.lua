@@ -1,7 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
-local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 
 ---@class MultiSpell:Spell
@@ -12,9 +12,9 @@ local MultiSpell = ClassMgr.Class("MultiSpell", Spell)
 
 function MultiSpell:OnInit(data)
     Spell.OnInit(self, data)
-    self.randomOrder = data.randomOrder or false
-    self.castCount = data.castCount or 999
-    self.isCombo = data.isCombo or false
+    self.randomOrder = data["随机顺序"] or false
+    self.castCount = data["释放个数"] or 999
+    self.isCombo = data["组合技"] or false
 end
 
 --- 实际执行魔法

@@ -17,9 +17,8 @@ local ColorQuad = ColorQuad
 local MainStorage = game:GetService("MainStorage")
 
 local gg            = require(MainStorage.code.common.MGlobal)           ---@type gg
-local UiCommon      = require(MainStorage.code.client.ui.UiCommon)       ---@type UiCommon
+-- local UiCommon      = require(MainStorage.code.client.ui.UiCommon)       ---@type UiCommon
 local wheelControl  = require( MainStorage.code.client.MWheelControl )   ---@type MMobileWheelControl
-local uiMap            = require(MainStorage.code.client.ui.UiMap)  ---@type UiMap
 
 local WorldService  = game:GetService( 'WorldService' )
 local inputservice = game:GetService("UserInputService")
@@ -41,20 +40,20 @@ local  Controller = {
 
 
 function Controller.init()
+    local UiSettingBut = require(MainStorage.code.client.UiClient.SysUi.SettingBut) ---@type UiSettingBut
+    local NpcClient = require(MainStorage.code.client.UiClient.Npc) ---@type NpcClient
     gg.log("Controller初始化")
     local ui_size_x = gg.get_ui_size().x
     Controller.press_xy_limit = ui_size_x * 0.01   --屏幕长度的1/100(用来判断是否是点击动作)
 
     Controller.initKeyboard()
-    UiCommon.init_battle_btn()
-    UiCommon.init_skill_select_ui_btn() -- 技能按钮初始化
-    UiCommon.init_game_task_map()   -- 任务数据初始化
-
-
     gg.get_camera_window_size()
-    wheelControl.init( Controller )
-    wheelControl.ShowView(true)
-    uiMap.init_map()
+    -- wheelControl.init( Controller )
+    -- wheelControl.ShowView(true)
+    -- uiMap.init_map()
+    UiSettingBut.OnInit()
+    NpcClient.init_npc()
+
 end
 
 
@@ -128,7 +127,7 @@ function Controller.handleKeyboard( keyCode, flag )
     if  const_allow_keyboard[ keyCode ] then
         if  flag == 0 then         --按键抬起
             if  keyCode == Enum.KeyCode.T.Value then
-                UiCommon.openTextInput( true )
+                -- UiCommon.openTextInput( true )
 
             elseif  keyCode == Enum.KeyCode.Z.Value then
                 --测试拾取物品
@@ -219,7 +218,11 @@ end
 function Controller.tryPickObject( x, y )
 
     local obj_list = {}     --查找范围
-    for k, v in pairs( gg.clentGetContainerMonster().Children ) do
+    local  monster_container = gg.clentGetContainerMonster()
+    if not monster_container then
+        return
+    end
+    for k, v in pairs( monster_container.Children ) do
         obj_list[ #obj_list+1] = v     --只找怪物
     end
 
@@ -326,8 +329,8 @@ function Controller.tryAoeRayGround( x, y )
 
     --local ret_table = WorldService:RaycastAll( ray_.Origin, ray_.Direction, 12800, true, {2} )
     local ret_table = WorldService:RaycastClosest( ray_.Origin, ray_.Direction, 12800, true, {2} )
-    --ret_table = 1={normal={-0.000000, 1.000000, -0.000971} distance=2428.7092285156 position={650.002686, -0.343750, 2228.231445} obj=[node(754493)(Model):base]} 
-        --2={normal={0.000000, 1.000000, 0.000000} distance=1996.7115478516 position={620.065369, 100.000000, 1809.116821} obj=[node(793564)(GeoSolid):Cube]} 
+    --ret_table = 1={normal={-0.000000, 1.000000, -0.000971} distance=2428.7092285156 position={650.002686, -0.343750, 2228.231445} obj=[node(754493)(Model):base]}
+        --2={normal={0.000000, 1.000000, 0.000000} distance=1996.7115478516 position={620.065369, 100.000000, 1809.116821} obj=[node(793564)(GeoSolid):Cube]}
 
     if  ret_table then
         -- gg.log ( 'RaycastClosest=', gg.getClientWorkSpace().Camera, ret_table, ret_table.position )

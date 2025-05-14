@@ -40,6 +40,7 @@ function ViewBase:Get(path, type, ...)
     end
 
     local node = self.node
+	gg.log("node",node,path)
     local fullPath = ""
     for part in path:gmatch("[^/]+") do --用/分割字符串
         if part ~= "" then

@@ -1,8 +1,6 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
-local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
-local SpellConfig = require(MainStorage.code.common.Config.SpellConfig)
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local Battle            = require(MainStorage.code.server.Battle)    ---@type Battle
 
 ---@class OverrideParam
@@ -17,16 +15,45 @@ local Battle            = require(MainStorage.code.server.Battle)    ---@type Ba
 ---@field isAlways boolean
 
 ---@class SubSpell:Class
----@field spell Spell 魔法
+---@field spellCache Spell 魔法
 ---@field overrideParams OverrideParam[] 复写参数
 ---@field overrideValues OverrideValue[] 修改数值
 ---@field dynamicTags table<string, EquipingTag[]> 动态词条
 local SubSpell = ClassMgr.Class("SubSpell")
 
 function SubSpell:OnInit( data )
-    self.spell = SpellConfig.Get(data["魔法"])
+    self.spellCache = nil
+    self.spellName = data["魔法"]
+    
+    -- 初始化复写参数
     self.overrideParams = {}
+    if data["复写参数"] then
+        for _, param in ipairs(data["复写参数"]) do
+            table.insert(self.overrideParams, {
+                objectName = param["objectName"],
+                paramName = param["paramName"],
+                value = param["value"]
+            })
+        end
+    end
+    
+    -- 初始化修改数值
     self.overrideValues = {}
+    if data["修改数值"] then
+        for _, value in ipairs(data["修改数值"]) do
+            table.insert(self.overrideValues, {
+                objectName = value["objectName"],
+                paramName = value["paramName"],
+                paramValue = {
+                    multiplier = value["paramValue"]["倍率"],
+                    addType = value["paramValue"]["增加类型"],
+                    multiplyBase = value["paramValue"]["乘以基础数值"]
+                },
+                isAlways = value["isAlways"]
+            })
+        end
+    end
+    
     self.dynamicTags = {}
 end
 
@@ -113,7 +140,11 @@ function SubSpell:Cast(caster, target, param)
         end
     end
     
-    return self.spell:Cast(caster, target, spellParam)
+    if not self.spellCache then
+        local SpellConfig = require(MainStorage.code.common.Config.SpellConfig)
+        self.spellCache = SpellConfig.Get(self.spellName)
+    end
+    return self.spellCache:Cast(caster, target, spellParam)
 end
 
 return SubSpell

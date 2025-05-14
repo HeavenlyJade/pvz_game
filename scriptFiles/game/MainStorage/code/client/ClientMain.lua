@@ -8,6 +8,7 @@ local ClassMgr    = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local ClientInit = require(MainStorage.code.client.event.ClinentInit) ---@type ClientInit
+local Controller = require(MainStorage.code.client.MController) ---@type Controller
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
 local tick = 0
@@ -20,6 +21,7 @@ function ClientMain.start_client()
     ClientMain.createNetworkChannel()
     ClientMain.handleCoreUISettings()
     ClientInit.init()
+    Controller.init()
     local timer = SandboxNode.New("Timer", game.StarterGui)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
     

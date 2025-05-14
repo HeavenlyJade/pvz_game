@@ -1,7 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
-local CastParam = require(MainStorage.code.common.spell.CastParam) ---@type CastParam
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local Timer = require(MainStorage.code.common.Timer) ---@type Timer
 local RunService = game:GetService("RunService")
 local WorldService = game:GetService("WorldService")
@@ -43,17 +43,17 @@ local AOEItem = {}
 
 function AOESpell:OnInit(data)
     Spell.OnInit(self, data)
-    self.duration = data.duration or 0
-    self.canHitSameTarget = data.canHitSameTarget or false
-    self.hitInterval = data.hitInterval or 1
-    self.persistentEffects = data.persistentEffects or {}
-    self.collisionType = data.collisionType or CollisionType.CIRCLE
-    self.circleRadius = data.circleRadius or 0
-    self.rectangleSize = data.rectangleSize or Vector3.zero
-    self.ellipseMajorAxis = data.ellipseMajorAxis or 0
-    self.ellipseMinorAxis = data.ellipseMinorAxis or 0
-    self.ellipseRotation = data.ellipseRotation or 0
-    self.offset = data.offset or Vector3.zero
+    self.duration = data["持续时间"] or 0
+    self.canHitSameTarget = data["可重复击中同一目标"] or false
+    self.hitInterval = data["击中间隔"] or 1
+    self.persistentEffects = data["特效_持续"] or {}
+    self.collisionType = data["范围形状"] or CollisionType.CIRCLE
+    self.circleRadius = data["圆形半径"] or 0
+    self.rectangleSize = data["方形长宽旋转"]
+    self.ellipseMajorAxis = data["椭圆长轴"] or 0
+    self.ellipseMinorAxis = data["椭圆短轴"] or 0
+    self.ellipseRotation = data["椭圆旋转"] or 0
+    self.offset = data["偏移"]
     
     self.aoeItems = {}
     self.aoeItemCount = 0

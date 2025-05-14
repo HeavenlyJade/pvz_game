@@ -47,6 +47,7 @@ function HudInteract:OnInit(node, config)
             self:HideInteract()
         end
     end)
+    self:HideInteract()
 end
 
 ---显示交互界面
