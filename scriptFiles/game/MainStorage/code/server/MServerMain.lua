@@ -134,9 +134,8 @@ function MainServer.start_server()
     gg.uuid_start = gg.rand_int_between(100000, 999999)
 
     gg.log('主服务器开始初始化');
-    local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
-    gg.CommandManager = CommandManager  -- 挂载到全局gg对象上以便全局访问
 
+    MainServer.initCloudData()
     MTerrain.init()                       --地形管理
     MainServer.register_player_in_out()   --玩家进出游戏
     MainServer.createNetworkChannel()     --建立网络通道
@@ -144,8 +143,16 @@ function MainServer.start_server()
     -- MainServer.SetCollisionGroup()        --设置碰撞组
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
+    
 end
 
+
+function MainServer.initModule()
+    local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
+    local cloudMailData = require(MainStorage.code.server.cloudData.cloudMailData) ---@type CloudMailData
+    gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
+    gg.cloudMailData = cloudMailData:Init()
+end
 
 -- --设置碰撞组
 -- function MainServer.SetCollisionGroup()
@@ -227,7 +234,10 @@ function MainServer.player_enter_game(player)
         player_:SendHoverText('加载玩家背包数据失败，请退出游戏后重试')
         return     --加载背包数据失败
     end
+
+    local mail_player_data_ = gg.cloudMailData:OnPlayerLogin(uin_)
     player_.bag = cloud_player_bag_
+    player_.mail = mail_player_data_
 
     gg.server_players_list[uin_] = player_
     gg.server_players_name_list[player.Name] = player_

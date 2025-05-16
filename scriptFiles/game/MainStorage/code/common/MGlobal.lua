@@ -40,8 +40,9 @@ local gg = {
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
 
-    CommandManager = nil, -- 命令管理器
+    CommandManager = nil, ---@type CommandManager
     network_channel = nil, ---@type NetworkChannel
+    cloudMailData = nil, ---@type CloudMailData
     tick = 0, -- server_main的tick
     game_stat = 0, -- 0=正常 1=完结
 

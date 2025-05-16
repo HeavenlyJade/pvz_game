@@ -32,6 +32,7 @@ function _M:OnInit(info_)
     self.name = info_.nickname
     self.isPlayer = true
     self.bag = nil ---@type Bag
+    self.mail = nil ---@type Mail
     self.uuid             = gg.create_uuid('p')                 -- 唯一ID
     self.auto_attack      = 0                                   -- 自动攻击技能ID
     self.auto_attack_tick = 10                                  -- 攻击间隔
