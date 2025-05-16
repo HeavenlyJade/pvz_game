@@ -18,7 +18,7 @@ local MainStorage = game:GetService("MainStorage")
 
 local gg            = require(MainStorage.code.common.MGlobal)           ---@type gg
 -- local UiCommon      = require(MainStorage.code.client.ui.UiCommon)       ---@type UiCommon
-local wheelControl  = require( MainStorage.code.client.MWheelControl )   ---@type MMobileWheelControl
+-- local wheelControl  = require( MainStorage.code.client.MWheelControl )   ---@type MMobileWheelControl
 
 local WorldService  = game:GetService( 'WorldService' )
 local inputservice = game:GetService("UserInputService")
@@ -40,8 +40,8 @@ local  Controller = {
 
 
 function Controller.init()
-    local UiSettingBut = require(MainStorage.code.client.UiClient.SysUi.SettingBut) ---@type UiSettingBut
-    local NpcClient = require(MainStorage.code.client.UiClient.Npc) ---@type NpcClient
+    -- local UiSettingBut = require(MainStorage.code.client.UiClient.SysUi.SettingBut) ---@type UiSettingBut
+    -- local NpcClient = require(MainStorage.code.client.UiClient.Npc) ---@type NpcClient
     gg.log("Controller初始化")
     local ui_size_x = gg.get_ui_size().x
     Controller.press_xy_limit = ui_size_x * 0.01   --屏幕长度的1/100(用来判断是否是点击动作)
@@ -51,7 +51,7 @@ function Controller.init()
     -- wheelControl.init( Controller )
     -- wheelControl.ShowView(true)
     -- uiMap.init_map()
-    UiSettingBut.OnInit()
+    -- UiSettingBut.OnInit()
     -- NpcClient.init_npc()
 
 end
@@ -160,9 +160,9 @@ function Controller.handleMouse( inputObj, flag )
     end
 
     --检测按钮在屏幕的左下角摇杆区域， 右下角按钮区域
-    if  wheelControl.handleMouse( inputObj, flag ) == 0 then
-        return 0   --不再透传
-    end
+    -- if  wheelControl.handleMouse( inputObj, flag ) == 0 then
+    --     return 0   --不再透传
+    -- end
 
 
     --快速点击，判断为点选和切换目标（左键和屏幕点击）

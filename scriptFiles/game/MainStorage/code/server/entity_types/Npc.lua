@@ -32,49 +32,49 @@ function _M:OnInit(npcData, actor)
     self.interactCondition = Modifiers.New(npcData["互动条件"])
     self.interactCommands  = npcData["互动指令"]
     self.interactIcon      = npcData["互动图标"]
-    self.uuid              = gg.create_uuid('npc')
+    self.uuid              = gg.create_uuid('uNpc')
     self.target            = nil
     actor.CubeBorderEnable = true                      --debug显示碰撞方块
-    gg.log("Npc初始化", self.name, self.uuid)
-    gg.log("Npc对象", actor)
-    self:setupNpcInteraction(actor, self.name)
-    -- local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox
+    if npcData["状态机"] then
+        self:SetAnimationController(npcData["状态机"]) 
+    end
+    -- self:setupNpcInteraction(actor, self.name)
+    local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox
     -- -- 获取NPC模型尺寸
     local npcSize         = actor.Size
 
-    -- -- 设置触发器尺寸，在NPC模型周围扩展一定范围
-    -- trigger.LocalPosition = actor.Center
-    -- trigger.Size          = Vector3.New(400 + math.max(npcSize.x, npcSize.z), 200,
-    --     400 + math.max(npcSize.x, npcSize.z))                                                               -- 扩展范围
+    -- 设置触发器尺寸，在NPC模型周围扩展一定范围
+    trigger.LocalPosition = actor.Center
+    trigger.Size          = Vector3.New(400 + math.max(npcSize.x, npcSize.z), 200, 400 + math.max(npcSize.x, npcSize.z))                                                               -- 扩展范围
 
-    -- -- 监听触发器被触碰
-    -- trigger.Touched:Connect(function(node)
-    --     print("Touched", self.name, node.Name)
+    -- 监听触发器被触碰
+    trigger.Touched:Connect(function(node)
+        print("Touched", self.name, node.Name)
 
-    --     if node and node.UserId then
-    --         local player = gg.getPlayerByUin(node.UserId)
-    --         if player then
-    --             self:SetTarget(player)
-    --             -- 将NPC添加到玩家的附近NPC列表中
-    --             player:AddNearbyNpc(self)
-    --         end
-    --     end
-    -- end)
+        if node and node.UserId then
+            local player = gg.getPlayerByUin(node.UserId)
+            if player then
+                self:SetTarget(player)
+                -- 将NPC添加到玩家的附近NPC列表中
+                player:AddNearbyNpc(self)
+            end
+        end
+    end)
 
-    -- -- 监听触发器触碰结束
-    -- trigger.TouchEnded:Connect(function(node)
-    --     print("TouchEnded", self.name, node.Name)
-    --     if node and node.UserId then
-    --         local player = gg.getPlayerByUin(node.UserId)
-    --         if player then
-    --             if self.target == player then
-    --                 self:SetTarget(nil)
-    --             end
-    --             -- 从玩家的附近NPC列表中移除
-    --             player:RemoveNearbyNpc(self)
-    --         end
-    --     end
-    -- end)
+    -- 监听触发器触碰结束
+    trigger.TouchEnded:Connect(function(node)
+        print("TouchEnded", self.name, node.Name)
+        if node and node.UserId then
+            local player = gg.getPlayerByUin(node.UserId)
+            if player then
+                if self.target == player then
+                    self:SetTarget(nil)
+                end
+                -- 从玩家的附近NPC列表中移除
+                player:RemoveNearbyNpc(self)
+            end
+        end
+    end)
     -- 注册NPC交互事件处理器
     ServerEventManager.Subscribe("InteractWithNpc", function(evt)
         local player = evt.player
@@ -93,52 +93,52 @@ function _M:OnInit(npcData, actor)
     self:createTitle(npcSize.y)
 end
 
-function _M:setupNpcInteraction(actor, npc_name)
-    gg.log('NP区域', npc_name, actor)
-    actor.CubeBorderEnable = true --debug显示碰撞方块
-    -- 获取区域和模型属性
-    local interactArea = SandboxNode.new('Area', actor)
-    local npcSize = actor.Size
-    local centerPos = actor.Position
-    local expand = Vector3.new(150, 100, 150)
-    -- 设置区域范围
-    interactArea.Beg = centerPos - (npcSize / 2 + expand)
-    interactArea.End = centerPos + (npcSize / 2 + expand)
-    -- 区域外观（调试用）
-    interactArea.Show = true -- 正式环境设为false
-    interactArea.Color = ColorQuad.new(0, 255, 0, 50)
-    interactArea.EffectWidth = 1
+-- function _M:setupNpcInteraction(actor, npc_name)
+--     gg.log('NP区域', npc_name, actor)
+--     actor.CubeBorderEnable = true --debug显示碰撞方块
+--     -- 获取区域和模型属性
+--     local interactArea = SandboxNode.new('Area', actor)
+--     local npcSize = actor.Size
+--     local centerPos = actor.Position
+--     local expand = Vector3.new(150, 100, 150)
+--     -- 设置区域范围
+--     interactArea.Beg = centerPos - (npcSize / 2 + expand)
+--     interactArea.End = centerPos + (npcSize / 2 + expand)
+--     -- 区域外观（调试用）
+--     interactArea.Show = true -- 正式环境设为false
+--     interactArea.Color = ColorQuad.new(0, 255, 0, 50)
+--     interactArea.EffectWidth = 1
 
-    -- 创建客户端事件处理
-    local function handlePlayerInteraction(node, isEntering,self)
-        print("玩家进入/离开区域", node, isEntering)
-        if node and node.UserId then
-            local player = gg.getPlayerByUin(node.UserId)
-            if player then
-                if isEntering then
-                    self:SetTarget(player)
-                    -- 将NPC添加到玩家的附近NPC列表中
-                    player:AddNearbyNpc(self)
-                else
-                    self:SetTarget(nil)
-                    player:RemoveNearbyNpc(self)
-                end
-            end
-        end
+--     -- 创建客户端事件处理
+--     local function handlePlayerInteraction(node, isEntering,self)
+--         print("玩家进入/离开区域", node, isEntering)
+--         if node and node.UserId then
+--             local player = gg.getPlayerByUin(node.UserId)
+--             if player then
+--                 if isEntering then
+--                     self:SetTarget(player)
+--                     -- 将NPC添加到玩家的附近NPC列表中
+--                     player:AddNearbyNpc(self)
+--                 else
+--                     self:SetTarget(nil)
+--                     player:RemoveNearbyNpc(self)
+--                 end
+--             end
+--         end
 
-    end
+--     end
 
-    -- 注册区域事件
-    interactArea.EnterNode:connect(function(node)
-        handlePlayerInteraction(node, true,self) -- 玩家进入
-    end)
+--     -- 注册区域事件
+--     interactArea.EnterNode:connect(function(node)
+--         handlePlayerInteraction(node, true,self) -- 玩家进入
+--     end)
 
-    interactArea.LeaveNode:connect(function(node)
-        handlePlayerInteraction(node, false,self) -- 玩家离开
-    end)
+--     interactArea.LeaveNode:connect(function(node)
+--         handlePlayerInteraction(node, false,self) -- 玩家离开
+--     end)
 
-    return interactArea
-end
+--     return interactArea
+-- end
 
 ---设置NPC的目标
 ---@param target Player|nil

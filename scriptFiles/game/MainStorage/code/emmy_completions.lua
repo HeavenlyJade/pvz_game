@@ -71,7 +71,7 @@
 ---@field GetCurrentStatePlayedTime fun(self: Animator, layerIdx: number) Number 获取当前层级正在播放的状态的PlayedTime
 ---@field SetStatePauseAtNormlizedTime fun(self: Animator) boolean
 ---@field EventNotify fun(self: Animator, statedata: SandboxNode, name: string, layerIndex: number, state: StateMachineMessage) None 发送一个当前状态机消息的通知
----@field GetAnimationPostNotify fun(self: Animator) Event 获取动画完成通知
+---@field GetAnimationPostNotify Event 获取动画完成通知
 ---@field GetUpdateAssetNotify fun(self: Animator, url: string, state: boolean) None 获取更新资源通知
 ---@field UpdateAssetNotify fun(self: Animator, url: string, state: boolean) None 更新资源通知
 ---@field ClipsEventNotify fun(self: Animator, function: string, variant: ReflexVariant) None 动画切片事件通知

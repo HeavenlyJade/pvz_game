@@ -117,6 +117,17 @@ function _M:OnInit(info_)
             wait = 0
         }
     }
+    self.modelPlayer = nil  ---@type ModelPlayer
+end
+
+function _M:SetAnimationController(name)
+    local AnimationConfig = require(MainStorage.code.common.config.AnimationConfig) ---@type AnimationConfig
+    local ModelPlayer = require(MainStorage.code.server.graphic.ModelPlayer) ---@type ModelPlayer
+    local animator = self.actor.Animator
+    local animationConfig = AnimationConfig.Get(name)
+    if animator and animationConfig then
+        self.modelPlayer = ModelPlayer.New(animator, animationConfig)
+    end
 end
 
 function _M:GetPosition()
@@ -858,6 +869,7 @@ function _M:ChangeScene(new_scene)
     -- 离开旧场景
     if self.scene then
         if self.scene then
+            self.scene.node2Entity[self.actor] = nil
             if self.isPlayer then
                 self.scene:player_leave(self.uin)
             end
@@ -871,6 +883,7 @@ function _M:ChangeScene(new_scene)
     -- 进入新场景
     self.scene = new_scene
     -- gg.network_channel:fireClient( self.uin, { cmd='change_scene_ok', v=new_scene.name } )  --同步给客户端
+    self.scene.node2Entity[self.actor] = nil
     if self.isPlayer then
         new_scene:player_enter(self.uin)
     end
@@ -927,30 +940,6 @@ function _M:revive()
         mp_max = self.maxMana
     })
 
-end
-
--- 判断当前目标是否丢失(隐身 复活中)
-function _M:checkTargetLost()
-    if self.target.battle_stat == BATTLE_STAT_WAIT_SPAWN then
-        gg.log('checkTargetLost1', self.uuid)
-        self.scene:infoTargetLost(self.target.uuid)
-        self.target = nil
-
-    elseif self.target.actor.Visible == false then
-        gg.log('checkTargetLost2', self.uuid)
-        self.scene:infoTargetLost(self.target.uuid)
-        self.target = nil
-
-    end
-
-end
-
--- 获得怪物的配置：第一技能和攻击距离（怪物使用）
-function _M:getSkill1AndRange()
-    local skill_id_ = self.battle_data.skills[1]
-    local range_ = common_config.skill_def[skill_id_].range
-    -- gg.log( 'getSkill1AndRange:', skill_id_, range_ )
-    return skill_id_, range_
 end
 
 -- 设置攻击前置时间， 施法前摇，标志位和时间
@@ -1016,13 +1005,6 @@ end
 -- tick刷新
 function _M:update()
     self.tick = self.tick + 1
-
-    if self.tick % 2 == 0 then
-        if self.target then
-            self:checkTargetLost() -- 检查目标是否丢失
-        end
-    end
-
     -- 更新状态机
     local currentState = BattleState.states[self.battle_stat]
     if currentState and currentState.update then

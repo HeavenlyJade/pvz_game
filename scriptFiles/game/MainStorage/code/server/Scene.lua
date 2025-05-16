@@ -1,31 +1,31 @@
 --- V109 miniw-haima
-
-local print        = print
+local print = print
 local setmetatable = setmetatable
-local SandboxNode  = SandboxNode
-local Vector3      = Vector3
-local Enum         = Enum
-local math         = math
-local Vector2      = Vector2
-local ColorQuad    = ColorQuad
-local wait         = wait
-local game         = game
-local pairs        = pairs
-local next         = next
+local SandboxNode = SandboxNode
+local Vector3 = Vector3
+local Enum = Enum
+local math = math
+local Vector2 = Vector2
+local ColorQuad = ColorQuad
+local wait = wait
+local game = game
+local pairs = pairs
+local next = next
 
-
-local MainStorage   = game:GetService("MainStorage")
-local ClassMgr  = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local gg            = require(MainStorage.code.common.MGlobal) ---@type gg
+local MainStorage = game:GetService("MainStorage")
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
-local common_const  = require(MainStorage.code.common.MConst) ---@type common_const
-local NpcConfig     = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig
+local common_const = require(MainStorage.code.common.MConst) ---@type common_const
+local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig
+-- local AfkSpotConfig = require(MainStorage.code.common.config.AfkSpotConfig) ---@type AfkSpotConfig
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 
-local Monster      = require(MainStorage.code.server.entity_types.Monster) ---@type Monster
-local Npc         = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
+local Monster = require(MainStorage.code.server.entity_types.Monster) ---@type Monster
+local Npc = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
+-- local AfkSpot = require(MainStorage.code.server.entity_types.AfkSpot) ---@type AfkSpot
 
-local BagMgr        = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
-
+local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
 
 -- 场景类：单个场景实例  g0(入口大厅)
 ---@class Scene
@@ -49,14 +49,38 @@ function _M:initNpcs()
     for npc_name, npc_data in pairs(all_npcs) do
         if npc_data["场景"] == self.name then
             local sceneNode = self.node["NPC"]
-            gg.log("--服务端NPC面板数据", npc_name, npc_data["场景"], self.name, self.node["NPC"], sceneNode[npc_data["节点名"]])
+            gg.log("--服务端NPC面板数据", npc_name, npc_data["场景"], self.name, self.node["NPC"],
+                sceneNode[npc_data["节点名"]])
             if sceneNode and sceneNode[npc_data["节点名"]] then
                 local actor = sceneNode[npc_data["节点名"]]
                 local npc = Npc.New(npc_data, actor)
+                self.node2Entity[actor] = npc
                 self.npcs[npc.uuid] = npc
             end
         end
     end
+end
+
+---初始化场景中的挂机点
+function _M:initAfkSpots()
+    -- local all_afk_spots = AfkSpotConfig.GetAll()
+    -- gg.log("初始化挂机点", all_afk_spots)
+    -- for afk_name, afk_data in pairs(all_afk_spots) do
+    --     if afk_data["场景"] == self.name then
+    --         local sceneNode = self.node["挂机点"]
+    --         if sceneNode then
+    --             for _, node_name in ipairs(afk_data["节点名"]) do
+    --                 if sceneNode[node_name] then
+    --                     local actor = sceneNode[node_name]
+    --                     local afk_spot = AfkSpot.New(afk_data, actor)
+    --                     afk_spot.scene = self
+    --                     self.node2Entity[actor] = afk_spot
+    --                     self.npcs[afk_spot.uuid] = afk_spot
+    --                 end
+    --             end
+    --         end
+    --     end
+    -- end
 end
 
 ---创建新的场景实例
@@ -64,20 +88,79 @@ end
 function _M:OnInit(name, sceneId)
     self.name = name
     self.sceneId = sceneId
-    self.players          = {}   --玩家列表  [uin  = Player]
-    self.monsters         = {}   --怪物列表  [uuid = Monster]
-    self.npcs             = {}   -- NPC列表
-    self.monster_spawns   = {}   --刷怪点管理   [ spawn_name = { count, config } ]
-    self.npc_spawns       = {}
-    self.drop_boxs        = {}   --掉落物品列表
+    self.players = {} -- 玩家列表  [uin  = Player]
+    self.monsters = {} -- 怪物列表  [uuid = Monster]
+    self.npcs = {} -- NPC列表
+    self.monster_spawns = {} -- 刷怪点管理   [ spawn_name = { count, config } ]
+    self.npc_spawns = {}
+    self.drop_boxs = {} -- 掉落物品列表
+    self.node2Entity = {}
 
-    self.tick             = 0    --总tick值(递增)
+    self.tick = 0 -- 总tick值(递增)
 
-    self.scene_config     = nil  --当前地图的节点scene刷怪配置,
-    self.npc_spawn_config = {}   -- 当前地图的NPC刷新点
+    self.scene_config = nil -- 当前地图的节点scene刷怪配置,
+    self.npc_spawn_config = {} -- 当前地图的NPC刷新点
     self.node = game.WorkSpace["Ground"][name]
 
     self:initNpcs() -- Initialize NPCs after scene creation
+    self:initAfkSpots() -- Initialize AfkSpots after scene creation
+
+    -- 创建NPC更新定时任务
+    self.npcUpdateTaskId = ServerScheduler.add(function()
+        self:update_npcs()
+    end, 0, 1, true) -- 立即开始，每秒执行一次
+end
+
+---更新所有NPC
+function _M:update_npcs()
+    for _, npc in pairs(self.npcs) do
+        npc:update_npc()
+    end
+end
+
+---@private
+function _M:OverlapBox(center, extent, angle, filterGroup, filterFunc)
+    local results = game:GetService('WorldService'):OverlapBox(Vector3.New(extent.x, extent.y, extent.z),
+        Vector3.New(center.x, center.y, center.z), Vector3.New(angle.x, angle.y, angle.z), false, filterGroup)
+    local retActors = {}
+    for _, v in ipairs(results) do
+        local obj = v.obj
+        local entity = self.node2Entity[obj]
+        gg.log("entity", obj, entity)
+        if entity then
+            table.insert(retActors, entity)
+            if filterFunc then
+                filterFunc(entity)
+            end
+        end
+    end
+    return retActors
+end
+
+function _M:SelectCylinderTargets(center, radius, height, filterGroup, filterFunc)
+    if radius == 0 or height == 0 then
+        return {}
+    end
+    local cylinderFilter = function(entity)
+        -- 判断是否在半径内，忽略y坐标
+        local centerPos = center
+        local targetPos = entity:GetLocation()
+        centerPos.y = 0
+        targetPos.y = 0
+        local distance = (centerPos - targetPos).length
+        if distance > radius then
+            return false
+        end
+        if filterFunc then
+            return filterFunc(entity)
+        end
+        return true
+    end
+    local halfHeight = height / 2
+    local results = self:OverlapBox(Vector3.New(center.x, center.y + halfHeight, center.z),
+        Vector3.New(radius, halfHeight, radius), Vector3.New(0, 0, 0), filterGroup, cylinderFilter)
+    gg.log("results", results)
+    return results
 end
 
 ---初始化地形
@@ -85,20 +168,19 @@ function _M:initTerrain()
     local ground_name_ = self.name
 
     local workspace = game:GetWorkSpace(self.sceneId)
-    --gg.log( 'GetWorkSpace1', workspace )
+    -- gg.log( 'GetWorkSpace1', workspace )
 
     if self.sceneId == 0 then
-        --game.WorkSpace
+        -- game.WorkSpace
     else
         local environment_ = workspace:WaitForChild('Environment')
-        --gg.log( 'environment_1', environment_ )
-        workspace.Environment:Destroy() --删除旧地形
+        -- gg.log( 'environment_1', environment_ )
+        workspace.Environment:Destroy() -- 删除旧地形
 
-        --克隆新地形
+        -- 克隆新地形
         local workspace0 = game:GetWorkSpace(0)
         environment_ = workspace0:WaitForChild('Environment'):Clone()
         environment_.Parent = workspace
-
 
         if not workspace.Ground then
             local ground_ = SandboxNode.new('SandboxNode', workspace)
@@ -110,7 +192,7 @@ function _M:initTerrain()
 
     local gx_ = workspace.Ground[ground_name_]
     if not gx_ then
-        --移动 ground
+        -- 移动 ground
         if MainStorage.Ground[ground_name_] then
             MainStorage.Ground[ground_name_].Parent = workspace.Ground
             gx_ = workspace.Ground[ground_name_]
@@ -121,7 +203,7 @@ function _M:initTerrain()
         if gx_.Visible == false then
             gx_.Visible = true
         end
-        --gx_.Position = Vector3.New(0,0,0)    --坐标改到中心点
+        -- gx_.Position = Vector3.New(0,0,0)    --坐标改到中心点
     else
         gg.log('scene not exist:', ground_name_)
     end
@@ -139,7 +221,7 @@ end
 ---@param uin_ number 玩家ID
 function _M:player_enter(uin_)
     if self.players[uin_] then
-        --已经存在
+        -- 已经存在
     else
         local player_ = gg.server_players_list[uin_]
         if player_ then
@@ -200,19 +282,22 @@ end
 ---通知目标丢失
 ---@param uuid_ string 怪物UUID
 function _M:InfoTargetLost(uuid_)
-    for uin_, player_ in pairs(self.players) do
-        if player_.target and player_.target.uuid == uuid_ then
-            local info_ = { cmd = 'cmd_sync_target_info', show = 0, v = 'lost' }
-            gg.network_channel:fireClient(uin_, info_)
-        end
-    end
+    -- for uin_, player_ in pairs(self.players) do
+    --     if player_.target and player_.target.uuid == uuid_ then
+    --         local info_ = {
+    --             cmd = 'cmd_sync_target_info',
+    --             show = 0,
+    --             v = 'lost'
+    --         }
+    --         gg.network_channel:fireClient(uin_, info_)
+    --     end
+    -- end
 end
-
 
 ---增加一个掉落物箱
 ---@param item_ table 物品信息
 function _M:addDrop(item_)
-    item_.tick = gg.tick --记录tick
+    item_.tick = gg.tick -- 记录tick
     self.drop_boxs[item_.uuid] = item_
 end
 
@@ -227,12 +312,12 @@ function _M:check_drop()
         for uin_, player_ in pairs(self.players) do
             local pos2_ = player_:GetPosition()
             if not gg.fast_out_distance(pos1_, pos2_, 200) and box_info_.player_uin == uin_ then
-                local player_data_ = BagMgr.GetPlayerBag( uin_ )
+                local player_data_ = BagMgr.GetPlayerBag(uin_)
                 local drop_re = player_data_:GiveItem(box_info_)
                 gg.log("玩家拾取物品和结果", box_info_, drop_re, uin_)
 
                 if drop_re == 0 then
-                    BagMgr.s2c_PlayerBagItems(uin_, {})   --刷新玩家背包数据
+                    BagMgr.s2c_PlayerBagItems(uin_, {}) -- 刷新玩家背包数据
                     self.drop_boxs[box_uuid_] = nil
                     box_info_.model:Destroy()
                     break
@@ -246,9 +331,9 @@ end
 function _M:check_monster_alive()
     for _, monster_ in pairs(self.monsters) do
         if monster_.target then
-            --gg.log( '====check_monster_alive target:', monster_.uuid, monster_.level, monster_.target.uuid )
+            -- gg.log( '====check_monster_alive target:', monster_.uuid, monster_.level, monster_.target.uuid )
         else
-            --gg.log( '====check_monster_alive no target:', monster_.uuid, monster_.level )
+            -- gg.log( '====check_monster_alive no target:', monster_.uuid, monster_.level )
             if monster_.level >= 50 then
                 monster_:tryGetTargetPlayer()
             end
@@ -287,7 +372,7 @@ end
 ---每一帧更新
 function _M:update()
     if next(self.players) == nil then
-        return --场景内没有玩家
+        return -- 场景内没有玩家
     end
     self.tick = self.tick + 1
 
@@ -299,22 +384,24 @@ function _M:update()
     for _, monster_ in pairs(self.monsters) do
         monster_:update_monster()
     end
-    for _, npc_ in pairs(self.npcs) do
-        npc_:update_npc()
-    end
 
-    --慢update
+    -- 慢update
     local mod_ = self.tick % 11
-    -- if mod_ == 1 then
-    --     self:check_monster_spawn()
     if mod_ == 2 then
         self:check_monster_alive()
     elseif mod_ == 3 then
         self:check_player_alive()
     elseif mod_ == 4 then
         self:check_drop()
-    else
+    end
+end
 
+---场景销毁时清理
+function _M:OnDestroy()
+    -- 取消NPC更新定时任务
+    if self.npcUpdateTaskId then
+        ServerScheduler.cancel(self.npcUpdateTaskId)
+        self.npcUpdateTaskId = nil
     end
 end
 

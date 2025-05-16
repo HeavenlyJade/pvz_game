@@ -89,6 +89,11 @@ function FightState:OnInit()
                 fight_data_.wait = fight_data_.wait - 1
                 return
             end
+
+            if entity.target.battle_stat == BATTLE_STAT_WAIT_SPAWN or entity.target.battle_stat == BATTLE_STAT_DEAD_WAIT or self.target.actor.Visible == false then
+                entity.scene:InfoTargetLost(entity.target.uuid)
+                entity.target = nil
+            end
             
             -- 检查是否有目标
             if not entity.target then
@@ -110,23 +115,23 @@ function FightState:OnInit()
             dirWithRandomOffset:Normalize()
             
             -- 获取技能和攻击范围
-            local skill, attackRange = entity:getSkill1AndRange()
-            local approachPos = Vector3.New(
-                targetPos.x + dirWithRandomOffset.x * 32,
-                targetPos.y,
-                targetPos.z + dirWithRandomOffset.z * 32
-            )
+            -- local skill, attackRange = entity:getSkill1AndRange()
+            -- local approachPos = Vector3.New(
+            --     targetPos.x + dirWithRandomOffset.x * 32,
+            --     targetPos.y,
+            --     targetPos.z + dirWithRandomOffset.z * 32
+            -- )
             
-            -- 判断是移动还是攻击
-            if gg.out_distance(entity:GetPosition(), approachPos, attackRange * 0.9) then
-                -- 目标不在攻击范围内，导航接近
-                entity.actor:NavigateTo(approachPos)
-                entity:play_animation('100101', 1.0, 0)  -- 行走动画
-            else
-                -- 目标在攻击范围内，停止移动并攻击
-                entity.actor:StopNavigate()
-                entity:Attack(entity.target, 0, "entity_attack")
-            end
+            -- -- 判断是移动还是攻击
+            -- if gg.out_distance(entity:GetPosition(), approachPos, attackRange * 0.9) then
+            --     -- 目标不在攻击范围内，导航接近
+            --     entity.actor:NavigateTo(approachPos)
+            --     entity:play_animation('100101', 1.0, 0)  -- 行走动画
+            -- else
+            --     -- 目标在攻击范围内，停止移动并攻击
+            --     entity.actor:StopNavigate()
+            --     entity:Attack(entity.target, 0, "entity_attack")
+            -- end
             
             -- 设置下次更新时间
             fight_data_.wait = 5  -- 等待5帧(0.5秒)再次检查

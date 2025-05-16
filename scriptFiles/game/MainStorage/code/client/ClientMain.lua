@@ -21,6 +21,7 @@ function ClientMain.start_client()
     ClientMain.createNetworkChannel()
     ClientMain.handleCoreUISettings()
     ClientInit.init()
+    -- Controller.init()
     ClientMain.initButton()
     Controller.init()
     local timer = SandboxNode.New("Timer", game.StarterGui)
@@ -61,8 +62,8 @@ end
 
 
 function ClientMain.initButton()
-    local UiSettingBut = require(MainStorage.code.client.UiClient.SysUi.SettingBut) ---@type UiSettingBut
-    UiSettingBut.OnInit()
+    -- local UiSettingBut = require(MainStorage.code.client.UiClient.SysUi.SettingBut) ---@type UiSettingBut
+    -- UiSettingBut.OnInit()
 
 end
 function ClientMain.OnClientNotify(args)
@@ -74,3 +75,4 @@ function ClientMain.OnClientNotify(args)
 end
 
 return ClientMain
+

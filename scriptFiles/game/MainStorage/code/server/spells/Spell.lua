@@ -89,20 +89,12 @@ function Spell:Cast(caster, target, param)
     if not target then
         -- 获取施法者面前的敌人
         local casterPos = caster:GetLocation()
-        local WorldService = game:GetService('WorldService') ---@type WorldService
-        local ret_table = WorldService:OverlapSphere(5000, casterPos, true, {1, 2, 3})
-        gg.log("ret_table", ret_table)
-        if ret_table and #ret_table > 0 then
-            for _, hit in pairs(ret_table) do
-                if hit.obj and hit.obj.Parent then
-                    local hitEntity = hit.obj.Parent:FindFirstChild("Entity")
-                    if hitEntity then
-                        target = hitEntity.Value
-                        param.realTarget = target
-                        break
-                    end
-                end
-            end
+        local ret_table = caster.scene:SelectCylinderTargets(casterPos, 5000, 5000, {3, 4}, nil)
+        gg.log("ret_table", casterPos, ret_table)
+        for _, hit in pairs(ret_table) do
+            gg.log("hit", hit)
+            target = hit
+            break
         end
         if not target then
             print(self.spellName .. ": 找不到目标")

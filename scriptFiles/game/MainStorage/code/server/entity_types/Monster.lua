@@ -41,7 +41,7 @@ local _M = ClassMgr.Class('Monster', Entity)
 -- 初始化怪物
 function _M:OnInit(info_)
     Entity:OnInit(info_)    -- 父类初始化
-    self.uuid = gg.create_uuid('m')  -- 唯一ID
+    self.uuid = gg.create_uuid('uMob')  -- 唯一ID
     
     -- 设置怪物类型和等级
     self.mobType = info_.mobType
@@ -77,15 +77,13 @@ end
 --------------------------------------------------
 
 -- 创建怪物模型
-function _M:CreateModel()
+function _M:CreateModel(scene)
     self.name = self.mobType.data["显示名"]
     
     -- 创建Actor
-    local container = game.WorkSpace["Ground"][self.scene.name]["怪物"]
+    local container = game.WorkSpace["Ground"][scene.name]["怪物"]
     local actor_monster = SandboxNode.new('Actor', container)
-    
-    -- 设置模型和属性
-    print("model".. self.mobType.data["模型"])
+    actor_monster.CollideGroupID = 3
     actor_monster.ModelId = self.mobType.data["模型"]
     actor_monster.Name = self.uuid
     
@@ -212,77 +210,7 @@ function _M:checkIdle(ticks, idle_data_)
 end
 
 -- 处理战斗状态
-function _M:checkFight(ticks, fight_data_)
-    -- 减少等待时间
-    if fight_data_.wait > 0 then
-        fight_data_.wait = fight_data_.wait - ticks
-        return
-    end
-    
-    -- 检查是否有目标
-    if not self.target then
-        -- 失去目标，返回空闲状态
-        self:setBattleStat(BATTLE_STAT_IDLE)
-        return
-    end
-    
-    -- 获取目标位置
-    local targetPos = self.target:GetPosition()
-    
-    -- 计算靠近目标的位置（带随机偏移）
-    local dir = self:GetPosition() - targetPos
-    local dirWithRandomOffset = Vector3.New(
-        dir.x + gg.rand_int_both(16),
-        0,
-        dir.z + gg.rand_int_both(16)
-    )
-    dirWithRandomOffset:Normalize()
-    
-    -- 获取技能和攻击范围
-    local skill, attackRange = self:getSkill1AndRange()
-    local approachPos = Vector3.New(
-        targetPos.x + dirWithRandomOffset.x * 32,
-        targetPos.y,
-        targetPos.z + dirWithRandomOffset.z * 32
-    )
-    
-    -- 判断是移动还是攻击
-    if gg.out_distance(self:GetPosition(), approachPos, attackRange * 0.9) then
-        -- 目标不在攻击范围内，导航接近
-        self.actor:NavigateTo(approachPos)
-        self:play_animation('100101', 1.0, 0)  -- 行走动画
-    else
-        -- 目标在攻击范围内，停止移动并攻击
-        self.actor:StopNavigate()
-        self:Attack(self.target, 0, "entity_attack")
-    end
-    
-    -- 设置下次更新时间
-    fight_data_.wait = 5  -- 等待5帧(0.5秒)再次检查
-end
 
--- 怪物状态机更新
-function _M:checkMonStat(ticks)
-    if not self.battle_stat or not self.stat_data then return end
-    
-    local currentState = self.battle_stat
-    if currentState == BATTLE_STAT_IDLE then
-        -- 空闲状态
-        self:checkIdle(ticks, self.stat_data.idle)
-        
-    elseif currentState == BATTLE_STAT_FIGHT then
-        -- 战斗状态
-        self:checkFight(ticks, self.stat_data.fight)
-        
-    elseif currentState == BATTLE_STAT_DEAD_WAIT then
-        -- 死亡等待状态处理
-        -- 可以添加死亡相关处理逻辑
-        
-    elseif currentState == BATTLE_STAT_WAIT_SPAWN then
-        -- 等待重生状态处理
-        -- 可以添加重生相关处理逻辑
-    end
-end
 
 ---@override
 function _M:createHpBar( root_ )
@@ -321,15 +249,6 @@ end
 function _M:update_monster()
     -- 调用父类更新
     self:update()
-    
-    -- 更新状态机
-    self:checkMonStat(1)
-    
-    -- 检查怪物是否离开刷新点太远
-    if self.tick % 50 == 0 then  -- 每50帧检查一次
-        self:checkTooFarFromPos()
-    end
-    
     -- 在空闲状态下寻找目标
     -- if self.battle_stat == BATTLE_STAT_IDLE and self.tick % 20 == 0 then
     --     self:tryGetTargetPlayer()

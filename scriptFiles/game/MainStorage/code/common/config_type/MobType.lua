@@ -21,9 +21,10 @@ function MobType:Spawn(position, level, scene)
         mobType  = self,
         level = level,
     })
+    monster_:CreateModel(scene)
     monster_:ChangeScene(scene)
-    monster_:CreateModel()
     scene.monsters[monster_.uuid] = monster_
+    scene.node2Entity[monster_.actor] = monster_
     return monster_
 end
 

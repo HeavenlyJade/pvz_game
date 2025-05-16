@@ -141,20 +141,20 @@ function MainServer.start_server()
     MainServer.register_player_in_out()   --玩家进出游戏
     MainServer.createNetworkChannel()     --建立网络通道
 
-    MainServer.SetCollisionGroup()        --设置碰撞组
+    -- MainServer.SetCollisionGroup()        --设置碰撞组
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
 end
 
 
---设置碰撞组
-function MainServer.SetCollisionGroup()
-    --设置碰撞组
-    local WS = game:GetService("PhysXService")
-    WS:SetCollideInfo(0, 0, false)   --玩家不与玩家碰撞
-    WS:SetCollideInfo(1, 1, false)   --怪物不与怪物碰撞
-    WS:SetCollideInfo(0, 1, false)   --玩家不与怪物碰撞
-end
+-- --设置碰撞组
+-- function MainServer.SetCollisionGroup()
+--     --设置碰撞组
+--     local WS = game:GetService("PhysXService")
+--     WS:SetCollideInfo(0, 0, false)   --玩家不与玩家碰撞
+--     WS:SetCollideInfo(1, 1, false)   --怪物不与怪物碰撞
+--     WS:SetCollideInfo(0, 1, false)   --玩家不与怪物碰撞
+-- end
 
 --注册玩家进游戏和出游戏消息
 function MainServer.register_player_in_out()
@@ -169,11 +169,6 @@ function MainServer.register_player_in_out()
         gg.log('====PlayerRemoving', player.UserId)
         MainServer.player_leave_game(player)
     end)
-end
-
-function MainServer.initEventRelease()
-    local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
-    MailManager:Init()
 end
 
 --玩家进入游戏，数据加载
@@ -193,10 +188,11 @@ function MainServer.player_enter_game(player)
     end
 
     local actor_ = player.Character
+    actor_.CollideGroupID = 4
     actor_.Movespeed = 800
-    actor_.ModelId = 'sandboxSysId://entity/130034/body.omod'    --默认渔民女
-    actor_:AddAttribute("model_type", Enum.AttributeType.String)
-    actor_:SetAttribute("model_type", "player")
+    -- actor_.ModelId = 'sandboxSysId://entity/130034/body.omod'    --默认渔民女
+    -- actor_:AddAttribute("model_type", Enum.AttributeType.String)
+    -- actor_:SetAttribute("model_type", "player")
 
     --加载数据 1 玩家历史等级经验值
     local ret1_, cloud_player_data_ = cloudDataMgr.ReadPlayerData(uin_)

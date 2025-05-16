@@ -261,8 +261,6 @@ function _M:handleCompleteTask(taskId)
     -- 修改任务状态
     self.dict_game_task.main_line.pending_pickup[taskId] = nil
     self.dict_game_task.main_line.finish[taskId] = true
-
-
     TaskSystem:GiveTaskReward(self, taskId)
 
     -- 同步数据
