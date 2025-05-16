@@ -9,6 +9,10 @@ local Entity      = require(MainStorage.code.server.entity_types.Entity) ---@typ
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
+
+
+
+
 ---@class Player : Entity    --玩家类  (单个玩家) (管理玩家状态)
 ---@field dict_btn_skill table 技能按钮映射
 ---@field dict_game_task table 任务数据
@@ -32,7 +36,7 @@ function _M:OnInit(info_)
     self.name = info_.nickname
     self.isPlayer = true
     self.bag = nil ---@type Bag
-    self.mail = nil ---@type Mail
+    self.mail = nil ---@type MailDataStruct
     self.uuid             = gg.create_uuid('p')                 -- 唯一ID
     self.auto_attack      = 0                                   -- 自动攻击技能ID
     self.auto_attack_tick = 10                                  -- 攻击间隔

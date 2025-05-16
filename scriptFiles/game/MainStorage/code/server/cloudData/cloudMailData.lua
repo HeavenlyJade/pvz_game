@@ -13,6 +13,20 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local cloudService = game:GetService("CloudService")   ---@type CloudService
 
+
+---@class PlayerMailData
+---@field mails table
+---@field last_update number
+
+---@class PlayerBitmapData
+---@field bitmap table
+---@field last_update number
+
+---@class MailDataStruct
+---@field player_mail_data_ PlayerMailData
+---@field player_mail_bitmap_data_ PlayerBitmapData
+
+
 ---@class CloudMailData
 local CloudMailData = {
 

@@ -135,7 +135,7 @@ function MainServer.start_server()
 
     gg.log('主服务器开始初始化');
 
-    MainServer.initCloudData()
+    MainServer.initModule()
     MTerrain.init()                       --地形管理
     MainServer.register_player_in_out()   --玩家进出游戏
     MainServer.createNetworkChannel()     --建立网络通道
