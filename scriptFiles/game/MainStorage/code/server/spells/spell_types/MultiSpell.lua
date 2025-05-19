@@ -24,7 +24,6 @@ end
 ---@return boolean 是否成功释放
 function MultiSpell:CastReal(caster, target, param)
     self:PlayEffect(self.castEffects, target, caster, param)
-    self:PlayEffect(self.targetEffects, caster, target, param)
     local anySucceed = false
 
     local log = {}

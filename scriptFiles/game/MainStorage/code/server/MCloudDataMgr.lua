@@ -147,38 +147,56 @@ end
 
 
 -- 读取玩家的任务配置
-function MCloudDataMgr.ReadGameTaskData(uin_)
-    local ret_, ret2_ = cloudService:GetTableOrEmpty( 'game_task' .. uin_ )
-    if  ret_ then
-        if ret2_ and ret2_.uin == uin_ then
-            return 0, ret2_
-        else
-            return 0, {}
+function MCloudDataMgr.ReadGameTaskData(player)
+    local ret_, ret2_ = cloudService:GetTableOrEmpty('game_task' .. player.uin)
+    if ret_ then
+        if ret2_ and ret2_.uin == player.uin then
+            -- 重建任务
+            for questId, questData in pairs(ret2_.quests) do
+                local Quest = require(MainStorage.code.common.config_type.Quest)
+                local quest = Quest.New(questId)  -- 从配置创建任务
+                if quest then
+                    local AcceptedQuest = require(MainStorage.code.server.entity_types.player_data.AcceptedQuest)
+                    local acceptedQuest = AcceptedQuest.New(quest, player)
+                    acceptedQuest.progress = questData.progress
+                    player.quests[questId] = acceptedQuest
+                end
+            end
+            
+            -- 设置已完成任务
+            player.acceptedQuestIds = ret2_.acceptedQuestIds
+            return 0
         end
-    else
-        return 1 ,{}
     end
     
+    -- 初始化空的任务数据
+    player.quests = {}
+    player.acceptedQuestIds = {}
+    return 1
 end
 
-function MCloudDataMgr.SaveGameTaskData(uin_)
-    local player_ = gg.server_players_list[ uin_ ]
-    if  player_ then
-        local data_ = {
-            uin   = uin_,
-            dict_game_task = player_.dict_game_task,
-            daily_tasks =player_.daily_tasks 
+function MCloudDataMgr.SaveGameTaskData(player)
+    -- 构建最小化的任务数据
+    local questsData = {}
+    for questId, quest in pairs(player.quests) do
+        questsData[questId] = {
+            progress = quest.progress
         }
-
-        cloudService:SetTableAsync( 'game_task' .. uin_, data_, function ( ret_ )
-            if  not ret_ then
-                gg.log("保存玩家任务失败", 'game_task' .. uin_, data_ )
-            else
-                gg.log("保存玩家任务成功", 'game_task' .. uin_, data_ )
-            end
-        end )
     end
-    
+
+    local data_ = {
+        uin = player.uin,
+        quests = questsData,
+        acceptedQuestIds = player.acceptedQuestIds
+    }
+
+    cloudService:SetTableAsync('game_task' .. player.uin, data_, function(ret_)
+        if not ret_ then
+            gg.log("保存玩家任务失败", 'game_task' .. player.uin, data_)
+        else
+            gg.log("保存玩家任务成功", 'game_task' .. player.uin, data_)
+        end
+    end)
 end
 
 return MCloudDataMgr

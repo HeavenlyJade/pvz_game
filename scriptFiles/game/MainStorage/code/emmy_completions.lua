@@ -679,7 +679,7 @@
 
 
 
----@class EffectObject
+---@class EffectObject : Transform
 ---@field AssetID string 特效资源id
 ---@field Duration number 特效持续时间
 ---@field Looping boolean 特效是否循环
@@ -1968,11 +1968,11 @@
 ---@field FindNearestPolygonCenter fun(self: Actor) Vector3 同步找到一个可以寻路过去的点
 ---@field UseDefaultAnimation fun(self: Actor, use: boolean) None 是否使用默认动作
 ---@field BindCustomPlayerSkin fun(self: Actor) void 自定义绑定玩家皮肤给actor
----@field Walking fun(self: Actor, isWalking: boolean) None 当开始行走时会发送一次事件，停止行走时会发送一次通知
----@field Standing fun(self: Actor, isStanding: boolean) None 结束站立时会发送一次事件，开始站立时会发送一次通知
----@field Jumping fun(self: Actor, isJumping: boolean) None 跳跃开始时会发送一次事件，跳跃结束时会发送一次通知
----@field Flying fun(self: Actor, isFlying: boolean) None 飞行开始时会发送一次事件，飞行结束时会发送一次通知
----@field Died fun(self: Actor, isDied: boolean) None 死亡开始时会发送一次事件
+---@field Walking Event<fun(self: Actor, isWalking: boolean)> None 当开始行走时会发送一次事件，停止行走时会发送一次通知
+---@field Standing Event<fun(self: Actor, isStanding: boolean)> None 结束站立时会发送一次事件，开始站立时会发送一次通知
+---@field Jumping Event<fun(self: Actor, isJumping: boolean)> None 跳跃开始时会发送一次事件，跳跃结束时会发送一次通知
+---@field Flying Event<fun(self: Actor, isFlying: boolean)> None 飞行开始时会发送一次事件，飞行结束时会发送一次通知
+---@field Died Event<fun(self: Actor, isDied: boolean)> None 死亡开始时会发送一次事件
 ---@field MoveStateChange fun(self: Actor, beforeState: BehaviorState, afterState: BehaviorState) None 当actor移动状态发送变化时会发送一次事件
 ---@field NavigateFinished fun(self: Actor, isFinished: boolean) None 自动寻路结束后发送事件
 ---@field MoveFinished fun(self: Actor, isMoveFinished: boolean) None 移动MoveTo结束后触发
@@ -2923,6 +2923,7 @@
 ---@field y number y坐标
 ---@field z number z坐标
 ---@field New fun(x: number, y: number, z: number) Vector3 构造
+---@field Normalize fun(self: Vector3) Vector3 归一化向量（向量方向计算）
 
 
 
@@ -2932,7 +2933,7 @@
 ---@field y number y坐标
 ---@field z number z坐标
 ---@field w number w坐标
----@field Normalize number 归一化向量（向量方向计算）
+---@field Normalize fun(self: Vector4) Vector4 归一化向量（向量方向计算）
 
 
 
@@ -4391,6 +4392,7 @@ Vector4 = {} ---@type Vector4
 ---@field LayoutHRelation LayoutHRelation
 ---@field LayoutVRelation LayoutVRelation
 ---@field FillMethod FillMethod
+---@field NodeSyncMode NodeSyncMode
 Enum = {} ---@type Enum
 
 Quaternion = {} ---@type Quaternion

@@ -32,8 +32,8 @@ end
 function PainSpell:CastReal(caster, target, param)
     if not target.isEntity then return false end
     
-    local damage = param:GetValue(self, "baseDamage", self.baseDamage)
-    local multiplier = param:GetValue(self, "baseMultiplier", self.baseMultiplier) * param.power
+    local damage = param:GetValue(self, "基础伤害", self.baseDamage)
+    local multiplier = param:GetValue(self, "基础倍率", self.baseMultiplier) * param.power
     
     -- 添加临时属性
     if next(self.extraStats) then
@@ -114,7 +114,6 @@ function PainSpell:CastReal(caster, target, param)
     end
     
     self:PlayEffect(self.castEffects, target, caster, param)
-    self:PlayEffect(self.targetEffects, caster, target, param)
     
     return true
 end

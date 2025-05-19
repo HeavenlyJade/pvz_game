@@ -29,7 +29,6 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
             end
             local button = self.onAddElementCb(child)
             if button then
-                print("ViewList", ui.Name, self.path, child.Name)
                 button.path = self.path .. "/" .. child.Name
                 local idx = tonumber(num)
                 if idx then

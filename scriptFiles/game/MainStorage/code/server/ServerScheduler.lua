@@ -37,15 +37,19 @@ end
 ---Add a new scheduled task
 ---@param func function The function to execute
 ---@param delay number Delay in seconds before first execution
----@param repeatInterval number Repeat interval in seconds (0 for one-time execution)
+---@param repeatInterval? number Repeat interval in seconds (0 for one-time execution)
+---@param isInTick? boolean 是否时间使用游戏刻， 一秒10刻， 默认false 
 ---@return number taskId The ID of the created task
-function ServerScheduler.add(func, delay, repeatInterval, isInSecond)
+function ServerScheduler.add(func, delay, repeatInterval, isInTick)
     local taskId = ServerScheduler.nextTaskId
     ServerScheduler.nextTaskId = ServerScheduler.nextTaskId + 1
-
-    if isInSecond then
-        delay = math.floor(delay * 30)
-        repeatInterval = math.floor(repeatInterval * 30)
+    if not repeatInterval then
+        repeatInterval = 0
+    end
+    
+    if not isInTick then
+        delay = math.floor(delay * 10)
+        repeatInterval = math.floor(repeatInterval * 10)
     end
 
     local task = {

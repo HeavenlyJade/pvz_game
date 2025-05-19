@@ -5,14 +5,6 @@
 local table = table ---@type table
 local native_log = print -- 尽量使用gg.log来输出日志，方便以后重定向
 
-local game = game
-local Enum = Enum
-local Vector2 = Vector2 ---@type Vector2
-local Vector3 = Vector3 ---@type Vector3
-local Quaternion = Quaternion ---@type Quaternion
-local SandboxNode = SandboxNode ---@type SandboxNode
-local ColorQuad = ColorQuad ---@type ColorQuad
-
 local table_insert = table.insert
 
 local string_find = string.find
@@ -29,6 +21,103 @@ local Players = game:GetService('Players')
 ---@field FireServer fun(self, data: table)
 ---@field fireClient fun(self, uin: number, data: table)
 
+local vec = {}
+
+---@param v Vector2|Vector3|Vector4 要标准化的向量
+---@return Vector2|Vector3|Vector4 标准化后的向量
+function vec.Normalize(v)
+    if v.w then
+        return Vector4.Normalize(v)
+    elseif v.z then
+        return Vector3.Normalize(v)
+    else
+        return Vector2.Normalize(v)
+    end
+end
+
+---@param v1 Vector2|Vector3|Vector4 第一个向量
+---@param v2 Vector2|Vector3|Vector4 第二个向量
+---@return number 两个向量之间的距离
+function vec.Distance(v1, v2)
+    return math.sqrt(vec.DistanceSq(v1, v2))
+end
+
+---@param v1 Vector2|Vector3|Vector4 第一个向量
+---@param v2 Vector2|Vector3|Vector4 第二个向量
+---@return number 两个向量之间距离的平方
+function vec.DistanceSq(v1, v2)
+    -- print("v1", tostring(v1))
+    if v1.w and v2.w then
+        local dx = v1.x - v2.x
+        local dy = v1.y - v2.y
+        local dz = v1.z - v2.z
+        local dw = v1.w - v2.w
+        return dx * dx + dy * dy + dz * dz + dw * dw
+    elseif v1.z and v2.z then
+        local dx = v1.x - v2.x
+        local dy = v1.y - v2.y
+        local dz = v1.z - v2.z
+        return dx * dx + dy * dy + dz * dz
+    else
+        local dx = v1.x - v2.x
+        local dy = v1.y - v2.y
+        return dx * dx + dy * dy
+    end
+end
+
+---@param v1 Vector2|Vector3|Vector4 第一个向量
+---@param v2 Vector2|Vector3|Vector4 第二个向量
+---@return number 两个向量的点积
+function vec.Dot(v1, v2)
+    if v1.w and v2.w then
+        return Vector4.Dot(v1, v2)
+    elseif v1.z and v2.z then
+        return Vector3.Dot(v1, v2)
+    else
+        return Vector2.Dot(v1, v2)
+    end
+end
+
+---@param v1 Vector2|Vector3|Vector4 起始向量
+---@param v2 Vector2|Vector3|Vector4 目标向量
+---@param percent number 插值比例(0-1)
+---@return Vector2|Vector3|Vector4 插值后的向量
+function vec.Learp(v1, v2, percent)
+    if v1.w and v2.w then
+        return Vector4.Lerp(v1, v2, percent)
+    elseif v1.z and v2.z then
+        return Vector3.Lerp(v1, v2, percent)
+    else
+        return Vector2.Lerp(v1, v2, percent)
+    end
+end
+
+---@param v1 Vector3 第一个向量
+---@param v2 Vector3 第二个向量
+---@return Vector3 两个向量的叉积
+function vec.Cross(v1, v2)
+    if v1.z and v2.z then
+        return Vector3.Cross(v1, v2)
+    end
+    return v1:Cross(v2)
+end
+
+---@param v1 Vector2|Vector3|Vector4 向量
+---@param x number x坐标
+---@param y number y坐标
+---@param z? number z坐标
+---@param w? number w坐标
+---@return Vector2|Vector3|Vector4 相加后的向量
+function vec.Add(v1, x, y, z, w)
+    if v1.w then
+        return Vector4.New(v1.x + x, v1.y + y, v1.z + z, v1.w + w)
+    elseif v1.z then
+        return Vector3.New(v1.x + x, v1.y + y, v1.z + z)
+    else
+        return Vector2.New(v1.x + x, v1.y + y)
+    end
+end
+
 ---@class gg      --存放自定义的global全局变量和函数
 ---@field tick number 当前tick
 ---@field game_stat number 游戏状态
@@ -37,6 +126,7 @@ local Players = game:GetService('Players')
 ---@field server_players_name_list table<string, Player> 服务器玩家名称列表
 ---@field equipSlot table<number, table<number, boolean>> 各个装备槽位对应的装备类型
 local gg = {
+    vec = vec,
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
 
@@ -68,11 +158,7 @@ local gg = {
         }
     },
 
-    ---@type table<string, CScene>
-    server_scene_list = { -- 场景列表
-        -- [ g0 ] = CScene,
-        -- [ g1 ] = CScene,
-    },
+    server_scene_list = {}, ---@type table<string, Scene>
     -- 客户端使用(p1)
     client_scene_name = 'g0', -- 当前客户端的场景
     client_target_node = nil, -- 当前目标
@@ -152,10 +238,14 @@ function gg.getPlayerInfoByUin(uin_)
     end
 end
 
+---@param name_ string
 function gg.getLivingByName(name_)
-    if name_:startswith('id:') then
-        -- TODO: 改为采用实体ID查找
-        name_ = name_:sub(4)
+    if string.sub(name_, 1, 2) == 'u_' then
+        for scene_name, scene in pairs(gg.server_scene_list) do
+            if scene.uuid2Entity[name_] then
+                return scene.uuid2Entity[name_]
+            end
+        end
     end
     return gg.server_players_name_list[name_]
 end

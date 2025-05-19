@@ -178,9 +178,9 @@ end
 ---@param param CastParam 参数
 ---@return Entity|nil 命中的目标
 function AOESpell:GetHitTargets(loc, caster, param)
-    local sizeScale = param:GetValue(self, "sizeScale", 1)
-    local widthScale = param:GetValue(self, "widthScale", 1)
-    local heightScale = param:GetValue(self, "heightScale", 1)
+    local sizeScale = param:GetValue(self, "尺寸倍率", 1)
+    local widthScale = param:GetValue(self, "宽度倍率", 1)
+    local heightScale = param:GetValue(self, "高度倍率", 1)
     
     if self.collisionType == CollisionType.CIRCLE then
         local radius = self.circleRadius * widthScale * sizeScale
@@ -214,9 +214,9 @@ end
 ---@param param CastParam 参数
 ---@return boolean 是否成功释放
 function AOESpell:CastReal(caster, target, param)
-    local loc = target:GetLocation()
+    local loc = target:GetPosition()
     if self.offset ~= Vector3.zero then
-        local direction = (param.realTarget:GetLocation() - caster:GetPosition()):Normalize()
+        local direction = (param.realTarget:GetPosition() - caster:GetPosition()):Normalize()
         local right = Vector3.right
         loc = loc + direction * self.offset.x + right * self.offset.y
     end
@@ -262,7 +262,7 @@ end
 ---@param param CastParam 参数
 ---@return number
 function AOESpell:GetFullSize(param)
-    local sizeScale = param:GetValue(self, "sizeScale", 1)
+    local sizeScale = param:GetValue(self, "尺寸倍率", 1)
     if self.collisionType == CollisionType.CIRCLE then
         return self.circleRadius * sizeScale
     elseif self.collisionType == CollisionType.RECTANGLE then

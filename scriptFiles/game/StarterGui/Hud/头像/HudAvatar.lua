@@ -30,18 +30,12 @@ function HudAvatar:OnInit(node, config)
         self.questList:SetVisible(not self.questList.node.Enabled)
     end
     
-    ---TODO: 肖飞——完善任务系统后在此接受包
-    ClientEventManager.Subscribe("QuestsUpdate", function(evt)
+    ClientEventManager.Subscribe("UpdateQuestsData", function(evt)
         local evt = evt ---@type QuestsUpdate
         self.questList:SetElementSize(#evt.quests) ---设为 #evt.quests
         for i, child in ipairs(evt.quests) do
             local ele = self.questList:GetChild(i) ---@cast ele ViewButton
-            local title = child.name
-            if child.countMax > 1 then
-                title = title .. string.format("(%s/%s)", child.count, child.countMax)
-            end
-            ele:Get("任务标题").node.Title = title
-            ele:Get("任务描述").node.Title = child.description
+            ele:Get("任务标题").node.Title = child.description
         end
     end)
 end

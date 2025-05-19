@@ -25,14 +25,14 @@ local _M                 = ClassMgr.Class('Npc', Entity) --父类Entity
 ---@param npcData NpcData
 ---@param actor Actor
 function _M:OnInit(npcData, actor)
-    Entity:OnInit(npcData) --父类初始化
+    Entity:OnInit({}) --父类初始化
     self.spawnPos          = actor.LocalPosition
     self.actor             = actor
     self.name              = npcData["名字"]
     self.interactCondition = Modifiers.New(npcData["互动条件"])
     self.interactCommands  = npcData["互动指令"]
     self.interactIcon      = npcData["互动图标"]
-    self.uuid              = gg.create_uuid('uNpc')
+    self.uuid              = gg.create_uuid('u_Npc')
     self.target            = nil
     actor.CubeBorderEnable = true                      --debug显示碰撞方块
     if npcData["状态机"] then

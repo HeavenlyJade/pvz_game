@@ -7,6 +7,9 @@ local ItemCommands = require(MainStorage.code.server.CommandSystem.commands.MIte
 local MiscCommands = require(MainStorage.code.server.CommandSystem.commands.MiscCommand)   ---@type MiscCommand
 local MobCommand = require(MainStorage.code.server.CommandSystem.commands.MobCommand)   ---@type MobCommand
 local SpellCommand = require(MainStorage.code.server.CommandSystem.commands.SpellCommand)   ---@type SpellCommand
+local StatCommand = require(MainStorage.code.server.CommandSystem.commands.StatCommand)   ---@type StatCommand
+local QuestCommand = require(MainStorage.code.server.CommandSystem.commands.QuestCommand)   ---@type QuestCommand
+
 -- local QuestCommands = require(MainStorage.code.server.CommandSystem.commands.MQuestCommands)     ---@type QuestCommands
 -- local PlayerCommands = require(MainStorage.code.server.CommandSystem.commands.MPlayerCommands)   ---@type PlayerCommands
 -- local SkillCommands = require(MainStorage.code.server.CommandSystem.commands.MSkillCommands)     ---@type SkillCommands
@@ -27,6 +30,8 @@ CommandManager.handlers = {
     ["title"] = MiscCommands.title,
     ["spawnMob"] = MobCommand.spawnMob,
     ["cast"] = SpellCommand.cast,
+    ["showStat"] = StatCommand.showStat,
+    ["quest"] = QuestCommand.main,
     -- ["装备"] = {},
 
     -- -- 玩家属性相关
@@ -53,8 +58,8 @@ ServerEventManager.Subscribe("ClientExecuteCommand", function(evt)
 end)
 
 function CommandManager.ExecuteCommand(commandStr, player)
-    if not commandStr then return false end
-
+    if not commandStr or commandStr == "" then return false end
+    
     -- 1. 分割命令和参数
     local command, jsonStr = commandStr:match("^(%S+)%s+(.+)$")
     if not command then
@@ -78,7 +83,7 @@ function CommandManager.ExecuteCommand(commandStr, player)
             return false
         end
     end
-    gg.log("执行指令", command, params)
+    gg.log("执行指令", player, command, params)
     -- 5. 调用处理器
     local success, result = pcall(handler, params, player)
     if not success then

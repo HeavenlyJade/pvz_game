@@ -1,6 +1,7 @@
 
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
+local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 
 ---@class Modifier
 local _M = ClassMgr.Class("Modifier")
@@ -16,18 +17,38 @@ function _M:OnInit(data)
     end
     
     -- 设置其他属性
+    self.targeter = data["目标"]
+    self.targeterPath = data["目标场景名"]
+    self.compareTo = data["比较对象"]
+    self.compareToPath = data["比较对象场景名"]
     self.invert = data["反转"] or false
     self.action = data["动作"] or "必须"
     self.amount = data["数量"] or nil
-    self.subSpell = data["魔法"] or nil
+    self.subSpell = data["魔法"]
+    if self.subSpell then
+        self.subSpell = SubSpell.New(self.subSpell)
+    end
     self.overrideParams = data["复写参数"] or {}
     self.modifyValues = data["修改数值"] or {}
 end
 
+function _M:GetTarget(caster, target, targeter, targeterPath)
+    if targeter == "目标" then
+        return target
+    elseif targeter == "自己" then
+        return caster
+    else
+        local scene = target.scene ---@type Scene
+        return scene.node2Entity[scene:Get(targeterPath)]
+    end
+end
+
 function _M:Check(caster, target, param)
     local success = true
+    local c = self:GetTarget(caster, target, self.compareTo, self.compareToPath)
+    local t = self:GetTarget(caster, target, self.targeter, self.targeterPath)
     if self.condition ~= nil then
-        success = self.condition:Check(self, caster, target)
+        success = self.condition:Check(self, c, t)
     end
     local stop = false
     if self.invert then success = not success end
@@ -45,12 +66,12 @@ function _M:Check(caster, target, param)
     elseif self.action == "乘以威力" then
         if success then param.power = param.power * tonumber(self.amount) end
     elseif self.action == "释放" then
-        if success and self.subSpell ~= nil then
-            self.subSpell:Cast(caster, target, param)
+        if success and self.subSpell then
+            self.subSpell:Cast(c, t, param)
         end
     elseif self.action == "改为释放" then
-        if success and self.subSpell ~= nil then
-            self.subSpell:Cast(caster, target, param)
+        if success and self.subSpell then
+            self.subSpell:Cast(c, t, param)
             param.cancelled = true
         end
     end

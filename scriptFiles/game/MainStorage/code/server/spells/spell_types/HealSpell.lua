@@ -28,8 +28,8 @@ function HealSpell:CastReal(caster, target, param)
     if not target.isEntity then return false end
     
     local battle = Battle.New(caster, target, self.spellName, nil)
-    local damage = param:GetValue(self, "baseHeal", self.baseHeal)
-    local multiplier = param:GetValue(self, "baseMultiplier", self.baseMultiplier) * param.power
+    local damage = param:GetValue(self, "基础治疗", self.baseHeal)
+    local multiplier = param:GetValue(self, "基础倍率", self.baseMultiplier) * param.power
     
     if damage > 0 then
         battle:AddModifier("BASE", "增加", damage * multiplier)
@@ -92,7 +92,6 @@ function HealSpell:CastReal(caster, target, param)
     
     target:Heal(battle:GetFinalDamage(), self.spellName)
     self:PlayEffect(self.castEffects, target, caster, param)
-    self:PlayEffect(self.targetEffects, caster, target, param)
     
     return true
 end

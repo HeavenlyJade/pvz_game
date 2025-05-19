@@ -63,6 +63,10 @@ end
 ---@param param CastParam|nil 参数
 ---@return boolean 是否成功释放
 function SubSpell:Cast(caster, target, param)
+    if not self.spellCache then
+        local SpellConfig = require(MainStorage.code.common.config.SpellConfig)
+        self.spellCache = SpellConfig.Get(self.spellName)
+    end
     if not param then
         param = CastParam.New()
     end
@@ -116,7 +120,7 @@ function SubSpell:Cast(caster, target, param)
                 end
 
                 spellParam.extraModifiers[name]:AddModifier(
-                    self.spell.spellName,
+                    self.spellCache.spellName,
                     modifier.paramValue.addType,
                     modifier.paramValue.multiplier
                 )
@@ -139,11 +143,7 @@ function SubSpell:Cast(caster, target, param)
             end
         end
     end
-
-    if not self.spellCache then
-        local SpellConfig = require(MainStorage.code.common.Config.SpellConfig)
-        self.spellCache = SpellConfig.Get(self.spellName)
-    end
+    
     return self.spellCache:Cast(caster, target, spellParam)
 end
 

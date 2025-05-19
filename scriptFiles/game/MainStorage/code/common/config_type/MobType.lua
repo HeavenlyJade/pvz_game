@@ -16,11 +16,15 @@ end
 ---@param scene Scene
 ---@return Monster
 function MobType:Spawn(position, level, scene)
+    if not position then
+        return nil
+    end
     local monster_ = Monster.New({ ---@type Monster
         position = position,
         mobType  = self,
         level = level,
     })
+    gg.log("monster", position)
     monster_:CreateModel(scene)
     monster_:ChangeScene(scene)
     scene.monsters[monster_.uuid] = monster_
@@ -43,7 +47,7 @@ function MobType:GetStatAtLevel(statType, level)
     end
 
     local result = gg.eval(expr)
-    print("calc result:", expr, result)
+    -- print("calc result:", expr, result)
 
     return result
 end

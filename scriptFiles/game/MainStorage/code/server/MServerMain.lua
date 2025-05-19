@@ -27,6 +27,8 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 -- 总入口
 ---@class MainServer
 local MainServer = {};
+local initFinished = false;
+local waitingPlayers = {} -- 存储等待初始化的玩家
 
 -- 定义命令处理器模块
 local CommandHandlers = {}
@@ -67,7 +69,7 @@ end
 function CommandHandlers.handleGetGameTaskData(uin_, args)
 	local player_ = gg.server_players_list[uin_]
     if player_ then
-        player_:syncGameTaskData()
+        player_:UpdateQuestsData()
     end
 end
 
@@ -132,18 +134,21 @@ local COMMAND_DISPATCH = {
 function MainServer.start_server()
     math.randomseed(os.time() + os.clock())
     gg.uuid_start = gg.rand_int_between(100000, 999999)
+    MainServer.register_player_in_out()   --玩家进出游戏
 
     gg.log('主服务器开始初始化');
-
     MainServer.initModule()
     MTerrain.init()                       --地形管理
-    MainServer.register_player_in_out()   --玩家进出游戏
     MainServer.createNetworkChannel()     --建立网络通道
-
-    -- MainServer.SetCollisionGroup()        --设置碰撞组
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
+    initFinished = true
     
+    -- 处理等待中的玩家
+    for _, player in ipairs(waitingPlayers) do
+        MainServer.player_enter_game(player)
+    end
+    waitingPlayers = {} -- 清空等待列表
 end
 
 
@@ -169,11 +174,23 @@ function MainServer.register_player_in_out()
 
     players.PlayerAdded:Connect(function(player)
         gg.log('====PlayerAdded', player.UserId)
-        MainServer.player_enter_game(player)
+        if initFinished then
+            MainServer.player_enter_game(player)
+        else
+            table.insert(waitingPlayers, player)
+            gg.log('====PlayerAdded to waiting list', player.UserId)
+        end
     end)
 
     players.PlayerRemoving:Connect(function(player)
         gg.log('====PlayerRemoving', player.UserId)
+        -- 如果玩家在等待列表中，需要移除
+        for i, waitingPlayer in ipairs(waitingPlayers) do
+            if waitingPlayer.UserId == player.UserId then
+                table.remove(waitingPlayers, i)
+                break
+            end
+        end
         MainServer.player_leave_game(player)
     end)
 end
@@ -214,7 +231,7 @@ function MainServer.player_enter_game(player)
 
     -- 玩家信息初始化
     local player_ = Player.New({
-        x=600, y=400, z=-3400,      --(617,292,-3419)
+        position = Vector3.New(600, 400, -3400),      --(617,292,-3419)
         uin=uin_,
         id=1,
         nickname=player.Nickname,
@@ -235,6 +252,7 @@ function MainServer.player_enter_game(player)
         return     --加载背包数据失败
     end
 
+    cloudDataMgr.ReadGameTaskData(player_)
     local mail_player_data_ = gg.cloudMailData:OnPlayerLogin(uin_)
     player_.bag = cloud_player_bag_
     player_.mail = mail_player_data_
@@ -252,7 +270,6 @@ function MainServer.player_enter_game(player)
     player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
 
     player_:initSkillData()                 --- 加载玩家技能
-    -- player_:initGameTaskData()              --- 加载玩家任务
     player_:RefreshStats()               --重生 --刷新战斗属性
 end
 
@@ -286,7 +303,7 @@ function MainServer.OnServerNotify(uin_, args)
     local handler = COMMAND_DISPATCH[args.cmd]
     if not handler then
         local player_ = gg.getPlayerByUin(uin_)
-        gg.log("publish event:", args)
+        gg.log("event", uin_, player_, gg.server_players_list)
         args.player = player_
         ServerEventManager.Publish(args.cmd, args)
         return

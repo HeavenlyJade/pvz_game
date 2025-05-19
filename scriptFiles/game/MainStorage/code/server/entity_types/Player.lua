@@ -15,7 +15,6 @@ local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@
 
 ---@class Player : Entity    --玩家类  (单个玩家) (管理玩家状态)
 ---@field dict_btn_skill table 技能按钮映射
----@field dict_game_task table 任务数据
 ---@field daily_tasks table 每日任务数据
 ---@field buff_instance table Buff实例
 ---@field player_net_stat PLAYER_NET_STAT 玩家网络状态
@@ -37,16 +36,66 @@ function _M:OnInit(info_)
     self.isPlayer = true
     self.bag = nil ---@type Bag
     self.mail = nil ---@type MailDataStruct
-    self.uuid             = gg.create_uuid('p')                 -- 唯一ID
+    self.uuid             = gg.create_uuid('u_Pl')                 -- 唯一ID
     self.auto_attack      = 0                                   -- 自动攻击技能ID
     self.auto_attack_tick = 10                                  -- 攻击间隔
     self.auto_wait_tick   = 0                                   -- 等待计时
     self.daily_tasks      = {}                                  -- 每日任务
     self.dict_btn_skill   = {}                                  -- 技能按钮映射
     self.buff_instance    = {}                                  -- Buff实例
-    self.dict_game_task   = {}                                  -- 任务数据
     self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
     self.nearbyNpcs       = {}                                  -- 附近的NPC列表
+    self.quests = {} ---@type AcceptedQuest[]
+    self.acceptedQuestIds = {} ---@type table<string, number> --值=0: 已领取, 未完成 =1: 已完成
+    self.news = {} ---@type table<string, table> --红点路径
+end
+
+---标记红点
+function _M:MarkNew(path)
+    
+end
+
+function _M:RefreshQuest(key)
+    --若key=每日, 每周, 每月: 重置quests和acceptedQuestIds中 刷新类型==key的
+    --否则: 重置任务名中包含key的
+    local questsToRemove = {}
+    local refreshedQuestNames = {}
+    
+    -- 遍历所有已接受的任务
+    for questId, quest in pairs(self.quests) do
+        local shouldRefresh = false
+        
+        -- 检查刷新类型
+        if key == "每日" or key == "每周" or key == "每月" then
+            shouldRefresh = quest.quest.refreshType == key
+        else
+            -- 检查任务名是否包含key
+            shouldRefresh = string.find(quest.quest.name, key) ~= nil
+        end
+        
+        if shouldRefresh then
+            table.insert(questsToRemove, questId)
+            table.insert(refreshedQuestNames, quest.quest.name)
+            -- 从acceptedQuestIds中移除
+            self.acceptedQuestIds[questId] = nil
+        end
+    end
+    
+    -- 移除需要刷新的任务
+    for _, questId in ipairs(questsToRemove) do
+        self.quests[questId] = nil
+    end
+    
+    -- 同步到客户端
+    self:UpdateQuestsData()
+    
+    -- 发送刷新消息
+    if #refreshedQuestNames > 0 then
+        local message = string.format("已刷新以下任务：\n%s", table.concat(refreshedQuestNames, "\n"))
+        self:SendChatText(message)
+    else
+        self:SendChatText("没有需要刷新的任务")
+    end
 end
 
 -- 设置玩家网络状态
@@ -64,6 +113,8 @@ end
 ---@override
 function _M:Die()
     -- 发布死亡事件
+    local debug_traceback = debug.traceback()
+    gg.log("Player died, stack trace:", debug_traceback)
     ServerEventManager.Publish("PlayerDeadEvent", { player = self })
     Entity.Die(self)
 end
@@ -100,6 +151,12 @@ function _M:RefreshStats()
     self:ResetStats("EQUIP")
     self:RemoveTagHandler("EQUIP-")
 
+    -- 添加所有属性的基础值
+    local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
+    for statName, statType in pairs(StatTypeConfig.GetAll()) do
+        self:AddStat(statName, statType.baseValue, {source = "EQUIP", refresh = false})
+    end
+
     -- 直接遍历bag_items，跳过c =0
     for category, items in pairs(self.bag.bag_items) do
         if category > 0 then
@@ -117,14 +174,10 @@ function _M:RefreshStats()
         end
     end
 
-    -- -- 刷新生命值和魔法值上限
-    -- local maxHealth = self:GetStat("Health")
-    -- local maxMana = self:GetStat("Mana")
-    -- self:SetMaxHealth(maxHealth)
-    -- self.maxMana = maxMana
-
-    -- -- 同步到客户端
-    -- self:rsyncData(1)
+    for statName, triggerFunc in pairs(Entity.TRIGGER_STAT_TYPES) do
+        local value = self:GetStat(statName)
+        triggerFunc(self, value)
+    end
 end
 
 --------------------------------------------------
@@ -174,271 +227,6 @@ function _M:syncSkillData()
     })
 end
 
---------------------------------------------------
--- 任务系统方法
---------------------------------------------------
-
--- 初始化任务数据
-function _M:initGameTaskData()
-    -- 从云数据读取
-    local ret1_, cloud_data_ = cloudDataMgr.ReadGameTaskData(self.uin)
-    if ret1_ == 0 and cloud_data_ and cloud_data_.dict_game_task then
-        self.dict_game_task = cloud_data_.dict_game_task
-    else
-        -- 创建默认任务结构
-        self.dict_game_task = {
-            main_line = {pending_pickup = {}, progress = {}, finish = {}},
-            branch_line = {pending_pickup = {}, progress = {}, finish = {}},
-            gaiden = {pending_pickup = {}, progress = {}, finish = {}},
-            daily_task = {pending_pickup = {}, progress = {}, finish = {}}
-        }
-
-        TaskSystem:InitDefaultTasks(self)
-    end
-
-    -- 同步到客户端
-    self:syncGameTaskData()
-end
-
--- 初始化任务目标
-function _M:initObjectivesFromConfig(questConfig)
-    local objectives_data = {}
-
-    if questConfig.objectives then
-        for i, objective in ipairs(questConfig.objectives) do
-            objectives_data[i] = {
-                type = objective.type,
-                target_id = objective.target_id,
-                target_name = objective.target_name,
-                required = objective.count or 1,
-                current = 0,
-                locations = objective.locations
-            }
-        end
-    end
-
-    return objectives_data
-end
-
--- 初始化默认任务
-function _M:initDefaultTasks()
-    if not common_config.main_line_task_config then return end
-
-    for chapter_key, chapter_data in pairs(common_config.main_line_task_config) do
-        if chapter_data.quests then
-            for _, quest in ipairs(chapter_data.quests) do
-                if quest.unlock_condition == nil then
-                    -- 初始化任务目标
-                    local objectives_data = self:initObjectivesFromConfig(quest)
-                    -- 添加到进度中
-                    self.dict_game_task.main_line.progress[quest.id] = {
-                        start_time = os.time(),
-                        objectives = objectives_data,
-                        dialogue_progress = 0,
-                        unlocked_steps = {[1] = true},
-                        unlocked_branches = {},
-                        tracking = {active = true},
-                        custom_data = {}
-                    }
-                end
-            end
-        end
-    end
-end
-
--- 同步任务数据到客户端
-function _M:syncGameTaskData()
-    if not self.dict_game_task then return end
-        gg.network_channel:fireClient(self.uin, {
-        cmd = 'cmd_sync_player_game_task',
-        uin = self.uin,
-        task_data = self.dict_game_task
-    })
-end
-
--- 处理任务完成
-function _M:handleCompleteTask(taskId)
-    -- 检查任务状态
-    if not self.dict_game_task.main_line.pending_pickup[taskId] then
-        return false
-    end
-
-    -- 修改任务状态
-    self.dict_game_task.main_line.pending_pickup[taskId] = nil
-    self.dict_game_task.main_line.finish[taskId] = true
-    TaskSystem:GiveTaskReward(self, taskId)
-
-    -- 同步数据
-    self:syncGameTaskData()
-
-    -- 发送成功消息
-    gg.network_channel:fireClient(self.uin, {
-        cmd = "cmd_client_show_msg",
-        msg = "任务完成，奖励已发放！"
-    })
-
-    return true
-end
-
--- 获取任务状态
-function _M:GetQuestStatus(questType, questId)
-    local questData = self:GetQuestData(questType, questId)
-    return questData and questData.status or "未接取"
-end
-
--- 设置任务状态
-function _M:SetQuestStatus(questType, questId, field, value)
-    if not self.dict_game_task[questType] then
-        self.dict_game_task[questType] = {
-            pending_pickup = {},
-            progress = {},
-            finish = {}
-        }
-    end
-
-    -- 移除旧状态
-    local oldStatus = self:GetQuestStatus(questType, questId)
-    if oldStatus == "进行中" then
-        self.dict_game_task[questType].progress[questId] = nil
-    elseif oldStatus == "待领取" then
-        self.dict_game_task[questType].pending_pickup[questId] = nil
-    elseif oldStatus == "已完成" then
-        self.dict_game_task[questType].finish[questId] = nil
-    end
-
-    -- 设置新状态
-    if value == "进行中" then
-        self.dict_game_task[questType].progress[questId] = {
-            start_time = os.time(),
-            objectives = {}
-        }
-    elseif value == "待领取" then
-        self.dict_game_task[questType].pending_pickup[questId] = true
-    elseif value == "已完成" then
-        self.dict_game_task[questType].finish[questId] = true
-    end
-
-    -- 同步到客户端
-    self:syncGameTaskData()
-
-    -- 保存到云端
-    cloudDataMgr.saveGameTaskData(self.uin)
-end
-
--- 获取任务数据
-function _M:GetQuestData(questType, questId)
-    if not self.dict_game_task[questType] then return nil end
-
-    if self.dict_game_task[questType].progress[questId] then
-        return {
-            status = "进行中",
-            data = self.dict_game_task[questType].progress[questId]
-        }
-    elseif self.dict_game_task[questType].pending_pickup[questId] then
-        return { status = "待领取" }
-    elseif self.dict_game_task[questType].finish[questId] then
-        return { status = "已完成" }
-    end
-
-    return nil
-end
-
--- 获取任务目标进度
-function _M:GetQuestObjectiveProgress(questType, questId, targetIndex)
-    local questData = self:GetQuestData(questType, questId)
-    if not questData or questData.status ~= "进行中" or not questData.data.objectives then
-        return 0
-    end
-
-    return questData.data.objectives[targetIndex] or 0
-end
-
--- 获取任务目标最大进度
-function _M:GetQuestObjectiveMaxProgress(questType, questId, targetIndex)
-    return TaskSystem:GetQuestObjectiveMaxProgress(self, questType, questId, targetIndex)
-end
-
--- 更新任务目标进度
-function _M:UpdateQuestObjectiveProgress(questType, questId, targetIndex, newProgress)
-    local questData = self:GetQuestData(questType, questId)
-    if not questData or questData.status ~= "进行中" then
-        return false
-    end
-
-    if not questData.data.objectives then
-        questData.data.objectives = {}
-    end
-
-    questData.data.objectives[targetIndex] = newProgress
-
-    -- 同步到客户端
-    self:syncGameTaskData()
-
-    -- 保存到云端
-    cloudDataMgr.saveGameTaskData(self.uin)
-
-    return true
-end
-
--- 检查所有任务目标是否完成
-function _M:AreAllQuestObjectivesComplete(questType, questId)
-    return TaskSystem:AreAllQuestObjectivesComplete(self, questType, questId)
-end
-
--- 获取任务配置
-function _M:GetQuestConfig(questId)
-    -- 寻找匹配questId的任务配置
-    for chapterKey, chapterData in pairs(common_config.main_line_task_config) do
-        if chapterData.quests then
-            for _, quest in ipairs(chapterData.quests) do
-                if quest.id == questId then
-                    return quest
-                end
-            end
-        end
-    end
-
-    return nil
-end
-
--- 设置任务对话进度
-function _M:SetQuestDialogueProgress(questType, questId, progress)
-    return TaskSystem:SetQuestDialogueProgress(self, questType, questId, progress)
-end
-
--- 检查并更新任务完成状态
-function _M:CheckQuestCompletion(questType, questId)
-    return TaskSystem:CheckQuestCompletion(self, questType, questId)
-end
-
--- 设置任务追踪
-function _M:SetQuestTracking(questType, questId, isTracking)
-    local questData = self:GetQuestData(questType, questId)
-    if not questData then return false end
-
-    if questData.status == "进行中" then
-        if not questData.data.tracking then
-            questData.data.tracking = {}
-        end
-        questData.data.tracking.active = isTracking and true or false
-
-        -- 同步到客户端
-        self:syncGameTaskData()
-        return true
-    end
-
-    return false
-end
-
--- 解锁任务步骤
-function _M:UnlockQuestStep(questType, questId, stepIndex)
-    return TaskSystem:UnlockQuestStep(self, questType, questId, stepIndex)
-end
-
--- 解锁任务对话分支
-function _M:UnlockQuestDialogueBranch(questType, questId, branchId)
-    return TaskSystem:UnlockQuestDialogueBranch(self, questType, questId, branchId)
-end
 
 --------------------------------------------------
 -- 玩家同步与更新方法
@@ -477,9 +265,8 @@ end
 -- 玩家离开游戏
 function _M:Save()
     cloudDataMgr.SavePlayerData(self.uin, true)
-if self.bag.dirtySave then
-        self.bag:Save()
-    end
+    cloudDataMgr.SaveGameTaskData(self)
+    self.bag:Save()
 end
 
 -- 更新玩家状态
@@ -561,7 +348,7 @@ function _M:UpdateNearbyNpcsToClient()
 
     -- 收集NPC信息并计算距离
     for _, npc in pairs(self.nearbyNpcs) do
-        local distance = (npc.actor.LocalPosition - self.actor.LocalPosition).Magnitude
+        local distance = gg.vec.Distance(npc.actor.LocalPosition, self.actor.LocalPosition)
         table.insert(npcList, {
             npc = npc,
             distance = distance
@@ -585,6 +372,23 @@ function _M:UpdateNearbyNpcsToClient()
     gg.network_channel:fireClient(self.uin, {
         cmd = "NPCInteractionUpdate",
         interactOptions = interactOptions
+    })
+end
+
+-- 同步任务数据到客户端
+function _M:UpdateQuestsData()
+    -- 构建任务数据
+    local quests = {}
+    
+    -- 添加进行中的任务
+    for questId, quest in pairs(self.quests) do
+        table.insert(quests, quest:GetQuestDesc())
+    end
+    
+    -- 发送到客户端
+    gg.network_channel:fireClient(self.uin, {
+        cmd = 'UpdateQuestsData',
+        quests = quests
     })
 end
 

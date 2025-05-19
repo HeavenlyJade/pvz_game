@@ -4,6 +4,7 @@ local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type Cas
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
+local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Graphics
 
 
 
@@ -32,6 +33,7 @@ local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSp
 local Spell = ClassMgr.Class("Spell")
 
 function Spell.Load( data )
+    print("LoadSpell", data["魔法名"], data["类型"])
     local class = require(MainStorage.code.server.spells.spell_types[data["类型"]])
     return class.New(data)
 end
@@ -66,10 +68,9 @@ function Spell:OnInit( data )
         end
     end
 
-    self.preCastEffects = data["特效_前摇释放"] or {}
-    self.preTargetEffects = data["特效_前摇目标"] or {}
-    self.castEffects = data["特效_释放"] or {}
-    self.targetEffects = data["特效_目标"] or {}
+    -- 加载特效
+    self.preCastEffects = Graphics.Load(data["特效_前摇"])
+    self.castEffects = Graphics.Load(data["特效_释放"])
 end
 
 --- 执行魔法
@@ -88,13 +89,15 @@ function Spell:Cast(caster, target, param)
     end
     if not target then
         -- 获取施法者面前的敌人
-        local casterPos = caster:GetLocation()
+        local casterPos = caster:GetPosition()
         local ret_table = caster.scene:SelectCylinderTargets(casterPos, 5000, 5000, {3, 4}, nil)
         gg.log("ret_table", casterPos, ret_table)
         for _, hit in pairs(ret_table) do
-            gg.log("hit", hit)
-            target = hit
-            break
+            if hit ~= caster then
+                gg.log("hit", hit)
+                target = hit
+                break
+            end
         end
         if not target then
             print(self.spellName .. ": 找不到目标")
@@ -154,8 +157,8 @@ function Spell:Cast(caster, target, param)
     end
 
     self:PlayEffect(self.preCastEffects, param.realTarget, caster, param)
-    self:PlayEffect(self.preTargetEffects, caster, param.realTarget, param)
 
+    table.insert(log, string.format("%s: %s对%s释放通过", self.spellName, caster.name, target.name))
     local delay = param:GetValue(self, "延迟", self.delay)
     if delay > 0 then
         if self.printInfo then

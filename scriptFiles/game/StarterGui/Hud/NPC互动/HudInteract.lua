@@ -81,7 +81,9 @@ function HudInteract:ShowInteract(interactOptions)
         local button = self.interactList:GetChild(i) ---@cast button ViewButton
         gg.log("更新交互选项", i, option,button)
         button:Get("Text").node.Title = option.npcName
-        button:Get("Icon").node.Icon = option.icon
+        if option.icon then
+            button:Get("图标").node.Icon = option.icon 
+        end
         button.index = i
     end
 end

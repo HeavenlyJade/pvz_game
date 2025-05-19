@@ -134,8 +134,6 @@ function CloudMailData:AddPlayerMail(uin, mailData)
     playerMail.mails[mailData.id] = mailData
     playerMail.last_update = os.time()
     
-    -- 保存到云存
-    
     return mailData.id
 end
 

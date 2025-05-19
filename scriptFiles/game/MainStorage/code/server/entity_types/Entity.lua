@@ -15,8 +15,6 @@ local next = next
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
-local BattleState = require(MainStorage.code.server.entity_types.BattleState) ---@type BattleState
-
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
 local Battle = require(MainStorage.code.server.Battle) ---@type Battle
@@ -26,14 +24,12 @@ local ServerEventManager = require(MainStorage.code.server.event.ServerEventMana
 -- local MainServer = require( game:GetService("MainStorage"):WaitForChild('code').server.MServerMain )
 -- local PlayerModule = require( StartPlayer.StarterPlayerScripts.PlayerModule )
 
-local BATTLE_STAT_IDLE = BattleState.BATTLE_STAT_IDLE
-local BATTLE_STAT_FIGHT = BattleState.BATTLE_STAT_FIGHT
-local BATTLE_STAT_DEAD_WAIT = BattleState.BATTLE_STAT_DEAD_WAIT
-local BATTLE_STAT_WAIT_SPAWN = BattleState.BATTLE_STAT_WAIT_SPAWN
-
 local TRIGGER_STAT_TYPES = {
     ["生命"] = function(creature, value)
         creature:SetMaxHealth(value)
+    end,
+    ["速度"] = function(creature, value)
+        creature.actor.Movespeed = value
     end
 }
 
@@ -46,17 +42,17 @@ local TRIGGER_STAT_TYPES = {
 ---@field wait_tick number
 ---@field stat_flags any
 ---@field npc_type NPC_TYPE
----@field battle_stat BATTLE_STAT
 ---@field stat_data any
 ---@field model_weapon any
 ---@field actor Actor
 ---@field target Entity
+---@field isDead boolean 是否已死亡
+---@field isRespawning boolean 是否正在复活
 ---@field New fun( info_:table ):Entity
 local _M = ClassMgr.Class("Entity") -- 父类 (子类： Player, Monster )
-
+_M.TRIGGER_STAT_TYPES = TRIGGER_STAT_TYPES
 -- 新增属性
 function _M:OnInit(info_)
-    gg.log("OnInit", info_)
     self.spawnPos = info_.position
     self.name = nil
     self.uuid = nil
@@ -66,11 +62,15 @@ function _M:OnInit(info_)
     self.scene = nil ---@type Scene
     self.exp = 0 -- 当前经验值
     self.level = 1 -- 当前等级
-    self.stats = {}
+    self.stats = {} ---@type table<string, table<string, number>>
 
     self.actor = nil -- game_actor
     self.target = nil -- 当前目标 Entity
     -- self.model_weapon = nil -- 武器
+
+    self.isDead = false -- 是否已死亡
+    self.deathWaitTime = 0 -- 死亡等待时间
+    self.combatTime = 0 -- 战斗时间计数器
 
     self.bb_title = nil -- 头顶名字和等级 billboard
     self.bb_damage = nil -- 伤害飘字
@@ -100,8 +100,6 @@ function _M:OnInit(info_)
     self.wait_tick = 0 -- 等待状态tick值(递减)（剧情使用）
     self.last_anim = '' -- 最后一个播放的动作
 
-    self.battle_stat = BATTLE_STAT_IDLE -- 战斗状态： 空闲 战斗 死亡 复活
-
     self.stat_data = { -- 每个状态下的数据
         idle = {
             select = 0,
@@ -110,14 +108,20 @@ function _M:OnInit(info_)
         fight = {
             wait = 0
         }, -- monster
-        wait_spawn = {
+        wander = {
             wait = 0
-        },
-        dead_wait = {
+        }, -- monster wander
+        melee = {
             wait = 0
-        }
+        } -- monster melee
     }
     self.modelPlayer = nil  ---@type ModelPlayer
+end
+
+function _M:GetSize()
+    local size = self.actor.Size
+    local scale = self.actor.LocalScale
+    return Vector3.New(size.x * scale.x, size.y * scale.y, size.z * scale.z)
 end
 
 function _M:SetAnimationController(name)
@@ -127,7 +131,24 @@ function _M:SetAnimationController(name)
     local animationConfig = AnimationConfig.Get(name)
     if animator and animationConfig then
         self.modelPlayer = ModelPlayer.New(animator, animationConfig)
+        self.actor.Walking:Connect(function(isWalking)
+            if isWalking then
+                self.modelPlayer:OnWalk()
+            end
+        end)
+        self.actor.Standing:Connect(function(isStanding)
+            if isStanding then
+                self.modelPlayer:OnStand()
+            end
+        end)
+        self.actor.Died:Connect(function()
+            self.modelPlayer:OnDead()
+        end)
     end
+end
+
+function _M:SetPosition(position)
+    self.actor.LocalPosition = position
 end
 
 function _M:GetPosition()
@@ -141,7 +162,14 @@ function _M:GetToStringParams()
 end
 
 function _M:RefreshStats()
+    if not self.actor then return end
     self:ResetStats("EQUIP")
+    
+    -- 遍历所有需要触发的属性类型并刷新
+    for statName, triggerFunc in pairs(TRIGGER_STAT_TYPES) do
+        local value = self:GetStat(statName)
+        triggerFunc(self, value)
+    end
 end
 
 -- 词条系统 --------------------------------------------------------
@@ -459,7 +487,7 @@ function _M:AddStat(statName, amount, ...)
     self.stats[source][statName] = self.stats[source][statName] + amount
 
     -- 这里应该有触发属性类型逻辑，但需要根据具体游戏逻辑实现
-    if params.refresh and TRIGGER_STAT_TYPES[statName] then
+    if self.actor and params.refresh and TRIGGER_STAT_TYPES[statName] then
         TRIGGER_STAT_TYPES[statName](self, self:GetStat(statName))
     end
 end
@@ -524,7 +552,7 @@ end
 ---@param damager Entity 伤害来源
 ---@param isCrit boolean 是否暴击
 function _M:Hurt(amount, damager, isCrit)
-    if self.battle_stat == BATTLE_STAT_DEAD_WAIT or self.battle_stat == BATTLE_STAT_WAIT_SPAWN then
+    if self.isDead then
         return
     end
 
@@ -542,19 +570,24 @@ function _M:Hurt(amount, damager, isCrit)
     -- 扣除生命值
     if amount > 0 then
         self:SetHealth(self.health - amount)
-        if self.battle_stat == BATTLE_STAT_IDLE then
-            self:setBattleStat(BATTLE_STAT_FIGHT)
-        end
+        -- 进入战斗状态
+        self.combatTime = 10 -- 设置战斗时间为10秒
         -- 显示伤害数字
         if self.scene then
             self:showDamage(amount, {
                 cr = isCrit and 1 or 0
             })
         end
+        -- 更新血条
+        if self.hp_bar then
+            self.hp_bar.FillAmount = self.health / self.maxHealth
+        end
     end
 
     -- 检查死亡
     if self.health <= 0 then
+        local debug_traceback = debug.traceback()
+        gg.log(self, "Health = 0, stack trace:", debug_traceback)
         self:Die()
     end
 end
@@ -590,7 +623,27 @@ end
 
 --- 死亡处理
 function _M:Die()
-    self:DestroyObject()
+    if self.isDead then return end
+    
+    self.isDead = true
+    self.deathWaitTime = self.isPlayer and 30 or 60
+    
+    -- 停止导航
+    self.actor:StopNavigate()
+    if self.modelPlayer then
+        self.modelPlayer:OnDead()
+    end
+    
+    -- 如果是玩家，发送死亡状态到客户端
+    if self.isPlayer then
+        gg.network_channel:fireClient(self.uin, {
+            cmd = 'cmd_player_actor_stat',
+            v = 'dead'
+        })
+    end
+    
+    -- 发布死亡事件
+    ServerEventManager.Publish("EntityDeadEvent", { entity = self })
 end
 
 function _M:DestroyObject()
@@ -613,29 +666,6 @@ function _M:SetMaxHealth(amount)
         self.actor.MaxHealth = self.maxHealth
         self.actor.Health = self.health
     end
-end
-
--- 位置和状态 ------------------------------------------------------
-
---- 获取位置
----@return Vector3 位置坐标
-function _M:GetLocation()
-    -- if self.battle_stat == BATTLE_STAT_DEAD_WAIT or self.battle_stat == BATTLE_STAT_WAIT_SPAWN then
-    --     return self.deadPosition or Vector3.New(0, 0, 0)
-    -- end
-
-    -- -- 如果有偏移量，计算偏移后的位置
-    -- if self.mob and self.mob.mobType.offset then
-    --     local offset = self.mob.mobType.offset
-    --     local scale = self.actor and self.actor.LocalScale or Vector3.New(1, 1, 1)
-    --     return Vector3.New(
-    --         self.actor.Position.x + offset.x * scale.x,
-    --         self.actor.Position.y + offset.y * scale.y,
-    --         self.actor.Position.z
-    --     )
-    -- end
-
-    return self.actor and self.actor.LocalPosition or Vector3.New(0, 0, 0)
 end
 
 -- 设置游戏场景中使用的actor实例
@@ -673,7 +703,8 @@ end
 
 -- hp为0
 function _M:checkDead()
-    self:setBattleStat(BATTLE_STAT_DEAD_WAIT)
+    -- 进入战斗状态
+    self.combatTime = 10
 end
 
 -- 增加经验值
@@ -694,7 +725,7 @@ function _M:addExp(exp_)
             })
 
             -- 展示特效
-            self:showReviveEffect(self.actor.Position)
+            self:showReviveEffect(self:GetPosition())
         end
     end
 
@@ -857,6 +888,7 @@ function _M:equipWeapon(model_src_)
 end
 
 -- 玩家改变场景   g10 g20 g30
+---@param new_scene string|Scene
 function _M:ChangeScene(new_scene)
     if type(new_scene) == "string" then
         new_scene = gg.server_scene_list[new_scene]
@@ -870,6 +902,7 @@ function _M:ChangeScene(new_scene)
     if self.scene then
         if self.scene then
             self.scene.node2Entity[self.actor] = nil
+            self.scene.uuid2Entity[self.uuid] = nil
             if self.isPlayer then
                 self.scene:player_leave(self.uin)
             end
@@ -883,7 +916,8 @@ function _M:ChangeScene(new_scene)
     -- 进入新场景
     self.scene = new_scene
     -- gg.network_channel:fireClient( self.uin, { cmd='change_scene_ok', v=new_scene.name } )  --同步给客户端
-    self.scene.node2Entity[self.actor] = nil
+    self.scene.node2Entity[self.actor] = self
+    self.scene.uuid2Entity[self.uuid] = self
     if self.isPlayer then
         new_scene:player_enter(self.uin)
     end
@@ -892,54 +926,10 @@ function _M:ChangeScene(new_scene)
 
 end
 
--- 播放一个动作
--- id 动作id    -- 1=100100(stand) 2=100130(下蹲) 3=100101(run)
--- speed:          动作播放速度  1=正常速度  0.5=半速慢动作
--- loop:是否循环    0=循环  1=单次  2=单次后定在最后一帧
-function _M:play_animation(id_, speed_, loop_)
-    if self.last_anim == id_ then
-        if loop_ == 0 then
-            return -- 循环且相同的动作
-        end
-    else
-        self.actor:StopAllAnimation(false)
-        self.last_anim = id_
-    end
-
-    if self.battle_stat == BATTLE_STAT_DEAD_WAIT then
-        self.actor:PlayAnimation('100106', 1.0, 2); -- 播放动作
-    else
-        self.actor:PlayAnimation(id_, speed_, loop_); -- 播放动作
-    end
-
-end
-
 
 -- 重置所有属性
 function _M:resetBattleData(resethpmp_)
     -- TODO: 刷新属性
-end
-
--- 复活
-function _M:revive()
-    self.actor.Visible = true
-    self:resetBattleData(true) -- 重置所有属性
-
-    if self.isPlayer then
-        self.target = nil -- 怪物复活 失去目标
-    end
-    self:setBattleStat(BATTLE_STAT_IDLE)
-    self:play_animation('100100', 1.0, 0) -- idle
-
-    gg.network_channel:fireClient(self.uin, {
-        cmd = 'cmd_player_actor_stat',
-        v = 'revive',
-        hp = self.health,
-        hp_max = self.maxHealth,
-        mp = self.mana,
-        mp_max = self.maxMana
-    })
-
 end
 
 -- 设置攻击前置时间， 施法前摇，标志位和时间
@@ -967,9 +957,9 @@ end
 -- 展示复活特效
 function _M:showReviveEffect(pos_)
     local function thread_wrap()
-        -- 爆炸特效
         local expl = SandboxNode.new('DefaultEffect', self.actor)
-        expl.AssetID = common_config.assets_dict.effect.revive_effect
+        expl.AssetID = 'sandboxSysId://particles/item_137_red.ent'
+
         expl.Position = Vector3.New(pos_.x, pos_.y, pos_.z)
         expl.LocalScale = Vector3.New(3, 3, 3)
         wait(1.5)
@@ -979,36 +969,60 @@ function _M:showReviveEffect(pos_)
 end
 
 -- 无法被攻击状态
-function _M:canNotBeenAttarked()
-    if self.battle_stat == BATTLE_STAT_DEAD_WAIT or self.battle_stat == BATTLE_STAT_WAIT_SPAWN then
-        return true
-    end
-    return false
-end
-
--- 改变状态
-function _M:setBattleStat(battle_stat_)
-    gg.log("self.battle_stat", self.battle_stat)
-    if self.battle_stat then
-        local currentState = BattleState.states[self.battle_stat]
-        if currentState and currentState.exit then
-            currentState:exit(self)
-        end
-    end
-    self.battle_stat = battle_stat_
-    local newState = BattleState.states[battle_stat_]
-    if newState and newState.enter then
-        newState:enter(self)
-    end
+function _M:CanBeTargeted()
+    return not self.isDead
 end
 
 -- tick刷新
 function _M:update()
     self.tick = self.tick + 1
-    -- 更新状态机
-    local currentState = BattleState.states[self.battle_stat]
-    if currentState and currentState.update then
-        currentState.update(self)
+    
+    -- 处理死亡状态
+    if self.isDead then
+        if self.deathWaitTime > 0 then
+            self.deathWaitTime = self.deathWaitTime - 1
+            gg.log("死亡倒计时", self, self.deathWaitTime)
+        else
+            self:CompleteRespawn()
+        end
+        return
+    end
+
+    -- 更新战斗时间
+    if self.combatTime > 0 then
+        self.combatTime = self.combatTime - 1
+    end
+end
+
+--- 完成复活
+function _M:CompleteRespawn()
+    self.isDead = false
+    self.deathWaitTime = 0
+    
+    -- 重置属性
+    self:resetBattleData(true)
+    
+    -- 重置目标
+    if self.isPlayer then
+        self.target = nil
+    end
+    
+    -- 重置战斗时间
+    self.combatTime = 0
+    if self.modelPlayer then
+        self.modelPlayer:SwitchState("idle")
+    end
+    
+    -- 同步状态到客户端
+    if self.isPlayer then
+        gg.network_channel:fireClient(self.uin, {
+            cmd = 'cmd_player_actor_stat',
+            v = 'revive',
+            hp = self.health,
+            hp_max = self.maxHealth,
+            mp = self.mana,
+            mp_max = self.maxMana
+        })
     end
 end
 

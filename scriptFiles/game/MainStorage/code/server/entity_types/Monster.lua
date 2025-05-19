@@ -12,25 +12,21 @@ local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
-local BattleState   = require(MainStorage.code.server.entity_types.BattleState) ---@type BattleState
+local BehaviorTree  = require(MainStorage.code.server.entity_types.BehaviorTree) ---@type BehaviorTree
 
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local Entity   = require(MainStorage.code.server.entity_types.Entity)          ---@type Entity
 -- local skillMgr  = require(MainStorage.code.server.skill.MSkillMgr)  ---@type SkillMgr
 
-local BATTLE_STAT_IDLE  = BattleState.BATTLE_STAT_IDLE
-local BATTLE_STAT_FIGHT = BattleState.BATTLE_STAT_FIGHT
-local BATTLE_STAT_DEAD_WAIT = BattleState.BATTLE_STAT_DEAD_WAIT
-local BATTLE_STAT_WAIT_SPAWN = BattleState.BATTLE_STAT_WAIT_SPAWN
-
 ---@class Monster:Entity    --怪物类 (单个怪物) (管理怪物状态)
 ---@field name string 怪物名称
 ---@field scene_name string 所在场景名称
----@field battle_stat number 战斗状态
 ---@field stat_data table 状态数据
 ---@field target any 目标对象
 ---@field mobType MobType 怪物类型
 ---@field level number 怪物等级
+---@field currentBehavior table 当前行为配置
+---@field behaviorUpdateTick number 行为更新计时器
 ---@field New fun(info_:table):Monster
 local _M = ClassMgr.Class('Monster', Entity)
 
@@ -40,8 +36,8 @@ local _M = ClassMgr.Class('Monster', Entity)
 
 -- 初始化怪物
 function _M:OnInit(info_)
-    Entity:OnInit(info_)    -- 父类初始化
-    self.uuid = gg.create_uuid('uMob')  -- 唯一ID
+    Entity.OnInit(self, info_)    -- 父类初始化
+    self.uuid = gg.create_uuid('u_Mob')  -- 唯一ID
     
     -- 设置怪物类型和等级
     self.mobType = info_.mobType
@@ -50,25 +46,20 @@ function _M:OnInit(info_)
     for statName, _ in pairs(self.mobType.data["属性公式"]) do
         self:AddStat(statName, self.mobType:GetStatAtLevel(statName, self.level))
     end
-    -- 初始化状态数据
-    self.stat_data = {
-        idle = {
-            wait = 0,
-            select = 0
-        },
-        fight = {
-            wait = 0
-        }
-    }
     
-    -- 设置初始战斗状态
-    self:setBattleStat(BATTLE_STAT_IDLE)
+    -- 初始化行为系统
+    self.currentBehavior = nil
+    self.behaviorUpdateTick = 0
+    
+    -- 初始化攻击相关变量
+    self.attackTimer = 0
+    self.isAttacking = false
 end
 
 ---@override
 function _M:Die()
     -- 发布死亡事件
-    ServerEventManager.Publish("MobDeadEvent", { mob = self.mob })
+    ServerEventManager.Publish("MobDeadEvent", { mob = self })
     Entity.Die(self)
 end
 
@@ -82,9 +73,12 @@ function _M:CreateModel(scene)
     
     -- 创建Actor
     local container = game.WorkSpace["Ground"][scene.name]["怪物"]
-    local actor_monster = SandboxNode.new('Actor', container)
+    local actor_monster = game.WorkSpace["怪物模型"][self.mobType.data["模型"]]:Clone() ---@type Actor
+    actor_monster:SetParent(container)
+    actor_monster.Enabled = true
+    actor_monster.Visible = true
+    actor_monster.SyncMode = Enum.NodeSyncMode.NORMAL
     actor_monster.CollideGroupID = 3
-    actor_monster.ModelId = self.mobType.data["模型"]
     actor_monster.Name = self.uuid
     
     -- 设置初始位置
@@ -98,14 +92,27 @@ function _M:CreateModel(scene)
     -- 加载完成事件处理
     actor_monster.LoadFinish:connect(function(ret)
         -- 创建头顶标题
-        self:createTitle(actor_monster.Size[1])
+        self:createTitle(actor_monster.Size.y)
     end)
     self:SetHealth(self:GetStat("生命"))
+    if self.mobType.data["状态机"] then
+        self:SetAnimationController(self.mobType.data["状态机"]) 
+    end
 end
 
 --------------------------------------------------
 -- 战斗相关方法
 --------------------------------------------------
+
+-- 获取当前行为配置
+function _M:GetCurrentBehavior()
+    return self.currentBehavior
+end
+
+-- 设置当前行为配置
+function _M:SetCurrentBehavior(behavior)
+    self.currentBehavior = behavior
+end
 
 -- 尝试获取目标玩家
 function _M:tryGetTargetPlayer()
@@ -125,6 +132,10 @@ function _M:Hurt(amount, damager, isCrit)
     Entity.Hurt(self, amount, damager, isCrit)
     if not self.target then
         self:SetTarget(damager)
+    end
+    -- 更新血条
+    if self.hp_bar then
+        self.hp_bar.FillAmount = self.health / self.maxHealth
     end
 end
 
@@ -160,61 +171,10 @@ function _M:spawnRandomPos(rangeX, rangeY, rangeZ)
     )
 end
 
---------------------------------------------------
--- AI状态机方法
---------------------------------------------------
-
--- 处理空闲状态
-function _M:checkIdle(ticks, idle_data_)
-    -- 减少等待时间
-    if idle_data_.wait > 0 then
-        idle_data_.wait = idle_data_.wait - ticks
-        return
-    end
-    
-    -- 重新选择行动
-    idle_data_.select = gg.rand_int(3)  -- 随机选择行动 [0-2]
-    
-    if idle_data_.select == 0 then
-        -- 站立不动
-        idle_data_.wait = 60 + gg.rand_int(10)
-        self:play_animation('100100', 1.0, 0)  -- 站立动画
-        
-    elseif idle_data_.select == 1 then
-        -- 随机漫步
-        idle_data_.wait = 60 + gg.rand_int(10)
-        
-        -- 设置移动速度和导航到随机位置
-        self.actor.Movespeed = self:GetStat("速度")
-        self.actor:NavigateTo(self:GetPosition() + Vector3.New(
-            gg.rand_int_both(1600),
-            0,
-            gg.rand_int_both(1600)
-        ))
-        self:play_animation('100101', 1.0, 0)  -- 行走动画
-        
-    elseif idle_data_.select == 2 then
-        -- 随机动作
-        idle_data_.wait = 120 + gg.rand_int(10)
-        
-        if idle_data_.wait % 5 == 1 then
-            self:play_animation('100102', 1.0, 0)  -- 躺下
-        else
-            self:play_animation('100103', 1.0, 0)  -- 坐下
-        end
-    else
-        -- 默认站立
-        self:play_animation('100100', 1.0, 0)
-        idle_data_.wait = 20 + gg.rand_int(10)
-    end
-end
-
--- 处理战斗状态
-
-
 ---@override
 function _M:createHpBar( root_ )
-    if self.mobType["显示血条"] then
+    print(self.mobType.data["显示名"], self.mobType.data["显示血条"])
+    if self.mobType.data["显示血条"] then
         local bg_  = SandboxNode.new( "UIImage", root_ )
         local bar_ = SandboxNode.new( "UIImage", root_ )
 
@@ -249,10 +209,90 @@ end
 function _M:update_monster()
     -- 调用父类更新
     self:update()
-    -- 在空闲状态下寻找目标
-    -- if self.battle_stat == BATTLE_STAT_IDLE and self.tick % 20 == 0 then
-    --     self:tryGetTargetPlayer()
-    -- end
+    
+    -- 每1秒更新一次行为状态
+    self.behaviorUpdateTick = self.behaviorUpdateTick + 1
+    if self.behaviorUpdateTick >= 10 then -- 10帧 = 1秒
+        self.behaviorUpdateTick = 0
+        self:UpdateBehavior()
+    end
+    
+    -- 每帧更新当前行为
+    self:UpdateCurrentBehavior()
+end
+
+--关闭AI
+---@param duration  number 持续时间，0则为取消冻结
+function _M:Freeze(duration)
+    if duration == 0 then
+        self.freezeEndTime = nil
+        return
+    end
+    
+    local currentTime = os.time()
+    local newEndTime = currentTime + duration
+    
+    -- 如果已经有冻结时间，取较大的那个
+    if self.freezeEndTime then
+        self.freezeEndTime = math.max(self.freezeEndTime, newEndTime)
+    else
+        self.freezeEndTime = newEndTime
+    end
+end
+
+function _M:IsFrozen()
+    if not self.freezeEndTime then
+        return false
+    end
+    
+    local currentTime = os.time()
+    if currentTime >= self.freezeEndTime then
+        self.freezeEndTime = nil
+        return false
+    end
+    
+    return true
+end
+
+function _M:GetAttackDuration()
+    return 1
+end
+
+-- 更新行为状态
+function _M:UpdateBehavior()
+    if self.isDead or self:IsFrozen() then return end
+    -- 如果当前行为可以退出
+    local currentBehaviorType = self.currentBehavior and self.currentBehavior["类型"]
+    if currentBehaviorType and BehaviorTree[currentBehaviorType] then
+        if BehaviorTree[currentBehaviorType]:CanExit(self) then
+            BehaviorTree[currentBehaviorType]:OnExit(self)
+            self.currentBehavior = nil
+        end
+    end
+    
+    -- 如果当前没有行为，尝试进入新行为
+    if not self.currentBehavior and self.mobType.data["行为"] then
+        -- 遍历行为列表
+        for _, behavior in ipairs(self.mobType.data["行为"]) do
+            local behaviorType = behavior["类型"]
+            if BehaviorTree[behaviorType] and BehaviorTree[behaviorType]:CanEnter(self, behavior) then
+                self.currentBehavior = behavior
+                BehaviorTree[behaviorType]:OnEnter(self)
+                -- gg.log("EnterBehavior", self, behaviorType)
+                break
+            end
+        end
+    end
+end
+
+-- 更新当前行为
+function _M:UpdateCurrentBehavior()
+    if self:IsFrozen() then return end
+    
+    local currentBehaviorType = self.currentBehavior and self.currentBehavior["类型"]
+    if currentBehaviorType and BehaviorTree[currentBehaviorType] then
+        BehaviorTree[currentBehaviorType]:Update(self)
+    end
 end
 
 return _M

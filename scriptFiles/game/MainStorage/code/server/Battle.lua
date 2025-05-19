@@ -23,7 +23,7 @@ Battle.ATTACKER_BATTLE_STATS = {
 Battle.VICTIM_BATTLE_STATS = {
     ["防御"] = function(battle, amount)
         -- local attack = battle.GetDamageModifier("攻击")
-        battle.AddDModifier("ARMOR", "增加", -amount)
+        battle:AddModifier("ARMOR", "增加", -amount)
     end
 }
 
@@ -70,6 +70,7 @@ function Battle:AddDamageModifier(modifier)
 end
 
 function Battle:AddModifier(source, modifierType, amount)
+    print("AddModifier", self, self.AddDamageModifier, source, modifierType, amount)
     self:AddDamageModifier({
         source = source,
         modifierType = modifierType,

@@ -23,6 +23,7 @@ local function LoadConfig()
         ["节点名"] = "铁匠铺",
         ["互动条件"] = Modifiers.New({
             {
+                ["目标"] = "目标",
                 ["条件类型"] = "ChanceCondition",
                 ["条件"] = {
                     ["最小值"] = 20
@@ -30,7 +31,6 @@ local function LoadConfig()
                 ["动作"] = "必须"
             }
         }),
-        ["状态机"] = "白菜",
         ["互动指令"] = {
             "title {\"信息\":\"嘿，你好！\"}"
         }

@@ -52,7 +52,6 @@ function HudMenu:OnInit(node, config)
     
     ClientEventManager.Subscribe("SyncInventoryItems", function(evt)
         local evt = evt ---@type SyncInventoryItems
-        gg.log("SyncInventoryItems", evt)
         -- 更新货币显示
         if evt.moneys then
             for idx, money in ipairs(evt.moneys) do
@@ -64,6 +63,7 @@ function HudMenu:OnInit(node, config)
             end
         end
     end)
+    
 end
 
 

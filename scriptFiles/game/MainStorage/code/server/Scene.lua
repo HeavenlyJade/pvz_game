@@ -18,12 +18,12 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
 local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig
--- local AfkSpotConfig = require(MainStorage.code.common.config.AfkSpotConfig) ---@type AfkSpotConfig
+local AfkSpotConfig = require(MainStorage.code.common.config.AfkSpotConfig) ---@type AfkSpotConfig
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 
 local Monster = require(MainStorage.code.server.entity_types.Monster) ---@type Monster
 local Npc = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
--- local AfkSpot = require(MainStorage.code.server.entity_types.AfkSpot) ---@type AfkSpot
+local AfkSpot = require(MainStorage.code.server.entity_types.AfkSpot) ---@type AfkSpot
 
 local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
 
@@ -56,31 +56,50 @@ function _M:initNpcs()
                 local npc = Npc.New(npc_data, actor)
                 self.node2Entity[actor] = npc
                 self.npcs[npc.uuid] = npc
+                npc:ChangeScene(self)
             end
         end
     end
 end
 
+---@return SandboxNode
+function _M:Get(path)
+    local node = self.node
+    local lastPart = ""
+    for part in path:gmatch("[^/]+") do -- 用/分割字符串
+        if part ~= "" then
+            lastPart = part
+            if not node then
+                gg.log(string.format("场景[%s]获取路径[%s]失败: 在[%s]处节点不存在", self.name, path, lastPart))
+                return nil
+            end
+            node = node[part]
+        end
+    end
+    return node
+end
+
 ---初始化场景中的挂机点
 function _M:initAfkSpots()
-    -- local all_afk_spots = AfkSpotConfig.GetAll()
-    -- gg.log("初始化挂机点", all_afk_spots)
-    -- for afk_name, afk_data in pairs(all_afk_spots) do
-    --     if afk_data["场景"] == self.name then
-    --         local sceneNode = self.node["挂机点"]
-    --         if sceneNode then
-    --             for _, node_name in ipairs(afk_data["节点名"]) do
-    --                 if sceneNode[node_name] then
-    --                     local actor = sceneNode[node_name]
-    --                     local afk_spot = AfkSpot.New(afk_data, actor)
-    --                     afk_spot.scene = self
-    --                     self.node2Entity[actor] = afk_spot
-    --                     self.npcs[afk_spot.uuid] = afk_spot
-    --                 end
-    --             end
-    --         end
-    --     end
-    -- end
+    local all_afk_spots = AfkSpotConfig.GetAll()
+    gg.log("初始化挂机点", all_afk_spots)
+    for afk_name, afk_data in pairs(all_afk_spots) do
+        if afk_data["场景"] == self.name then
+            local sceneNode = self.node["挂机点"]
+            if sceneNode then
+                for _, node_name in ipairs(afk_data["节点名"]) do
+                    if sceneNode[node_name] then
+                        local actor = sceneNode[node_name]
+                        local afk_spot = AfkSpot.New(afk_data, actor)
+                        afk_spot.scene = self
+                        self.node2Entity[actor] = afk_spot
+                        self.npcs[afk_spot.uuid] = afk_spot
+                        afk_spot:ChangeScene(self)
+                    end
+                end
+            end
+        end
+    end
 end
 
 ---创建新的场景实例
@@ -94,6 +113,7 @@ function _M:OnInit(name, sceneId)
     self.monster_spawns = {} -- 刷怪点管理   [ spawn_name = { count, config } ]
     self.npc_spawns = {}
     self.drop_boxs = {} -- 掉落物品列表
+    self.uuid2Entity = {}
     self.node2Entity = {}
 
     self.tick = 0 -- 总tick值(递增)
@@ -144,7 +164,7 @@ function _M:SelectCylinderTargets(center, radius, height, filterGroup, filterFun
     local cylinderFilter = function(entity)
         -- 判断是否在半径内，忽略y坐标
         local centerPos = center
-        local targetPos = entity:GetLocation()
+        local targetPos = entity:GetPosition()
         centerPos.y = 0
         targetPos.y = 0
         local distance = (centerPos - targetPos).length
