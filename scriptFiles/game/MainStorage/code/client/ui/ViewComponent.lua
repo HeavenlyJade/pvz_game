@@ -5,7 +5,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 
 ---@class ViewComponent:Class
 ---@field node UIComponent
----@field New fun(node: SandboxNode, ui: ViewBase, path:string,  ...): ViewComponent
+---@field New fun(node: SandboxNode, ui: ViewBase, path?:string,  ...): ViewComponent
 ---@field path string 组件的绝对路径
 local  ViewComponent = ClassMgr.Class("ViewComponent")
 
@@ -23,6 +23,7 @@ function ViewComponent:OnInit(node, ui, path)
     self.ui = ui ---@type ViewBase
     self.index = 0
     self.path = path
+    self.extraParams = {} -- 可在此存储任意与该按钮相关的数据
 end
 
 ---@override

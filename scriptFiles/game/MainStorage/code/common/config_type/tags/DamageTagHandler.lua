@@ -3,6 +3,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local TagHandler = require(MainStorage.code.common.config_type.tags.TagHandler) ---@type TagHandler
 local DamageAmplifier = require(MainStorage.code.common.config_type.modifier.DamageAmplifier) ---@type DamageAmplifier
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 
 
 ---@class DamageTag : TagHandler
@@ -22,6 +23,7 @@ function DamageTag:OnInit(data)
     self.targetDamageAmplifier = DamageAmplifier.Load(data["目标属性增伤"]) ---@type DamageAmplifier[]
     self.subSpell = data["释放魔法"] or {} ---@type SubSpell[]
     self.subSpellInheritPower = data["释放魔法继承威力"] or false ---@type boolean
+    self.subSpellPower = data["释放魔法威力增加"] or .0 ---@type number
 end
 
 function DamageTag:CanTriggerReal(caster, target, castParam, param, log)
@@ -90,7 +92,7 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
     
     -- 处理增伤效果
     if self.damage ~= 0 then
-        local damage = self.damage * castParam.power
+        local damage = self:GetUpgradeValue("增伤", self.damage, castParam.power)
         battle:AddModifier(self.m_tagIndex, "倍率", damage)
         if self.printMessage then 
             table.insert(log, string.format("%s.%s：增加%.2f%%伤害", 
@@ -100,7 +102,7 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
     
     -- 处理暴击率增加
     if self.critChance ~= 0 then
-        local damage = self.critChance * castParam.power
+        local damage = self:GetUpgradeValue("增加暴击率", self.critChance, castParam.power)
         battle.critChance = battle.critChance + damage
         if self.printMessage then 
             table.insert(log, string.format("%s.%s：增加%.2f%%暴击率", 
@@ -110,7 +112,7 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
     
     -- 处理暴击伤害增加
     if self.critDamage ~= 0 then
-        local damage = self.critDamage * castParam.power
+        local damage = self:GetUpgradeValue("增加暴击伤害", self.critDamage, castParam.power)
         battle.critDamage = battle.critDamage + damage
         if self.printMessage then 
             table.insert(log, string.format("%s.%s：增加%.2f%%暴击伤害", 
@@ -146,12 +148,12 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
     
     -- 处理额外释放魔法
     if #self.subSpell > 0 then
-        local subParam = nil
+        local subParam = CastParam.New({
+            skipTags = {self.m_tagType.id},
+            power = 1+self:GetUpgradeValue("释放魔法威力增加", self.subSpellPower, castParam.power)
+        })
         if self.subSpellInheritPower then
-            subParam = {
-                skipTags = {self.m_tagType.id},
-                power = battle:GetFinalDamage()
-            }
+            subParam.power = subParam.power * battle:GetFinalDamage()
             if self.printMessage then 
                 table.insert(log, string.format("%s.%s：子魔法继承威力=%.2f", self.m_tagType.id, self.m_tagIndex, subParam.power))
             end

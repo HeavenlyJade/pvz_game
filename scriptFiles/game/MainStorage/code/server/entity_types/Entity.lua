@@ -465,16 +465,11 @@ end
 --- 添加属性
 ---@param statName string 属性名
 ---@param amount number 属性值
----@param ... table 参数。 source=string 来源，refresh=boolean 是否刷新
-function _M:AddStat(statName, amount, ...)
-    local params = ... and ... or {}
-    if params.source == nil then
-        params.source = "BASE"
-    end
-    local source = params.source
-    if params.refresh == nil then
-        params.refresh = true
-    end
+---@param source? string 来源，默认为"BASE"
+---@param refresh? boolean 是否刷新，默认为true
+function _M:AddStat(statName, amount, source, refresh)
+    source = source or "BASE"
+    refresh = refresh == nil and true or refresh
 
     if not self.stats[source] then
         self.stats[source] = {}
@@ -487,25 +482,24 @@ function _M:AddStat(statName, amount, ...)
     self.stats[source][statName] = self.stats[source][statName] + amount
 
     -- 这里应该有触发属性类型逻辑，但需要根据具体游戏逻辑实现
-    if self.actor and params.refresh and TRIGGER_STAT_TYPES[statName] then
+    if self.actor and refresh and TRIGGER_STAT_TYPES[statName] then
         TRIGGER_STAT_TYPES[statName](self, self:GetStat(statName))
     end
 end
 
 --- 获取属性值
 ---@param statName string 属性名
----@param ... table 参数。 sources=string[] 来源列表，triggerTags=boolean 是否触发词条，castParam=CastParam 施法参数
+---@param sources? string[] 来源列表
+---@param triggerTags? boolean 是否触发词条，默认为true
+---@param castParam? CastParam 施法参数
 ---@return number 属性值
-function _M:GetStat(statName, ...)
+function _M:GetStat(statName, sources, triggerTags, castParam)
     local amount = 0
-    local params = ... and ... or {}
-    if params.triggerTags == nil then
-        params.triggerTags = true
-    end
+    triggerTags = triggerTags == nil and true or triggerTags
 
     -- 遍历所有来源的属性
     for source, statMap in pairs(self.stats) do
-        if not params.sources or table:contains(params.sources, source) then
+        if not sources or table:contains(sources, source) then
             if statMap[statName] then
                 amount = amount + statMap[statName]
             end
@@ -513,10 +507,10 @@ function _M:GetStat(statName, ...)
     end
 
     -- 触发词条影响属性
-    if params.triggerTags and self.tagHandlers[statName] then
+    if triggerTags and self.tagHandlers[statName] then
         local battle = Battle.New(self, self, statName)
         battle:AddModifier("BASE", "增加", amount)
-        self:TriggerTags(statName, self, params.castParam, battle)
+        self:TriggerTags(statName, self, castParam, battle)
         amount = battle:GetFinalDamage()
     end
 

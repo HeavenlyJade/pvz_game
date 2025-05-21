@@ -8,7 +8,8 @@ local MiscCommands = require(MainStorage.code.server.CommandSystem.commands.Misc
 local MobCommand = require(MainStorage.code.server.CommandSystem.commands.MobCommand)   ---@type MobCommand
 local SpellCommand = require(MainStorage.code.server.CommandSystem.commands.SpellCommand)   ---@type SpellCommand
 local StatCommand = require(MainStorage.code.server.CommandSystem.commands.StatCommand)   ---@type StatCommand
-local QuestCommand = require(MainStorage.code.server.CommandSystem.commands.QuestCommand)   ---@type QuestCommand
+local QuestCommand = require(MainStorage.code.server.CommandSystem.commands.QuestCommands)   ---@type QuestCommand
+local MailCommand = require(MainStorage.code.server.CommandSystem.commands.MailCommand) ---@type MailCommand
 
 -- local QuestCommands = require(MainStorage.code.server.CommandSystem.commands.MQuestCommands)     ---@type QuestCommands
 -- local PlayerCommands = require(MainStorage.code.server.CommandSystem.commands.MPlayerCommands)   ---@type PlayerCommands
@@ -32,6 +33,8 @@ CommandManager.handlers = {
     ["cast"] = SpellCommand.cast,
     ["showStat"] = StatCommand.showStat,
     ["quest"] = QuestCommand.main,
+       -- 邮件相关命令
+    ["mail"] = MailCommand.main,
     -- ["装备"] = {},
 
     -- -- 玩家属性相关
@@ -59,7 +62,7 @@ end)
 
 function CommandManager.ExecuteCommand(commandStr, player)
     if not commandStr or commandStr == "" then return false end
-    
+
     -- 1. 分割命令和参数
     local command, jsonStr = commandStr:match("^(%S+)%s+(.+)$")
     if not command then

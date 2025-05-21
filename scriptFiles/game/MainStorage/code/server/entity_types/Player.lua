@@ -9,12 +9,13 @@ local Entity      = require(MainStorage.code.server.entity_types.Entity) ---@typ
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
+local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
+local cloudService      = game:GetService("CloudService")     --- @type CloudService
 
 
 
 
 ---@class Player : Entity    --玩家类  (单个玩家) (管理玩家状态)
----@field dict_btn_skill table 技能按钮映射
 ---@field daily_tasks table 每日任务数据
 ---@field buff_instance table Buff实例
 ---@field player_net_stat PLAYER_NET_STAT 玩家网络状态
@@ -41,13 +42,14 @@ function _M:OnInit(info_)
     self.auto_attack_tick = 10                                  -- 攻击间隔
     self.auto_wait_tick   = 0                                   -- 等待计时
     self.daily_tasks      = {}                                  -- 每日任务
-    self.dict_btn_skill   = {}                                  -- 技能按钮映射
     self.buff_instance    = {}                                  -- Buff实例
     self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
     self.nearbyNpcs       = {}                                  -- 附近的NPC列表
     self.quests = {} ---@type AcceptedQuest[]
     self.acceptedQuestIds = {} ---@type table<string, number> --值=0: 已领取, 未完成 =1: 已完成
     self.news = {} ---@type table<string, table> --红点路径
+    self.skills = {} ---@type table<string, Skill>
+    self.equippedSkills = {} ---@type table<number, string>
 end
 
 ---标记红点
@@ -150,6 +152,22 @@ function _M:RefreshStats()
     -- 先重置装备属性
     self:ResetStats("EQUIP")
     self:RemoveTagHandler("EQUIP-")
+    self:RemoveTagHandler("SKILL-")
+    
+    -- 遍历所有技能
+    for skillId, skill in pairs(self.skills) do
+        -- 检查技能是否应该生效
+        local shouldBeEffective = skill.equipSlot > 0 or skill.skillType.effectiveWithoutEquip
+        
+        if shouldBeEffective then
+            -- 添加被动词条
+            for _, tagType in ipairs(skill.skillType.passiveTags) do
+                local tag = tagType:FactoryEquipingTag("SKILL-" .. skillId, skill.level)
+                self:AddTagHandler(tag)
+                gg.log(string.format("添加技能词条: %s (等级 %d)", tagType.name, skill.level))
+            end
+        end
+    end
 
     -- 添加所有属性的基础值
     local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
@@ -188,45 +206,131 @@ end
 function _M:initSkillData()
     -- 从云数据读取
     local ret1_, cloud_data_ = cloudDataMgr.ReadSkillData(self.uin)
-    if ret1_ == 0 and cloud_data_ and cloud_data_.skill then
-        self.dict_btn_skill = cloud_data_.skill
-    else
-        -- 使用默认技能配置
-        self.dict_btn_skill = {
-            [1] = 1001,
-            [2] = 0,
-        }
-
-        -- 从玩家配置加载技能
-        local player_config = common_config.dict_player_config[1]
-        if player_config and player_config.skills then
-            for i = 1, #player_config.skills do
-                self.dict_btn_skill[i] = player_config.skills[i]
-            end
+    if ret1_ == 0 and cloud_data_ and cloud_data_.skills then
+        -- 加载已保存的技能
+        for skillId, skillData in pairs(cloud_data_.skills) do
+            self.skills[skillId] = Skill.New(self, skillData)
         end
     end
-
     -- 同步到客户端
     self:syncSkillData()
 end
 
 -- 保存技能配置
 function _M:saveSkillConfig()
-    cloudDataMgr.SaveSkillData(self.uin)
-    self:syncSkillData()
+    local skillData = {
+        uin = self.uin,
+        skills = {}
+    }
+    -- 保存所有技能数据
+    for skillId, skill in pairs(self.skills) do
+        skillData.skills[skillId] = {
+            skill = skill.skillType.name,
+            level = skill.level,
+            slot = skill.equipSlot
+        }
+    end
+    cloudService:SetTableAsync( 'sk' .. self.uin, skillData, function ( ret_ )
+        if  not ret_ then
+            gg.log("保存玩家技能失败", 'sk' .. self.uin, skillData )
+        else
+            gg.log("保存玩家技能成功", 'sk' .. self.uin, skillData )
+        end
+    end )
 end
 
 -- 同步技能数据到客户端
 function _M:syncSkillData()
-    if not self.dict_btn_skill then return end
-
+    local skillData = {
+        skills = {}
+    }
+    
+    -- 收集技能数据
+    for skillId, skill in pairs(self.skills) do
+        skillData.skills[skillId] = {
+            skill = skill.skillType.name,
+            level = skill.level,
+            slot = skill.equipSlot
+        }
+        
+        -- 记录已装备的技能
+        if skill.equipSlot > 0 then
+            self.equippedSkills[skill.equipSlot] = skillId
+        end
+    end
+    
+    -- 发送到客户端
     gg.network_channel:fireClient(self.uin, {
-        cmd = 'cmd_sync_player_skill',
+        cmd = 'SyncPlayerSkills',
         uin = self.uin,
-        skill = self.dict_btn_skill
+        skillData = skillData
     })
 end
 
+-- 修改装备技能函数，添加词条更新
+function _M:EquipSkill(skillId, slot)
+    local skill = self.skills[skillId]
+    if not skill then return false end
+    
+    -- 如果目标槽位已有技能，先卸下
+    local existingSkillId = self.equippedSkills[slot]
+    if existingSkillId then
+        local existingSkill = self.skills[existingSkillId]
+        if existingSkill then
+            existingSkill.equipSlot = 0
+        end
+    end
+    
+    -- 装备新技能
+    skill.equipSlot = slot
+    self.equippedSkills[slot] = skillId
+    
+    -- 刷新属性
+    self:RefreshStats()
+    
+    -- 保存配置
+    self:saveSkillConfig()
+    return true
+end
+
+-- 修改卸下技能函数，添加词条更新
+function _M:UnequipSkill(slot)
+    local skillId = self.equippedSkills[slot]
+    if not skillId then return false end
+    
+    local skill = self.skills[skillId]
+    if skill then
+        skill.equipSlot = 0
+        self.equippedSkills[slot] = nil
+        
+        -- 刷新属性
+        self:RefreshStats()
+        
+        -- 保存配置
+        self:saveSkillConfig()
+        return true
+    end
+    return false
+end
+
+-- 修改升级技能函数，添加词条更新
+function _M:UpgradeSkill(skillId)
+    local skill = self.skills[skillId]
+    if not skill then return false end
+    
+    -- 检查是否达到最大等级
+    if skill.level >= skill.skillType.maxLevel then
+        return false
+    end
+    
+    -- 升级技能
+    skill.level = skill.level + 1
+    self:RefreshStats()
+    
+    -- 保存配置
+    self:saveSkillConfig()
+    return true
+end
 
 --------------------------------------------------
 -- 玩家同步与更新方法

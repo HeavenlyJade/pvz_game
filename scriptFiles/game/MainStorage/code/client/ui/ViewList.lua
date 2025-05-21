@@ -11,14 +11,17 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@field New fun(node: UIComponent|ViewComponent, ui: ViewBase, path: string, onAddElementCb: fun(child: SandboxNode): ViewComponent): ViewList
 local ViewList = ClassMgr.Class("ViewList", ViewComponent)
 
+
 ---@param node SandboxNode
----@param ui SandboxNode
+---@param ui ViewBase
 ---@param onAddElementCb fun(child: SandboxNode): ViewComponent
 function ViewList:OnInit(node, ui, path, onAddElementCb)
     ViewComponent.OnInit(self, node, ui, path)
     self.childrens = {} ---@type ViewComponent[]
     self.childNameTemplate = nil
-    self.onAddElementCb = onAddElementCb
+    self.onAddElementCb = onAddElementCb or function(child)
+        return ViewComponent.New(child, ui)
+    end
     for _, child in pairs(self.node.Children) do
         local childName = child.Name
         local num = childName:match("_([0-9]+)")

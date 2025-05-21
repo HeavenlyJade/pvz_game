@@ -382,7 +382,7 @@ function Controller.AoeRayRelease()
     gg.client_aoe_cylinder:Destroy()
     gg.client_aoe_cylinder = nil
 
-    gg.lockCamera( false )
+    -- gg.lockCamera( false )
 end
 
 

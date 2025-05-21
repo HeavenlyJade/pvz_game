@@ -1,6 +1,9 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 
+---@class UpgradeValue
+---@field paramName string
+---@field number number
 
 ---@class TagHandler:Class
 local TagHandler = ClassMgr.Class("TagHandler")
@@ -15,8 +18,24 @@ function TagHandler:OnInit( data )
     self.chance = data["几率"] ---@type number
     self.selfCondition = data["自身条件"] ---@type Modifiers
     self.targetCondition = data["目标条件"] ---@type Modifiers
+    self.upgradeValues = data["升级增加数值"] or {} ---@type UpgradeValue[]
 end
 
+function TagHandler:GetUpgradeValue(paramName, defaultValue, power)
+    if not self.upgradeValues then return defaultValue end
+    
+    local result = defaultValue
+    local adder2 = 0
+    
+    -- 检查全局升级
+    for _, upgrade in ipairs(self.upgradeValues) do
+        if upgrade.paramName == paramName then
+            adder2 = adder2 + result * upgrade.number * (power - 1)
+        end
+    end
+    
+    return result + adder2
+end
 
 function TagHandler:CanTriggerReal(caster, target, castParam, param, log)
     return true

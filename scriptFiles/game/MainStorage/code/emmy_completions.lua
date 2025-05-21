@@ -311,7 +311,7 @@
 
 
 ---@class TweenService
----@field Create fun(self: TweenService, node: SandboxNode, info: TweenInfo, map: ReflexMap) SandboxNode 将暂停补间动画的播放
+---@field Create fun(self: TweenService, node: SandboxNode, info: TweenInfo, map: table) SandboxNode 将暂停补间动画的播放
 
 
 ---@class UITween
@@ -1162,7 +1162,7 @@
 ---@field FindTool fun(self: Backpack, tool: SandboxNode) Number 查询道具是否已经放在物品栏中，返回下标
 
 
----@class Camera
+---@class Camera : Transform
 ---@field PickPosition Vector3 摄像机跟随鼠标在游戏内指向的三维坐标
 ---@field LookFocus Vector3 摄像机焦点，镜头所看向的点
 ---@field ZNear number 摄像机的近平面
@@ -1465,8 +1465,8 @@
 ---@field InputChanged Event<fun(inputObj: InputObject, bGameProcessd: boolean)> 输入改变
 ---@field InputEnded Event<fun(inputObj: InputObject, bGameProcessd: boolean)> 输入结束
 ---@field TouchStarted Event<fun(inputObj: InputObject, bGameProcessd: boolean)> 触摸开始
----@field TouchMoved SandboxNode 触摸移动
----@field TouchEnded SandboxNode 触摸结束
+---@field TouchMoved Event<fun(inputObj: InputObject, bGameProcessd: boolean)> 触摸移动
+---@field TouchEnded Event<fun(inputObj: InputObject, bGameProcessd: boolean)> 触摸结束
 ---@field PickObjects fun(self: UserInputService, mouseX: number, mouseY: number, objects: Table) SandboxNode 从给定的obj列表中，根据传入的2D屏幕坐标，拾取指定对象
 ---@field PickObjectsEx fun(self: UserInputService) SandboxNode
 ---@field IsKeyDown fun(self: UserInputService, key: number) boolean 按键是否按下
@@ -2428,7 +2428,7 @@
 
 
 ---@class WorkSpace
----@field CurrentCamera SandboxNode 当前相机（临时用）
+---@field CurrentCamera Camera 当前相机（临时用）
 ---@field SceneId number 当前SceneId（仅编辑器展示）
 ---@field CoordBlockPosition fun(self: WorkSpace, pos: Vector3) WCoord 方块坐标
 ---@field GetBlockID fun(self: WorkSpace, blockpos: WCoord) Number 获取方块id
@@ -2654,9 +2654,9 @@
 ---@field GetCurMapOwid fun(self: RunService) String 获取当前地图ID
 ---@field GetCurMapUpdateTimestamp fun(self: RunService) Number 获取当前地图更新时间（上传时间）
 ---@field HeartBeat fun(self: RunService, time: double) None 心跳事件
----@field RenderStepped fun(self: RunService, step: double) None 渲染步幅事件，每次Update触发RenderStepped事件
----@field Stepped fun(self: RunService) Event 步幅事件，每次Tick触发Stepped事件
----@field SystemStepped fun(self: RunService) Event 步幅事件，每次系统Tick触发SystemStepped事件
+---@field RenderStepped Event<fun(step: number)> None 渲染步幅事件，每次Update触发RenderStepped事件
+---@field Stepped Event<fun()> Event 步幅事件，每次Tick触发Stepped事件
+---@field SystemStepped Event<fun()> Event 步幅事件，每次系统Tick触发SystemStepped事件
 
 
 ---@class SandboxSceneMgrService
@@ -2834,9 +2834,9 @@
 
 
 ---@class Quaternion
----@field New fun(self: Quaternion, x: number, y: number, z: number, w: number) Quaternion 构造一个四元数，x,y,z,w必须满足四元数的基本规则，
+---@field New fun(x: number, y: number, z: number, w: number) Quaternion 构造一个四元数，x,y,z,w必须满足四元数的基本规则，
 ---@field LookAt fun(self: Quaternion, forward: Vector3, up: Vector3) Quaternion 通过指定forward方向和upward创建一个旋转, forward表示旋转之后的正前方方向，up表示旋转之后的正上方方向
----@field FromEuler fun(self: Quaternion, x: number, y: number,z: number) Quaternion 使用欧拉角（角度）来构建一个四元数 fun(旋转顺序是ZXY)
+---@field FromEuler fun(x: number, y: number,z: number) Quaternion 使用欧拉角（角度）来构建一个四元数 fun(旋转顺序是ZXY)
 ---@field FromAxisAngle fun(self: Quaternion, axis: Vector3, angle: number) Vector3 通过轴角来构建一个四元数, angle是旋转角度（角度，非弧度）， axis旋转轴（需要归一化）
 ---@field Lerp fun(self: Quaternion, a: Quaternion, b: Quaternion, progress: number) Quaternion 使用t控制a和b之间插值，然后对结果进行归一化
 ---@field Lerp Quaternion 通过t在a和b之间插值，然后对结果进行归一化
@@ -3107,6 +3107,7 @@
 
 ---@class CameraModel :Enum
 ---@field Classic CameraModel 1 经典模式
+---@field LockFirstPerson CameraModel 1 经典模式
 
 
 ---@class CameraType :Enum
@@ -4368,10 +4369,16 @@
 ---@field NewInputContent Event
 
 ---@class GameService
----@field Workspace SandboxNode 工作区
+---@field UserInputService UserInputService
+---@field Workspace WorkSpace 工作区
 ---@field Players SandboxNode 玩家
 ---@field ServerStorage SandboxNode 服务器存储
----@field WorkSpace SandboxNode 玩家
+---@field Tween TweenService
+---@field WorkSpace WorkSpace 玩家
+---@field MouseService MouseService
+---@field Assets SandboxNode 素材
+---@field WorldService WorldService
+---@field RunService RunService
 ---@field GetService fun(self: GameService, name: string) SandboxNode 获取服务
 ---@field Chat ChatService 聊天服务
 ---@field StarterGui SandboxNode UI
@@ -4392,10 +4399,30 @@ Vector4 = {} ---@type Vector4
 ---@field LayoutHRelation LayoutHRelation
 ---@field LayoutVRelation LayoutVRelation
 ---@field FillMethod FillMethod
+---@field CameraType CameraType
+---@field EasingStyle EasingStyle
 ---@field NodeSyncMode NodeSyncMode
+---@field CameraModel CameraModel
 Enum = {} ---@type Enum
 
 Quaternion = {} ---@type Quaternion
 ColorQuad = {} ---@type ColorQuad
 
 script = {} ---@type SandboxNode
+TweenInfo = {} ---@type TweenInfo
+-- -- 所有参数为默认的 TweenInfo
+-- local default = TweenInfo.New() 
+-- -- 时间设置为 0.5 秒的 TweenInfo
+-- local timeChanged = TweenInfo.New(0.5) 
+-- -- 释放样式设置为 Back 的 TweenInfo
+-- local easingStyled = TweenInfo.New(0.5, Enum.EasingStyle.Back, 0, 0, 0, false) 
+-- -- 释放方向设置为 In 的 TweenInfo
+-- local easingDirected = TweenInfo.New(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In, 0, 0, false)
+-- -- 自身重复 4 次的 TweenInfo
+-- local repeated = TweenInfo.New(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In, 0, 4, false)
+-- -- 完成目标后会反向其插值的 TweenInfo
+-- local reverses = TweenInfo.New(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In, 0, 4, true)
+-- -- 无限循环的 TweenInfo
+-- local reverses = TweenInfo.New(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In, 0, -1,  true)
+-- -- 各插值之间有 1 秒延迟的 TweenInfo
+-- local delayed = TweenInfo.New(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In, 1, 4, true)

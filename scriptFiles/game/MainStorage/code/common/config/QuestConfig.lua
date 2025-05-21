@@ -1,7 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local Modifiers      = require(MainStorage.code.common.config_type.modifier.Modifiers)    ---@type Modifiers
-local Quest      = require(MainStorage.code.common.config.Quest)    ---@type Quest
+local Quest      = require(MainStorage.code.common.config_type.Quest)    ---@type Quest
 
 
 --- 任务配置文件
@@ -24,7 +24,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "2抽卡",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["2抽卡"] = Quest.New({
         ["名字"] = "2抽卡",
@@ -39,7 +39,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "3装备兵刃",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["3装备兵刃"] = Quest.New({
         ["名字"] = "3装备兵刃",
@@ -54,7 +54,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "4完成关卡1-2",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["4完成关卡1-2"] = Quest.New({
         ["名字"] = "4完成关卡1-2",
@@ -69,7 +69,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "5强化护甲",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["5强化护甲"] = Quest.New({
         ["名字"] = "5强化护甲",
@@ -84,7 +84,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "6完成关卡1-3",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["6完成关卡1-3"] = Quest.New({
         ["名字"] = "6完成关卡1-3",
@@ -99,7 +99,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "7装备宝石",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["7装备宝石"] = Quest.New({
         ["名字"] = "7装备宝石",
@@ -114,7 +114,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "8完成关卡1-4",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["8完成关卡1-4"] = Quest.New({
         ["名字"] = "8完成关卡1-4",
@@ -129,7 +129,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "9强化护甲",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["9强化护甲"] = Quest.New({
         ["名字"] = "9强化护甲",
@@ -144,7 +144,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "10完成关卡1-5",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["10完成关卡1-5"] = Quest.New({
         ["名字"] = "10完成关卡1-5",
@@ -159,7 +159,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "11抽卡15",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["11完成关卡1-1"] = Quest.New({
         ["名字"] = "11完成关卡1-1",
@@ -168,7 +168,7 @@ local function LoadConfig()
         ["任务类型"] = 0,
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["11抽卡15"] = Quest.New({
         ["名字"] = "11抽卡15",
@@ -183,7 +183,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "12强化兵刃",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["12强化兵刃"] = Quest.New({
         ["名字"] = "12强化兵刃",
@@ -198,7 +198,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "13完成关卡1-6",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["13完成关卡1-6"] = Quest.New({
         ["名字"] = "13完成关卡1-6",
@@ -228,7 +228,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "15进阶护甲",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["15进阶护甲"] = Quest.New({
         ["名字"] = "15进阶护甲",
@@ -243,7 +243,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "16装备宝石",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["16装备宝石"] = Quest.New({
         ["名字"] = "16装备宝石",
@@ -258,7 +258,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "17每日关卡",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["17每日关卡"] = Quest.New({
         ["名字"] = "17每日关卡",
@@ -273,7 +273,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "18完成关卡2-3",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["18完成关卡2-3"] = Quest.New({
         ["名字"] = "18完成关卡2-3",
@@ -288,7 +288,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "19抽卡5",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["19抽卡5"] = Quest.New({
         ["名字"] = "19抽卡5",
@@ -303,7 +303,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "20强化紫武",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["20强化紫武"] = Quest.New({
         ["名字"] = "20强化紫武",
@@ -318,7 +318,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "21完成关卡2-5",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["21完成关卡2-5"] = Quest.New({
         ["名字"] = "21完成关卡2-5",
@@ -333,7 +333,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "22强化护甲",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["22强化护甲"] = Quest.New({
         ["名字"] = "22强化护甲",
@@ -348,7 +348,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "23完成困难关卡",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["23完成困难关卡"] = Quest.New({
         ["名字"] = "23完成困难关卡",
@@ -363,7 +363,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "24进阶护甲",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["24进阶护甲"] = Quest.New({
         ["名字"] = "24进阶护甲",
@@ -378,7 +378,7 @@ local function LoadConfig()
         ["自动领取下一任务"] = "25完成关卡2-6",
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["25完成关卡2-6"] = Quest.New({
         ["名字"] = "25完成关卡2-6",
@@ -392,7 +392,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = false,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["主线"] = Quest.New({
         ["名字"] = "主线",
@@ -477,7 +477,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 2,
         ["刷新时自动领取"] = true,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["周常任务2"] = Quest.New({
         ["名字"] = "周常任务2",
@@ -491,7 +491,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 2,
         ["刷新时自动领取"] = true,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["周常任务3"] = Quest.New({
         ["名字"] = "周常任务3",
@@ -505,7 +505,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 2,
         ["刷新时自动领取"] = true,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["成就任务1"] = Quest.New({
         ["名字"] = "成就任务1",
@@ -519,7 +519,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = true,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["成就任务2"] = Quest.New({
         ["名字"] = "成就任务2",
@@ -533,7 +533,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = true,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["成就任务3"] = Quest.New({
         ["名字"] = "成就任务3",
@@ -547,7 +547,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 0,
         ["刷新时自动领取"] = true,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["每日"] = Quest.New({
         ["名字"] = "每日",
@@ -601,7 +601,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 1,
         ["刷新时自动领取"] = true,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["每日任务2"] = Quest.New({
         ["名字"] = "每日任务2",
@@ -615,7 +615,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 1,
         ["刷新时自动领取"] = true,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     }),
     ["每日任务3"] = Quest.New({
         ["名字"] = "每日任务3",
@@ -629,7 +629,7 @@ local function LoadConfig()
         },
         ["刷新类型"] = 1,
         ["刷新时自动领取"] = true,
-        ["显示完成进度"] = true
+        ["显示完成进度"] = false
     })
 }loaded = true
 end

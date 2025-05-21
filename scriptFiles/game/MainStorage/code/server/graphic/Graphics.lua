@@ -1,6 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 
 ---@class Graphic:Class
 local Graphic = ClassMgr.Class("Graphic")
@@ -154,12 +155,46 @@ function AnimationGraphic:PlayAtReal(caster, target, param)
     end
 end
 
+---@class CameraShakeGraphic:Graphic
+local CameraShakeGraphic = ClassMgr.Class("CameraShakeGraphic", Graphic)
+function CameraShakeGraphic:OnInit( data )
+    Graphic.OnInit(self, data)
+    -- 震动基础参数
+    self.frequency = data["频率"] or 0.05
+    self.strength = data["强度"] or 1.0
+    self.rotation = data["旋转"] ---@type Vector3
+    self.position = data["位移"] ---@type Vector3
+    
+    -- 循环参数
+    self.loop = data["循环"] or false
+end
+
+function CameraShakeGraphic:PlayAtReal(caster, target, param)
+    if target.isPlayer then
+        gg.network_channel:fireClient(target.uin, {
+            cmd = "ShakeCamera",
+            duration = self.duration,
+            frequency = self.frequency,
+            strength = self.strength,
+            rotX = self.rotation[1],
+            rotY = self.rotation[2],
+            rotZ = self.rotation[3],
+            posX = self.position[1],
+            posY = self.position[2],
+            posZ = self.position[3],
+            loop = self.loop
+        })
+    end
+end
+
 ---@class Graphics
 ---@field ParticleGraphic ParticleGraphic
 ---@field AnimationGraphic AnimationGraphic
+---@field CameraShakeGraphic CameraShakeGraphic
 local loaders = {
     ParticleGraphic = ParticleGraphic,
     AnimationGraphic = AnimationGraphic,
+    CameraShakeGraphic = CameraShakeGraphic,
 }
 
 --- 加载特效配置

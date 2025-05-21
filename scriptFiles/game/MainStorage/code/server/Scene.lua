@@ -138,7 +138,6 @@ function _M:update_npcs()
     end
 end
 
----@private
 function _M:OverlapBox(center, extent, angle, filterGroup, filterFunc)
     local results = game:GetService('WorldService'):OverlapBox(Vector3.New(extent.x, extent.y, extent.z),
         Vector3.New(center.x, center.y, center.z), Vector3.New(angle.x, angle.y, angle.z), false, filterGroup)

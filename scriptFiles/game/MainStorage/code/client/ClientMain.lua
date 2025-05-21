@@ -9,6 +9,7 @@ local ClientEventManager = require(MainStorage.code.client.event.ClientEventMana
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local ClientInit = require(MainStorage.code.client.event.ClinentInit) ---@type ClientInit
 local Controller = require(MainStorage.code.client.MController) ---@type Controller
+local CameraController = require(MainStorage.code.client.camera.CameraController) ---@type CameraController
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
 local tick = 0

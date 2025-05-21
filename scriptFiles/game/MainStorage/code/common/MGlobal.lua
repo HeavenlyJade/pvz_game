@@ -21,7 +21,123 @@ local Players = game:GetService('Players')
 ---@field FireServer fun(self, data: table)
 ---@field fireClient fun(self, uin: number, data: table)
 
+
+local Math = {}
+--求半径内的随机点
+function Math.RandomPointInRadius(center, radius)
+    local angle = math.random(0, 360)
+    local x = center.x + radius * math.cos(angle)
+    local z = center.z + radius * math.sin(angle)
+    return Vec3.new(x, center.y, z)
+end
+--平滑阻尼插值
+function Math.SmoothDamp(current, target, velocity, smoothTime, maxSpeed, deltaTime)
+    -- 防止除以零
+    if smoothTime == 0 then
+        return target
+    end
+
+    -- 计算减速度常数
+    local timeConstant = math.sqrt(2.0 / smoothTime)
+
+    -- 计算最大速度
+    local maxVelocity = maxSpeed * timeConstant
+
+    -- 限制速度
+    velocity = math.min(velocity, maxVelocity)
+    velocity = math.max(velocity, -maxVelocity)
+
+    -- 计算新的位置
+    local remainingTime = smoothTime - deltaTime
+    local t = 1 - math.exp(-timeConstant * deltaTime)
+
+    -- 使用线性插值（lerp）来平滑移动
+    local smoothedValue = current + (target - current) * t
+
+    -- 更新速度
+    velocity = velocity - (target - smoothedValue) / remainingTime
+
+    return smoothedValue, velocity
+end
+
+--范围随机数
+function Math.Random(min, max)
+    return min + math.random() * (max - min)
+end
+--随机数加偏移
+function Math.RandomDeviation(value, dev)
+    return value + self:Random(-dev, dev)
+end
+--在一个圈内随机
+function Math.RandomInsideUnitCircle()
+    local x = math.random() * 2 - 1
+    local y = math.random() * 2 - 1
+    local ret = Vec2.new(x, y)
+    return ret:Normalized()
+end
+
+--判断一个数字是否在某个范围内
+function Math.IsInRange(value, min, max)
+    return value >= min and value <= max
+end
+
+--几乎等于
+function Math.IsAlmostEqual(a, b, epsilon)
+    return math.abs(a - b) < epsilon
+end
+
+--补间
+function Math.Lerp(a, b, t)
+    return a + (b - a) * t
+end
+--判断是否为NaN
+function Math.IsNaN(x)
+    return x ~= x
+end
+--判断数字是否无穷大
+function Math.IsInfinity(x)
+    return x == math.huge or x == -math.huge
+end
+--判断浮点是否等于0，接近即可
+function Math.IsZero(x)
+    local r = 0.001
+    return math.abs(x) <= r
+end
+--角度差
+function Math.DeltaAngle(a, b)
+    local delta = (b - a) % 360
+    if delta < -180 then
+        delta = delta + 360
+    elseif delta > 180 then
+        delta = delta - 360
+    end
+    return delta
+end
+
+--根据一个向量方向，返回的左边方向
+function Math.GetLeftDirection(direction)
+    return self:GetRightDirection(direction):Negate()
+end
+--根据一个向量方向，返回的右边方向
+function Math.GetRightDirection(direction)
+    if direction.x == 0 and direction.z == 0 then
+        return Vec3.new(0, 0, 1)
+    end
+    local orient = Quat.lookAt(direction)
+    return orient * Vec3.new(1, 0, 0)
+end
+
+
+
 local vec = {}
+
+vec.M_EPSILON = 0.000001
+vec.M_PI = 3.14159265358979323846
+vec.M_DEGTORAD = vec.M_PI / 180.0
+vec.M_DEGTORAD_2 = vec.M_PI / 360.0
+vec.M_RADTODEG = 1.0 / vec.M_DEGTORAD
+vec.Rad2Deg = 180.0 / vec.M_PI
+vec.Deg2Rad = vec.M_PI / 180.0
 
 ---@param v Vector2|Vector3|Vector4 要标准化的向量
 ---@return Vector2|Vector3|Vector4 标准化后的向量
@@ -102,6 +218,7 @@ function vec.Cross(v1, v2)
     return v1:Cross(v2)
 end
 
+
 ---@param v1 Vector2|Vector3|Vector4 向量
 ---@param x number x坐标
 ---@param y number y坐标
@@ -126,7 +243,9 @@ end
 ---@field server_players_name_list table<string, Player> 服务器玩家名称列表
 ---@field equipSlot table<number, table<number, boolean>> 各个装备槽位对应的装备类型
 local gg = {
+    math = Math,
     vec = vec,
+    noise = require(script.Parent.math.PerlinNoise),
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
 
@@ -294,19 +413,19 @@ function gg.getClientWorkSpace()
     -- return game:GetService("workspace")
 end
 
--- 是否锁定视角，不允许转动
----@param flag_ boolean 是否锁定
-function gg.lockCamera(flag_)
+-- -- 是否锁定视角，不允许转动
+-- ---@param flag_ boolean 是否锁定
+-- function gg.lockCamera(flag_)
 
-    if flag_ then
-        gg.getClientWorkSpace().Camera.CameraType = Enum.CameraType.Fixed
-        gg.lockClientCharactor = true
-    else
-        gg.getClientWorkSpace().Camera.CameraType = Enum.CameraType.Custom
-        gg.lockClientCharactor = false
-    end
+--     if flag_ then
+--         gg.getClientWorkSpace().Camera.CameraType = Enum.CameraType.Fixed
+--         gg.lockClientCharactor = true
+--     else
+--         gg.getClientWorkSpace().Camera.CameraType = Enum.CameraType.Custom
+--         gg.lockClientCharactor = false
+--     end
 
-end
+-- end
 
 -- 服务器获得Npc容器
 ---@param scene_name_ string 场景名称

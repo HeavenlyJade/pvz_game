@@ -540,5 +540,37 @@ function Bag:GetItemAmount(itemType)
     return total
 end
 
+---@param moneyId number 货币类型
+---@param amount number 货币数量
+---@return boolean 是否成功
+function Bag:TakeMoney(moneyId, amount)
+    local itemType = Bag.MoneyType[moneyId]
+    if not itemType then
+        return false
+    end
+    return self:RemoveItems({itemType = amount})
+end
+
+---@param moneyId number 货币类型
+---@param amount number 货币数量
+---@return boolean 是否成功
+function Bag:AddMoney(moneyId, amount)
+    local itemType = Bag.MoneyType[moneyId]
+    if not itemType then
+        return false
+    end
+    return self:AddItem(itemType:ToItem(amount))
+end
+
+---@param moneyId number 货币类型
+---@return number 货币总数量
+function Bag:GetMoneyAmount(moneyId)
+    local itemType = Bag.MoneyType[moneyId]
+    if not itemType then
+        return 0
+    end
+    return self:GetItemAmount(itemType)
+end
+
 return Bag
 

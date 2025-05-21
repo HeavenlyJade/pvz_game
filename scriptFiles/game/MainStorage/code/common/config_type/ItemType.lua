@@ -29,15 +29,10 @@ local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@field New fun( data:table ):ItemType
 local ItemType = ClassMgr.Class("ItemType")
 
-function ItemType:GetToStringParams()
-    return {
-        name = self.name
-    }
-end
-
 function ItemType:OnInit(data)
     self.name = data["名字"] or ""
     self.description = data["描述"] or ""
+    self.detail = data["详细属性"] or ""
     self.icon = data["图标"]
     self.rank = ItemRankConfig.Get(data["品级"] or "普通")
     self.extraPower = data["额外战力"] or 0
@@ -84,6 +79,12 @@ function ItemType:OnInit(data)
         local Bag = require(MainStorage.code.server.bag.Bag) ---@type Bag
         Bag.MoneyType[self.moneyIndex] = self
     end
+end
+
+function ItemType:GetToStringParams()
+    return {
+        name = self.name
+    }
 end
 
 function ItemType:ToItem(count)

@@ -2,6 +2,7 @@ local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local TagHandler = require(MainStorage.code.common.config_type.tags.TagHandler) ---@type TagHandler
 local DamageAmplifier = require(MainStorage.code.common.config_type.modifier.DamageAmplifier) ---@type DamageAmplifier
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 
 ---@class AttributeTag : TagHandler
 local AttributeTag = ClassMgr.Class("AttributeTag", TagHandler)
@@ -26,7 +27,7 @@ function AttributeTag:TriggerReal(caster, target, castParam, param, log)
     
     -- 处理基础属性增加
     if self.addValue ~= 0 then
-        local amount = self.addValue * (1 + castParam.power)
+        local amount = self:GetUpgradeValue("增加", self.addValue, castParam.power)
         local modifyType = self.isPercentage and "倍率" or "增加"
         battle:AddModifier(self.m_tagType.id, modifyType, amount)
         
