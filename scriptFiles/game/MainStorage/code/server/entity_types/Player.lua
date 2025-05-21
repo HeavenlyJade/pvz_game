@@ -314,17 +314,31 @@ function _M:UnequipSkill(slot)
 end
 
 -- 修改升级技能函数，添加词条更新
-function _M:UpgradeSkill(skillId)
-    local skill = self.skills[skillId]
-    if not skill then return false end
+function _M:UpgradeSkill(skillType)
+    -- 查找玩家是否已拥有该技能
+    local foundSkill = self.skills[skillType.name]
+    -- 如果技能不存在
+    if not foundSkill then
+        -- 创建新技能
+        local skillId = skillType.name
+        self.skills[skillId] = Skill.New(self, {
+            skill = skillType.name,
+            level = 1,
+            slot = 0
+        })
+        
+        -- 保存配置
+        self:saveSkillConfig()
+        return true
+    end
     
-    -- 检查是否达到最大等级
-    if skill.level >= skill.skillType.maxLevel then
+    -- 如果技能已存在，检查是否可以升级
+    if foundSkill.level >= skillType.maxLevel then
         return false
     end
     
     -- 升级技能
-    skill.level = skill.level + 1
+    foundSkill.level = foundSkill.level + 1
     self:RefreshStats()
     
     -- 保存配置

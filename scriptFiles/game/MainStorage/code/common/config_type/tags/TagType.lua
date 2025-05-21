@@ -2,11 +2,7 @@ local MainStorage = game:GetService('MainStorage')
 local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 local EquipingTag     = require(MainStorage.code.common.config_type.tags.EquipingTag)    ---@type EquipingTag
 
-local tagHandlers = {
-    DamageTagHandler = require(MainStorage.code.common.config_type.tags.DamageTagHandler),
-    AttributeTagHandler = require(MainStorage.code.common.config_type.tags.AttributeTagHandler),
-    -- SpellTagHandler = require(MainStorage.code.common.config_type.tags.SpellTagHandler),
-}
+
 
 -- 词条类型定义
 ---@class TagType
@@ -19,7 +15,8 @@ function TagType:OnInit(data)
     self.description = data["描述"]
     self.functions = {}
     for _, tagHandler in ipairs(data["功能"]) do
-        local tagHandlerClass = tagHandlers[tagHandler["类型"]]
+        print(tagHandler["类型"])
+        local tagHandlerClass = require(MainStorage.code.common.config_type.tags[tagHandler["类型"]])
         table.insert(self.functions, tagHandlerClass.New(tagHandler))
     end
 end

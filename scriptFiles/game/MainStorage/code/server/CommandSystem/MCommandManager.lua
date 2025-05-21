@@ -31,6 +31,7 @@ CommandManager.handlers = {
     ["title"] = MiscCommands.title,
     ["spawnMob"] = MobCommand.spawnMob,
     ["cast"] = SpellCommand.cast,
+    ["skill"] = SpellCommand.skill,
     ["showStat"] = StatCommand.showStat,
     ["quest"] = QuestCommand.main,
        -- 邮件相关命令

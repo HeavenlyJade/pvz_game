@@ -151,22 +151,20 @@ function SpellTag:TriggerReal(caster, target, castParam, param, log)
     -- 处理复写参数
     for _, modifier in ipairs(self.overrideParams) do
         ---@cast modifier OverrideParam
-        if not modifier.paramName then goto continue end
-        
-        local name
-        if not modifier.objectName then
-            name = modifier.paramName
-        else
-            name = string.format("%s.%s", modifier.objectName, modifier.paramName)
+        if modifier.paramName then
+            local name
+            if not modifier.objectName then
+                name = modifier.paramName
+            else
+                name = string.format("%s.%s", modifier.objectName, modifier.paramName)
+            end
+            
+            spellParam.extraParams[name] = modifier.value
+            if self.printMessage then
+                table.insert(log, string.format("%s.%s：复写%s为%s", 
+                    self.m_tagType.id, self.m_tagIndex, name, tostring(modifier.value)))
+            end
         end
-        
-        spellParam.extraParams[name] = modifier.value
-        if self.printMessage then
-            table.insert(log, string.format("%s.%s：复写%s为%s", 
-                self.m_tagType.id, self.m_tagIndex, name, tostring(modifier.value)))
-        end
-        
-        ::continue::
     end
     
     -- 处理额外释放魔法
