@@ -9,6 +9,7 @@ local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) 
 local Skill = ClassMgr.Class("Skill")
 
 function Skill:OnInit( player, data )
+    gg.log("Skill:OnInit", player, data)
     self.player = player
     self.skillType = SkillTypeConfig.Get(data["skill"]) ---@type SkillType
     self.level = data["level"] or 1

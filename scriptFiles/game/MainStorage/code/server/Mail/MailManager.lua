@@ -66,7 +66,6 @@ function MailManager:RegisterNetworkHandlers()
     gg.log("邮件网络消息处理函数注册完成")
 end
 
-
 ---------------------------
 -- 邮件操作处理函数
 ---------------------------
