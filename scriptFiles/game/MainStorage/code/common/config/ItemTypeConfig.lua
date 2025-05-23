@@ -25,8 +25,7 @@ local function LoadConfig()
         ["装备格子"] = 0,
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
-        ["是货币"] = false,
-        ["货币序号"] = -1
+        ["是货币"] = false
     }),
     ["物品"] = ItemType.New({
         ["名字"] = "物品",

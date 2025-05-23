@@ -8,7 +8,10 @@ local Graphic = ClassMgr.Class("Graphic")
 
 -- 从模板创建新的特效对象
 local function CreateParticle(particleName)
-    local fxTemplate = game.WorkSpace["特效"][particleName]
+    local fxTemplate = MainStorage["特效"][particleName]
+    if not fxTemplate then
+        fxTemplate = game.WorkSpace["特效"][particleName]
+    end
     if fxTemplate then
         return fxTemplate:Clone()
     end
@@ -26,9 +29,9 @@ function Graphic:OnInit( data )
 end
 
 function Graphic:GetTarget(caster, target)
-    if self.targeter == "目标" then
+    if self.targeter == 1 then
         return target
-    elseif self.targeter == "自己" then
+    elseif self.targeter == 0 then
         return caster
     else
         local scene = target.scene ---@type Scene
@@ -40,12 +43,14 @@ end
 ---@param target Entity
 ---@param param CastParam
 function Graphic:PlayAt(caster, target, param)
+    local c = self:GetTarget(caster, target)
+    gg.log("PlayAt", caster, target, c)
     if self.delay > 0 then
         ServerScheduler.add(function ()
-            self:PlayAtReal(caster, target, param)
+            self:PlayAtReal(caster, c, param)
         end, self.delay)
     else
-        self:PlayAtReal(caster, target, param)
+        self:PlayAtReal(caster, c, param)
     end
 end
 
@@ -160,6 +165,7 @@ local CameraShakeGraphic = ClassMgr.Class("CameraShakeGraphic", Graphic)
 function CameraShakeGraphic:OnInit( data )
     Graphic.OnInit(self, data)
     -- 震动基础参数
+    self.name = gg.create_uuid('g_SHAKE')
     self.frequency = data["频率"] or 0.05
     self.strength = data["强度"] or 1.0
     self.rotation = data["旋转"] ---@type Vector3
@@ -173,6 +179,7 @@ function CameraShakeGraphic:PlayAtReal(caster, target, param)
     if target.isPlayer then
         gg.network_channel:fireClient(target.uin, {
             cmd = "ShakeCamera",
+            name = self.name,
             duration = self.duration,
             frequency = self.frequency,
             strength = self.strength,

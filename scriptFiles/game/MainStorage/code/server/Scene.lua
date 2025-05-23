@@ -145,7 +145,7 @@ function _M:OverlapBox(center, extent, angle, filterGroup, filterFunc)
     for _, v in ipairs(results) do
         local obj = v.obj
         local entity = self.node2Entity[obj]
-        gg.log("entity", obj, entity)
+        -- gg.log("entity", obj, entity)
         if entity then
             table.insert(retActors, entity)
             if filterFunc then

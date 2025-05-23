@@ -11,7 +11,7 @@ local SpellCommand = {}
 
 ---@param player Player
 function SpellCommand.cast(params, player)
-    if params["复杂魔法"] and params["魔法"] ~= "null" then
+    if params["复杂魔法"] and params["复杂魔法"]["魔法"] then
         local spell = SubSpell.New(params["复杂魔法"])
         spell:Cast(player, nil)
     else

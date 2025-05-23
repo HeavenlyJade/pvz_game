@@ -37,7 +37,6 @@ local _M = ClassMgr.Class('Monster', Entity)
 -- 初始化怪物
 function _M:OnInit(info_)
     Entity.OnInit(self, info_)    -- 父类初始化
-    self.uuid = gg.create_uuid('u_Mob')  -- 唯一ID
     
     -- 设置怪物类型和等级
     self.mobType = info_.mobType
@@ -54,6 +53,11 @@ function _M:OnInit(info_)
     -- 初始化攻击相关变量
     self.attackTimer = 0
     self.isAttacking = false
+end
+
+_M.GenerateUUID = function(self)
+    print("GenerateUUID MOB")
+    self.uuid = gg.create_uuid('u_Mob')
 end
 
 ---@override
@@ -73,7 +77,11 @@ function _M:CreateModel(scene)
     
     -- 创建Actor
     local container = game.WorkSpace["Ground"][scene.name]["怪物"]
-    local actor_monster = game.WorkSpace["怪物模型"][self.mobType.data["模型"]]:Clone() ---@type Actor
+    local actor_monster = MainStorage["怪物模型"][self.mobType.data["模型"]] ---@type Actor
+    if not actor_monster then
+        actor_monster = game.WorkSpace["怪物模型"][self.mobType.data["模型"]] ---@type Actor
+    end
+    actor_monster = actor_monster:Clone()
     actor_monster:SetParent(container)
     actor_monster.Enabled = true
     actor_monster.Visible = true

@@ -1,11 +1,8 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
-local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
-local Timer = require(MainStorage.code.common.Timer) ---@type Timer
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local RunService = game.RunService
-local WorldService = game:GetService("WorldService")
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Graphics
 
@@ -22,6 +19,9 @@ local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Grap
 ---@field activeProjectiles table<number, ProjectileItem> 正在活动的飞弹
 ---@field projectileCount number 飞弹数量
 ---@field projectileID number 飞弹ID
+---@field duration number 飞弹持续时间
+---@field canPassThroughTerrain boolean 是否可以穿过地形
+---@field startTime number 飞弹生成时间
 local ProjectileSpell = ClassMgr.Class("ProjectileSpell", Spell)
 
 ---@class ProjectileItem
@@ -39,13 +39,15 @@ local ProjectileItem = {}
 function ProjectileSpell:OnInit(data)
     Spell.OnInit(self, data)
     self.projectileModel = data["飞弹模型"] or "飞弹"
-    self.canHitSameTarget = data["可重复击中同一目标"] or false
+    self.canHitSameTarget = data["可重复碰撞同一目标"] or false
     self.hitInterval = data["对同一目标生效间隔"] or -1
     self.maxHits = data["生效次数"] or -1
     self.scatterCount = data["散射次数"] or 1
     self.scatterAngle = data["散射角度"] or 0
     self.scatterDelay = data["散射延迟"] or 0
     self.spawnAtCaster = data["生成于自己位置"] or false
+    self.duration = data["持续时间"] or 5
+    self.canPassThroughTerrain = data["穿过地形"]
     self.projectileEffects = Graphics.Load(data["特效_飞弹"])
     self.activeProjectiles = {}
     self.projectileCount = 0
@@ -84,8 +86,14 @@ end
 ---@param param CastParam 参数
 function ProjectileSpell:CreateProjectile(position, direction, baseDirection, caster, param)
     -- 生成飞弹Actor
-    local actor = game.WorkSpace["飞弹"][self.projectileModel]:Clone()
-    actor.Position = position
+    local originalActor = MainStorage["飞弹"][self.projectileModel] ---@type Actor
+    if not originalActor then
+        originalActor = game.WorkSpace["飞弹"][self.projectileModel] ---@type Actor
+    end
+    local actor = originalActor:Clone()
+    actor.Parent = caster.scene.node["世界特效"]
+    actor.Visible = true
+    actor.CollideGroupID = 9
     
     -- 创建飞弹项
     local item = {
@@ -96,9 +104,12 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
         param = param,
         hitTargets = {},
         lastHitTimes = {},
-        remainingHits = param:GetValue(self, "生效次数", self.maxHits)
+        remainingHits = param:GetValue(self, "生效次数", self.maxHits),
+        startTime = os.time(),
+        size = gg.vec.Multiply3(originalActor.Size, originalActor.LocalScale)
     }
-    
+    actor.Position = gg.vec.Add3(position, 0, -item.size.y/2, 0)
+
     -- 注册飞弹
     local id = self:GenerateId()
     self.activeProjectiles[id] = item
@@ -119,8 +130,9 @@ function ProjectileSpell:UpdateProjectile(id)
     
     local newPosition = item.actor.Position + item.direction * item.actor.Movespeed / 10.0
     item.actor.Position = newPosition
+    
     -- 检查碰撞
-    local hitTargets = item.caster.scene:OverlapBox(gg.vec.Add(newPosition, 0, item.actor.Size.y / 2, 0), item.actor.Size, item.actor.LocalEuler, {2, 3, 4})
+    local hitTargets = item.caster.scene:OverlapBox(gg.vec.Add3(newPosition, 0, item.size.y / 2, 0), item.size, item.actor.LocalEuler, {3, 4})
     if hitTargets and #hitTargets > 0 then
         -- 遍历所有碰撞到的目标
         for _, target in ipairs(hitTargets) do
@@ -128,6 +140,21 @@ function ProjectileSpell:UpdateProjectile(id)
             if target ~= item.caster then
                 self:HandleProjectileHit(id, target)
             end
+        end
+    end
+    
+    -- 检查地形碰撞
+    if not self.canPassThroughTerrain then
+        local hitGround = item.caster.scene:OverlapBox(gg.vec.Add3(newPosition, 0, item.size.y / 2, 0), Vector3.New(20, 20, 20), item.actor.LocalEuler, {1})
+        if hitGround and #hitGround > 0 then
+            self:DestroyProjectile(id)
+        end
+    end
+    
+    -- 检查持续时间
+    if self.duration > 0 then
+        if item.startTime and os.time() - item.startTime >= self.duration then
+            self:DestroyProjectile(id)
         end
     end
 end
@@ -213,13 +240,24 @@ function ProjectileSpell:CastReal(caster, target, param)
     -- 确定生成位置
     local position
     if self.spawnAtCaster then
-        position = caster:GetPosition()
+        position = caster:GetCenterPosition()
     else
-        position = target:GetPosition()
+        if not target then
+            return false
+        end
+        position = target:GetCenterPosition()
     end
-    
-    -- 计算基础方向
-    local baseDirection = (target:GetPosition() - caster:GetPosition()):Normalize()
+
+    local baseDirection
+    if not target then
+        if param.lookDirection then
+            baseDirection = param.lookDirection
+        else
+            baseDirection = caster:GetDirection()
+        end
+    else
+        baseDirection = (self:GetPosition(target) - caster:GetPosition()):Normalize()
+    end
     
     -- 获取散射参数
     local shootCount = param:GetValue(self, "散射次数", self.scatterCount)

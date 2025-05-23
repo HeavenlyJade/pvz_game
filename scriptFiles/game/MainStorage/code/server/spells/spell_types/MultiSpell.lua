@@ -23,7 +23,7 @@ end
 ---@param param CastParam 参数
 ---@return boolean 是否成功释放
 function MultiSpell:CastReal(caster, target, param)
-    self:PlayEffect(self.castEffects, target, caster, param)
+    self:PlayEffect(self.castEffects, caster, target, param)
     local anySucceed = false
 
     local log = {}

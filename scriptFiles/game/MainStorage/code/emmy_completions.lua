@@ -1227,7 +1227,7 @@
 ---@field OpenAssetPoolGoCache fun(self: GameSetting) None
 
 
----@class Player
+---@class MiniPlayer : Actor
 ---@field Character SandboxNode 玩家行为
 ---@field Neutral boolean 是否中立
 ---@field Team SandboxNode 隶属的队伍
@@ -2834,6 +2834,10 @@
 
 
 ---@class Quaternion
+---@field x number x坐标
+---@field y number y坐标
+---@field z number z坐标
+---@field w number w坐标
 ---@field New fun(x: number, y: number, z: number, w: number) Quaternion 构造一个四元数，x,y,z,w必须满足四元数的基本规则，
 ---@field LookAt fun(self: Quaternion, forward: Vector3, up: Vector3) Quaternion 通过指定forward方向和upward创建一个旋转, forward表示旋转之后的正前方方向，up表示旋转之后的正上方方向
 ---@field FromEuler fun(x: number, y: number,z: number) Quaternion 使用欧拉角（角度）来构建一个四元数 fun(旋转顺序是ZXY)

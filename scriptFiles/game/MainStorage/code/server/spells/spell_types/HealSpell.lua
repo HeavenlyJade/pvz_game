@@ -91,7 +91,7 @@ function HealSpell:CastReal(caster, target, param)
     end
     
     target:Heal(battle:GetFinalDamage(), self.spellName)
-    self:PlayEffect(self.castEffects, target, caster, param)
+    self:PlayEffect(self.castEffects, caster, target, param)
     
     return true
 end

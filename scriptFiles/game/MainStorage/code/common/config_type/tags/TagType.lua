@@ -15,7 +15,6 @@ function TagType:OnInit(data)
     self.description = data["描述"]
     self.functions = {}
     for _, tagHandler in ipairs(data["功能"]) do
-        print(tagHandler["类型"])
         local tagHandlerClass = require(MainStorage.code.common.config_type.tags[tagHandler["类型"]])
         table.insert(self.functions, tagHandlerClass.New(tagHandler))
     end

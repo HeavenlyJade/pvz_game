@@ -28,7 +28,7 @@ function Math.RandomPointInRadius(center, radius)
     local angle = math.random(0, 360)
     local x = center.x + radius * math.cos(angle)
     local z = center.z + radius * math.sin(angle)
-    return Vec3.new(x, center.y, z)
+    return Vector3.New(x, center.y, z)
 end
 --平滑阻尼插值
 function Math.SmoothDamp(current, target, velocity, smoothTime, maxSpeed, deltaTime)
@@ -72,8 +72,8 @@ end
 function Math.RandomInsideUnitCircle()
     local x = math.random() * 2 - 1
     local y = math.random() * 2 - 1
-    local ret = Vec2.new(x, y)
-    return ret:Normalized()
+    local ret = Vector2.New(x, y)
+    return ret:Normalize()
 end
 
 --判断一个数字是否在某个范围内
@@ -116,15 +116,15 @@ end
 
 --根据一个向量方向，返回的左边方向
 function Math.GetLeftDirection(direction)
-    return self:GetRightDirection(direction):Negate()
+    return Math.GetRightDirection(direction):Negate()
 end
 --根据一个向量方向，返回的右边方向
 function Math.GetRightDirection(direction)
     if direction.x == 0 and direction.z == 0 then
-        return Vec3.new(0, 0, 1)
+        return Vector3.New(0, 0, 1)
     end
-    local orient = Quat.lookAt(direction)
-    return orient * Vec3.new(1, 0, 0)
+    local orient = Quaternion.lookAt(direction)
+    return orient * Vector3.New(1, 0, 0)
 end
 
 
@@ -139,99 +139,201 @@ vec.M_RADTODEG = 1.0 / vec.M_DEGTORAD
 vec.Rad2Deg = 180.0 / vec.M_PI
 vec.Deg2Rad = vec.M_PI / 180.0
 
----@param v Vector2|Vector3|Vector4 要标准化的向量
----@return Vector2|Vector3|Vector4 标准化后的向量
-function vec.Normalize(v)
-    if v.w then
-        return Vector4.Normalize(v)
-    elseif v.z then
-        return Vector3.Normalize(v)
-    else
+-- Vector2 specific functions
+---@param v Vector2 要标准化的向量
+---@return Vector2 标准化后的向量
+function vec.Normalize2(v)
         return Vector2.Normalize(v)
+end
+
+---@param v1 Vector2 第一个向量
+---@param v2 Vector2 第二个向量
+---@return number 两个向量之间的距离
+function vec.Distance2(v1, v2)
+    return math.sqrt(vec.DistanceSq2(v1, v2))
+end
+
+---@param v1 Vector2 第一个向量
+---@param v2 Vector2 第二个向量
+---@return number 两个向量之间距离的平方
+function vec.DistanceSq2(v1, v2)
+        local dx = v1.x - v2.x
+        local dy = v1.y - v2.y
+    return dx * dx + dy * dy
+end
+
+---@param v1 Vector2 第一个向量
+---@param v2 Vector2 第二个向量
+---@return number 两个向量的点积
+function vec.Dot2(v1, v2)
+    return Vector2.Dot(v1, v2)
+end
+
+---@param v1 Vector2 起始向量
+---@param v2 Vector2 目标向量
+---@param percent number 插值比例(0-1)
+---@return Vector2 插值后的向量
+function vec.Lerp2(v1, v2, percent)
+    return Vector2.Lerp(v1, v2, percent)
+end
+
+---@param v1 Vector2 向量
+---@param x number x坐标
+---@param y number y坐标
+---@return Vector2 相加后的向量
+function vec.Add2(v1, x, y)
+    return Vector2.New(v1.x + x, v1.y + y)
+end
+
+function vec.ToDirection(v1)
+    -- Convert angles to radians
+    local pitch = v1.x * vec.M_DEGTORAD
+    local yaw = v1.y * vec.M_DEGTORAD
+    
+    -- Calculate direction vector components
+    local x = math.sin(yaw) * math.cos(pitch)
+    local y = -math.sin(pitch)
+    local z = math.cos(yaw) * math.cos(pitch)
+    
+    -- Return normalized direction vector
+    return Vector3.New(x, y, z)
+end
+
+---@param v Vector2 向量
+---@param scalar_or_vec number|Vector2 标量值或向量
+---@return Vector2 相乘后的向量
+function vec.Multiply2(v, scalar_or_vec)
+    if type(scalar_or_vec) == "number" then
+        return Vector2.New(v.x * scalar_or_vec, v.y * scalar_or_vec)
+    else
+        return Vector2.New(v.x * scalar_or_vec.x, v.y * scalar_or_vec.y)
     end
 end
 
----@param v1 Vector2|Vector3|Vector4 第一个向量
----@param v2 Vector2|Vector3|Vector4 第二个向量
----@return number 两个向量之间的距离
-function vec.Distance(v1, v2)
-    return math.sqrt(vec.DistanceSq(v1, v2))
+-- Vector3 specific functions
+---@param v Vector3 要标准化的向量
+---@return Vector3 标准化后的向量
+function vec.Normalize3(v)
+    return Vector3.Normalize(v)
 end
 
----@param v1 Vector2|Vector3|Vector4 第一个向量
----@param v2 Vector2|Vector3|Vector4 第二个向量
+---@param v1 Vector3 第一个向量
+---@param v2 Vector3 第二个向量
+---@return number 两个向量之间的距离
+function vec.Distance3(v1, v2)
+    return math.sqrt(vec.DistanceSq3(v1, v2))
+end
+
+---@param v1 Vector3 第一个向量
+---@param v2 Vector3 第二个向量
 ---@return number 两个向量之间距离的平方
-function vec.DistanceSq(v1, v2)
-    -- print("v1", tostring(v1))
-    if v1.w and v2.w then
-        local dx = v1.x - v2.x
-        local dy = v1.y - v2.y
-        local dz = v1.z - v2.z
-        local dw = v1.w - v2.w
-        return dx * dx + dy * dy + dz * dz + dw * dw
-    elseif v1.z and v2.z then
+function vec.DistanceSq3(v1, v2)
         local dx = v1.x - v2.x
         local dy = v1.y - v2.y
         local dz = v1.z - v2.z
         return dx * dx + dy * dy + dz * dz
-    else
-        local dx = v1.x - v2.x
-        local dy = v1.y - v2.y
-        return dx * dx + dy * dy
-    end
 end
 
----@param v1 Vector2|Vector3|Vector4 第一个向量
----@param v2 Vector2|Vector3|Vector4 第二个向量
+---@param v1 Vector3 第一个向量
+---@param v2 Vector3 第二个向量
 ---@return number 两个向量的点积
-function vec.Dot(v1, v2)
-    if v1.w and v2.w then
-        return Vector4.Dot(v1, v2)
-    elseif v1.z and v2.z then
+function vec.Dot3(v1, v2)
         return Vector3.Dot(v1, v2)
-    else
-        return Vector2.Dot(v1, v2)
-    end
 end
 
----@param v1 Vector2|Vector3|Vector4 起始向量
----@param v2 Vector2|Vector3|Vector4 目标向量
+---@param v1 Vector3 起始向量
+---@param v2 Vector3 目标向量
 ---@param percent number 插值比例(0-1)
----@return Vector2|Vector3|Vector4 插值后的向量
-function vec.Learp(v1, v2, percent)
-    if v1.w and v2.w then
-        return Vector4.Lerp(v1, v2, percent)
-    elseif v1.z and v2.z then
+---@return Vector3 插值后的向量
+function vec.Lerp3(v1, v2, percent)
         return Vector3.Lerp(v1, v2, percent)
-    else
-        return Vector2.Lerp(v1, v2, percent)
-    end
 end
 
 ---@param v1 Vector3 第一个向量
 ---@param v2 Vector3 第二个向量
 ---@return Vector3 两个向量的叉积
-function vec.Cross(v1, v2)
-    if v1.z and v2.z then
+function vec.Cross3(v1, v2)
         return Vector3.Cross(v1, v2)
     end
-    return v1:Cross(v2)
-end
 
-
----@param v1 Vector2|Vector3|Vector4 向量
+---@param v1 Vector3 向量
 ---@param x number x坐标
 ---@param y number y坐标
----@param z? number z坐标
----@param w? number w坐标
----@return Vector2|Vector3|Vector4 相加后的向量
-function vec.Add(v1, x, y, z, w)
-    if v1.w then
-        return Vector4.New(v1.x + x, v1.y + y, v1.z + z, v1.w + w)
-    elseif v1.z then
-        return Vector3.New(v1.x + x, v1.y + y, v1.z + z)
+---@param z number z坐标
+---@return Vector3 相加后的向量
+function vec.Add3(v1, x, y, z)
+    return Vector3.New(v1.x + x, v1.y + y, v1.z + z)
+end
+
+---@param v Vector3 向量
+---@param scalar_or_vec number|Vector3 标量值或向量
+---@return Vector3 相乘后的向量
+function vec.Multiply3(v, scalar_or_vec)
+    if type(scalar_or_vec) == "number" then
+        return Vector3.New(v.x * scalar_or_vec, v.y * scalar_or_vec, v.z * scalar_or_vec)
     else
-        return Vector2.New(v1.x + x, v1.y + y)
+        return Vector3.New(v.x * scalar_or_vec.x, v.y * scalar_or_vec.y, v.z * scalar_or_vec.z)
+    end
+end
+
+-- Vector4 specific functions
+---@param v Vector4 要标准化的向量
+---@return Vector4 标准化后的向量
+function vec.Normalize4(v)
+    return Vector4.Normalize(v)
+end
+
+---@param v1 Vector4 第一个向量
+---@param v2 Vector4 第二个向量
+---@return number 两个向量之间的距离
+function vec.Distance4(v1, v2)
+    return math.sqrt(vec.DistanceSq4(v1, v2))
+end
+
+---@param v1 Vector4 第一个向量
+---@param v2 Vector4 第二个向量
+---@return number 两个向量之间距离的平方
+function vec.DistanceSq4(v1, v2)
+    local dx = v1.x - v2.x
+    local dy = v1.y - v2.y
+    local dz = v1.z - v2.z
+    local dw = v1.w - v2.w
+    return dx * dx + dy * dy + dz * dz + dw * dw
+end
+
+---@param v1 Vector4 第一个向量
+---@param v2 Vector4 第二个向量
+---@return number 两个向量的点积
+function vec.Dot4(v1, v2)
+    return Vector4.Dot(v1, v2)
+end
+
+---@param v1 Vector4 起始向量
+---@param v2 Vector4 目标向量
+---@param percent number 插值比例(0-1)
+---@return Vector4 插值后的向量
+function vec.Lerp4(v1, v2, percent)
+    return Vector4.Lerp(v1, v2, percent)
+end
+
+---@param v1 Vector4 向量
+---@param x number x坐标
+---@param y number y坐标
+---@param z number z坐标
+---@param w number w坐标
+---@return Vector4 相加后的向量
+function vec.Add4(v1, x, y, z, w)
+        return Vector4.New(v1.x + x, v1.y + y, v1.z + z, v1.w + w)
+end
+
+---@param v Vector4 向量
+---@param scalar_or_vec number|Vector4 标量值或向量
+---@return Vector4 相乘后的向量
+function vec.Multiply4(v, scalar_or_vec)
+    if type(scalar_or_vec) == "number" then
+        return Vector4.New(v.x * scalar_or_vec, v.y * scalar_or_vec, v.z * scalar_or_vec, v.w * scalar_or_vec)
+    else
+        return Vector4.New(v.x * scalar_or_vec.x, v.y * scalar_or_vec.y, v.z * scalar_or_vec.z, v.w * scalar_or_vec.w)
     end
 end
 
@@ -748,13 +850,52 @@ function gg.clone(ori_tab)
     return new_tab
 end
 
+function gg:ShallowCopy(orig, customCopy)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == "table" then
+        copy = {}
+        for orig_key, orig_value in pairs(orig) do
+            copy[orig_key] = Utils:ShallowCopy(orig_value, customCopy)
+        end
+    else -- number, string, boolean, etc
+        if customCopy then
+            copy = customCopy(orig)
+        else
+            copy = orig
+        end
+    end
+    return copy
+end
+
+function gg.DeepCopy(object)
+    local lookup_table = {}
+    local function _copy(object)
+        if type(object) ~= "table" then
+            return object
+        elseif lookup_table[object] then
+            return lookup_table[object]
+        end
+        local new_table = {}
+        lookup_table[object] = new_table
+        for key, value in pairs(object) do
+            new_table[_copy(key)] = _copy(value)
+        end
+        return setmetatable(new_table, getmetatable(object))
+    end
+    return _copy(object)
+end
+
 -- 打印日志使用
 ---@param ... any 要打印的内容
 function gg.log(...)
-    local args = {...}
     local tab = {}
-    for i, v in ipairs(args) do
-        if type(v) == 'table' then
+    local n = select('#', ...)
+    for i = 1, n do
+        local v = select(i, ...)
+        if v == nil then
+            tab[i] = "nil"
+        elseif type(v) == 'table' then
             if v.className then
                 tab[i] = v:ToString()
             else
@@ -809,7 +950,7 @@ end
 ---@param x number X坐标
 ---@param y number Y坐标
 ---@return number, number 标准化后的X,Y坐标
-function gg.NormalizeVec2(x, y)
+function gg.Normalize2(x, y)
     local len = math.sqrt(x * x + y * y)
     if len > 0 then
         return x / len, y / len
@@ -962,102 +1103,6 @@ gg.thread_call = coroutine.work
 -- 等同于下面定义
 -- function gg.thread_call( func_ )
 -- coroutine.work( func_ )
--- end
-
---------------------------------------------------------
--- Vec3方向转euler   dir to euler
----@param vec3_normalized_ Vector3 标准化的方向向量
----@return Vector3 欧拉角
-function gg.d2e(vec3_normalized_)
-    -- Vector3.Normalize( vec3_normalized_ )
-    local _, rot = Quaternion.LookAt(vec3_normalized_, gg.VECUP)
-    return Vector3.FromQuaternion(rot)
-end
-
--- euler转vec3方向标量  euler to dir
----@param vec3_euler_ Vector3 欧拉角
----@return Vector3 标准化的方向向量
-function gg.e2d(vec3_euler_)
-    local q4 = Quaternion.FromEuler(vec3_euler_.x, vec3_euler_.y, vec3_euler_.z)
-    return q4:LookDir() -- normalized dir
-end
-
--- 获得物体朝向的vector3向量
----@param obj_ SandboxNode 物体节点
----@return Vector3 标准化的方向向量
-function gg.getDirVector3(obj_)
-    local vec3 = obj_.Rotation:LookDir()
-    return vec3 -- normalized dir
-end
-
--- 设置物体朝向的vector3向量  vec3需要先进行标量化
----@param obj_ SandboxNode 物体节点
----@param vec3_normalized_ Vector3 标准化的方向向量
-function gg.setDirVector3(obj_, vec3_normalized_)
-    -- Vector3.Normalize( vec3_normalized_ )
-    local _, rot = Quaternion.LookAt(vec3_normalized_, gg.VECUP)
-    obj_.Rotation = rot
-    -- local target_euler = Vector3.FromQuaternion(rot)
-end
-
--- 设置物体朝向的vector3向量  vec3为欧拉角
----@param obj_ SandboxNode 物体节点
----@param vec3_euler Vector3 欧拉角
-function gg.setDirVector3Euler(obj_, vec3_euler)
-    local q4 = Quaternion.FromEuler(vec3_euler.x, vec3_euler.y, vec3_euler.z)
-    obj_.Rotation = q4
-end
-
---                 ^（正上）
---                 |  
---                 | /
---                 |/
---            -----+-------->  （前）
---                /
---               /
---              /  （ 右 = 前 cross 正上 ）
---
--- local vRight     = gg.VECUP:cross(normal_dir)  --获得右侧方向   (前 cross 正上  = 右）
--- local target_up  = target_dir:cross(vRight)    --获得上方向     (前 cross 右   = 正上）
-
--- 获得两个位置的角度euler值
----@param pos1_ Vector3 位置1
----@param pos2_ Vector3 位置2
----@return Vector3 欧拉角
-function gg.getEulerByPositon(pos1_, pos2_)
-    local dir_ = pos1_ - pos2_
-    Vector3.Normalize(dir_)
-
-    local _, rot = Quaternion.LookAt(dir_, gg.VECUP)
-    return Vector3.FromQuaternion(rot)
-end
-
--- 获得两个位置的角度euler值( Y轴不变保持水平 )
----@param pos1_ Vector3 位置1
----@param pos2_ Vector3 位置2
----@return Vector3 欧拉角
-function gg.getEulerByPositonY0(pos1_, pos2_)
-    local dir_ = pos1_ - pos2_
-    local dir_y0_ = Vector3.New(dir_.x, 0, dir_.z)
-    Vector3.Normalize(dir_y0_)
-
-    local _, rot = Quaternion.LookAt(dir_y0_, gg.VECUP)
-    return Vector3.FromQuaternion(rot)
-end
-
--- actor1朝向某个目标actor2 ( Y轴不变保持水平 )
----@param actor1_ SandboxNode 源物体
----@param actor2_ SandboxNode 目标物体
-function gg.actorLookAtActorY0(actor1_, actor2_)
-    actor1_.Euler = gg.getEulerByPositonY0(actor1_.Position, actor2_.Position)
-end
-
--- function gg.split(str)
---     local result = {}
---     for part in string.gmatch(str, "%S+") do
---         table.insert(result, part)
---     end
---     return result
 -- end
 
 -- 文字框

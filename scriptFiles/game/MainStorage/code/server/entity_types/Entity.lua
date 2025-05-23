@@ -55,7 +55,7 @@ _M.TRIGGER_STAT_TYPES = TRIGGER_STAT_TYPES
 function _M:OnInit(info_)
     self.spawnPos = info_.position
     self.name = nil
-    self.uuid = nil
+    self:GenerateUUID()
     self.isEntity = true
     self.isPlayer = false
     self.uin = info_.uin
@@ -118,6 +118,16 @@ function _M:OnInit(info_)
     self.modelPlayer = nil  ---@type ModelPlayer
 end
 
+---@protected
+_M.GenerateUUID = function(self)
+    return ""
+end
+
+function _M:SubscribeEvent(eventType, listener, priority)
+    ServerEventManager.Subscribe(eventType, listener, priority, self.uuid)
+end
+
+
 function _M:GetSize()
     local size = self.actor.Size
     local scale = self.actor.LocalScale
@@ -153,6 +163,14 @@ end
 
 function _M:GetPosition()
     return self.actor and self.actor.LocalPosition or Vector3.New(0, 0, 0)
+end
+
+function _M:GetCenterPosition()
+    return gg.vec.Add3(self:GetPosition(), 0, self.actor.Size.y/2, 0)
+end
+
+function _M:GetDirection()
+    return self.actor and self.actor.ForwardDir or Vector3.New(0, 0, 1)
 end
 
 function _M:GetToStringParams()
@@ -268,7 +286,7 @@ end
 
 --- 触发词条
 ---@param key string 触发键
----@param target Entity|Vector3 目标
+---@param target SpellTarget 目标
 ---@param castParam CastParam|nil 施法参数
 ---@param ... any 额外参数
 function _M:TriggerTags(key, target, castParam, ...)
@@ -340,7 +358,7 @@ function _M:GetCooldown(reason, target)
         if self.cooldownTarget[reason] then
             local targetId = target.actor and target.actor.InstanceID or 0
             if self.cooldownTarget[reason][targetId] then
-                local remainingTime = self.cooldownTarget[reason][targetId] - os.time()
+                local remainingTime = self.cooldownTarget[reason][targetId] - os.clock()
                 return remainingTime > 0 and remainingTime or 0
             end
         end
@@ -348,7 +366,7 @@ function _M:GetCooldown(reason, target)
 
     -- 检查全局冷却
     if self.cd_list[reason] then
-        local remainingTime = self.cd_list[reason] - os.time()
+        local remainingTime = self.cd_list[reason] - os.clock()
         return remainingTime > 0 and remainingTime or 0
     end
 
@@ -374,10 +392,10 @@ function _M:SetCooldown(reason, time, target)
             self.cooldownTarget[reason] = {}
         end
         local targetId = target.actor and target.actor.InstanceID or 0
-        self.cooldownTarget[reason][targetId] = os.time() + time
+        self.cooldownTarget[reason][targetId] = os.clock() + time
     else
         -- 设置全局冷却
-        self.cd_list[reason] = os.time() + time
+        self.cd_list[reason] = os.clock() + time
     end
 end
 
@@ -642,6 +660,7 @@ end
 
 function _M:DestroyObject()
     self.actor:Destroy()
+    ServerEventManager.UnsubscribeByKey(self.uuid)
 end
 
 --- 设置最大生命值

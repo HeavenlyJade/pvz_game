@@ -113,7 +113,7 @@ function PainSpell:CastReal(caster, target, param)
         caster:ResetStats("TEMP")
     end
     
-    self:PlayEffect(self.castEffects, target, caster, param)
+    self:PlayEffect(self.castEffects, caster, target, param)
     
     return true
 end

@@ -33,8 +33,8 @@ local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Grap
 local Spell = ClassMgr.Class("Spell")
 
 function Spell.Load( data )
-    print("LoadSpell", data["魔法名"], data["类型"])
     local class = require(MainStorage.code.server.spells.spell_types[data["类型"]])
+    print("LoadSpell", data["魔法名"], data["类型"], class)
     return class.New(data)
 end
 
@@ -57,6 +57,10 @@ function Spell:OnInit( data )
     -- 直接使用配置中的Modifiers实例
     self.selfConditions = data["自身条件"] or {}
     self.targetConditions = data["目标条件"] or {}
+    self.requireTarget = data["必须要目标"]
+    if self.requireTarget == nil then
+        self.requireTarget = true
+    end
 
     -- 初始化子魔法数组
     self.subSpells = {}
@@ -73,6 +77,16 @@ function Spell:OnInit( data )
     self.castEffects = Graphics.Load(data["特效_释放"])
 end
 
+function Spell:GetName(target)
+    if not target then
+        return "[无目标]"
+    elseif type(target) == "userdata" then
+        return tostring(target)
+    else
+        return target.name
+    end
+end
+
 --- 执行魔法
 ---@param caster Entity 施法者
 ---@param target Entity|Vector3|nil 目标
@@ -87,7 +101,7 @@ function Spell:Cast(caster, target, param)
     if not caster then
         return false
     end
-    if not target then
+    if not target and self.requireTarget then
         -- 获取施法者面前的敌人
         local casterPos = caster:GetPosition()
         local ret_table = caster.scene:SelectCylinderTargets(casterPos, 5000, 5000, {3, 4}, nil)
@@ -124,7 +138,7 @@ function Spell:Cast(caster, target, param)
         return false
     end
 
-    if target and target.isEntity then
+    if target and self:IsEntity(target) then
         target:TriggerTags("beCastSpell", caster, param, param)
     end
     if param.cancelled then
@@ -156,9 +170,9 @@ function Spell:Cast(caster, target, param)
         end
     end
 
-    self:PlayEffect(self.preCastEffects, param.realTarget, caster, param)
+    self:PlayEffect(self.preCastEffects, caster, param.realTarget, param)
 
-    table.insert(log, string.format("%s: %s对%s释放通过", self.spellName, caster.name, target.name))
+    table.insert(log, string.format("%s: %s对%s释放通过", self.spellName, caster.name, self:GetName(target)))
     local delay = param:GetValue(self, "延迟", self.delay)
     if delay > 0 then
         if self.printInfo then
@@ -188,7 +202,7 @@ function Spell:PlayEffect(effects, playFrom, playAt, param)
     local actions = {}
     for i, effect in ipairs(effects) do
         if effect then
-            actions[i] = effect:PlayAt(self, playFrom, playAt, param)
+            actions[i] = effect:PlayAt(playFrom, playAt, param)
         end
     end
     return actions
@@ -201,6 +215,18 @@ end
 ---@return boolean 是否成功释放
 function Spell:CastReal(caster, target, param)
     return true
+end
+
+function Spell:GetPosition(target)
+    if type(target) == "userdata" then
+        return target
+    else
+        return target:GetPosition()
+    end
+end
+
+function Spell:IsEntity(target)
+    return type(target) ~= "userdata"
 end
 
 --- 检查是否可以释放魔法
@@ -217,7 +243,7 @@ function Spell:CanCast(caster, target, param, log)
         return false
     end
 
-    if self.targetCooldown > 0 and target.isEntity and caster:IsCoolingdown(self.spellName, target) then
+    if self.targetCooldown > 0 and self:IsEntity(target) and caster:IsCoolingdown(self.spellName, target) then
         if log then
             log[#log + 1] = string.format("%s：对该目标冷却中", self.spellName)
         end

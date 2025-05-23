@@ -11,6 +11,7 @@ local ServerEventManager      = require(MainStorage.code.server.event.ServerEven
 local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
 local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local cloudService      = game:GetService("CloudService")     --- @type CloudService
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 
 
 
@@ -37,7 +38,6 @@ function _M:OnInit(info_)
     self.isPlayer = true
     self.bag = nil ---@type Bag
     self.mail = nil ---@type MailDataStruct
-    self.uuid             = gg.create_uuid('u_Pl')                 -- 唯一ID
     self.auto_attack      = 0                                   -- 自动攻击技能ID
     self.auto_attack_tick = 10                                  -- 攻击间隔
     self.auto_wait_tick   = 0                                   -- 等待计时
@@ -50,6 +50,33 @@ function _M:OnInit(info_)
     self.news = {} ---@type table<string, table> --红点路径
     self.skills = {} ---@type table<string, Skill>
     self.equippedSkills = {} ---@type table<number, string>
+
+    self:SubscribeEvent("CastSpell", function (evt)
+        if evt.player == self then
+            local skill = self.skills[evt.skill]
+            if skill.equipSlot > 0 and skill.skillType.activeSpell then
+                local param = CastParam.New()
+                param.lookDirection = evt.direction
+                if skill.skillType.activeSpell:Cast(self, nil, param) then
+                    -- 获取技能冷却时间
+                    local cooldown = self:GetCooldown(skill.skillType.activeSpell.spellName)
+                    if cooldown > 0 then
+                        -- 发送冷却更新到客户端
+                        gg.network_channel:fireClient(self.uin, {
+                            cmd = "EquipSkillCooldownUpdate",
+                            skillId = evt.skill,
+                            cooldown = cooldown
+                        })
+                    end
+                end
+            end
+        end
+    end)
+end
+
+_M.GenerateUUID = function(self)
+    print("GenerateUUID PLAYER")
+    self.uuid = gg.create_uuid('u_Pl')
 end
 
 ---标记红点
@@ -326,8 +353,6 @@ function _M:UpgradeSkill(skillType)
             level = 1,
             slot = 0
         })
-        
-        -- 保存配置
         self:saveSkillConfig()
         return true
     end
@@ -466,7 +491,7 @@ function _M:UpdateNearbyNpcsToClient()
 
     -- 收集NPC信息并计算距离
     for _, npc in pairs(self.nearbyNpcs) do
-        local distance = gg.vec.Distance(npc.actor.LocalPosition, self.actor.LocalPosition)
+        local distance = gg.vec.Distance3(npc.actor.LocalPosition, self.actor.LocalPosition)
         table.insert(npcList, {
             npc = npc,
             distance = distance

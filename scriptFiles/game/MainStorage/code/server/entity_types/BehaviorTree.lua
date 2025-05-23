@@ -102,9 +102,9 @@ function WanderBehavior:OnInit()
         
         -- 如果需要在出生点附近
         if behavior["保持在出生点附近"] then
-            randomOffset = gg.vec.Add(entity.spawnPos, randomOffset.x, randomOffset.y, randomOffset.z)
+            randomOffset = gg.vec.Add3(entity.spawnPos, randomOffset.x, randomOffset.y, randomOffset.z)
         else
-            randomOffset = gg.vec.Add(entity:GetPosition(), randomOffset.x, randomOffset.y, randomOffset.z)
+            randomOffset = gg.vec.Add3(entity:GetPosition(), randomOffset.x, randomOffset.y, randomOffset.z)
         end ---@cast randomOffset Vector3
         entity.actor.Movespeed = entity:GetStat("速度")
         -- print("NavigateTo", randomOffset)
@@ -146,7 +146,7 @@ function MeleeBehavior:OnInit()
     self.CanEnter = function(self, entity, behavior)
         if not entity.target or not entity.target:CanBeTargeted() then return false end
         -- 检查距离
-        local distanceSq = gg.vec.DistanceSq(entity:GetPosition(), entity.target:GetPosition())
+        local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
         return distanceSq <= (behavior["脱战距离"] or 20) ^ 2
     end
     
@@ -168,7 +168,7 @@ function MeleeBehavior:OnInit()
         
         local behavior = entity:GetCurrentBehavior()
         local targetPos = entity.target:GetPosition()
-        local distanceSq = gg.vec.DistanceSq(entity:GetPosition(), targetPos)
+        local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), targetPos)
         
         -- 如果距离太远，退出战斗
         if distanceSq > (behavior["脱战距离"] or 20) ^ 2 then
@@ -223,7 +223,7 @@ function MeleeBehavior:OnInit()
         if not entity.target or not entity.target:CanBeTargeted() then return true end
         
         local behavior = entity:GetCurrentBehavior()
-        local distanceSq = gg.vec.DistanceSq(entity:GetPosition(), entity.target:GetPosition())
+        local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
         return distanceSq > (behavior["脱战距离"] or 20) ^ 2
     end
     

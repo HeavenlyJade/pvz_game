@@ -14,3 +14,8 @@
 
 ---@class NPCInteractionUpdate : S2CEvent
 ---@field interactOptions NPCInteractionOption[] 交互选项列表
+
+---@class EquipSkillCooldownUpdate : S2CEvent
+---@field skillId string
+---@field index number
+---@field cooldown number

@@ -8,7 +8,13 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@field New fun(node: SandboxNode, ui: ViewBase, path: string): ViewButton
 local  ViewButton = ClassMgr.Class("ViewButton", ViewComponent)
 
+function ViewButton:SetTouchEnable(enable)
+    self.img.Grayed = not enable
+    self.enabled = enable
+end
+
 function ViewButton:OnTouchOut()
+    if not self.enabled then return end
     if self.isHover then
         self.img.Icon = self.hoverImg
         self.img.FillColor = self.hoverColor
@@ -38,6 +44,7 @@ function ViewButton:OnTouchOut()
 end
 
 function ViewButton:OnTouchIn()
+    if not self.enabled then return end
     self.img.Icon = self.clickImg
     self.img.FillColor = self.clickColor
     if self.soundPress and soundPlayer then
@@ -57,6 +64,7 @@ function ViewButton:OnTouchIn()
 end
 
 function ViewButton:OnHoverOut()
+    if not self.enabled then return end
     self.isHover = false
     self.img.Icon = self.normalImg
     self.img.FillColor = self.normalColor
@@ -69,6 +77,7 @@ function ViewButton:OnHoverOut()
 end
 
 function ViewButton:OnHoverIn()
+    if not self.enabled then return end
     self.isHover = true
     self.img.Icon = self.hoverImg
     self.img.FillColor = self.hoverColor
@@ -89,6 +98,7 @@ function ViewButton:OnHoverIn()
 end
 
 function ViewButton:OnClick()
+    if not self.enabled then return end
     if self.clickCb then
         self.clickCb(self.ui, self)
     end

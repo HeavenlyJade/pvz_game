@@ -9,11 +9,12 @@ function CastParam:OnInit(...)
     local data = ... or {}
     self.power = data.power or 1.0 ---@type number
     self.cancelled = data.cancelled or false ---@type boolean
-    self.realTarget = data.realTarget ---@type Entity|Vector3|nil
+    self.realTarget = data.realTarget ---@type SpellTarget
     self.skipTags = data.skipTags or {} ---@type table<string, boolean>
     self.extraModifiers = data.extraModifiers or {} ---@type table<string, Battle>
     self.extraParams = data.extraParams or {} ---@type table<string, any>
     self.dynamicTags = data.dynamicTags ---@type table<string, EquipingTag[]>|nil
+    self.lookDirection = nil --仅限主动释放技能： 释放时玩家的摄像机朝向
 end
 
 function CastParam:Clone()

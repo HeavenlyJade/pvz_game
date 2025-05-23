@@ -22,10 +22,10 @@ function SkillType:OnInit(data)
     self.description = data["技能描述"] or ""
     self.icon = data["技能图标"] or ""
     self.effectiveWithoutEquip = data["无需装备也可生效"] or false
-
     ---客户端
     self.isEntrySkill = data["是入口技能"] or false
     self.nextSkills = data["下一技能"]
+    self.targetMode = data["目标模式"]
     
     -- 加载被动词条
     self.passiveTags = {}
@@ -40,7 +40,21 @@ function SkillType:OnInit(data)
     -- 加载主动释放魔法
     if data["主动释放魔法"] then
         self.activeSpell = SpellConfig.Get(data["主动释放魔法"]) ---@type Spell
+        gg.log("activeSpell", self.activeSpell, data["主动释放魔法"])
         self.cooldown = self.activeSpell.cooldown
+    end
+
+    if data["后坐力"] then
+        local recoil = data["后坐力"]
+        self.recoil = {
+            vertical_recoil = recoil["垂直后坐力"] or 3,
+            vertical_recoil_max = recoil["最大垂直后坐力"] or 8,
+            vertical_recoil_correct = recoil["垂直后坐力恢复"] or 5,
+            horizontal_recoil = recoil["水平后坐力"] or 3,
+            horizontal_recoil_max = recoil["最大水平后坐力"] or 6,
+            horizontal_recoil_correct = recoil["水平后坐力恢复"] or 2,
+            recoil_cooling_time = recoil["后坐力冷却时间"] or 0.5
+        }
     end
 end
 

@@ -18,14 +18,15 @@ local ServerEventListener = {
 --- 订阅事件
 ---@param eventType string 事件类型
 ---@param listener fun(evt: table) 事件回调函数
----@param ... number 优先级，默认为10
-function ServerEventManager.Subscribe(eventType, listener, ...)
-    local priority = ... or 10
+---@param priority? number 优先级，默认为10
+---@param key? string 记录ID，可用 ServerEventManager.UnsubscribeByKey(key) 移除所有指定key的监听器
+function ServerEventManager.Subscribe(eventType, listener, priority, key)
+    local priority = priority or 10
     local l = {
+        key = key,
         cb = listener,
         priority = priority
     }
-    
     if not ServerEventManager._eventDictionary[eventType] then
         ServerEventManager._eventDictionary[eventType] = {}
     end
@@ -60,6 +61,18 @@ function ServerEventManager.Unsubscribe(eventType, listener)
         for i = #list, 1, -1 do
             if list[i].cb == listener then
                 table.remove(list, i)
+            end
+        end
+    end
+end
+
+--- 通过key取消订阅事件
+---@param key string 要取消的事件监听器的key
+function ServerEventManager.UnsubscribeByKey(key)
+    for eventType, listeners in pairs(ServerEventManager._eventDictionary) do
+        for i = #listeners, 1, -1 do
+            if listeners[i].key == key then
+                table.remove(listeners, i)
             end
         end
     end

@@ -1,6 +1,0 @@
-{
-    "Lua.runtime.unicodeName": true,
-    "Lua.diagnostics.disable": [
-        "undefined-field"
-    ]
-}

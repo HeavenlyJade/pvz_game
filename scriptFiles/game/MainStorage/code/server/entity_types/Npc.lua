@@ -32,9 +32,10 @@ function _M:OnInit(npcData, actor)
     self.interactCondition = Modifiers.New(npcData["互动条件"])
     self.interactCommands  = npcData["互动指令"]
     self.interactIcon      = npcData["互动图标"]
-    self.uuid              = gg.create_uuid('u_Npc')
     self.target            = nil
     actor.CubeBorderEnable = true                      --debug显示碰撞方块
+    actor.CollideGroupID   = 1
+    actor.EnablePhysics = true
     if npcData["状态机"] then
         self:SetAnimationController(npcData["状态机"]) 
     end
@@ -93,6 +94,10 @@ function _M:OnInit(npcData, actor)
     self:createTitle(npcSize.y)
 end
 
+_M.GenerateUUID = function(self)
+    print("GenerateUUID NPC")
+    self.uuid = gg.create_uuid('u_Npc')
+end
 -- function _M:setupNpcInteraction(actor, npc_name)
 --     gg.log('NP区域', npc_name, actor)
 --     actor.CubeBorderEnable = true --debug显示碰撞方块

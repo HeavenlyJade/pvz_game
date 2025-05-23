@@ -1,4 +1,8 @@
-local Mat3 = script.Parent.Mat3x3
+
+local MainStorage = game:GetService("MainStorage")
+local Vec3 = require(MainStorage.code.common.math.Vec3)
+local Quat = require(MainStorage.code.common.math.Quat)
+local Mat3 = require(MainStorage.code.common.math.Matrix3x3)
 
 local Mat3x4 = {}
 
@@ -54,10 +58,9 @@ function Mat3x4:Mul(mat)
     res.m23 = self.m20 * mat.m03 + self.m21 * mat.m13 + self.m22 * mat.m23 + self.m23
     return res
 end
-
 --矩阵乘向量
 function Mat3x4:MulVec3(vec3)
-    local res = Vector3.New(0, 0, 0)
+    local res = Vec3.new()
     res.x = self.m00 * vec3.x + self.m01 * vec3.y + self.m02 * vec3.z + self.m03
     res.y = self.m10 * vec3.x + self.m11 * vec3.y + self.m12 * vec3.z + self.m13
     res.z = self.m20 * vec3.x + self.m21 * vec3.y + self.m22 * vec3.z + self.m23
@@ -65,7 +68,7 @@ function Mat3x4:MulVec3(vec3)
 end
 
 function Mat3x4:MulVec4(vec4)
-    local res = Vector3.New(0, 0, 0)
+    local res = Vec3.new()
     res.x = self.m00 * vec4.x + self.m01 * vec4.y + self.m02 * vec4.z + self.m03
     res.y = self.m10 * vec4.x + self.m11 * vec4.y + self.m12 * vec4.z + self.m13
     res.z = self.m20 * vec4.x + self.m21 * vec4.y + self.m22 * vec4.z + self.m23
@@ -106,7 +109,6 @@ function Mat3x4.__sub(lhs, rhs)
     res.m23 = lhs.m23 - rhs.m23
     return res
 end
-
 --乘
 function Mat3x4.__mul(lhs, rhs)
     if rhs.x and rhs.y and rhs.z and rhs.w then
@@ -135,7 +137,6 @@ function Mat3x4:__tostring()
         self.m23
     )
 end
-
 --设置平移
 function Mat3x4:SetTranslation(x, y, z)
     if type(x) == "table" then
@@ -147,7 +148,7 @@ function Mat3x4:SetTranslation(x, y, z)
 end
 
 function Mat3x4:GetTranslation()
-    return Vector3.New(self.m03, self.m13, self.m23)
+    return Vec3.new(self.m03, self.m13, self.m23)
 end
 
 --设置旋转
@@ -165,15 +166,13 @@ function Mat3x4:SetRotation(rotation)
     self.m21 = rotation.m21
     self.m22 = rotation.m22
 end
-
 --获取旋转，返回四元数
 function Mat3x4:GetRotation()
     local mat3 = Mat3.new(self.m00, self.m01, self.m02, self.m10, self.m11, self.m12, self.m20, self.m21, self.m22)
-    local quat = Vector4.New(0, 0, 0, 1)
+    local quat = Quat.new()
     quat:FromMat3(mat3)
     return quat
 end
-
 --设置缩放
 function Mat3x4:SetScale(x, y, z)
     if type(x) == "table" then
@@ -185,7 +184,7 @@ function Mat3x4:SetScale(x, y, z)
 end
 
 function Mat3x4:GetScale()
-    return Vector3.New(self.m00, self.m11, self.m22)
+    return Vec3.new(self.m00, self.m11, self.m22)
 end
 
 --逆矩阵
@@ -220,12 +219,11 @@ function Mat3x4:ToMat3()
     res:SetData(self.m00, self.m01, self.m02, self.m10, self.m11, self.m12, self.m20, self.m21, self.m22)
     return res
 end
-
 --分解
 function Mat3x4:Decompose()
-    local translation = Vector3.New(0, 0, 0)
-    local rotation = Vector4.New(0, 0, 0, 1)
-    local scale = Vector3.New(0, 0, 0)
+    local translation = Vec3.new()
+    local rotation = Quat.new()
+    local scale = Vec3.new()
 
     translation.x = self.m03
     translation.y = self.m13
@@ -235,7 +233,7 @@ function Mat3x4:Decompose()
     scale.y = math.sqrt(self.m01 * self.m01 + self.m11 * self.m11 + self.m21 * self.m21)
     scale.z = math.sqrt(self.m02 * self.m02 + self.m12 * self.m12 + self.m22 * self.m22)
 
-    local invScale = Vector3.New(1.0 / scale.x, 1.0 / scale.y, 1.0 / scale.z)
+    local invScale = Vec3.new(1.0 / scale.x, 1.0 / scale.y, 1.0 / scale.z)
     rotation = self:ToMat3():Scaled(invScale)
 
     return translation, rotation, scale

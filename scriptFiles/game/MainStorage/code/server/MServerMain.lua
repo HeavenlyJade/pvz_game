@@ -264,6 +264,7 @@ function MainServer.player_enter_game(player)
     actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置
 
     player_:setGameActor(actor_)     --player
+    actor_.CollideGroupID = 4
     player_:ChangeScene('g0')       --默认g0大厅
 
     player_:equipWeapon(common_config.assets_dict.model.model_sword)

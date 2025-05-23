@@ -32,9 +32,9 @@ function CardsGui:OnInit(node, config)
     self.confirmPointsButton = self:Get("框体/主卡/确定加点", ViewButton) ---@type ViewButton
     self.selectionList = self:Get("框体/主卡/选择列表", ViewList) ---@type ViewList
     self.mainCardFrame = self:Get("框体/主卡/加点框/纵列表/主卡框", ViewButton) ---@type ViewButton
-    self.skillButtons = {}
+    self.skillButtons = {} ---@type table<number, ViewList>
     for i = 1, 3 do
-        self.skillButtons[i] = self:Get("框体/主卡/加点框/纵列表/列表_" .. i, ViewButton) ---@type ViewButton
+        self.skillButtons[i] = self:Get("框体/主卡/加点框/纵列表/列表_" .. i, ViewList) ---@type ViewList
     end
     self.RegisterMenuButton(self.closeButton)
 
@@ -74,8 +74,8 @@ function CardsGui:HandleSkillSync(data)
     -- 反序列化技能数据
     for skillId, skillData in pairs(data.skillData.skills) do
         -- 创建技能对象
-        local Skill = require(MainStorage.code.client.skills.Skill) ---@type Skill
-        local skill = Skill.New(skillData)
+        local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
+        local skill = Skill.New(nil, skillData)
         self.skills[skillId] = skill
 
         -- 记录已装备的技能

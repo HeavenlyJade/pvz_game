@@ -2,6 +2,7 @@ local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local Battle            = require(MainStorage.code.server.Battle)    ---@type Battle
+local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 
 ---@class OverrideParam
 ---@field objectName string
@@ -66,6 +67,7 @@ function SubSpell:Cast(caster, target, param)
     if not self.spellCache then
         local SpellConfig = require(MainStorage.code.common.config.SpellConfig)
         self.spellCache = SpellConfig.Get(self.spellName)
+        gg.log("SubSpell:Cast", self.spellName, self.spellCache)
     end
     if not param then
         param = CastParam.New()

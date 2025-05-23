@@ -10,31 +10,72 @@ local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 ---@class SkillEventManager
 local SkillEventManager = {}
 
--- 事件名称常量
+--[[
+===================================
+事件定义部分
+===================================
+]]
+
+-- 客户端请求事件
+SkillEventManager.REQUEST = {
+    GET_LIST = "SkillRequest_GetList",
+    LEARN = "SkillRequest_Learn",
+    UPGRADE = "SkillRequest_Upgrade",
+    EQUIP = "SkillRequest_Equip",
+    UNEQUIP = "SkillRequest_Unequip",
+    GET_DETAIL = "SkillRequest_GetDetail",
+    GET_AVAILABLE = "SkillRequest_GetAvailable"
+}
+
+-- 服务器响应事件
+SkillEventManager.RESPONSE = {
+    LIST = "SkillResponse_List",
+    LEARN = "SkillResponse_Learn",
+    UPGRADE = "SkillResponse_Upgrade",
+    EQUIP = "SkillResponse_Equip",
+    UNEQUIP = "SkillResponse_Unequip",
+    DETAIL = "SkillResponse_Detail",
+    AVAILABLE = "SkillResponse_Available",
+    ERROR = "SkillResponse_Error"
+}
+
+-- 服务器通知事件
+SkillEventManager.NOTIFY = {
+    SKILL_CHANGED = "SkillNotify_Changed",
+    SKILL_UNLOCKED = "SkillNotify_Unlocked"
+}
+
+-- 兼容旧版事件名称（用于过渡）
 SkillEventManager.EVENTS = {
     -- 客户端请求事件
-    REQUEST_GET_LIST = "SkillRequest_GetList",
-    REQUEST_LEARN = "SkillRequest_Learn",
-    REQUEST_UPGRADE = "SkillRequest_Upgrade",
-    REQUEST_EQUIP = "SkillRequest_Equip",
-    REQUEST_UNEQUIP = "SkillRequest_Unequip",
-    REQUEST_GET_DETAIL = "SkillRequest_GetDetail",
-    REQUEST_GET_AVAILABLE = "SkillRequest_GetAvailable",
+    REQUEST_GET_LIST = SkillEventManager.REQUEST.GET_LIST,
+    REQUEST_LEARN = SkillEventManager.REQUEST.LEARN,
+    REQUEST_UPGRADE = SkillEventManager.REQUEST.UPGRADE,
+    REQUEST_EQUIP = SkillEventManager.REQUEST.EQUIP,
+    REQUEST_UNEQUIP = SkillEventManager.REQUEST.UNEQUIP,
+    REQUEST_GET_DETAIL = SkillEventManager.REQUEST.GET_DETAIL,
+    REQUEST_GET_AVAILABLE = SkillEventManager.REQUEST.GET_AVAILABLE,
     
     -- 服务器响应事件
-    RESPONSE_LIST = "SkillResponse_List",
-    RESPONSE_LEARN = "SkillResponse_Learn",
-    RESPONSE_UPGRADE = "SkillResponse_Upgrade",
-    RESPONSE_EQUIP = "SkillResponse_Equip",
-    RESPONSE_UNEQUIP = "SkillResponse_Unequip",
-    RESPONSE_DETAIL = "SkillResponse_Detail",
-    RESPONSE_AVAILABLE = "SkillResponse_Available",
-    RESPONSE_ERROR = "SkillResponse_Error",
+    RESPONSE_LIST = SkillEventManager.RESPONSE.LIST,
+    RESPONSE_LEARN = SkillEventManager.RESPONSE.LEARN,
+    RESPONSE_UPGRADE = SkillEventManager.RESPONSE.UPGRADE,
+    RESPONSE_EQUIP = SkillEventManager.RESPONSE.EQUIP,
+    RESPONSE_UNEQUIP = SkillEventManager.RESPONSE.UNEQUIP,
+    RESPONSE_DETAIL = SkillEventManager.RESPONSE.DETAIL,
+    RESPONSE_AVAILABLE = SkillEventManager.RESPONSE.AVAILABLE,
+    RESPONSE_ERROR = SkillEventManager.RESPONSE.ERROR,
     
     -- 服务器通知事件
-    NOTIFY_SKILL_CHANGED = "SkillNotify_Changed",
-    NOTIFY_SKILL_UNLOCKED = "SkillNotify_Unlocked"
+    NOTIFY_SKILL_CHANGED = SkillEventManager.NOTIFY.SKILL_CHANGED,
+    NOTIFY_SKILL_UNLOCKED = SkillEventManager.NOTIFY.SKILL_UNLOCKED
 }
+
+--[[
+===================================
+错误码和错误消息定义
+===================================
+]]
 
 -- 错误码定义
 SkillEventManager.ERROR_CODES = {
@@ -68,6 +109,12 @@ SkillEventManager.ERROR_MESSAGES = {
     [SkillEventManager.ERROR_CODES.INVALID_PARAMETERS] = "参数无效"
 }
 
+--[[
+===================================
+初始化和基础功能
+===================================
+]]
+
 --- 初始化技能事件管理器
 function SkillEventManager.Initialize()
     gg.log("初始化技能事件管理器...")
@@ -80,28 +127,26 @@ end
 
 --- 注册所有事件处理器
 function SkillEventManager.RegisterEventHandlers()
-    local events = SkillEventManager.EVENTS
-    
     -- 获取技能列表
-    ServerEventManager.Subscribe(events.REQUEST_GET_LIST, SkillEventManager.HandleGetSkillList)
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.GET_LIST, SkillEventManager.HandleGetSkillList)
     
     -- 学习技能
-    ServerEventManager.Subscribe(events.REQUEST_LEARN, SkillEventManager.HandleLearnSkill)
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.LEARN, SkillEventManager.HandleLearnSkill)
     
     -- 升级技能
-    ServerEventManager.Subscribe(events.REQUEST_UPGRADE, SkillEventManager.HandleUpgradeSkill)
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.UPGRADE, SkillEventManager.HandleUpgradeSkill)
     
     -- 装备技能
-    ServerEventManager.Subscribe(events.REQUEST_EQUIP, SkillEventManager.HandleEquipSkill)
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.EQUIP, SkillEventManager.HandleEquipSkill)
     
     -- 卸下技能
-    ServerEventManager.Subscribe(events.REQUEST_UNEQUIP, SkillEventManager.HandleUnequipSkill)
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.UNEQUIP, SkillEventManager.HandleUnequipSkill)
     
     -- 获取技能详情
-    ServerEventManager.Subscribe(events.REQUEST_GET_DETAIL, SkillEventManager.HandleGetSkillDetail)
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.GET_DETAIL, SkillEventManager.HandleGetSkillDetail)
     
     -- 获取可学习技能
-    ServerEventManager.Subscribe(events.REQUEST_GET_AVAILABLE, SkillEventManager.HandleGetAvailableSkills)
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.GET_AVAILABLE, SkillEventManager.HandleGetAvailableSkills)
     
     gg.log("已注册 " .. 7 .. " 个技能事件处理器")
 end
@@ -126,6 +171,12 @@ function SkillEventManager.ValidatePlayer(evt, eventName)
     return player, SkillEventManager.ERROR_CODES.SUCCESS
 end
 
+--[[
+===================================
+服务器响应部分 - 发送数据到客户端
+===================================
+]]
+
 --- 发送错误响应给客户端
 ---@param evt table 事件参数
 ---@param errorCode number 错误码
@@ -145,7 +196,7 @@ function SkillEventManager.SendErrorResponse(evt, errorCode, extraData)
     end
     
     gg.network_channel:fireClient(uin, {
-        cmd = SkillEventManager.EVENTS.RESPONSE_ERROR,
+        cmd = SkillEventManager.RESPONSE.ERROR,
         data = response
     })
 end
@@ -164,6 +215,35 @@ function SkillEventManager.SendSuccessResponse(evt, eventName, data)
         data = data
     })
 end
+
+--- 发送技能变化通知
+---@param evt table 事件参数
+---@param skillName string 技能名称
+---@param changeType string 变化类型
+function SkillEventManager.NotifySkillChanged(evt, skillName, changeType)
+    local uin = evt.uin or evt.player
+    gg.network_channel:fireClient(uin, {
+        cmd = SkillEventManager.NOTIFY.SKILL_CHANGED,
+        data = {
+            skillName = skillName,
+            changeType = changeType,
+            timestamp = os.time()
+        }
+    })
+end
+
+--- 获取错误消息
+---@param errorCode number 错误码
+---@return string 错误消息
+function SkillEventManager.GetErrorMessage(errorCode)
+    return SkillEventManager.ERROR_MESSAGES[errorCode] or "未知错误"
+end
+
+--[[
+===================================
+客户端请求处理部分 - 处理客户端事件
+===================================
+]]
 
 --- 处理获取技能列表请求
 ---@param evt table 事件数据
@@ -196,7 +276,7 @@ function SkillEventManager.HandleGetSkillList(evt)
         end
     end
     
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.EVENTS.RESPONSE_LIST, {
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LIST, {
         skills = skillList,
         equippedSkills = equippedSkills
     })
@@ -249,7 +329,7 @@ function SkillEventManager.HandleLearnSkill(evt)
     -- 保存数据
     player:saveSkillConfig()
     
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.EVENTS.RESPONSE_LEARN, {
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LEARN, {
         skillName = skillName,
         level = skill.level
     })
@@ -304,7 +384,7 @@ function SkillEventManager.HandleUpgradeSkill(evt)
     if success then
         player:saveSkillConfig()
         
-        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.EVENTS.RESPONSE_UPGRADE, {
+        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, {
             skillName = skillName,
             oldLevel = oldLevel,
             newLevel = targetLevel
@@ -344,7 +424,7 @@ function SkillEventManager.HandleEquipSkill(evt)
     -- 执行装备
     local success = player:EquipSkill(skillName, slot)
     if success then
-        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.EVENTS.RESPONSE_EQUIP, {
+        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
             skillName = skillName,
             slot = slot
         })
@@ -383,7 +463,7 @@ function SkillEventManager.HandleUnequipSkill(evt)
     -- 执行卸下
     local success = player:UnequipSkill(slot)
     if success then
-        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.EVENTS.RESPONSE_UNEQUIP, {
+        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UNEQUIP, {
             skillName = skillName,
             slot = slot
         })
@@ -440,7 +520,7 @@ function SkillEventManager.HandleGetSkillDetail(evt)
         detail.description = skill:GetDescription()
     end
     
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.EVENTS.RESPONSE_DETAIL, detail)
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.DETAIL, detail)
 end
 
 --- 处理获取可学习技能请求
@@ -487,32 +567,9 @@ function SkillEventManager.HandleGetAvailableSkills(evt)
         end
     end
     
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.EVENTS.RESPONSE_AVAILABLE, {
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.AVAILABLE, {
         availableSkills = availableSkills
     })
-end
-
---- 发送技能变化通知
----@param evt table 事件参数
----@param skillName string 技能名称
----@param changeType string 变化类型
-function SkillEventManager.NotifySkillChanged(evt, skillName, changeType)
-    local uin = evt.uin or evt.player
-    gg.network_channel:fireClient(uin, {
-        cmd = SkillEventManager.EVENTS.NOTIFY_SKILL_CHANGED,
-        data = {
-            skillName = skillName,
-            changeType = changeType,
-            timestamp = os.time()
-        }
-    })
-end
-
---- 获取错误消息
----@param errorCode number 错误码
----@return string 错误消息
-function SkillEventManager.GetErrorMessage(errorCode)
-    return SkillEventManager.ERROR_MESSAGES[errorCode] or "未知错误"
 end
 
 return SkillEventManager

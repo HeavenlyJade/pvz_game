@@ -217,7 +217,7 @@ end
 
 --矩阵乘向量
 function Mat3:MulVec2(v)
-    return Vector2.new(
+    return Vec2.new(
         self.m00 * v.x + self.m01 * v.y + self.m02,
         self.m10 * v.x + self.m11 * v.y + self.m12
     )

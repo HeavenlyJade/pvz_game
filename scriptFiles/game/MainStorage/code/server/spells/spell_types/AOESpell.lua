@@ -83,7 +83,7 @@ function AOESpell:SimulateAOE(dt)
         local isCanMove = true
         
         -- 检查碰撞
-        local ret = WorldService:OverlapSphere(item.colliderSize, destPos + Vector3.New(0, item.colliderSize, 0), true, {1})
+        local ret = WorldService:OverlapSphere(item.colliderSize, destPos + Vector3.New(0, item.colliderSize, 0), true, {3, 4})
         for _, v in pairs(ret) do
             if v.obj.Visible then
                 isCanMove = false
