@@ -787,7 +787,7 @@ function gg.table2str(tbl, level_, visited)
     end
     level_ = level_ or 0
     if level_ >= 10 then
-        gg.log('ERROR table2str level>=10')
+        -- gg.log('ERROR table2str level>=10')
         return '' -- 层数保护
     end
 

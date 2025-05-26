@@ -24,7 +24,6 @@ local SubSpell = ClassMgr.Class("SubSpell")
 
 function SubSpell:OnInit( data )
     -- print(debug.traceback())
-    gg.log("SubSpell:OnInit", data)
     self.spellCache = nil
     self.spellName = data["魔法"]
 

@@ -171,7 +171,8 @@ local function LoadConfig()
         ["尺寸倍率"] = 1,
         ["必须要目标"] = true
     })
-}loaded = true
+} 
+    loaded = true
 end
 
 ---@param spellName string

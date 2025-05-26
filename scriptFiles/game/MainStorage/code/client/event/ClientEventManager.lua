@@ -1,3 +1,4 @@
+
 ---@class ClientEventManager
 local ClientEventManager = {
     _eventDictionary = {} -- @type table<string, ClientEventListener[]>
@@ -73,7 +74,7 @@ function ClientEventManager.Publish(eventType, eventData)
         for _, item in ipairs(ClientEventManager._eventDictionary[eventType]) do
             local success, err = pcall(item.cb, eventData)
             if not success then
-                warn(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
+                gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
             end
         end
     end

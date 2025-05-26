@@ -72,7 +72,9 @@ local function LoadConfig()
             ["后坐力冷却时间"] = 0.5
         }
     })
-}loaded = true
+}
+
+loaded = true
 
 --将SkillType的"下一技能"转换为SkillType
 for _, skillType in pairs(SkillTypeConfig.config) do
@@ -119,6 +121,63 @@ function SkillTypeConfig.GetEntrySkills()
         LoadConfig()
     end
     return entrySkills
+end
+
+--- 将 SkillType 实例配置转换为纯 table 数据
+---@return table<string, table> 
+function SkillTypeConfig.ConvertFromSkillTypeInstances()
+    local tableConfig = {}
+    local allSkills = SkillTypeConfig.GetAll()
+    for skillName, skillType in pairs(allSkills) do
+        -- 创建基础 table 结构
+        local skillData = {}
+        -- 提取 SkillType 实例的所有属性
+        if type(skillType) == "table" then
+            -- 复制所有基础属性
+            -- for key, value in pairs(skillType) do
+            --     -- 跳过方法和元表相关属性
+            --     if type(value) ~= "function" and key ~= "__index" and key ~= "className" then
+            --         skillData[key] = value
+            --     end
+            -- end
+            skillData.name = skillType.name
+            skillData.maxLevel =  skillType.maxLevel
+            skillData.description = skillType.description
+            skillData.icon =  skillType.icon 
+            skillData.isEntrySkill =  skillType.isEntrySkill 
+            skillData.effectiveWithoutEquip = skillType.effectiveWithoutEquip 
+            skillData.nextSkills = skillType.nextSkills 
+            skillData.targetMode =  skillType.targetMode 
+            skillData.passiveTags =skillType.passiveTags
+            skillData.activeSpell = skillType.activeSpell
+            skillData.recoil = skillType.recoil
+            
+            -- 处理下一技能列表
+            local nextSkills = {}
+            local nextSkillsSource =  skillType["下一技能"]
+            if nextSkillsSource and type(nextSkillsSource) == "table" then
+                for _, nextSkill in ipairs(nextSkillsSource) do
+                    if type(nextSkill) == "string" then
+                        -- 已经是字符串
+                        table.insert(nextSkills, nextSkill)
+                    elseif type(nextSkill) == "table" then
+                        -- 如果是 SkillType 实例，提取技能名
+                        local nextSkillName = nextSkill["技能名"]
+                        if nextSkillName then
+                            table.insert(nextSkills, nextSkillName)
+                        end
+                    end
+                end
+            end
+            if #nextSkills > 0 then
+                skillData["下一技能"] = nextSkills
+            end
+        end
+    
+        tableConfig[skillName] = skillData
+    end
+    
+    return tableConfig
 end
 
 return SkillTypeConfig

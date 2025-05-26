@@ -155,8 +155,10 @@ end
 function MainServer.initModule()
     local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
     local cloudMailData = require(MainStorage.code.server.cloudData.cloudMailData) ---@type CloudMailData
+    local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
     gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
     gg.cloudMailData = cloudMailData:Init()
+    SkillEventManager.Init()
 end
 
 -- --设置碰撞组

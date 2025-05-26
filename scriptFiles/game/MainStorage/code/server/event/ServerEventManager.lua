@@ -1,6 +1,7 @@
 
 local MainStorage     = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
+
 ---@class SEvent
 ---@field __class Class 事件类型
 
@@ -91,7 +92,7 @@ function ServerEventManager.Publish(eventType, eventData)
         for _, item in ipairs(ServerEventManager._eventDictionary[eventType]) do
             local success, err = pcall(item.cb, eventData)
             if not success then
-                warn(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
+                gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
             end
         end
     end

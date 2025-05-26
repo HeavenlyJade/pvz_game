@@ -116,7 +116,7 @@ SkillEventManager.ERROR_MESSAGES = {
 ]]
 
 --- 初始化技能事件管理器
-function SkillEventManager.Initialize()
+function SkillEventManager.Init()
     gg.log("初始化技能事件管理器...")
     
     -- 注册所有事件监听器
@@ -147,16 +147,15 @@ function SkillEventManager.RegisterEventHandlers()
     
     -- 获取可学习技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.GET_AVAILABLE, SkillEventManager.HandleGetAvailableSkills)
-    
-    gg.log("已注册 " .. 7 .. " 个技能事件处理器")
-end
+    end
 
 --- 验证玩家和基础参数
 ---@param evt table 事件参数
 ---@param eventName string 事件名称
 ---@return Player|nil, number 玩家对象和错误码
 function SkillEventManager.ValidatePlayer(evt, eventName)
-    local uin = evt.uin or evt.player
+    local env_player = evt.player
+    local uin = env_player.uin
     if not uin then
         gg.log("事件 " .. eventName .. " 缺少玩家UIN参数")
         return nil, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS
@@ -206,10 +205,9 @@ end
 ---@param eventName string 响应事件名称
 ---@param data table 响应数据
 function SkillEventManager.SendSuccessResponse(evt, eventName, data)
-    local uin = evt.uin or evt.player
-    data.success = true
-    data.errorCode = SkillEventManager.ERROR_CODES.SUCCESS
-    
+    local env_player = evt.player
+    local uin = env_player.uin
+    -- gg.log("发送成功响应给客户端",eventName,data)
     gg.network_channel:fireClient(uin, {
         cmd = eventName,
         data = data
@@ -245,41 +243,54 @@ end
 ===================================
 ]]
 
+
+
 --- 处理获取技能列表请求
 ---@param evt table 事件数据
 function SkillEventManager.HandleGetSkillList(evt)
+    gg.log("处理获取技能列表请求",evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "GetSkillList")
     if not player then
         SkillEventManager.SendErrorResponse(evt, errorCode)
         return
     end
-    
+    local skillTreeResult = SkillTypeConfig.ConvertFromSkillTypeInstances()
+    for key, value in pairs(skillTreeResult) do
+        gg.log("技能Key:", key, "技能Value:", value)
+    end
+    -- 检查玩家是否有技能数据，没有则加载默认配置
+
     -- 构建技能列表数据
     local skillList = {}
     local equippedSkills = {}
-    
+
     -- 已拥有的技能
     for skillName, skill in pairs(player.skills or {}) do
         table.insert(skillList, {
             name = skillName,
-            displayName = skill.skillType.displayName,
+            icon = skill.skillType.icon,
             level = skill.level,
+            nextSkills = skill.skillType.nextSkills,
             maxLevel = skill.skillType.maxLevel,
             equipped = skill.equipSlot > 0,
             equipSlot = skill.equipSlot,
             description = skill:GetDescription()
         })
-        
+
         -- 装备槽位信息
         if skill.equipSlot > 0 then
             equippedSkills[skill.equipSlot] = skillName
         end
     end
     
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LIST, {
+    -- 构建响应数据（包含树状结构）
+    local responseData = {
         skills = skillList,
         equippedSkills = equippedSkills
-    })
+    }
+    
+    gg.log("发送技能列表响应，包含", #skillList, "个技能")
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LIST, responseData)
 end
 
 --- 处理学习技能请求

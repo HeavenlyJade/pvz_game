@@ -4,6 +4,7 @@ local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
+local MenuButtonUtils = require(MainStorage.code.client.ui.MenuButtonUtils) ---@type MenuButtonUtils
 
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
@@ -39,6 +40,7 @@ function CardsGui:OnInit(node, config)
     -- 初始化技能数据
     self.skills = {} ---@type table<string, Skill>
     self.equippedSkills = {} ---@type table<number, string>
+    MenuButtonUtils.RegisterMenuButton(self.closeButton)
 
     ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
         self:HandleSkillSync(data)

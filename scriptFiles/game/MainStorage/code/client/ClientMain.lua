@@ -2,13 +2,14 @@
 local MainStorage     = game:GetService("MainStorage")
 local game            = game
 local Enum            = Enum  ---@type Enum
-local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
+
 local ViewBase        = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ClassMgr    = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local ClientInit = require(MainStorage.code.client.event.ClinentInit) ---@type ClientInit
 local Controller = require(MainStorage.code.client.MController) ---@type Controller
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
 local tick = 0

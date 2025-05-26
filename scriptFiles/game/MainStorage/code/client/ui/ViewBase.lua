@@ -88,6 +88,7 @@ function ViewBase:OnInit(node, config)
     allUI[self.className] = self
     ViewBase[self.className] = self
 
+
     -- print("config", self.className, self.hideOnInit)
     if self.hideOnInit then
         self:Close()
