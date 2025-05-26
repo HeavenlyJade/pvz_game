@@ -16,7 +16,7 @@ function MobCommand.spawnMob(params, player)
     end
     local level = tonumber(params["等级"] or "1")
     local mob = mobType:Spawn(player:GetPosition(), level, player.scene)
-    mob:SetTarget(player)
+    -- mob:SetTarget(player)
     return true
 end
 

@@ -27,7 +27,7 @@ function SyncAll()
 end
 
 -- 使用ServerScheduler替代Timer
-ServerScheduler.add(SyncAll, 0, 1, true) -- 立即开始，每秒执行一次
+ServerScheduler.add(SyncAll, 0, 0.2) -- 立即开始，每秒执行一次
 
 ---刷新玩家的背包数据（服务器 to 客户端）
 ---@param uin_ number 玩家ID

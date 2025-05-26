@@ -658,6 +658,17 @@ function _M:Die()
     ServerEventManager.Publish("EntityDeadEvent", { entity = self })
 end
 
+function _M:GetEnemyGroup()
+    local groupId = self.actor.CollideGroupID
+    if groupId == 3 then
+        return {4}
+    elseif groupId == 4 then
+        return {3}
+    else
+        return {3, 4}
+    end
+end
+
 function _M:DestroyObject()
     self.actor:Destroy()
     ServerEventManager.UnsubscribeByKey(self.uuid)

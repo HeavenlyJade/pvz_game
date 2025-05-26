@@ -8,203 +8,118 @@ local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 ---@field repeatInterval number Repeat interval in seconds (0 for one-time execution)
 ---@field remaining number Remaining ticks before execution
 ---@field taskId number Unique identifier for the task
+---@field rounds number For time wheel implementation (number of wheel rotations needed)
 
+print("ServerScheduler INIT")
 ---@class ServerScheduler
 local ServerScheduler = {
-    tasks = {},
+    tasks = {},  -- All tasks by ID
     nextTaskId = 1,
-    highPriorityTasks = {},    -- remaining <= 1
-    mediumPriorityTasks = {},  -- 1 < remaining <= 10
-    lowPriorityTasks = {},     -- 10 < remaining <= 100
-    lowestPriorityTasks = {},  -- remaining > 100
+    
+    -- Time wheel configuration
+    wheelSlots = 60,  -- Number of slots in the wheel (1 slot per second for 60 seconds)
+    wheelPrecision = 1,  -- 1 second precision
+    timeWheel = {},    -- The actual time wheel
+    currentSlot = 1,   -- Current position in the wheel
+    
+    -- Timing statistics
+    lastTime = os.time(),
+    updateCount = 0,
+    updatesPerSecond = 0,
     tick = 0
 }
 
----Add task to appropriate priority queue
----@param task Task The task to add
-local function addToPriorityQueue(task)
-    if task.remaining <= 1 then
-        ServerScheduler.highPriorityTasks[task.taskId] = task
-    elseif task.remaining <= 10 then
-        ServerScheduler.mediumPriorityTasks[task.taskId] = task
-    elseif task.remaining <= 100 then
-        ServerScheduler.lowPriorityTasks[task.taskId] = task
-    else
-        ServerScheduler.lowestPriorityTasks[task.taskId] = task
-    end
+-- Initialize the time wheel
+for i = 1, ServerScheduler.wheelSlots do
+    ServerScheduler.timeWheel[i] = {}
 end
 
 ---Add a new scheduled task
 ---@param func function The function to execute
 ---@param delay number Delay in seconds before first execution
 ---@param repeatInterval? number Repeat interval in seconds (0 for one-time execution)
----@param isInTick? boolean 是否时间使用游戏刻， 一秒10刻， 默认false 
 ---@return number taskId The ID of the created task
-function ServerScheduler.add(func, delay, repeatInterval, isInTick)
+function ServerScheduler.add(func, delay, repeatInterval)
     local taskId = ServerScheduler.nextTaskId
     ServerScheduler.nextTaskId = ServerScheduler.nextTaskId + 1
+    
+    delay = delay * 30
     if not repeatInterval then
         repeatInterval = 0
     end
     
-    if not isInTick then
-        delay = math.floor(delay * 10)
-        repeatInterval = math.floor(repeatInterval * 10)
-    end
-
+    -- Calculate rounds and slot for the time wheel
+    local totalDelay = delay
+    local rounds = math.floor(totalDelay / (ServerScheduler.wheelSlots * ServerScheduler.wheelPrecision))
+    local slot = (ServerScheduler.currentSlot + math.floor(totalDelay / ServerScheduler.wheelPrecision) - 1) % ServerScheduler.wheelSlots + 1
+    
     local task = {
         func = func,
         delay = delay,
-        repeatInterval = repeatInterval,
+        repeatInterval = repeatInterval * 30,
         remaining = delay,
-        taskId = taskId
+        taskId = taskId,
+        rounds = rounds
     }
-
+    
     ServerScheduler.tasks[taskId] = task
-    addToPriorityQueue(task)
-
+    table.insert(ServerScheduler.timeWheel[slot], task)
+    
     return taskId
 end
 
 ---Cancel a scheduled task
 ---@param taskId number The ID of the task to cancel
----@return boolean success Whether the task was successfully cancelled
+---@return nil
 function ServerScheduler.cancel(taskId)
-    if ServerScheduler.tasks[taskId] then
-        ServerScheduler.tasks[taskId] = nil
-        ServerScheduler.highPriorityTasks[taskId] = nil
-        ServerScheduler.mediumPriorityTasks[taskId] = nil
-        ServerScheduler.lowPriorityTasks[taskId] = nil
-        ServerScheduler.lowestPriorityTasks[taskId] = nil
-        return true
-    end
-    return false
+    ServerScheduler.tasks[taskId] = nil
+    -- The task will be removed from the wheel when its slot is processed
 end
 
 ---Update all scheduled tasks
 function ServerScheduler.update()
-    local toRemove = {}
-    local toRequeue = {}
-
-    -- Process high priority tasks (check every frame)
-    for taskId, task in pairs(ServerScheduler.highPriorityTasks) do
-        if task.remaining > 0 then
-            task.remaining = task.remaining - 1
-        else
-            -- Execute task
-            local success, err = pcall(task.func)
-            if not success then
-                gg.log("[ERROR] Scheduled task failed:", err)
-            end
-
-            -- Handle repeat
-            if task.repeatInterval > 0 then
-                task.remaining = task.repeatInterval
-                table.insert(toRequeue, task)
-            else
-                table.insert(toRemove, taskId)
-            end
-        end
-    end
-
-    -- Process medium priority tasks (check every 10 frames)
-    if ServerScheduler.tick % 10 == 0 then
-        for taskId, task in pairs(ServerScheduler.mediumPriorityTasks) do
-            if task.remaining > 10 then
-                task.remaining = task.remaining - 10
-                table.insert(toRequeue, task)
-            else
-                task.remaining = task.remaining - 1
-                if task.remaining <= 0 then
-                    local success, err = pcall(task.func)
-                    if not success then
-                        gg.log("[ERROR] Scheduled task failed:", err)
-                    end
-
-                    if task.repeatInterval > 0 then
-                        task.remaining = task.repeatInterval
-                        table.insert(toRequeue, task)
-                    else
-                        table.insert(toRemove, taskId)
-                    end
-                else
-                    table.insert(toRequeue, task)
+    local tasks = ServerScheduler.timeWheel[ServerScheduler.currentSlot]
+    local remainingTasks = {}
+    local tasksToReschedule = {}  -- 新增：收集需要重新调度的任务
+    
+    for _, task in ipairs(tasks) do
+        if ServerScheduler.tasks[task.taskId] then  -- Check if task wasn't cancelled
+            if task.rounds <= 0 then
+                -- Execute the task
+                local success, err = pcall(task.func)
+                if not success then
+                    gg.log("[ERROR] Scheduled task failed:", err)
                 end
-            end
-        end
-    end
-
-    -- Process low priority tasks (check every 100 frames)
-    if ServerScheduler.tick % 100 == 0 then
-        for taskId, task in pairs(ServerScheduler.lowPriorityTasks) do
-            if task.remaining > 100 then
-                task.remaining = task.remaining - 100
-                table.insert(toRequeue, task)
-            else
-                task.remaining = task.remaining - 10
-                if task.remaining <= 0 then
-                    local success, err = pcall(task.func)
-                    if not success then
-                        gg.log("[ERROR] Scheduled task failed:", err)
-                    end
-
-                    if task.repeatInterval > 0 then
-                        task.remaining = task.repeatInterval
-                        table.insert(toRequeue, task)
-                    else
-                        table.insert(toRemove, taskId)
-                    end
+                
+                -- Handle repeating tasks
+                if task.repeatInterval > 0 then
+                    -- 将需要重新调度的任务收集起来
+                    local newRounds = math.floor(task.repeatInterval / (ServerScheduler.wheelSlots * ServerScheduler.wheelPrecision))
+                    local newSlot = (ServerScheduler.currentSlot + math.floor(task.repeatInterval / ServerScheduler.wheelPrecision) - 1) % ServerScheduler.wheelSlots + 1
+                    
+                    task.rounds = newRounds
+                    table.insert(tasksToReschedule, {task = task, slot = newSlot})
                 else
-                    table.insert(toRequeue, task)
+                    -- Remove one-time tasks
+                    ServerScheduler.tasks[task.taskId] = nil
                 end
-            end
-        end
-
-        -- Process lowest priority tasks
-        for taskId, task in pairs(ServerScheduler.lowestPriorityTasks) do
-            if task.remaining > 100 then
-                task.remaining = task.remaining - 100
-                table.insert(toRequeue, task)
             else
-                task.remaining = task.remaining - 10
-                if task.remaining <= 0 then
-                    local success, err = pcall(task.func)
-                    if not success then
-                        gg.log("[ERROR] Scheduled task failed:", err)
-                    end
-
-                    if task.repeatInterval > 0 then
-                        task.remaining = task.repeatInterval
-                        table.insert(toRequeue, task)
-                    else
-                        table.insert(toRemove, taskId)
-                    end
-                else
-                    table.insert(toRequeue, task)
-                end
+                -- Task needs more rounds, decrement and keep
+                task.rounds = task.rounds - 1
+                table.insert(remainingTasks, task)
             end
         end
     end
-
-    -- Remove completed tasks
-    for _, taskId in ipairs(toRemove) do
-        ServerScheduler.tasks[taskId] = nil
-        ServerScheduler.highPriorityTasks[taskId] = nil
-        ServerScheduler.mediumPriorityTasks[taskId] = nil
-        ServerScheduler.lowPriorityTasks[taskId] = nil
-        ServerScheduler.lowestPriorityTasks[taskId] = nil
+    
+    -- 更新当前槽位的任务
+    ServerScheduler.timeWheel[ServerScheduler.currentSlot] = remainingTasks
+    
+    -- 处理需要重新调度的任务
+    for _, rescheduleInfo in ipairs(tasksToReschedule) do
+        table.insert(ServerScheduler.timeWheel[rescheduleInfo.slot], rescheduleInfo.task)
     end
-
-    -- Requeue tasks to appropriate priority queues
-    for _, task in ipairs(toRequeue) do
-        if ServerScheduler.tasks[task.taskId] then
-            ServerScheduler.highPriorityTasks[task.taskId] = nil
-            ServerScheduler.mediumPriorityTasks[task.taskId] = nil
-            ServerScheduler.lowPriorityTasks[task.taskId] = nil
-            ServerScheduler.lowestPriorityTasks[task.taskId] = nil
-            addToPriorityQueue(task)
-        end
-    end
+    
+    ServerScheduler.currentSlot = ServerScheduler.currentSlot % ServerScheduler.wheelSlots + 1
 end
 
 return ServerScheduler

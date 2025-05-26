@@ -128,7 +128,7 @@ function _M:OnInit(name, sceneId)
     -- 创建NPC更新定时任务
     self.npcUpdateTaskId = ServerScheduler.add(function()
         self:update_npcs()
-    end, 0, 1, true) -- 立即开始，每秒执行一次
+    end, 0, 0.1) -- 立即开始，每秒执行一次
 end
 
 ---更新所有NPC
@@ -346,21 +346,6 @@ function _M:check_drop()
     end
 end
 
----检查怪物是否离开自己的刷新点太远
-function _M:check_monster_alive()
-    for _, monster_ in pairs(self.monsters) do
-        if monster_.target then
-            -- gg.log( '====check_monster_alive target:', monster_.uuid, monster_.level, monster_.target.uuid )
-        else
-            -- gg.log( '====check_monster_alive no target:', monster_.uuid, monster_.level )
-            if monster_.level >= 50 then
-                monster_:tryGetTargetPlayer()
-            end
-        end
-        monster_:checkTooFarFromPos()
-    end
-end
-
 ---检查玩家是否离开太远
 function _M:check_player_alive()
     for _, player_ in pairs(self.players) do
@@ -406,12 +391,10 @@ function _M:update()
 
     -- 慢update
     local mod_ = self.tick % 11
-    if mod_ == 2 then
-        self:check_monster_alive()
-    elseif mod_ == 3 then
+    if mod_ == 3 then
         self:check_player_alive()
-    elseif mod_ == 4 then
-        self:check_drop()
+    -- elseif mod_ == 4 then
+    --     self:check_drop()
     end
 end
 

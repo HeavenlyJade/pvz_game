@@ -2,199 +2,125 @@ local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 
+---@class Task
+---@field func function The function to execute
+---@field delay number Delay in seconds before first execution
+---@field repeatInterval number Repeat interval in seconds (0 for one-time execution)
+---@field remaining number Remaining ticks before execution
+---@field taskId number Unique identifier for the task
+---@field rounds number For time wheel implementation (number of wheel rotations needed)
+
+print("ClientScheduler INIT")
 ---@class ClientScheduler
 local ClientScheduler = {
-    tasks = {},
+    tasks = {},  -- All tasks by ID
     nextTaskId = 1,
-    highPriorityTasks = {},    -- remaining <= 1
-    mediumPriorityTasks = {},  -- 1 < remaining <= 10
-    lowPriorityTasks = {},     -- 10 < remaining <= 100
-    lowestPriorityTasks = {},  -- remaining > 100
+    
+    -- Time wheel configuration
+    wheelSlots = 60,  -- Number of slots in the wheel (1 slot per second for 60 seconds)
+    wheelPrecision = 1,  -- 1 second precision
+    timeWheel = {},    -- The actual time wheel
+    currentSlot = 1,   -- Current position in the wheel
+    
+    -- Timing statistics
+    lastTime = os.time(),
+    updateCount = 0,
+    updatesPerSecond = 0,
     tick = 0
 }
 
----Add task to appropriate priority queue
----@param task Task The task to add
-local function addToPriorityQueue(task)
-    if task.remaining <= 1 then
-        ClientScheduler.highPriorityTasks[task.taskId] = task
-    elseif task.remaining <= 10 then
-        ClientScheduler.mediumPriorityTasks[task.taskId] = task
-    elseif task.remaining <= 100 then
-        ClientScheduler.lowPriorityTasks[task.taskId] = task
-    else
-        ClientScheduler.lowestPriorityTasks[task.taskId] = task
-    end
+-- Initialize the time wheel
+for i = 1, ClientScheduler.wheelSlots do
+    ClientScheduler.timeWheel[i] = {}
 end
 
 ---Add a new scheduled task
 ---@param func function The function to execute
 ---@param delay number Delay in seconds before first execution
 ---@param repeatInterval? number Repeat interval in seconds (0 for one-time execution)
----@param isInTick? boolean 是否单位是秒
 ---@return number taskId The ID of the created task
-function ClientScheduler.add(func, delay, repeatInterval, isInTick)
+function ClientScheduler.add(func, delay, repeatInterval)
     local taskId = ClientScheduler.nextTaskId
     ClientScheduler.nextTaskId = ClientScheduler.nextTaskId + 1
-    repeatInterval = repeatInterval or 0
-    if not isInTick then
-        delay = math.floor(delay * 30)
-        repeatInterval = math.floor(repeatInterval * 30)
+    
+    delay = delay * 30
+    if not repeatInterval then
+        repeatInterval = 0
     end
-    print("add", delay, repeatInterval)
+    
+    -- Calculate rounds and slot for the time wheel
+    local totalDelay = delay
+    local rounds = math.floor(totalDelay / (ClientScheduler.wheelSlots * ClientScheduler.wheelPrecision))
+    local slot = (ClientScheduler.currentSlot + math.floor(totalDelay / ClientScheduler.wheelPrecision) - 1) % ClientScheduler.wheelSlots + 1
+    
     local task = {
         func = func,
         delay = delay,
-        repeatInterval = repeatInterval,
+        repeatInterval = repeatInterval * 30,
         remaining = delay,
-        taskId = taskId
+        taskId = taskId,
+        rounds = rounds
     }
-
+    
     ClientScheduler.tasks[taskId] = task
-    addToPriorityQueue(task)
-
+    table.insert(ClientScheduler.timeWheel[slot], task)
+    
     return taskId
 end
 
 ---Cancel a scheduled task
 ---@param taskId number The ID of the task to cancel
----@return boolean success Whether the task was successfully cancelled
+---@return nil
 function ClientScheduler.cancel(taskId)
-    if ClientScheduler.tasks[taskId] then
-        ClientScheduler.tasks[taskId] = nil
-        ClientScheduler.highPriorityTasks[taskId] = nil
-        ClientScheduler.mediumPriorityTasks[taskId] = nil
-        ClientScheduler.lowPriorityTasks[taskId] = nil
-        ClientScheduler.lowestPriorityTasks[taskId] = nil
-        return true
-    end
-    return false
+    ClientScheduler.tasks[taskId] = nil
+    -- The task will be removed from the wheel when its slot is processed
 end
 
 ---Update all scheduled tasks
 function ClientScheduler.update()
-    local toRemove = {}
-    local toRequeue = {}
-
-    -- Process high priority tasks (check every frame)
-    for taskId, task in pairs(ClientScheduler.highPriorityTasks) do
-        if task.remaining > 0 then
-            task.remaining = task.remaining - 1
-        else
-            -- Execute task
-            local success, err = pcall(task.func)
-            if not success then
-                gg.log("[ERROR_1] Scheduled task failed:", err)
-            end
-
-            -- Handle repeat
-            if task.repeatInterval > 0 then
-                task.remaining = task.repeatInterval
-                table.insert(toRequeue, task)
-            else
-                table.insert(toRemove, taskId)
-            end
-        end
-    end
-
-    -- Process medium priority tasks (check every 10 frames)
-    if ClientScheduler.tick % 10 == 0 then
-        for taskId, task in pairs(ClientScheduler.mediumPriorityTasks) do
-            if task.remaining > 10 then
-                task.remaining = task.remaining - 10
-                table.insert(toRequeue, task)
-            else
-                task.remaining = task.remaining - 1
-                if task.remaining <= 0 then
-                    local success, err = pcall(task.func)
-                    if not success then
-                        gg.log("[ERROR_2] Scheduled task failed:", err)
-                    end
-
-                    if task.repeatInterval > 0 then
-                        task.remaining = task.repeatInterval
-                        table.insert(toRequeue, task)
-                    else
-                        table.insert(toRemove, taskId)
-                    end
-                else
-                    table.insert(toRequeue, task)
+    -- Update timing statistics
+    local tasks = ClientScheduler.timeWheel[ClientScheduler.currentSlot]
+    local remainingTasks = {}
+    local tasksToReschedule = {}  -- 新增：收集需要重新调度的任务
+    
+    for _, task in ipairs(tasks) do
+        if ClientScheduler.tasks[task.taskId] then  -- Check if task wasn't cancelled
+            if task.rounds <= 0 then
+                -- Execute the task
+                local success, err = pcall(task.func)
+                if not success then
+                    gg.log("[ERROR] Scheduled task failed:", err)
                 end
-            end
-        end
-    end
-
-    -- Process low priority tasks (check every 100 frames)
-    if ClientScheduler.tick % 100 == 0 then
-        for taskId, task in pairs(ClientScheduler.lowPriorityTasks) do
-            if task.remaining > 100 then
-                task.remaining = task.remaining - 100
-                table.insert(toRequeue, task)
-            else
-                task.remaining = task.remaining - 10
-                if task.remaining <= 0 then
-                    local success, err = pcall(task.func)
-                    if not success then
-                        gg.log("[ERROR_3] Scheduled task failed:", err)
-                    end
-
-                    if task.repeatInterval > 0 then
-                        task.remaining = task.repeatInterval
-                        table.insert(toRequeue, task)
-                    else
-                        table.insert(toRemove, taskId)
-                    end
+                
+                -- Handle repeating tasks
+                if task.repeatInterval > 0 then
+                    -- 将需要重新调度的任务收集起来
+                    local newRounds = math.floor(task.repeatInterval / (ClientScheduler.wheelSlots * ClientScheduler.wheelPrecision))
+                    local newSlot = (ClientScheduler.currentSlot + math.floor(task.repeatInterval / ClientScheduler.wheelPrecision) - 1) % ClientScheduler.wheelSlots + 1
+                    
+                    task.rounds = newRounds
+                    table.insert(tasksToReschedule, {task = task, slot = newSlot})
                 else
-                    table.insert(toRequeue, task)
+                    -- Remove one-time tasks
+                    ClientScheduler.tasks[task.taskId] = nil
                 end
-            end
-        end
-
-        -- Process lowest priority tasks
-        for taskId, task in pairs(ClientScheduler.lowestPriorityTasks) do
-            if task.remaining > 100 then
-                task.remaining = task.remaining - 100
-                table.insert(toRequeue, task)
             else
-                task.remaining = task.remaining - 10
-                if task.remaining <= 0 then
-                    local success, err = pcall(task.func)
-                    if not success then
-                        gg.log("[ERROR_4] Scheduled task failed:", err)
-                    end
-
-                    if task.repeatInterval > 0 then
-                        task.remaining = task.repeatInterval
-                        table.insert(toRequeue, task)
-                    else
-                        table.insert(toRemove, taskId)
-                    end
-                else
-                    table.insert(toRequeue, task)
-                end
+                -- Task needs more rounds, decrement and keep
+                task.rounds = task.rounds - 1
+                table.insert(remainingTasks, task)
             end
         end
     end
-
-    -- Remove completed tasks
-    for _, taskId in ipairs(toRemove) do
-        ClientScheduler.tasks[taskId] = nil
-        ClientScheduler.highPriorityTasks[taskId] = nil
-        ClientScheduler.mediumPriorityTasks[taskId] = nil
-        ClientScheduler.lowPriorityTasks[taskId] = nil
-        ClientScheduler.lowestPriorityTasks[taskId] = nil
+    
+    -- 更新当前槽位的任务
+    ClientScheduler.timeWheel[ClientScheduler.currentSlot] = remainingTasks
+    
+    -- 处理需要重新调度的任务
+    for _, rescheduleInfo in ipairs(tasksToReschedule) do
+        table.insert(ClientScheduler.timeWheel[rescheduleInfo.slot], rescheduleInfo.task)
     end
-
-    -- Requeue tasks to appropriate priority queues
-    for _, task in ipairs(toRequeue) do
-        if ClientScheduler.tasks[task.taskId] then
-            ClientScheduler.highPriorityTasks[task.taskId] = nil
-            ClientScheduler.mediumPriorityTasks[task.taskId] = nil
-            ClientScheduler.lowPriorityTasks[task.taskId] = nil
-            ClientScheduler.lowestPriorityTasks[task.taskId] = nil
-            addToPriorityQueue(task)
-        end
-    end
+    
+    ClientScheduler.currentSlot = ClientScheduler.currentSlot % ClientScheduler.wheelSlots + 1
 end
 
 return ClientScheduler

@@ -29,9 +29,9 @@ function Graphic:OnInit( data )
 end
 
 function Graphic:GetTarget(caster, target)
-    if self.targeter == 1 then
+    if self.targeter == "目标" then
         return target
-    elseif self.targeter == 0 then
+    elseif self.targeter == "自己" then
         return caster
     else
         local scene = target.scene ---@type Scene

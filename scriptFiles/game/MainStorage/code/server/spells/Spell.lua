@@ -67,7 +67,6 @@ function Spell:OnInit( data )
     if data["子魔法"] then
         for _, subSpellData in ipairs(data["子魔法"]) do
             local subSpell = SubSpell.New(subSpellData)
-            gg.log("SubSpell", subSpell)
             table.insert(self.subSpells, subSpell)
         end
     end
@@ -101,21 +100,27 @@ function Spell:Cast(caster, target, param)
     if not caster then
         return false
     end
-    if not target and self.requireTarget then
-        -- 获取施法者面前的敌人
-        local casterPos = caster:GetPosition()
-        local ret_table = caster.scene:SelectCylinderTargets(casterPos, 5000, 5000, {3, 4}, nil)
-        gg.log("ret_table", casterPos, ret_table)
-        for _, hit in pairs(ret_table) do
-            if hit ~= caster then
-                gg.log("hit", hit)
-                target = hit
-                break
+    if not target then
+        if self.castOnSelf then
+            target = caster
+        else
+            if self.requireTarget then
+                -- 获取施法者面前的敌人
+                local casterPos = caster:GetPosition()
+                local ret_table = caster.scene:SelectCylinderTargets(casterPos, 5000, 5000, caster:GetEnemyGroup(), nil)
+                gg.log("ret_table", casterPos, ret_table)
+                for _, hit in pairs(ret_table) do
+                    if hit ~= caster then
+                        gg.log("hit", hit)
+                        target = hit
+                        break
+                    end
+                end
+                if not target then
+                    print(self.spellName .. ": 找不到目标")
+                    return false
+                end
             end
-        end
-        if not target then
-            print(self.spellName .. ": 找不到目标")
-            return false
         end
     end
 
@@ -233,7 +238,7 @@ end
 ---@param caster Entity 施法者
 ---@param target Entity|Vector3 目标
 ---@param param CastParam 参数
----@param log string[] 日志数组
+---@param log? string[] 日志数组
 ---@return boolean 是否可以释放
 function Spell:CanCast(caster, target, param, log)
     if self.cooldown > 0 and caster:IsCoolingdown(self.spellName) then

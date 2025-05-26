@@ -58,7 +58,7 @@ local function LoadConfig()
         ["是货币"] = true,
         ["货币序号"] = 1,
         ["获得词条"] = {
-            "词条2"
+            nil
         }
     }),
     ["体力"] = ItemType.New({

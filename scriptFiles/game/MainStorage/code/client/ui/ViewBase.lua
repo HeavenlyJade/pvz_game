@@ -139,7 +139,7 @@ function ViewBase:RegisterTween(component)
                         self.tweenTaskId = nil
                     end
                 end
-            end, 0, 1, true)
+            end, 0, 0.034)
         end
     end
 end

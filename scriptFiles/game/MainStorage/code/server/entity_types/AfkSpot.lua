@@ -60,7 +60,7 @@ function AfkSpot:StartSpellTimer(player)
     -- 创建新的定时器
     self.timerId = ServerScheduler.add(function()
         self:CastSpells(player)
-    end, 0, self.interval, true) -- 立即开始，每隔interval秒执行一次
+    end, 0, self.interval) -- 立即开始，每隔interval秒执行一次
 end
 
 --- 释放魔法

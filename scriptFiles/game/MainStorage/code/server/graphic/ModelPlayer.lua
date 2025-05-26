@@ -1,6 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 
 
 ---@class ModelPlayer
@@ -11,16 +12,20 @@ local ModelPlayer = ClassMgr.Class("ModelPlayer")
 ---@param animator Animator
 function ModelPlayer:OnInit(animator, stateConfig)
     self.animator = animator
+    self.finishTask = nil
     self.stateConfig = stateConfig
     self.currentState = nil ---@type table
     self.animationFinished = true
     self.isMoving = false
     self:SwitchState(stateConfig["初始状态"])
-    animator.GetAnimationPostNotify:Connect(function (...)
-        -- gg.log("动画播放完毕", ...)
-        self.animationFinished = true
-        self:PlayTransition("无")
-    end)
+    -- animator.Controller:GetStateMachine().EventNotify:Connect(function (...)
+    --     gg.log("EventNotify", ...)
+    -- end)
+    -- animator.GetAnimationPostNotify:Connect(function (...)
+    --     gg.log("动画播放完毕", ...)
+    --     self.animationFinished = true
+    --     self:PlayTransition("无")
+    -- end)
 end
 
 
@@ -99,12 +104,16 @@ end
 
 ---@param stateId string
 ---@param speed? number = 1
+---@return number
 function ModelPlayer:SwitchState(stateId, speed)
     -- print("SwitchState", stateId, speed)
+    if self.finishTask then
+        self.finishTask = ServerScheduler.cancel(self.finishTask)
+    end
     speed = speed or 1
     local state = self.stateConfig["状态"][stateId]
     if not state then
-        return
+        return 0
     end
     local fadeTime = 0
     if self.currentState then
@@ -118,7 +127,19 @@ function ModelPlayer:SwitchState(stateId, speed)
     else
         self.animator:Play(stateId, 0, 0)
     end
+    local playTime = state["动画持续时间"]
+    if playTime and playTime > 0 then
+        self.finishTask = ServerScheduler.add(function ()
+            self.animationFinished = true
+            self:PlayTransition("无")
+        end, playTime - 0.1)
+    end
+    -- local playTime = self.animator:GetCurrentStatePlayedTime(0)
+    -- gg.log("playTime", stateId, playTime)
+    -- local playTimeByStr = self.animator:GetStatePlayedTime(stateId)
+    -- gg.log("playTimeByStr", stateId, playTimeByStr)
     self.currentState = state
+    return playTime
 end
 
 return ModelPlayer

@@ -304,7 +304,6 @@ function MainServer.OnServerNotify(uin_, args)
     local handler = COMMAND_DISPATCH[args.cmd]
     if not handler then
         local player_ = gg.getPlayerByUin(uin_)
-        gg.log("event", uin_, player_, gg.server_players_list)
         args.player = player_
         ServerEventManager.Publish(args.cmd, args)
         return

@@ -66,7 +66,7 @@ function BattleHud:Open()
     -- 创建新的更新任务（每帧更新）`
     updateTaskId = ClientScheduler.add(function()
         self:UpdateCooldownAndCasting()
-    end, 0, 1, true)
+    end, 0, 0.034)
     
     self.recoilRecoveryFunc = function(deltaTime)
         if not recoil then return end

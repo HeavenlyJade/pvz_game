@@ -22,6 +22,10 @@ local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Grap
 ---@field duration number 飞弹持续时间
 ---@field canPassThroughTerrain boolean 是否可以穿过地形
 ---@field startTime number 飞弹生成时间
+---@field projectilePool table<Actor> 飞弹对象池
+---@field maxPoolSize number 对象池最大大小
+---@field updateCount number 更新计数
+---@field destroyCount number 销毁计数
 local ProjectileSpell = ClassMgr.Class("ProjectileSpell", Spell)
 
 ---@class ProjectileItem
@@ -52,6 +56,8 @@ function ProjectileSpell:OnInit(data)
     self.activeProjectiles = {}
     self.projectileCount = 0
     self.projectileID = 0
+    self.projectilePool = {}
+    self.maxPoolSize = data["对象池大小"] or 20
 end
 
 --- 生成唯一ID
@@ -59,6 +65,27 @@ end
 function ProjectileSpell:GenerateId()
     self.projectileID = self.projectileID + 1
     return self.projectileID
+end
+
+--- 从对象池获取飞弹Actor
+---@return Actor
+function ProjectileSpell:GetProjectileFromPool()
+    if #self.projectilePool > 0 then
+        return table.remove(self.projectilePool)
+    end
+    return nil
+end
+
+--- 将飞弹Actor返回对象池
+---@param actor Actor
+function ProjectileSpell:ReturnProjectileToPool(actor)
+    if #self.projectilePool < self.maxPoolSize then
+        actor.Visible = false
+        actor.Enabled = false
+        table.insert(self.projectilePool, actor)
+    else
+        actor:Destroy()
+    end
 end
 
 --- 生成飞弹
@@ -85,14 +112,19 @@ end
 ---@param caster Entity 施法者
 ---@param param CastParam 参数
 function ProjectileSpell:CreateProjectile(position, direction, baseDirection, caster, param)
-    -- 生成飞弹Actor
-    local originalActor = MainStorage["飞弹"][self.projectileModel] ---@type Actor
-    if not originalActor then
-        originalActor = game.WorkSpace["飞弹"][self.projectileModel] ---@type Actor
+    -- 从对象池获取或创建新的飞弹Actor
+    local actor = self:GetProjectileFromPool()
+    if not actor then
+        local originalActor = MainStorage["飞弹"][self.projectileModel] ---@type Actor
+        if not originalActor then
+            originalActor = game.WorkSpace["飞弹"][self.projectileModel] ---@type Actor
+        end
+        actor = originalActor:Clone()
     end
-    local actor = originalActor:Clone()
+    
     actor.Parent = caster.scene.node["世界特效"]
-    actor.Visible = true
+    actor.Enabled = true
+    actor.Visible = false  -- 初始设置为不可见
     actor.CollideGroupID = 9
     
     -- 创建飞弹项
@@ -106,9 +138,12 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
         lastHitTimes = {},
         remainingHits = param:GetValue(self, "生效次数", self.maxHits),
         startTime = os.time(),
-        size = gg.vec.Multiply3(originalActor.Size, originalActor.LocalScale)
+        size = gg.vec.Multiply3(actor.Size, actor.LocalScale),
+        updateCount = 0  -- 添加更新计数器
     }
-    actor.Position = gg.vec.Add3(position, 0, -item.size.y/2, 0)
+    local pos = gg.vec.Add3(position, 0, -item.size.y/2, 0)
+    actor.Position = pos
+
 
     -- 注册飞弹
     local id = self:GenerateId()
@@ -125,14 +160,29 @@ end
 ---@param id number 飞弹ID
 ---@param dt number 帧间隔时间
 function ProjectileSpell:UpdateProjectile(id)
-    local item = self.activeProjectiles[id]
+    local item = self.activeProjectiles[id] ---@type ProjectileItem
     if not item then return end
     
     local newPosition = item.actor.Position + item.direction * item.actor.Movespeed / 10.0
     item.actor.Position = newPosition
     
+    -- 延迟两次更新后设置为可见
+    item.updateCount = item.updateCount + 1
+    if item.updateCount >= 5 then
+        item.actor.Visible = true
+    end
+    
+    -- 如果设置了销毁计数，则递减计数并在计数为0时销毁
+    if item.destroyCount then
+        item.destroyCount = item.destroyCount - 1
+        if item.destroyCount <= 0 then
+            self:DestroyProjectile(id)
+        end
+        return
+    end
+    
     -- 检查碰撞
-    local hitTargets = item.caster.scene:OverlapBox(gg.vec.Add3(newPosition, 0, item.size.y / 2, 0), item.size, item.actor.LocalEuler, {3, 4})
+    local hitTargets = item.caster.scene:OverlapBox(gg.vec.Add3(newPosition, 0, item.size.y / 2, 0), item.size, item.actor.LocalEuler, item.caster:GetEnemyGroup())
     if hitTargets and #hitTargets > 0 then
         -- 遍历所有碰撞到的目标
         for _, target in ipairs(hitTargets) do
@@ -147,14 +197,14 @@ function ProjectileSpell:UpdateProjectile(id)
     if not self.canPassThroughTerrain then
         local hitGround = item.caster.scene:OverlapBox(gg.vec.Add3(newPosition, 0, item.size.y / 2, 0), Vector3.New(20, 20, 20), item.actor.LocalEuler, {1})
         if hitGround and #hitGround > 0 then
-            self:DestroyProjectile(id)
+            item.destroyCount = 5  -- 地形碰撞也延迟三次更新后销毁
         end
     end
     
     -- 检查持续时间
     if self.duration > 0 then
         if item.startTime and os.time() - item.startTime >= self.duration then
-            self:DestroyProjectile(id)
+            item.destroyCount = 5  -- 超时也延迟三次更新后销毁
         end
     end
 end
@@ -186,7 +236,7 @@ function ProjectileSpell:HandleProjectileHit(id, target)
     if item.remainingHits > 0 then
         item.remainingHits = item.remainingHits - 1
         if item.remainingHits == 0 then
-            self:DestroyProjectile(id)
+            item.destroyCount = 5  -- 设置需要三次更新后再销毁
         end
     end
 end
@@ -215,18 +265,12 @@ end
 function ProjectileSpell:DestroyProjectile(id)
     local item = self.activeProjectiles[id]
     if not item then return end
-    
-    -- 断开连接
     if item.moveConnection then
         item.moveConnection:Disconnect()
     end
-    
-    -- 销毁Actor
     if item.actor then
-        item.actor:Destroy()
+        self:ReturnProjectileToPool(item.actor)
     end
-    
-    -- 移除记录
     self.activeProjectiles[id] = nil
     self.projectileCount = self.projectileCount - 1
 end

@@ -23,6 +23,8 @@ local gg                = require(MainStorage.code.common.MGlobal)    ---@type g
 local SubSpell = ClassMgr.Class("SubSpell")
 
 function SubSpell:OnInit( data )
+    -- print(debug.traceback())
+    gg.log("SubSpell:OnInit", data)
     self.spellCache = nil
     self.spellName = data["魔法"]
 
@@ -58,6 +60,17 @@ function SubSpell:OnInit( data )
     self.dynamicTags = {}
 end
 
+function SubSpell:CanCast(caster, target)
+    if not self.spellCache then
+        local SpellConfig = require(MainStorage.code.common.config.SpellConfig)
+        self.spellCache = SpellConfig.Get(self.spellName)
+        gg.log("CanCast", self.spellName, self.spellCache)
+    end
+    local param = CastParam.New()
+    self.spellCache:CanCast(caster, target, param)
+    return not param.cancelled
+end
+
 --- 执行子魔法
 ---@param caster Entity 施法者
 ---@param target Entity|Vector3 目标
@@ -67,7 +80,6 @@ function SubSpell:Cast(caster, target, param)
     if not self.spellCache then
         local SpellConfig = require(MainStorage.code.common.config.SpellConfig)
         self.spellCache = SpellConfig.Get(self.spellName)
-        gg.log("SubSpell:Cast", self.spellName, self.spellCache)
     end
     if not param then
         param = CastParam.New()

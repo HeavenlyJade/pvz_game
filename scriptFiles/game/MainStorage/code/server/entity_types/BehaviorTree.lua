@@ -144,7 +144,17 @@ function MeleeBehavior:OnInit()
     ---@param behavior table
     ---@return boolean
     self.CanEnter = function(self, entity, behavior)
-        if not entity.target or not entity.target:CanBeTargeted() then return false end
+        if not entity.target or not entity.target:CanBeTargeted() then 
+            local searchRadius = behavior["主动索敌"]
+            if searchRadius and searchRadius > 0 then
+                entity:TryFindTarget(searchRadius) 
+                if not entity.target or not entity.target:CanBeTargeted() then
+                    return false
+                end
+            else
+                return false
+            end
+        end
         -- 检查距离
         local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
         return distanceSq <= (behavior["脱战距离"] or 20) ^ 2
@@ -156,11 +166,35 @@ function MeleeBehavior:OnInit()
         -- 进入战斗状态
         entity.attackTimer = 0
         entity.isAttacking = false
+        entity.skillCheckCounter = 0 -- 初始化技能检查计数器
     end
     
     ---@param self MeleeBehavior
     ---@param entity Monster
     self.Update = function(self, entity)
+        -- 检查并释放待释放的技能
+        if #entity.pendingSkills > 0 then
+            local skill = table.remove(entity.pendingSkills, 1)
+            skill:CastSkill(entity, entity.target)
+            return
+        end
+
+        -- 每30帧检查一次技能
+        entity.skillCheckCounter = (entity.skillCheckCounter or 0) + 1
+        if entity.skillCheckCounter >= 30 then
+            entity.skillCheckCounter = 0
+            
+            local periodicSkills = entity.mobType:GetSkillsByTiming("周期")
+            if periodicSkills then
+                for _, skill in ipairs(periodicSkills) do
+                    if skill:CanCast(entity, entity.target) then
+                        table.insert(entity.pendingSkills, skill)
+                        return
+                    end
+                end
+            end
+        end
+
         if not entity.target or not entity.target:CanBeTargeted() then
             entity:SetCurrentBehavior(nil)
             return
@@ -220,7 +254,10 @@ function MeleeBehavior:OnInit()
     ---@param entity Monster
     ---@return boolean
     self.CanExit = function(self, entity)
-        if not entity.target or not entity.target:CanBeTargeted() then return true end
+        if not entity.target or not entity.target:CanBeTargeted() then
+            entity:SetTarget(nil)
+             return true
+        end
         
         local behavior = entity:GetCurrentBehavior()
         local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())

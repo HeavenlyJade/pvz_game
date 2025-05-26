@@ -24,13 +24,6 @@ function RegisterMenuButton(viewButton)
     if not viewButton then return end
     -- 设置新的点击回调
     viewButton.clickCb = function(ui, button)
-        local buttonName = button.node.Name
-        if buttonName == "图鉴" then
-
-            local get_player_gui = gg.get_player_gui()
-            local CardsGui = get_player_gui.NewGuis.CardsGui
-            CardsGui.Visible= true
-        end
         -- 发送菜单点击事件到服务器
         gg.network_channel:FireServer({
             cmd = "MenuClicked",
@@ -39,10 +32,8 @@ function RegisterMenuButton(viewButton)
     end
 end
 
-
-
 function HudMenu:OnInit(node, config)
-    gg.log("HudMenu:OnInit")
+    gg.log("菜单按钮HudMenu初始化")
     ViewBase.OnInit(self, node, config)
     self.selectingCard = 0
     RegisterMenuButton(self:Get("活动", ViewButton))
@@ -59,7 +50,7 @@ function HudMenu:OnInit(node, config)
         return button
     end) ---@type ViewList<ViewButton>
 
-
+    
     ClientEventManager.Subscribe("SyncInventoryItems", function(evt)
         local evt = evt ---@type SyncInventoryItems
         -- 更新货币显示
@@ -73,7 +64,7 @@ function HudMenu:OnInit(node, config)
             end
         end
     end)
-
+    
 end
 
 
