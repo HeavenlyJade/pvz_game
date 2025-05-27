@@ -100,6 +100,8 @@ function CameraController.Init()
     _projectionDirty = true
 end
 
+-- 在 CameraController.lua 中，替换 SetActive 函数中的鼠标处理部分：
+
 function CameraController.SetActive(active)
     _owner = Players.LocalPlayer
     if active then
@@ -108,18 +110,18 @@ function CameraController.SetActive(active)
     
         CameraController.EnableSightTouch()
     
-        if game.UserInputService.TouchEnabled then -- 触摸
+        if game.UserInputService.TouchEnabled then -- 触摸设备
             _TouchStartedEvent =
                 game.UserInputService.TouchStarted:Connect(
-            function(inputObj, gameprocessed)
+                function(inputObj, gameprocessed)
                     _isTouching = true
                     CameraController.OnTouchStarted(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
-            end
-        )
+                end
+            )
 
             _TouchMovedEvent =
                 game.UserInputService.TouchMoved:Connect(
-            function(inputObj, gameprocessed)
+                function(inputObj, gameprocessed)
                     if _isTouching then
                         CameraController.OnTouchMoved(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
                     end
@@ -128,62 +130,59 @@ function CameraController.SetActive(active)
 
             _TouchEndedEvent =
                 game.UserInputService.TouchEnded:Connect(
-            function(inputObj, gameprocessed)
+                function(inputObj, gameprocessed)
                     _isTouching = false
                     CameraController.OnTouchEnded(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
                 end
             )
-        elseif game.UserInputService.MouseEnabled then -- 鼠标
+        elseif game.UserInputService.MouseEnabled then -- 鼠标设备
             _InputBeganEvent =
                 game.UserInputService.InputBegan:Connect(
-            function(inputObj, gameprocessed)
-                if
-                    inputObj.UserInputType == Enum.UserInputType.MouseButton1.Value or
-                        inputObj.UserInputType == Enum.UserInputType.MouseButton2.Value or
-                        inputObj.UserInputType == Enum.UserInputType.MouseButton3.Value
-                 then
+                function(inputObj, gameprocessed)
+                    -- 只有鼠标右键才开始摄像头控制
+                    if inputObj.UserInputType == Enum.UserInputType.MouseButton2.Value then
                         _isTouching = true
                         CameraController.OnTouchStarted(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
                     end
                 end
             )
+            
             _InputChangedEvent =
                 game.UserInputService.InputChanged:Connect(
-            function(inputObj, gameprocessed)
-                if inputObj.UserInputType == Enum.UserInputType.MouseMovement.Value then
-                        local IsSight = game.MouseService:IsSight()
-                    if IsSight then
+                function(inputObj, gameprocessed)
+                    if inputObj.UserInputType == Enum.UserInputType.MouseMovement.Value then
+                        -- 只有在按住鼠标右键时才处理鼠标移动
+                        if _isTouching then
                             CameraController.OnTouchMoved(
                                 _currentTouchPos.x + inputObj.Delta.x,
                                 _currentTouchPos.y + inputObj.Delta.y,
-                            inputObj.TouchId
-                        )
-                        elseif _isTouching then
+                                inputObj.TouchId
+                            )
                         end
+                    end
                 end
-            end
-        )
+            )
+            
             _InputEndedEvent =
                 game.UserInputService.InputEnded:Connect(
-            function(inputObj, gameprocessed)
-                if
-                    inputObj.UserInputType == Enum.UserInputType.MouseButton1.Value or
-                        inputObj.UserInputType == Enum.UserInputType.MouseButton2.Value or
-                        inputObj.UserInputType == Enum.UserInputType.MouseButton3.Value
-                 then
+                function(inputObj, gameprocessed)
+                    -- 只有鼠标右键抬起才停止摄像头控制
+                    if inputObj.UserInputType == Enum.UserInputType.MouseButton2.Value then
                         _isTouching = false
                         CameraController.OnTouchEnded(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
                     end
                 end
             )
         end
-        -- Bind to the camera's render stepped event
+        
+        -- 绑定渲染更新事件
         game.RunService.RenderStepped:Connect(
             function(dt)
                 CameraController.LaterUpdateClient(dt)
             end
         )
     else
+        -- 断开所有事件连接的代码保持不变...
         if _TouchStartedEvent then
             _TouchStartedEvent:Disconnect()
             _TouchStartedEvent = nil
@@ -196,7 +195,6 @@ function CameraController.SetActive(active)
             _TouchMovedEvent:Disconnect()
             _TouchMovedEvent = nil
         end
-
         if _InputBeganEvent then
             _InputBeganEvent:Disconnect()
             _InputBeganEvent = nil
@@ -205,14 +203,12 @@ function CameraController.SetActive(active)
             _InputEndedEvent:Disconnect()
             _InputEndedEvent = nil
         end
-
         if _InputChangedEvent then
             _InputChangedEvent:Disconnect()
             _InputChangedEvent = nil
         end
     end
 end
-
 --设置摄像机
 function CameraController.SetCamera(camera)
     _camera = camera
@@ -326,6 +322,17 @@ function CameraController.ThirdPersonUpdate(dt)
 
     -- 保存当前旋转状态
     _rotation = orient
+end
+
+function CameraController.RaytraceScene(filterGroup)
+    local winSize = _camera.WindowSize
+    local ray_   =  _camera:ViewportPointToRay( winSize.x/2, winSize.y/2, 12800 )
+    local result = game.WorldService:RaycastClosest(ray_.Origin, ray_.Direction, 12800, true, filterGroup)
+    print("result", result.obj, result.position, result.normal)
+    if result.isHit then
+        return result.position
+    end
+    return nil
 end
 
 --获取摄像机朝向，未抖动

@@ -23,11 +23,8 @@ local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSp
 ---@field projectileID number 飞弹ID
 ---@field duration number 飞弹持续时间
 ---@field canPassThroughTerrain boolean 是否可以穿过地形
----@field startTime number 飞弹生成时间
 ---@field projectilePool table<Actor> 飞弹对象池
 ---@field maxPoolSize number 对象池最大大小
----@field updateCount number 更新计数
----@field destroyCount number 销毁计数
 ---@field initialAngleOffset Vec2 初始角度修改
 ---@field gravity number 重力
 ---@field trackingSpeed number 追踪目标速度
@@ -38,13 +35,17 @@ local ProjectileSpell = ClassMgr.Class("ProjectileSpell", Spell)
 ---@field caster Entity 施法者
 ---@field direction Vec3 飞行方向
 ---@field baseDirection Vec3 基础方向
+---@field size Vec3
 ---@field param CastParam 参数
 ---@field hitTargets table<Entity, boolean> 已命中目标
 ---@field lastHitTimes table<Entity, number> 上次命中时间
 ---@field remainingHits number 剩余命中次数
 ---@field moveConnection SBXConnection 移动更新连接
 ---@field velocity Vec3 当前速度
+---@field destroyCount number 销毁计数
 ---@field target Entity|nil 追踪目标
+---@field startTime number 飞弹生成时间
+---@field updateCount number 更新计数
 local ProjectileItem = {}
 
 function ProjectileSpell:OnInit(data)
@@ -88,7 +89,7 @@ function ProjectileSpell:GenerateId()
 end
 
 --- 从对象池获取飞弹Actor
----@return Actor
+---@return Actor|nil
 function ProjectileSpell:GetProjectileFromPool()
     if #self.projectilePool > 0 then
         return table.remove(self.projectilePool)
@@ -128,7 +129,7 @@ end
 --- 创建飞弹
 ---@param position Vec3 生成位置
 ---@param direction Vec3 飞行方向
----@param baseDirection Vector3 基础方向
+---@param baseDirection Vec3 基础方向
 ---@param caster Entity 施法者
 ---@param param CastParam 参数
 function ProjectileSpell:CreateProjectile(position, direction, baseDirection, caster, param)
@@ -199,7 +200,7 @@ function ProjectileSpell:UpdateProjectile(id)
     end
     
     -- 应用追踪
-    if self.trackingSpeed > 0 and item.target and item.target:CanBeTargeted() then
+    if self.trackingSpeed > 0 and item.target and (not self:IsEntity(item.target) or item.target:CanBeTargeted()) then
         local targetPos = Vec3.new(item.target:GetPosition())
         local currentPos = Vec3.new(item.actor.Position)
         local toTarget = (targetPos - currentPos):Normalized()
@@ -234,7 +235,7 @@ function ProjectileSpell:UpdateProjectile(id)
     end
     
     -- 检查碰撞
-    local hitTargets = item.caster.scene:OverlapBox(
+    local hitTargets = item.caster.scene:OverlapBoxEntity(
         Vec3.new(item.actor.Position) + Vec3.new(0, item.size.y / 2, 0):ToVector3(),
         item.size:ToVector3(),
         item.actor.LocalEuler,
@@ -372,7 +373,9 @@ function ProjectileSpell:CastReal(caster, target, param)
         end
     else
         baseDirection = (self:GetPosition(target) - caster:GetPosition()):Normalize()
+        print("baseDirection 222", baseDirection)
     end
+    gg.log("baseDirection", baseDirection, target, self:GetPosition(target), caster:GetPosition(), (self:GetPosition(target) - caster:GetPosition()), (self:GetPosition(target) - caster:GetPosition()):Normalize())
     param.realTarget = target
     
     -- 获取散射参数

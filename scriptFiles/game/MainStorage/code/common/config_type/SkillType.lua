@@ -27,6 +27,8 @@ function SkillType:OnInit(data)
     self.nextSkills = data["下一技能"]
     self.prerequisite = {} ---@type SkillType[]
     self.targetMode = data["目标模式"]
+    self.skillType = data["技能分类"]
+    self.quality = data["品质"] or "" -- 
     
     -- 加载被动词条
     self.passiveTags = {}

@@ -174,7 +174,7 @@ function AOESpell:GetHitTargets(loc, caster, param)
         if self.printInfo then
             table.insert(log, string.format("%s: 矩形尺寸[%.1f, %.1f, %.1f]", self.spellName, scaleX, scaleY, scaleZ))
         end
-        local hitTargets = caster.scene:OverlapBox(loc, size, Vector3.zero, caster:GetEnemyGroup())
+        local hitTargets = caster.scene:OverlapBoxEntity(loc, size, Vector3.New(0,0,0), caster:GetEnemyGroup())
         if self.printInfo then
             table.insert(log, string.format("%s: 矩形检测命中[%d]个目标", self.spellName, hitTargets and #hitTargets or 0))
         end

@@ -82,8 +82,10 @@ function Spell:GetName(target)
         return "[无目标]"
     elseif type(target) == "userdata" then
         return tostring(target)
-    else
+    elseif target.Is and target:Is("Entity") then
         return target.name
+    else
+        return tostring(target)
     end
 end
 
@@ -225,14 +227,21 @@ end
 
 function Spell:GetPosition(target)
     if type(target) == "userdata" then
-        return target
+        return gg.Vec3.new(target)
     else
-        return target:GetPosition()
+        if type(target) == "table" and target.Is and target:Is("Entity") then
+            return gg.Vec3.new(target:GetPosition())
+        else
+            return target
+        end
     end
 end
 
 function Spell:IsEntity(target)
-    return type(target) ~= "userdata"
+    if type(target) == "table" and target.Is and target:Is("Entity") then
+        return true
+    end
+    return false
 end
 
 --- 检查是否可以释放魔法

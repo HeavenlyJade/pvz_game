@@ -50,8 +50,6 @@ function HudMenu:OnInit(node, config)
     self:RegisterMenuButton(self:Get("活动", ViewButton))
     self:RegisterMenuButton(self:Get("图鉴", ViewButton))
 
-    -- RegisterMenuButton(self:Get("活动", ViewButton))
-    -- RegisterMenuButton(self:Get("图鉴", ViewButton))
     self:Get("菜单/菜单按钮", ViewList, function(n)
         local button = ViewButton.New(n, self)
         self:RegisterMenuButton(button)
