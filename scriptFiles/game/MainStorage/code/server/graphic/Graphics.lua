@@ -44,7 +44,6 @@ end
 ---@param param CastParam
 function Graphic:PlayAt(caster, target, param)
     local c = self:GetTarget(caster, target)
-    gg.log("PlayAt", caster, target, c)
     if self.delay > 0 then
         ServerScheduler.add(function ()
             self:PlayAtReal(caster, c, param)

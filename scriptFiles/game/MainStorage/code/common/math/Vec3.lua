@@ -5,11 +5,34 @@ local MathDefines = require(MainStorage.code.common.math.MathDefines)
 local Vec3 = {}
 
 --实例化
+---@param x Vector3|Vec3|number[]|number
+---@param y? number
+---@param z? number
+---@return Vec3
 function Vec3.new(x, y, z)
     local obj = {}
-    obj.x = x or 0
-    obj.y = y or 0
-    obj.z = z or 0
+    if not x then
+        return nil
+    end
+    if type(x) == "table" then
+        if x.x then
+            obj.x = x.x
+            obj.y = x.y
+            obj.z = x.z
+        else
+            obj.x = x[1] or 0
+            obj.y = x[2] or 0
+            obj.z = x[3] or 0
+        end
+    elseif type(x) == "number" then
+        obj.x = x or 0
+        obj.y = y or 0
+        obj.z = z or 0
+    else
+        obj.x = x.x
+        obj.y = x.y
+        obj.z = x.z
+    end
     Vec3.__index = Vec3
     setmetatable(obj, Vec3)
     return obj
@@ -162,6 +185,13 @@ end
 ---------------------------------运算符重载-------------------------------
 
 --获取长度
+function Vec3:Length()
+    return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+end
+
+function Vec3:LengthSq()
+    return self.x * self.x + self.y * self.y + self.z * self.z
+end
 function Vec3:Magnitude()
     return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
 end
@@ -314,21 +344,52 @@ function Vec3:Equals(other)
     return math.abs(self.x - other.x) < r and math.abs(self.y - other.y) < r and math.abs(self.z - other.z) < r
 end
 
+function Vec3:ToVector3()
+    return Vector3.New(self.x, self.y, self.z)
+end
+
 --转换成表
 function Vec3:ToTable()
     return {self.x, self.y, self.z}
 end
 
---从表创建
-function Vec3:FromTable(t)
-    self.x = t[1]
-    self.y = t[2]
-    self.z = t[3]
-end
-
 --拷贝
 function Vec3:Clone()
     return Vec3.new(self.x, self.y, self.z)
+end
+
+--围绕Y轴旋转
+---@param degrees number 旋转角度
+---@return Vec3 旋转后的新向量实例
+function Vec3:rotateAroundY(degrees)
+    -- 处理90度的倍数情况
+    if degrees % 90 == 0 then
+        local rotateCount = math.ceil((degrees / 90.0) % 4)
+        if rotateCount == 3 then
+            return Vec3.new(self.z, self.y, -self.x)
+        elseif rotateCount == 2 then
+            return Vec3.new(-self.x, self.y, -self.z)
+        elseif rotateCount == 1 then
+            return Vec3.new(-self.z, self.y, self.x)
+        else
+            return self:Clone()
+        end
+    end
+    
+    -- 处理0度情况
+    if degrees == 0 then
+        return self:Clone()
+    end
+    
+    -- 处理其他角度
+    local rad = math.rad(degrees)
+    local cosine = math.cos(rad)
+    local sine = math.sin(rad)
+    return Vec3.new(
+        cosine * self.x - sine * self.z,
+        self.y,
+        sine * self.x + cosine * self.z
+    )
 end
 
 return Vec3

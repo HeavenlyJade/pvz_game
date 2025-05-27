@@ -9,7 +9,7 @@ function CastParam:OnInit(...)
     local data = ... or {}
     self.power = data.power or 1.0 ---@type number
     self.cancelled = data.cancelled or false ---@type boolean
-    self.realTarget = data.realTarget ---@type SpellTarget
+    self.realTarget = data.realTarget ---@type Entity
     self.skipTags = data.skipTags or {} ---@type table<string, boolean>
     self.extraModifiers = data.extraModifiers or {} ---@type table<string, Battle>
     self.extraParams = data.extraParams or {} ---@type table<string, any>
@@ -96,7 +96,7 @@ function CastParam:GetParamByName(name, v, def)
     end
     
     -- 类型不匹配时返回默认值
-    warn(string.format("参数类型转换失败: %s.%s, 值类型: %s, 目标类型: %s", 
+    gg.log(string.format("参数类型转换失败: %s.%s, 值类型: %s, 目标类型: %s", 
         name, v, type(value), type(def)))
     return def
 end

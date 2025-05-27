@@ -1,3 +1,6 @@
+local MainStorage = game:GetService("MainStorage")
+
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 
 ---@class ClientEventManager
 local ClientEventManager = {

@@ -1,7 +1,6 @@
 
 local MainStorage     = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
-
 ---@class SEvent
 ---@field __class Class 事件类型
 
@@ -87,7 +86,6 @@ end
 ---@param eventData table 事件数据
 function ServerEventManager.Publish(eventType, eventData)
     eventData.__class = eventType
-    gg.log("PublishEvent", eventType, eventData)
     if ServerEventManager._eventDictionary[eventType] then
         for _, item in ipairs(ServerEventManager._eventDictionary[eventType]) do
             local success, err = pcall(item.cb, eventData)

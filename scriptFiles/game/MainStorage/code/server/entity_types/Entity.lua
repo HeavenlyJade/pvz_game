@@ -763,7 +763,7 @@ end
 
 -- 怪物头部出现的名字和等级
 -- { name=desc_.name, level=self.level, high=0 }
-function _M:createTitle(height)
+function _M:createTitle()
     if not self.bb_title then
         local name_level_billboard = SandboxNode.new('UIBillboard', self.actor)
         name_level_billboard.Name = 'name_level'
@@ -771,9 +771,9 @@ function _M:createTitle(height)
         name_level_billboard.CanCollide = false -- 避免产生物理碰撞
         name_level_billboard.Size2d = Vector2.New(5, 5)
 
-        local high = 286 + (height or 0) -- 名字高度
-        name_level_billboard.LocalPosition = Vector3.New(0, high, 0)
+        name_level_billboard.LocalPosition = Vector3.New(0, self.actor.Size.y + 150 / self.actor.LocalScale.y, 0)
         name_level_billboard.ResolutionLevel = Enum.ResolutionLevel.R4X
+        name_level_billboard.LocalScale = Vector3.New(1, 0.6, 1)
 
         local number_level = gg.createTextLabel(name_level_billboard, self.name .. ' ' .. self.level)
         number_level.ShadowEnable = true

@@ -134,7 +134,7 @@ function _M:CreateModel(scene)
     -- 加载完成事件处理
     actor_monster.LoadFinish:connect(function(ret)
         -- 创建头顶标题
-        self:createTitle(actor_monster.Size.y)
+        self:createTitle()
     end)
     self:SetHealth(self:GetStat("生命"))
     if self.mobType.data["状态机"] then
@@ -168,7 +168,7 @@ function _M:TryFindTarget(detectRange)
     local nearestTarget = nil
     local minDistanceSq = detectRangeSq
 
-    gg.log("TryFindTarget", enemies)
+    -- gg.log("TryFindTarget", enemies)
     for _, entity in ipairs(enemies) do
         -- 检查是否是敌对单位
         if entity.isEntity and not entity.isDead then
@@ -254,8 +254,8 @@ function _M:createHpBar(root_)
         bar_.LayoutHRelation = Enum.LayoutHRelation.Middle
         bar_.LayoutVRelation = Enum.LayoutVRelation.Bottom
 
-        -- bg_.Size = Vector2.New(256, 32)
-        -- bar_.Size = Vector2.New(256, 32)
+        bg_.Size = Vector2.New(330, 28)
+        bar_.Size = Vector2.New(330, 28)
 
         bg_.Pivot = Vector2.New(0.5, -1.5)
         bar_.Pivot = Vector2.New(0.5, -1.5)

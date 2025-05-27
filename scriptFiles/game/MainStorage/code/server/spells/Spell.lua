@@ -76,6 +76,7 @@ function Spell:OnInit( data )
     self.castEffects = Graphics.Load(data["特效_释放"])
 end
 
+
 function Spell:GetName(target)
     if not target then
         return "[无目标]"
@@ -201,7 +202,7 @@ end
 ---@param playFrom Entity|Vector3 播放起点
 ---@param playAt Entity|Vector3 播放终点
 ---@param param CastParam 参数
----@return Action[]|nil 特效动作数组
+---@return Action[] 特效动作数组
 function Spell:PlayEffect(effects, playFrom, playAt, param)
     if not effects then return nil end
     local actions = {}

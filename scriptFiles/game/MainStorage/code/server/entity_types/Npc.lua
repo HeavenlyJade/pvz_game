@@ -50,8 +50,7 @@ function _M:OnInit(npcData, actor)
 
     -- 监听触发器被触碰
     trigger.Touched:Connect(function(node)
-        print("Touched", self.name, node.Name)
-
+        -- print("Touched", self.name, node.Name)
         if node and node.UserId then
             local player = gg.getPlayerByUin(node.UserId)
             if player then
@@ -64,7 +63,7 @@ function _M:OnInit(npcData, actor)
 
     -- 监听触发器触碰结束
     trigger.TouchEnded:Connect(function(node)
-        print("TouchEnded", self.name, node.Name)
+        -- print("TouchEnded", self.name, node.Name)
         if node and node.UserId then
             local player = gg.getPlayerByUin(node.UserId)
             if player then
@@ -91,7 +90,7 @@ function _M:OnInit(npcData, actor)
             end
         end
     end)
-    self:createTitle(npcSize.y)
+    self:createTitle()
 end
 
 _M.GenerateUUID = function(self)

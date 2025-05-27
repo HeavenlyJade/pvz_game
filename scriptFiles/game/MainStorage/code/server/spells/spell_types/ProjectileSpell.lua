@@ -5,6 +5,8 @@ local gg                = require(MainStorage.code.common.MGlobal)    ---@type g
 local RunService = game.RunService
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Graphics
+local Vec3 = require(MainStorage.code.common.math.Vec3) ---@type Vec3
+local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 
 ---@class ProjectileSpell:Spell
 ---@field projectileModel string 飞弹模型名称
@@ -26,18 +28,23 @@ local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Grap
 ---@field maxPoolSize number 对象池最大大小
 ---@field updateCount number 更新计数
 ---@field destroyCount number 销毁计数
+---@field initialAngleOffset Vec2 初始角度修改
+---@field gravity number 重力
+---@field trackingSpeed number 追踪目标速度
 local ProjectileSpell = ClassMgr.Class("ProjectileSpell", Spell)
 
 ---@class ProjectileItem
 ---@field actor Actor 飞弹Actor
 ---@field caster Entity 施法者
----@field direction Vector3 飞行方向
----@field baseDirection Vector3 基础方向
+---@field direction Vec3 飞行方向
+---@field baseDirection Vec3 基础方向
 ---@field param CastParam 参数
 ---@field hitTargets table<Entity, boolean> 已命中目标
 ---@field lastHitTimes table<Entity, number> 上次命中时间
 ---@field remainingHits number 剩余命中次数
 ---@field moveConnection SBXConnection 移动更新连接
+---@field velocity Vec3 当前速度
+---@field target Entity|nil 追踪目标
 local ProjectileItem = {}
 
 function ProjectileSpell:OnInit(data)
@@ -58,6 +65,19 @@ function ProjectileSpell:OnInit(data)
     self.projectileID = 0
     self.projectilePool = {}
     self.maxPoolSize = data["对象池大小"] or 20
+    
+    self.subSpellsOnEnd = {}
+    if data["结束子魔法"] then
+        for _, subSpellData in ipairs(data["结束子魔法"]) do
+            local subSpell = SubSpell.New(subSpellData)
+            table.insert(self.subSpellsOnEnd, subSpell)
+        end
+    end
+    -- 新增配置项
+    self.speed = data["速度"] or 500
+    self.gravity = data["重力"] or 0
+    self.trackingSpeed = data["追踪目标速度"] or 0
+    self.initialAngleOffset = gg.Vec2.new(data["初始角度修改"] or {0, 0})
 end
 
 --- 生成唯一ID
@@ -89,9 +109,9 @@ function ProjectileSpell:ReturnProjectileToPool(actor)
 end
 
 --- 生成飞弹
----@param position Vector3 生成位置
----@param direction Vector3 飞行方向
----@param baseDirection Vector3 基础方向
+---@param position Vec3 生成位置
+---@param direction Vec3 飞行方向
+---@param baseDirection Vec3 基础方向
 ---@param caster Entity 施法者
 ---@param param CastParam 参数
 ---@param delay number 延迟时间
@@ -106,8 +126,8 @@ function ProjectileSpell:SpawnProjectile(position, direction, baseDirection, cas
 end
 
 --- 创建飞弹
----@param position Vector3 生成位置
----@param direction Vector3 飞行方向
+---@param position Vec3 生成位置
+---@param direction Vec3 飞行方向
 ---@param baseDirection Vector3 基础方向
 ---@param caster Entity 施法者
 ---@param param CastParam 参数
@@ -127,23 +147,33 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
     actor.Visible = false  -- 初始设置为不可见
     actor.CollideGroupID = 9
     
+    if self.initialAngleOffset.x ~= 0 then
+        direction.y = direction.y + self.initialAngleOffset.x / 90
+    end
+    if self.initialAngleOffset.y ~= 0 then
+        direction = direction:rotateAroundY(self.initialAngleOffset.y)
+    end
+
+    gg.log("Vec3", position)
+    
     -- 创建飞弹项
     local item = {
         actor = actor,
         caster = caster,
         direction = direction,
-        baseDirection = baseDirection,
+        baseDirection = Vec3.new(baseDirection),
         param = param,
         hitTargets = {},
         lastHitTimes = {},
         remainingHits = param:GetValue(self, "生效次数", self.maxHits),
         startTime = os.time(),
-        size = gg.vec.Multiply3(actor.Size, actor.LocalScale),
-        updateCount = 0  -- 添加更新计数器
+        size = Vec3.new(actor.Size) * Vec3.new(actor.LocalScale),
+        updateCount = 0,  -- 添加更新计数器
+        velocity = direction * self.speed,  -- 初始速度
+        target = param.realTarget  -- 保存追踪目标
     }
-    local pos = gg.vec.Add3(position, 0, -item.size.y/2, 0)
-    actor.Position = pos
-
+    local pos = position + Vec3.new(0, -item.size.y/2, 0)
+    actor.Position = pos:ToVector3()
 
     -- 注册飞弹
     local id = self:GenerateId()
@@ -163,8 +193,30 @@ function ProjectileSpell:UpdateProjectile(id)
     local item = self.activeProjectiles[id] ---@type ProjectileItem
     if not item then return end
     
-    local newPosition = item.actor.Position + item.direction * item.actor.Movespeed / 10.0
-    item.actor.Position = newPosition
+    -- 应用重力
+    if self.gravity ~= 0 then
+        item.velocity = item.velocity + Vec3.new(0, -self.gravity, 0)
+    end
+    
+    -- 应用追踪
+    if self.trackingSpeed > 0 and item.target and item.target:CanBeTargeted() then
+        local targetPos = Vec3.new(item.target:GetPosition())
+        local currentPos = Vec3.new(item.actor.Position)
+        local toTarget = (targetPos - currentPos):Normalized()
+        item.velocity = item.velocity + toTarget * self.trackingSpeed
+    end
+    
+    -- 更新位置
+    local newPosition = Vec3.new(item.actor.Position) + item.velocity * (1/60)  -- 假设60FPS
+    item.actor.Position = newPosition:ToVector3()
+    
+    -- 更新方向
+    if not item.velocity:IsZero() then
+        local velocity = item.velocity
+        local pitch = math.deg(math.atan2(velocity.y, math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z)))
+        local yaw = math.deg(math.atan2(velocity.x, velocity.z))
+        item.actor.LocalEuler = Vec3.new(pitch, yaw, 0):ToVector3()
+    end
     
     -- 延迟两次更新后设置为可见
     item.updateCount = item.updateCount + 1
@@ -182,7 +234,12 @@ function ProjectileSpell:UpdateProjectile(id)
     end
     
     -- 检查碰撞
-    local hitTargets = item.caster.scene:OverlapBox(gg.vec.Add3(newPosition, 0, item.size.y / 2, 0), item.size, item.actor.LocalEuler, item.caster:GetEnemyGroup())
+    local hitTargets = item.caster.scene:OverlapBox(
+        Vec3.new(item.actor.Position) + Vec3.new(0, item.size.y / 2, 0):ToVector3(),
+        item.size:ToVector3(),
+        item.actor.LocalEuler,
+        item.caster:GetEnemyGroup()
+    )
     if hitTargets and #hitTargets > 0 then
         -- 遍历所有碰撞到的目标
         for _, target in ipairs(hitTargets) do
@@ -195,7 +252,12 @@ function ProjectileSpell:UpdateProjectile(id)
     
     -- 检查地形碰撞
     if not self.canPassThroughTerrain then
-        local hitGround = item.caster.scene:OverlapBox(gg.vec.Add3(newPosition, 0, item.size.y / 2, 0), Vector3.New(20, 20, 20), item.actor.LocalEuler, {1})
+        local hitGround = item.caster.scene:OverlapBox(
+            Vec3.new(item.actor.Position) + Vec3.new(0, item.size.y / 2, 0):ToVector3(),
+            Vec3.new(20, 20, 20):ToVector3(),
+            item.actor.LocalEuler,
+            {1}
+        )
         if hitGround and #hitGround > 0 then
             item.destroyCount = 5  -- 地形碰撞也延迟三次更新后销毁
         end
@@ -265,6 +327,15 @@ end
 function ProjectileSpell:DestroyProjectile(id)
     local item = self.activeProjectiles[id]
     if not item then return end
+
+    -- 在飞弹消失位置释放结束子魔法
+    if #self.subSpellsOnEnd > 0 then
+        local finalPosition = Vec3.new(item.actor.Position)
+        for _, subSpell in ipairs(self.subSpellsOnEnd) do
+            subSpell:Cast(item.caster, nil, item.param, finalPosition)
+        end
+    end
+
     if item.moveConnection then
         item.moveConnection:Disconnect()
     end
@@ -302,6 +373,7 @@ function ProjectileSpell:CastReal(caster, target, param)
     else
         baseDirection = (self:GetPosition(target) - caster:GetPosition()):Normalize()
     end
+    param.realTarget = target
     
     -- 获取散射参数
     local shootCount = param:GetValue(self, "散射次数", self.scatterCount)
@@ -310,7 +382,7 @@ function ProjectileSpell:CastReal(caster, target, param)
     
     -- 如果只有一发，直接生成
     if shootCount <= 1 then
-        self:SpawnProjectile(position, baseDirection, baseDirection, caster, param, 0)
+        self:SpawnProjectile(Vec3.new(position), Vec3.new(baseDirection), Vec3.new(baseDirection), caster, param, 0)
         return true
     end
     
@@ -332,7 +404,7 @@ function ProjectileSpell:CastReal(caster, target, param)
     -- 生成所有散射
     for i = 1, shootCount do
         local currentAngle = startAngle + (angleStep * (i - 1))
-        local currentDirection = Vector3.New(
+        local currentDirection = Vec3.new(
             baseDirection.x * math.cos(currentAngle) - baseDirection.y * math.sin(currentAngle),
             baseDirection.x * math.sin(currentAngle) + baseDirection.y * math.cos(currentAngle),
             baseDirection.z

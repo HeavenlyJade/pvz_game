@@ -1,10 +1,26 @@
+
+---@class Vec2
 local Vec2 = {}
 
 --实例化
+---@param x Vector2|Vec2|number[]|number
+---@param y? number
+---@return Vec2
 function Vec2.new(x, y)
     local obj = {}
-    obj.x = x or 0
-    obj.y = y or 0
+    if not x then
+        return nil
+    end
+    if type(x) == "table" then
+        obj.x = x[1] or 0
+        obj.y = x[2] or 0
+    elseif type(x) == "number" then
+        obj.x = x or 0
+        obj.y = y or 0
+    else
+        obj.x = x.x
+        obj.y = x.y
+    end
     Vec2.__index = Vec2
     setmetatable(obj, Vec2)
     return obj

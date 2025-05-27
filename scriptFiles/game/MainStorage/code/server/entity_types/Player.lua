@@ -236,7 +236,12 @@ function _M:initSkillData()
     if ret1_ == 0 and cloud_data_ and cloud_data_.skills then
         -- 加载已保存的技能
         for skillId, skillData in pairs(cloud_data_.skills) do
-            self.skills[skillId] = Skill.New(self, skillData)
+            local skill = Skill.New(self, skillData)
+            if not skill.skillType then
+                print(self.name .. "的技能不存在： " .. skillData["skill"])
+            else
+                self.skills[skillId] = skill
+            end
         end
     end
     -- 同步到客户端

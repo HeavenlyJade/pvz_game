@@ -138,6 +138,24 @@ function _M:update_npcs()
     end
 end
 
+function _M:OverlapSphere(center, radius, filterGroup, filterFunc)
+    local results = game:GetService('WorldService'):OverlapSphere(radius, 
+        Vector3.New(center.x, center.y, center.z), false, filterGroup)
+    local retActors = {}
+    for _, v in ipairs(results) do
+        local obj = v.obj
+        local entity = self.node2Entity[obj]
+        -- gg.log("entity", obj, entity)
+        if entity then
+            table.insert(retActors, entity)
+            if filterFunc then
+                filterFunc(entity)
+            end
+        end
+    end
+    return retActors
+end
+
 function _M:OverlapBox(center, extent, angle, filterGroup, filterFunc)
     local results = game:GetService('WorldService'):OverlapBox(Vector3.New(extent.x, extent.y, extent.z),
         Vector3.New(center.x, center.y, center.z), Vector3.New(angle.x, angle.y, angle.z), false, filterGroup)

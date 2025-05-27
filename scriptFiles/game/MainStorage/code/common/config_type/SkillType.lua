@@ -25,6 +25,7 @@ function SkillType:OnInit(data)
     ---客户端
     self.isEntrySkill = data["是入口技能"] or false
     self.nextSkills = data["下一技能"]
+    self.prerequisite = {} ---@type SkillType[]
     self.targetMode = data["目标模式"]
     
     -- 加载被动词条
@@ -56,6 +57,12 @@ function SkillType:OnInit(data)
             recoil_cooling_time = recoil["后坐力冷却时间"] or 0.5
         }
     end
+end
+
+function SkillType:GetToStringParams()
+    return {
+        name = self.name
+    }
 end
 
 return SkillType

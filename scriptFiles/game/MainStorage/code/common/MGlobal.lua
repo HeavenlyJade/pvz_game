@@ -11,8 +11,12 @@ local string_find = string.find
 local string_gsub = string.gsub
 local string_sub = string.sub
 local string_len = string.len
-
 local MainStorage = game:GetService("MainStorage")
+local Vec2 = require(MainStorage.code.common.math.Vec2)
+local Vec3 = require(MainStorage.code.common.math.Vec3)
+local Vec4 = require(MainStorage.code.common.math.Vec4)
+local Quat = require(MainStorage.code.common.math.Quat)
+
 local inputservice = game:GetService("UserInputService")
 local Players = game:GetService('Players')
 
@@ -347,6 +351,10 @@ end
 local gg = {
     math = Math,
     vec = vec,
+    Vec2 = Vec2, ---@type Vec2
+    Vec3 = Vec3, ---@type Vec3
+    Vec4 = Vec4, ---@type Vec4
+    Quat = Quat, ---@type Quat
     noise = require(script.Parent.math.PerlinNoise),
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
@@ -787,7 +795,7 @@ function gg.table2str(tbl, level_, visited)
     end
     level_ = level_ or 0
     if level_ >= 10 then
-        -- gg.log('ERROR table2str level>=10')
+        gg.log('ERROR table2str level>=10')
         return '' -- 层数保护
     end
 

@@ -4,7 +4,7 @@ local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
-local MenuButtonUtils = require(MainStorage.code.client.ui.MenuButtonUtils) ---@type MenuButtonUtils
+
 
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
@@ -17,6 +17,23 @@ local uiConfig = {
 
 ---@class CardsGui:ViewBase
 local CardsGui = ClassMgr.Class("CardsGui", ViewBase)
+
+---@param viewButton ViewButton
+function CardsGui:RegisterMenuButton(viewButton)
+    if not viewButton then return end
+    viewButton:SetTouchEnable(true)
+    -- 设置新的点击回调
+    viewButton.clickCb = function(ui, button)
+        if button.node.Name == "关闭" then
+            self:Close()
+        end
+        -- 发送菜单点击事件到服务器
+        gg.network_channel:FireServer({
+            cmd = "MenuClicked",
+            buttonName = button.node.Name
+        })
+    end
+end
 
 ---@override
 function CardsGui:OnInit(node, config)
@@ -40,7 +57,7 @@ function CardsGui:OnInit(node, config)
     -- 初始化技能数据
     self.skills = {} ---@type table<string, Skill>
     self.equippedSkills = {} ---@type table<number, string>
-    MenuButtonUtils.RegisterMenuButton(self.closeButton)
+    self:RegisterMenuButton(self.closeButton)
 
     ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
         self:HandleSkillSync(data)
