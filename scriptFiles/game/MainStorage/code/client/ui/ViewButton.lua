@@ -4,7 +4,7 @@ local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type
 local soundPlayer = game:GetService("StarterGui")["UISound"] ---@type Sound
 
 ---@class ViewButton:ViewComponent
----@field New fun(node: SandboxNode, ui: ViewBase, path: string): ViewButton
+---@field New fun(node: SandboxNode, ui: ViewBase, path?: string): ViewButton
 local  ViewButton = ClassMgr.Class("ViewButton", ViewComponent)
 
 function ViewButton:SetTouchEnable(enable)
@@ -40,9 +40,13 @@ function ViewButton:OnTouchOut()
             child.FillColor = props.normalColor
         end
     end
+
+    if self.touchEndCb then
+        self.touchEndCb(self.ui, self)
+    end
 end
 
-function ViewButton:OnTouchIn()
+function ViewButton:OnTouchIn(vector2)
     if not self.enabled then return end
     self.img.Icon = self.clickImg
     self.img.FillColor = self.clickColor
@@ -59,6 +63,17 @@ function ViewButton:OnTouchIn()
         if props.clickColor then
             child.FillColor = props.clickColor
         end
+    end
+
+    if self.touchBeginCb then
+        self.touchBeginCb(self.ui, self, vector2)
+    end
+end
+
+function ViewButton:OnTouchMove(node, isTouchMove, vector2, int)
+    if not self.enabled then return end
+    if self.touchMoveCb then
+        self.touchMoveCb(self.ui, self, vector2)
     end
 end
 
@@ -106,9 +121,14 @@ end
 function ViewButton:OnInit(node, ui, path)
     ViewComponent.OnInit(self, node, ui, path)
     self.childClickImgs = {    }
+    self.enabled = true
     local img = node
     self.img = node ---@type UIImage
+    self.img.ClickPass = false
     self.clickCb = nil
+    self.touchBeginCb = nil
+    self.touchMoveCb = nil
+    self.touchEndCb = nil
     self.clickImg = img:GetAttribute("图片-点击") ---@type string
     self.hoverImg = img:GetAttribute("图片-悬浮") ---@type string
     if self.hoverImg == "" then
@@ -140,11 +160,15 @@ function ViewButton:OnInit(node, ui, path)
     end)
 
     img.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-        self:OnTouchIn()
+        self:OnTouchIn(vector2)
     end)
 
     img.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
         self:OnTouchOut()
+    end)
+
+    img.TouchMove:Connect(function(node, isTouchMove, vector2, number)
+        self:OnTouchMove(node, isTouchMove, vector2, number)
     end)
 
     img.RollOut:Connect(function(node, isOver, vector2)
@@ -172,21 +196,19 @@ function ViewButton:OnInit(node, ui, path)
                 normalColor = child.FillColor,
             }
             child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-                self:OnTouchIn()
+                self:OnTouchIn(vector2)
             end)
             child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
                 self:OnTouchOut()
+            end)
+            child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
+                self:OnTouchMove(node, isTouchMove, vector2, number)
             end)
             child.Click:Connect(function(node, isClick, vector2, number)
                 self:OnClick()
             end)
         end
     end
-
 end
-
-
-
-
 
 return ViewButton

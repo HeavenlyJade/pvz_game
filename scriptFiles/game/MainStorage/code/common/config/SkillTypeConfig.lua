@@ -381,7 +381,7 @@ for _, skillType in pairs(SkillTypeConfig.config) do
     if skillType.isEntrySkill then
         table.insert(entrySkills, skillType)
     end
-
+    
     if skillType.nextSkills then
         local nextSkills = {}
         for _, skillName in ipairs(skillType.nextSkills) do
@@ -423,56 +423,5 @@ function SkillTypeConfig.GetEntrySkills()
     end
     return entrySkills
 end
-
----@class SkillTree
----@field mainSkill SkillType 主技能（入口技能）
----@field branches SkillType[] 分支技能列表
----获取技能树数据结构，按主卡分组
----@param skillCategory number 技能分类 (0=主卡, 1=副卡)
----@return table<string, SkillTree> 技能树映射表，key为主技能名称
-function SkillTypeConfig.GetSkillTrees(skillCategory)
-    if not loaded then
-        LoadConfig()
-    end
-
-    local skillTrees = {} ---@type table<string, SkillTree>
-
-    -- 遍历所有技能配置，找到指定分类的入口技能
-    for skillName, skillType in pairs(SkillTypeConfig.config) do
-        -- 筛选条件：是入口技能 且 属于指定分类
-        if skillType.isEntrySkill and skillType.skillType == skillCategory then
-            gg.log("构建技能树 - 找到主卡:", skillType.name, "分类:", skillCategory)
-
-            -- 创建技能树结构
-            local skillTree = {
-                mainSkill = skillType,
-                branches = {} ---@type SkillType[]
-            }
-
-            -- 收集该主卡的所有分支技能
-            if skillType.nextSkills then
-                for _, nextSkill in ipairs(skillType.nextSkills) do
-                    table.insert(skillTree.branches, nextSkill)
-                    gg.log("  - 添加分支技能:", nextSkill.name)
-                end
-            end
-
-            -- 以主技能名称作为key存储技能树
-            skillTrees[skillType.name] = skillTree
-            gg.log("技能树构建完成:", skillType.name, "包含", #skillTree.branches, "个分支技能")
-        end
-    end
-
-    gg.log("技能树构建完成，共", gg.table2str(skillTrees), "个技能树")
-    return skillTrees
-end
-
----获取主卡技能树 (分类0)
----@return table<string, SkillTree>
-function SkillTypeConfig.GetMainCardTrees()
-    return SkillTypeConfig.GetSkillTrees(0)
-end
-
-
 
 return SkillTypeConfig

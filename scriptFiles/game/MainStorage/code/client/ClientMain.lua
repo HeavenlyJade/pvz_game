@@ -9,7 +9,6 @@ local ClientEventManager = require(MainStorage.code.client.event.ClientEventMana
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local ClientInit = require(MainStorage.code.client.event.ClinentInit) ---@type ClientInit
 local Controller = require(MainStorage.code.client.MController) ---@type Controller
-local CameraController = require(MainStorage.code.client.camera.CameraController) ---@type CameraController
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
 local tick = 0
@@ -21,7 +20,7 @@ function ClientMain.start_client()
     gg.uuid_start = gg.rand_int_between(100000, 999999);
     ClientMain.createNetworkChannel()
     ClientMain.handleCoreUISettings()
-    -- ClientInit.init()
+    ClientInit.init()
     -- Controller.init()
     ClientMain.initButton()
     Controller.init()
@@ -29,13 +28,12 @@ function ClientMain.start_client()
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
 
     timer.Name = 'timer_client'
-    timer.Delay = 0.1      -- 延迟多少秒Q开始
+    timer.Delay = 0.1      -- 延迟多少秒开始
     timer.Loop = true      -- 是否循环
     timer.Interval = 0.03  -- 循环间隔多少秒 (1秒=20帧)
     timer.Callback = ClientMain.update
     timer:Start()     -- 启动定时器
 end
-
 
 
 --定时器update

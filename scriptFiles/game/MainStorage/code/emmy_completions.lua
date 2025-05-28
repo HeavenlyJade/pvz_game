@@ -1376,19 +1376,12 @@
 ---@field GetMicroPhoneStatusClient fun(self: VoiceChatService) boolean 获取麦克风状态 fun(客户端方法)
 
 
----@class ReflexMap
----@field normal Vector3 击中时的法线
----@field obj SandboxNode 击中的对象
----@field isHit boolean 是否击中
----@field distance number 击中距离
----@field position Vector3 击中位置
-
 ---@class WorldService
 ---@field PrnumberLog fun(self: WorldService, szLog: string) None 打印日志
 ---@field GetRangeXZ fun(self: WorldService) ReflexTuple 的坐标
 ---@field GetUIScale fun(self: WorldService) Vector2 获取UI布局的缩放尺寸
----@field RaycastClosest fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table):ReflexMap 射线段检测，返回最近的碰撞物
----@field RaycastAll fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table):ReflexMap 射线段检测，返回所有碰撞物，最多128个
+---@field RaycastClosest fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 射线段检测，返回最近的碰撞物
+---@field RaycastAll fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 射线段检测，返回所有碰撞物，最多128个
 ---@field SweepBoxAll fun(self: WorldService, center: Vector3, shape: Vector3, direction: Vector3, angle: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描全部
 ---@field SweepCapsuleAll fun(self: WorldService, radius: number, p0: Vector3, p1: Vector3, dir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描胶囊全部
 ---@field SweepSphereAll fun(self: WorldService, radius: number, center: Vector3, direction: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描球全部

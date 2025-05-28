@@ -18,6 +18,7 @@ local SkillType = ClassMgr.Class("SkillType")
 function SkillType:OnInit(data)
     -- 从配置中读取基础属性
     self.name = data["技能名"] or ""
+    self.displayName = data["显示名"] or ""
     self.maxLevel = data["最大等级"] or 1
     self.description = data["技能描述"] or ""
     self.icon = data["技能图标"] or ""
@@ -27,8 +28,6 @@ function SkillType:OnInit(data)
     self.nextSkills = data["下一技能"]
     self.prerequisite = {} ---@type SkillType[]
     self.targetMode = data["目标模式"]
-    self.skillType = data["技能分类"]
-    self.quality = data["品质"] or "" -- 
     
     -- 加载被动词条
     self.passiveTags = {}
@@ -43,7 +42,6 @@ function SkillType:OnInit(data)
     -- 加载主动释放魔法
     if data["主动释放魔法"] then
         self.activeSpell = SpellConfig.Get(data["主动释放魔法"]) ---@type Spell
-        gg.log("activeSpell", self.activeSpell, data["主动释放魔法"])
         self.cooldown = self.activeSpell.cooldown
     end
 

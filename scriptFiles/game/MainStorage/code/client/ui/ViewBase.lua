@@ -83,64 +83,13 @@ function ViewBase:OnInit(node, config)
     self.layer = config.layer == nil and 1 or config.layer
     self.displaying = false
     self.isOnTop = false
-    self.tweeningComponents = {} ---@type table<ViewComponent, boolean>
-    self.tweenTaskId = nil
     allUI[self.className] = self
     ViewBase[self.className] = self
 
-    -- print("config", self.className, self.hideOnInit)
     if self.hideOnInit then
         self:Close()
     else
         self:Open()
-    end
-end
-
-function ViewBase:RegisterTween(component)
-    if not self.tweeningComponents[component] then
-        self.tweeningComponents[component] = true
-
-        if not self.tweenTaskId then
-            self.tweenTaskId = ClientScheduler.add(function()
-                -- local traceback = debug.traceback()
-                -- print("SetVisible traceback:", traceback)
-                local hasActiveTweens = false
-                local componentsToRemove = {}
-
-                -- Update all tweening components
-                for component, _ in pairs(self.tweeningComponents) do
-                    if component.currentTween then
-                        local isFinished = component.currentTween:Update()
-                        if isFinished then
-                            -- Handle next tween if exists
-                            if component.currentTween.nextTween then
-                                component.currentTween = component.currentTween.nextTween
-                                hasActiveTweens = true
-                            else
-                                -- Mark component for removal
-                                component.currentTween = nil
-                                table.insert(componentsToRemove, component)
-                            end
-                        else
-                            hasActiveTweens = true
-                        end
-                    end
-                end
-
-                -- Remove finished components
-                for _, component in ipairs(componentsToRemove) do
-                    self.tweeningComponents[component] = nil
-                end
-
-                -- If no more active tweens, cancel the task
-                if not hasActiveTweens then
-                    if self.tweenTaskId then
-                        ClientScheduler.cancel(self.tweenTaskId)
-                        self.tweenTaskId = nil
-                    end
-                end
-            end, 0, 0.034)
-        end
     end
 end
 

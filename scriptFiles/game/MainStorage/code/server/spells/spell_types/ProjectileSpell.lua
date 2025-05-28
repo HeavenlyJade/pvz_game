@@ -154,10 +154,6 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
     if self.initialAngleOffset.y ~= 0 then
         direction = direction:rotateAroundY(self.initialAngleOffset.y)
     end
-
-    gg.log("Vec3", position)
-    
-    -- 创建飞弹项
     local item = {
         actor = actor,
         caster = caster,
@@ -413,7 +409,7 @@ function ProjectileSpell:CastReal(caster, target, param)
             baseDirection.z
         )
         local delay = shootDelay * (i - 1)
-        self:SpawnProjectile(position, currentDirection, baseDirection, caster, param, delay)
+        self:SpawnProjectile(Vec3.new(position), currentDirection, Vec3.new(baseDirection), caster, param, delay)
     end
     
     -- 播放释放特效

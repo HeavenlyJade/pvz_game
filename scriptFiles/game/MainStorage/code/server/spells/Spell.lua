@@ -34,7 +34,6 @@ local Spell = ClassMgr.Class("Spell")
 
 function Spell.Load( data )
     local class = require(MainStorage.code.server.spells.spell_types[data["类型"]])
-    print("LoadSpell", data["魔法名"], data["类型"], class)
     return class.New(data)
 end
 
