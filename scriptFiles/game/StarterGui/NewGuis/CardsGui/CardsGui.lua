@@ -12,6 +12,8 @@ local uiConfig = {
     uiName = "CardsGui",
     layer = 3,
     hideOnInit = true,
+    qualityList = {"UR", "SSR", "SR", "R", "N"},
+    qualityListMap = {["品质_5"]="N", ["品质_4"]="R", ["品质_3"]="SR", ["品质_2"]="SSR", ["品质_1"]="UR"}
 }
 
 ---@class CardsGui:ViewBase
@@ -42,20 +44,15 @@ function CardsGui:RegisterCardButtons()
         self.mainCardButton.clickCb = function(ui, button)
             self:SwitchToCardType("main")
         end
-        -- gg.log("主卡按钮事件已注册")
     else
-        -- gg.log("警告：找不到主卡按钮")
     end
-
     -- 副卡按钮点击事件
     if self.subCardButton then
         self.subCardButton:SetTouchEnable(true)
         self.subCardButton.clickCb = function(ui, button)
             self:SwitchToCardType("sub")
         end
-        -- gg.log("副卡按钮事件已注册")
     else
-        -- gg.log("警告：找不到副卡按钮")
     end
 end
 
@@ -75,7 +72,8 @@ function CardsGui:OnInit(node, config)
     self.mainCardFrame = self:Get("框体/主卡/加点框/纵列表/主卡框", ViewButton) ---@type ViewButton
     self.skillButtons = {} ---@type table<string, ViewButton> -- 主卡按钮框
     self.skillLists = {} ---@type table<string, ViewList>     -- 主卡技能树列表
-
+    self.qualityListMap = {} ---@type table<string, string> -- 构建反射的品质按钮名->品质名字典
+    self.qualityLists = {} ---@type table<string, ViewList> -- 品质列表
     -- 初始化技能数据
     self.skills = {} ---@type table<string, Skill>
     self.equippedSkills = {} ---@type table<number, string>
@@ -186,9 +184,9 @@ end
 
 -- 读取主卡数据并克隆节点
 function CardsGui:LoadMainCardsAndClone()
-    -- gg.log("开始读取主卡数据并克隆节点...")
+    gg.log("开始读取主卡数据并克隆节点...")
     local skillMainTrees = SkillTypeConfig.GetSkillTrees(0)
-    -- gg.log("skillMainTrees", skillMainTrees)
+    gg.log("skillMainTrees", skillMainTrees)
 
     -- 使用美化的打印函数显示技能树结构
     SkillTypeConfig.PrintSkillTrees(skillMainTrees)
@@ -203,93 +201,87 @@ end
 
 -- 克隆主卡选择按钮
 function CardsGui:CloneMainCardButtons(skillMainTrees)
-    -- gg.log("开始克隆主卡选择按钮...")
-    -- 从技能树中提取主卡数据
-    local mainCards = {} ---@type SkillType[]
+    local qualityList = uiConfig.qualityList or {"UR", "SSR", "SR", "R", "N"}
+    local qualityListMap = uiConfig.qualityListMap or {}
+    
+
+    local ListTemplate = self:Get('框体/主卡/选择列表/列表', ViewList) ---@type ViewList
+    -- 克隆品质列表
+    for _, quality in ipairs(qualityList) do
+        local listClone = ListTemplate.node:Clone()
+        local qualityName = "列表_" .. quality
+        listClone.Name = qualityName
+        listClone.Parent = ListTemplate.node.Parent
+        listClone.Visible = false         -- 默认不可见
+        local viewListObj = ViewList.New(listClone, self, "框体/主卡/选择列表/" .. qualityName)
+        self.qualityLists[quality] = viewListObj
+        
+        listClone['主卡_1']:Destroy()
+    end
+    
+
+    local templateNodeRef = self:Get('框体/主卡/选择列表/列表/主卡_1', ViewButton)
+
+        -- 遍历主卡，按品质分组
     for mainSkillName, skillTree in pairs(skillMainTrees) do
-        table.insert(mainCards, skillTree.mainSkill)
-        -- gg.log("找到主卡:", skillTree.mainSkill.name, "描述:", skillTree.mainSkill.description)
-        -- gg.log("  - 最大等级:", skillTree.mainSkill.maxLevel)
-        -- gg.log("  - 是入口技能:", skillTree.mainSkill.isEntrySkill)
-        -- gg.log("  - 目标模式:", skillTree.mainSkill.targetMode)
-        if skillTree.mainSkill.activeSpell then
-            -- gg.log("  - 主动技能:", skillTree.mainSkill.activeSpell.name)
-            -- gg.log("  - 冷却时间:", skillTree.mainSkill.cooldown)
-        end
-    end
-
-    -- gg.log("共找到", #mainCards, "个主卡")
-
-    local templateNode = self:Get('框体/主卡/选择列表/列表/主卡_1', ViewButton) ---@type ViewButton
-    if not templateNode or not templateNode.node then
-        -- gg.log("错误：找不到主卡_1模板节点")
-        return
-    end
-
-    -- 克隆每个主卡
-    for i, skillType in ipairs(mainCards) do
-        local clonedNode = templateNode.node:Clone()
-        if clonedNode then
-            local skillName = "技能"..skillType.name
+        local skillType = skillTree.mainSkill
+        local quality = skillType.quality or "N"
+        local listNode = self.qualityLists[quality]
+        if listNode and templateNodeRef then
+            local clonedNode = templateNodeRef.node:Clone()
+            local skillName = "技能" .. skillType.name
             clonedNode.Name = skillName
+            clonedNode.Parent = listNode.node
+            clonedNode.Visible = true      -- 技能节点默认可见
 
-            -- 确保克隆节点具有基本的图标属性和必要的Attribute
-            -- 安全设置图标
+            -- 设置图标
             if skillType.icon and skillType.icon ~= "" then
-                -- gg.log("skillType.icon:资源加载的日志", skillType.icon)
                 local iconNode = clonedNode['图标']
                 if iconNode then
                     iconNode.Icon = skillType.icon
-                else
-                    -- gg.log("警告：找不到图标子节点")
                 end
             end
-
-            -- 设置克隆节点的父容器
-            clonedNode.Parent = templateNode.node.Parent
-            wait(0.01)
-
-            -- 将克隆节点包装成ViewButton对象，使用简的路径
+            -- 包装成ViewButton
             local clonedButton = ViewButton.New(clonedNode, self, "框体/主卡/选择列表/列表/" .. skillName)
-
-            -- 实例化为ViewList并存入skillButtons
             self.skillButtons[skillName] = clonedButton
             clonedButton.clickCb = function(ui, button)
                 local rawName = button.node.Name
                 local mainSkillName = rawName:gsub("^技能", "")
                 local verticalKey = "纵" .. mainSkillName
-
-                -- 判断当前纵列表是否已经显示
                 local currentList = self.skillLists[verticalKey]
                 if currentList then
                     local isVisible = currentList.node.Visible
                     if isVisible then
-                        -- 如果已经显示，则隐藏
                         currentList:SetVisible(false)
                     else
-                        -- 如果没显示，则只显示当前，其它全部隐藏
                         for name, vlist in pairs(self.skillLists) do
                             vlist:SetVisible(name == verticalKey)
                         end
                     end
                 end
             end
-            -- gg.log("成功克隆主卡ViewButton:", skillType.name, "节点名:", clonedNode.Name)
-        else
-            -- gg.log("克隆失败:", skillType.name)
         end
     end
-
-    -- 延迟销毁模板节点，确保所有ViewButton初始化完成
-    gg.thread_call(function()
-        wait(0.1) -- 等待一帧确保所有ViewButton都初始化完成
-        if templateNode and templateNode.node then
-            templateNode.node:Destroy()
-            -- gg.log("模板节点已销毁")
+    gg.log("self.skillButtons", qualityListMap)
+    -- 2. 构建反射的品质按钮名->品质名字典
+    for btnName, quality in pairs(qualityListMap) do
+        local qualityBtn = self:Get("品质列表/"  .. btnName, ViewButton)
+        if qualityBtn then
+            qualityBtn.clickCb = function()
+                -- 1. 只显示当前品质的列表
+                for q, listNode in pairs(self.qualityLists) do
+                    listNode:SetVisible(q == quality)
+                end
+                -- 2. 隐藏所有加点框下的纵列表
+                for _, vlist in pairs(self.skillLists) do
+                    vlist:SetVisible(false)
+                end
+            end
         end
-    end)
-
-    -- gg.log("主卡按钮克隆完成")
+    end
+    
+    -- 销毁列表模板
+    ListTemplate.node:Destroy()
 end
 
 
@@ -557,7 +549,7 @@ function CardsGui:LoadSubCardsAndClone()
         -- 设置副卡名字
         local nameNode = clonedNode["副卡名字"]
         if nameNode then
-            nameNode.Title = skill.displayName ~= "" and skill.displayName or skill.name
+            nameNode.Title = skill.name
         end
 
         -- 设置图标
@@ -576,3 +568,4 @@ function CardsGui:LoadSubCardsAndClone()
 end
 
 return CardsGui.New(script.Parent, uiConfig)
+

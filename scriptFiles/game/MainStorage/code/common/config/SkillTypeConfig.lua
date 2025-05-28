@@ -550,7 +550,7 @@ for _, skillType in pairs(SkillTypeConfig.config) do
     if skillType.isEntrySkill then
         table.insert(entrySkills, skillType)
     end
-
+    
     if skillType.nextSkills then
         local nextSkills = {}
         for _, skillName in ipairs(skillType.nextSkills) do
@@ -664,6 +664,5 @@ function SkillTypeConfig.PrintSkillTrees(skillTrees)
 
     gg.log("========== 技能树结构结束 ==========")
 end
-
 
 return SkillTypeConfig

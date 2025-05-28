@@ -25,7 +25,7 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
     for _, child in pairs(self.node.Children) do
         local childName = child.Name
         local num = childName:match("_([0-9]+)")
-        --print("Init ViewList", path, ui.className, num)
+        print("Init ViewList", path, ui.className, num)
         if num then
             if not self.childNameTemplate then
                 local pos = childName:find("_") -- 找到 _ 的位置

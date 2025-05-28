@@ -29,6 +29,7 @@ function SkillType:OnInit(data)
     self.prerequisite = {} ---@type SkillType[]
     self.targetMode = data["目标模式"]
     self.skillType = data["技能分类"]
+    self.quality = data["技能品级"] or "R"
 
     -- 加载被动词条
     self.passiveTags = {}

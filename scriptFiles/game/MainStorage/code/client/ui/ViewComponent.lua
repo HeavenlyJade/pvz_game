@@ -62,7 +62,7 @@ function ViewComponent:SetColor(color)
     end
 end
 
-
+---@param visible boolean
 function ViewComponent:SetVisible(visible)
     self.node.Visible = visible
     self.node.Enabled = visible

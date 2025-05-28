@@ -4,7 +4,7 @@ local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local MenuButtonUtils = require(MainStorage.code.client.utils.MenuButtonUtils) ---@type MenuButtonUtils
+local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
 
 local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 
@@ -30,8 +30,8 @@ function HudMenu:RegisterMenuButton(viewButton)
         gg.log("菜单按钮点击", button.node.Name)
         if button.node.Name == "活动" then
             gg.log("活动按钮点击")
-        elseif button.node.Name == "图鉴" then
-            gg.log("图鉴按钮点击")
+        elseif button.node.Name == "卡包" then
+            gg.log("卡包按钮点击")
             ViewBase["CardsGui"]:Open()
         end
         -- 发送菜单点击事件到服务器
@@ -48,7 +48,7 @@ function HudMenu:OnInit(node, config)
     self.selectingCard = 0
     self:RegisterMenuButton(self:Get("活动", ViewButton))
     self:RegisterMenuButton(self:Get("图鉴", ViewButton))
-
+    self:RegisterMenuButton(self:Get("卡包", ViewButton))
     self:Get("菜单/菜单按钮", ViewList, function(n)
         local button = ViewButton.New(n, self)
         self:RegisterMenuButton(button)
