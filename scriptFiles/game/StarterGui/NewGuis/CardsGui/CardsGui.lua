@@ -13,7 +13,9 @@ local uiConfig = {
     layer = 3,
     hideOnInit = true,
     qualityList = {"UR", "SSR", "SR", "R", "N"},
-    qualityListMap = {["品质_5"]="N", ["品质_4"]="R", ["品质_3"]="SR", ["品质_2"]="SSR", ["品质_1"]="UR"}
+    qualityListMap = {["品质_5"]="N", ["品质_4"]="R", ["品质_3"]="SR", ["品质_2"]="SSR", ["品质_1"]="UR"},
+    mianCard ="主卡",
+    Subcard = "副卡"
 }
 
 ---@class CardsGui:ViewBase
@@ -42,7 +44,7 @@ function CardsGui:RegisterCardButtons()
     if self.mainCardButton then
         self.mainCardButton:SetTouchEnable(true)
         self.mainCardButton.clickCb = function(ui, button)
-            self:SwitchToCardType("main")
+            self:SwitchToCardType("主卡")
         end
     else
     end
@@ -50,7 +52,7 @@ function CardsGui:RegisterCardButtons()
     if self.subCardButton then
         self.subCardButton:SetTouchEnable(true)
         self.subCardButton.clickCb = function(ui, button)
-            self:SwitchToCardType("sub")
+            self:SwitchToCardType("副卡")
         end
     else
     end
@@ -72,13 +74,14 @@ function CardsGui:OnInit(node, config)
     self.mainCardFrame = self:Get("框体/主卡/加点框/纵列表/主卡框", ViewButton) ---@type ViewButton
     self.skillButtons = {} ---@type table<string, ViewButton> -- 主卡按钮框
     self.skillLists = {} ---@type table<string, ViewList>     -- 主卡技能树列表
+    self.subQualityLists ={} ---@type table<string, ViewList> -- 副卡品级列表
     self.qualityListMap = {} ---@type table<string, string> -- 构建反射的品质按钮名->品质名字典
     self.qualityLists = {} ---@type table<string, ViewList> -- 品质列表
     -- 初始化技能数据
     self.skills = {} ---@type table<string, Skill>
     self.equippedSkills = {} ---@type table<number, string>
 
-    -- 当前显示的卡片类型 ("main" 或 "sub")
+    -- 当前显示的卡片类型 ("主卡" 或 "副卡")
     self.currentCardType = "主卡"
     -- 注册按钮事件
     self:RegisterMenuButton(self.closeButton)
@@ -88,6 +91,7 @@ function CardsGui:OnInit(node, config)
     -- 读取主卡数据并克隆节点
     self:LoadMainCardsAndClone()
     self:LoadSubCardsAndClone()
+    self:BindQualityButtonEvents()
     ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
         self:HandleSkillSync(data)
     end)
@@ -144,16 +148,7 @@ end
 
 -- 切换到指定的卡片类型
 function CardsGui:SwitchToCardType(cardType)
-    if self.currentCardType == cardType then
-        -- gg.log("已经在", cardType, "页面，无需切换")
-        return
-    end
-
-    local oldCardType = self.currentCardType
     self.currentCardType = cardType
-    -- gg.log("切换卡片类型:", oldCardType, "->", cardType)
-
-    -- 更新显示
     self:UpdateCardDisplay(cardType)
 end
 
@@ -163,13 +158,13 @@ function CardsGui:UpdateCardDisplay(cardType)
 
     -- 显示/隐藏对应的卡片组件
     if self.mainCardComponent then
-        local showMain = (cardType == "main")
+        local showMain = (cardType == "主卡")
         self.mainCardComponent:SetVisible(showMain)
         -- gg.log("主卡组件显示状态:", showMain)
     end
 
     if self.subCardComponent then
-        local showSub = (cardType == "sub")
+        local showSub = (cardType == "副卡")
         self.subCardComponent:SetVisible(showSub)
         -- gg.log("副卡组件显示状态:", showSub)
     end
@@ -262,24 +257,7 @@ function CardsGui:CloneMainCardButtons(skillMainTrees)
             end
         end
     end
-    gg.log("self.skillButtons", qualityListMap)
-    -- 2. 构建反射的品质按钮名->品质名字典
-    for btnName, quality in pairs(qualityListMap) do
-        local qualityBtn = self:Get("品质列表/"  .. btnName, ViewButton)
-        if qualityBtn then
-            qualityBtn.clickCb = function()
-                -- 1. 只显示当前品质的列表
-                for q, listNode in pairs(self.qualityLists) do
-                    listNode:SetVisible(q == quality)
-                end
-                -- 2. 隐藏所有加点框下的纵列表
-                for _, vlist in pairs(self.skillLists) do
-                    vlist:SetVisible(false)
-                end
-            end
-        end
-    end
-    
+
     -- 销毁列表模板
     ListTemplate.node:Destroy()
 end
@@ -526,45 +504,102 @@ end
 
 -- 动态生成副卡列表
 function CardsGui:LoadSubCardsAndClone()
-    -- 获取所有副卡入口技能
+    local qualityList = uiConfig.qualityList or {"UR", "SSR", "SR", "R", "N"}
+    local subListTemplate = self:Get('框体/副卡/副卡列/副卡列表', ViewList) ---@type ViewList
+
     local allSkills = SkillTypeConfig.GetAll()
-    local subSkills = {}
+    local subSkillsByQuality = {}
+    for _, quality in ipairs(qualityList) do
+        subSkillsByQuality[quality] = {}
+    end
+
+    -- 分类统计
     for name, skill in pairs(allSkills) do
         if skill.skillType == 1 and skill.isEntrySkill then
-            table.insert(subSkills, skill)
+            local quality = skill.quality or "N"
+            if subSkillsByQuality[quality] then
+                table.insert(subSkillsByQuality[quality], skill)
+            end
+        end
+    end
+
+    -- 克隆副卡品级列表
+    for _, quality in ipairs(qualityList) do
+        local listClone = subListTemplate.node:Clone()
+        local qualityName = "副卡列表_" .. quality
+        listClone.Name = qualityName
+        listClone.Parent = subListTemplate.node.Parent
+        listClone.Visible = false
+
+        -- 设置LineCount为该品质副卡数量
+        local count = #subSkillsByQuality[quality]
+        listClone.LineCount = count > 0 and count or 1
+
+        self.subQualityLists[quality] = ViewList.New(listClone, self, "框体/副卡/副卡列/" .. qualityName)
+        -- 清空模板下的副卡槽
+        for _, child in ipairs(listClone.Children) do
+            if string.find(child.Name, "副卡槽") then
+                child:Destroy()
+            end
         end
     end
 
     local subCardTemplate = self:Get('框体/副卡/副卡列/副卡列表/副卡槽_1', ViewButton) ---@type ViewButton
-
-    local subCardTemplate2 = self:Get('框体/副卡/副卡列/副卡列表/副卡槽_2', ViewButton) ---@type ViewButton
-
     if not subCardTemplate or not subCardTemplate.node then return end
-
-    for i, skill in ipairs(subSkills) do
-        local clonedNode = subCardTemplate.node:Clone()
-        clonedNode.Name = skill.name
-        clonedNode.Parent = subCardTemplate.node.Parent
-
-        -- 设置副卡名字
-        local nameNode = clonedNode["副卡名字"]
-        if nameNode then
-            nameNode.Title = skill.name
+    -- 遍历副卡数据，按品级分组
+    local allSkills = SkillTypeConfig.GetAll()
+    for name, skill in pairs(allSkills) do
+        if skill.skillType == 1 and skill.isEntrySkill then
+            local quality = skill.quality 
+            local listNode = self.subQualityLists[quality]
+            if listNode then
+       
+                local clonedNode = subCardTemplate.node:Clone()
+                clonedNode.Name = skill.name
+                clonedNode.Parent = listNode.node
+                clonedNode.Visible = true
+                -- 设置副卡名字和图标
+                local nameNode = clonedNode["副卡名字"]
+                if nameNode then nameNode.Title = skill.name end
+                local iconNode = clonedNode["图标"]
+                if iconNode and skill.icon and skill.icon ~= "" then
+                    iconNode.Icon = skill.icon
+                end
+            end
         end
-
-        -- 设置图标
-        local iconNode = clonedNode["图标"]
-        if iconNode and skill.icon and skill.icon ~= "" then
-            iconNode.Icon = skill.icon
-        end
-
-        print("副卡生成:", skill.name, skill.icon or "无图标")
     end
 
-    -- 销毁模板
-    subCardTemplate.node:Destroy()
-    subCardTemplate2.node:Destroy()
+
+    subListTemplate.node:Destroy()
     print("副卡全部生成完毕，模板已销毁")
+end
+
+function CardsGui:BindQualityButtonEvents()
+    local qualityListMap = uiConfig.qualityListMap or {}
+    for btnName, quality in pairs(qualityListMap) do
+        local qualityBtn = self:Get("品质列表/"  .. btnName, ViewButton)
+        if qualityBtn then
+            qualityBtn.clickCb = function()
+                if self.currentCardType == "主卡" or self.currentCardType == "main" then
+                    -- 主卡品级列表显示
+                    for q, listNode in pairs(self.qualityLists) do
+                        listNode:SetVisible(q == quality)
+                    end
+                    -- 隐藏所有加点框下的纵列表
+                    for _, vlist in pairs(self.skillLists) do
+                        vlist:SetVisible(false)
+                    end
+                elseif self.currentCardType == "副卡" or self.currentCardType == "sub" then
+                    -- 副卡品级列表显示
+                    if self.subQualityLists then
+                        for q, listNode in pairs(self.subQualityLists) do
+                            listNode:SetVisible(q == quality)
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 return CardsGui.New(script.Parent, uiConfig)
