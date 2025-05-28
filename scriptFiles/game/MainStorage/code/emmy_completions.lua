@@ -384,7 +384,6 @@
 ---@field Rotation Quaternion 全局旋转
 ---@field LocalPosition Vector3 局部坐标
 ---@field LocalEuler Vector3 局部欧拉角
----@field LocalScale Vector3 局部欧拉角
 ---@field CubeBorderEnable boolean 立方体边框是否被禁止
 ---@field Layer LayerIndexDesc 灯光层级
 ---@field ForwardDir Vector3 看向指定方向
@@ -1101,7 +1100,7 @@
 ---@field Gravity_direction Vector3 重力方向
 ---@field Gravity number 重力
 ---@field Lifespan number 持续时长
----@field Mid_point number 中点
+---@field Mid_ponumber number 中点
 ---@field Emitrate number 发射的
 ---@field Length number 长
 ---@field Width number 宽
@@ -1172,7 +1171,7 @@
 ---@field CameraType CameraType 摄像机类型
 ---@field CameraSubject SandboxNode 摄像机子节点
 ---@field ViewportSize Vector2 描述客户端视口的尺寸（以像素为单位）
----@field ViewportPointToRay fun(self: Camera, x: number, y: number, depth: number):Ray 以朝向摄像机的方向，通过给定的距摄像机的深度，在视口上的某个位置创建单位射线（以像素为单位）
+---@field ViewportPonumberToRay fun(self: Camera, x: number, y: number, depth: number) Ray 以朝向摄像机的方向，通过给定的距摄像机的深度，在视口上的某个位置创建单位射线（以像素为单位）
 ---@field WorldToViewportPonumber fun(self: Camera, position: Vector3) Vector3 将一个世界坐标position转换到摄像机视口坐标
 ---@field WorldToUIPonumber fun(self: Camera, position: Vector3) Vector3 将3D节点世界坐标position转UI节点坐标
 

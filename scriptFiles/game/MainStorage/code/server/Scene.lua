@@ -144,24 +144,16 @@ function _M:OverlapSphere(center, radius, filterGroup, filterFunc)
     local retActors = {}
     for _, v in ipairs(results) do
         local obj = v.obj
-        table.insert(retActors, obj)
-        if filterFunc then
-            filterFunc(obj)
+        local entity = self.node2Entity[obj]
+        -- gg.log("entity", obj, entity)
+        if entity then
+            table.insert(retActors, entity)
+            if filterFunc then
+                filterFunc(entity)
+            end
         end
     end
     return retActors
-end
-
-function _M:OverlapSphereEntity(center, radius, filterGroup, filterFunc)
-    local nodes = self:OverlapSphere(center, radius, filterGroup, filterFunc)
-    local retEntities = {}
-    for _, node in ipairs(nodes) do
-        local entity = self.node2Entity[node]
-        if entity then
-            table.insert(retEntities, entity)
-        end
-    end
-    return retEntities
 end
 
 function _M:OverlapBox(center, extent, angle, filterGroup, filterFunc)
@@ -170,24 +162,16 @@ function _M:OverlapBox(center, extent, angle, filterGroup, filterFunc)
     local retActors = {}
     for _, v in ipairs(results) do
         local obj = v.obj
-        table.insert(retActors, obj)
-        if filterFunc then
-            filterFunc(obj)
+        local entity = self.node2Entity[obj]
+        -- gg.log("entity", obj, entity)
+        if entity then
+            table.insert(retActors, entity)
+            if filterFunc then
+                filterFunc(entity)
+            end
         end
     end
     return retActors
-end
-
-function _M:OverlapBoxEntity(center, extent, angle, filterGroup, filterFunc)
-    local nodes = self:OverlapBox(center, extent, angle, filterGroup, filterFunc)
-    local retEntities = {}
-    for _, node in ipairs(nodes) do
-        local entity = self.node2Entity[node]
-        if entity then
-            table.insert(retEntities, entity)
-        end
-    end
-    return retEntities
 end
 
 function _M:SelectCylinderTargets(center, radius, height, filterGroup, filterFunc)
@@ -210,8 +194,9 @@ function _M:SelectCylinderTargets(center, radius, height, filterGroup, filterFun
         return true
     end
     local halfHeight = height / 2
-    local results = self:OverlapBoxEntity(Vector3.New(center.x, center.y + halfHeight, center.z),
+    local results = self:OverlapBox(Vector3.New(center.x, center.y + halfHeight, center.z),
         Vector3.New(radius, halfHeight, radius), Vector3.New(0, 0, 0), filterGroup, cylinderFilter)
+    gg.log("results", results)
     return results
 end
 

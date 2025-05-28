@@ -20,40 +20,38 @@ local uiConfig = {
 function OnMoneyClick(ui, viewButton)
 end
 
--- ---@param viewButton ViewButton
--- function RegisterMenuButton(viewButton)
---     if not viewButton then return end
---     gg.log("菜单按钮初始化", viewButton.node.Name)
---     viewButton:SetTouchEnable(true)
---     -- 设置新的点击回调
---     viewButton.clickCb = function(ui, button)
---         gg.log("菜单按钮点击", button.node.Name)
---         if button.node.Name == "活动" then
---             gg.log("活动按钮点击")
---         elseif button.node.Name == "图鉴" then
---             gg.log("图鉴按钮点击")
---             ViewBase["CardsGui"]:Open()
---         end
---         -- 发送菜单点击事件到服务器
---         gg.network_channel:FireServer({
---             cmd = "MenuClicked",
---             buttonName = button.node.Name
---         })
---     end
--- end
+---@param viewButton ViewButton
+function HudMenu:RegisterMenuButton(viewButton)
+    if not viewButton then return end
+    gg.log("菜单按钮初始化", viewButton.node.Name)
+    viewButton:SetTouchEnable(true)
+    -- 设置新的点击回调
+    viewButton.clickCb = function(ui, button)
+        gg.log("菜单按钮点击", button.node.Name)
+        if button.node.Name == "活动" then
+            gg.log("活动按钮点击")
+        elseif button.node.Name == "图鉴" then
+            gg.log("图鉴按钮点击")
+            ViewBase["CardsGui"]:Open()
+        end
+        -- 发送菜单点击事件到服务器
+        gg.network_channel:FireServer({
+            cmd = "MenuClicked",
+            buttonName = button.node.Name
+        })
+    end
+end
 
 function HudMenu:OnInit(node, config)
     gg.log("菜单按钮HudMenu初始化")
     ViewBase.OnInit(self, node, config)
     self.selectingCard = 0
-    MenuButtonUtils.RegisterMenuButton(self:Get("活动", ViewButton))
-    MenuButtonUtils.RegisterMenuButton(self:Get("图鉴", ViewButton))
+    self:RegisterMenuButton(self:Get("活动", ViewButton))
+    self:RegisterMenuButton(self:Get("图鉴", ViewButton))
 
-    -- RegisterMenuButton(self:Get("活动", ViewButton))
-    -- RegisterMenuButton(self:Get("图鉴", ViewButton))
     self:Get("菜单/菜单按钮", ViewList, function(n)
         local button = ViewButton.New(n, self)
-        MenuButtonUtils.RegisterMenuButton(button)
+        self:RegisterMenuButton(button)
         return button
     end) ---@type ViewList<ViewButton>
 
@@ -63,7 +61,7 @@ function HudMenu:OnInit(node, config)
         return button
     end) ---@type ViewList<ViewButton>
 
-    
+
     ClientEventManager.Subscribe("SyncInventoryItems", function(evt)
         local evt = evt ---@type SyncInventoryItems
         -- 更新货币显示
@@ -77,7 +75,7 @@ function HudMenu:OnInit(node, config)
             end
         end
     end)
-    
+
 end
 
 

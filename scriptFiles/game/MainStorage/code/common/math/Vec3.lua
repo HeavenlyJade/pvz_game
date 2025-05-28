@@ -218,11 +218,6 @@ function Vec3:Normalize()
         self.y = self.y / mag
         self.z = self.z / mag
     end
-    return self
-end
-
-function Vec3:GetPosition()
-    return self
 end
 
 --获取归一化向量

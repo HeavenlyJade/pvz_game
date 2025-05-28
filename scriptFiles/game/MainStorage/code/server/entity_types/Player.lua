@@ -57,13 +57,10 @@ function _M:OnInit(info_)
             if skill.equipSlot > 0 and skill.skillType.activeSpell then
                 local param = CastParam.New()
                 param.lookDirection = evt.direction
-                local target = nil
-                if skill.skillType.targetMode == "位置" then
-                    target = gg.Vec3.new(evt.targetPos)
-                end
-                if skill.skillType.activeSpell:Cast(self, target, param) then
+                if skill.skillType.activeSpell:Cast(self, nil, param) then
                     -- 获取技能冷却时间
                     local cooldown = self:GetCooldown(skill.skillType.activeSpell.spellName)
+                    print("cooldown", skill.skillType.activeSpell.spellName, cooldown)
                     if cooldown > 0 then
                         -- 发送冷却更新到客户端
                         gg.network_channel:fireClient(self.uin, {

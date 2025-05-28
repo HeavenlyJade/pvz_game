@@ -33,7 +33,12 @@ local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Grap
 local Spell = ClassMgr.Class("Spell")
 
 function Spell.Load( data )
-    local class = require(MainStorage.code.server.spells.spell_types[data["类型"]])
+    local node = MainStorage.code.server.spells.spell_types[data["类型"]]
+    if not node then
+        gg.log("不存在的魔法类型", data["魔法名"], data["类型"], MainStorage.code.server.spells.spell_types)
+        return nil
+    end
+    local class = require(node)
     return class.New(data)
 end
 
@@ -81,10 +86,8 @@ function Spell:GetName(target)
         return "[无目标]"
     elseif type(target) == "userdata" then
         return tostring(target)
-    elseif target.Is and target:Is("Entity") then
-        return target.name
     else
-        return tostring(target)
+        return target.name
     end
 end
 
@@ -226,21 +229,14 @@ end
 
 function Spell:GetPosition(target)
     if type(target) == "userdata" then
-        return gg.Vec3.new(target)
+        return target
     else
-        if type(target) == "table" and target.Is and target:Is("Entity") then
-            return gg.Vec3.new(target:GetPosition())
-        else
-            return target
-        end
+        return target:GetPosition()
     end
 end
 
 function Spell:IsEntity(target)
-    if type(target) == "table" and target.Is and target:Is("Entity") then
-        return true
-    end
-    return false
+    return type(target) ~= "userdata"
 end
 
 --- 检查是否可以释放魔法

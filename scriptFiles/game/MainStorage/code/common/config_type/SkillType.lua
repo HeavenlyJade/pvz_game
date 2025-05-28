@@ -28,7 +28,8 @@ function SkillType:OnInit(data)
     self.nextSkills = data["下一技能"]
     self.prerequisite = {} ---@type SkillType[]
     self.targetMode = data["目标模式"]
-    
+    self.skillType = data["技能分类"]
+
     -- 加载被动词条
     self.passiveTags = {}
     if data["被动词条"] then
@@ -37,12 +38,14 @@ function SkillType:OnInit(data)
             table.insert(self.passiveTags, tag)
         end
     end
-    
+
     self.cooldown = 0
     -- 加载主动释放魔法
     if data["主动释放魔法"] then
         self.activeSpell = SpellConfig.Get(data["主动释放魔法"]) ---@type Spell
-        self.cooldown = self.activeSpell.cooldown
+        if self.activeSpell then
+            self.cooldown = self.activeSpell.cooldown
+        end
     end
 
     if data["后坐力"] then

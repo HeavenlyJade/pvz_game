@@ -17,8 +17,18 @@ local function LoadConfig()
         ["是入口技能"] = false,
         ["技能分类"] = 0,
         ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "三头豌豆_入口",
         ["目标模式"] = "敌人",
-        ["启用后坐力"] = false
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 0,
+            ["最大垂直后坐力"] = 0,
+            ["垂直后坐力恢复"] = 0,
+            ["水平后坐力"] = 0.2,
+            ["最大水平后坐力"] = 0,
+            ["水平后坐力恢复"] = 0,
+            ["后坐力冷却时间"] = 0
+        }
     }),
     ["射速1_三头豌豆"] = SkillType.New({
         ["技能名"] = "射速1_三头豌豆",
@@ -82,8 +92,18 @@ local function LoadConfig()
             "攻击1_双发豌豆"
         },
         ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "双发豌豆_入口",
         ["目标模式"] = "敌人",
-        ["启用后坐力"] = false
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 0,
+            ["最大垂直后坐力"] = 0,
+            ["垂直后坐力恢复"] = 0,
+            ["水平后坐力"] = 0.2,
+            ["最大水平后坐力"] = 0,
+            ["水平后坐力恢复"] = 0,
+            ["后坐力冷却时间"] = 0
+        }
     }),
     ["寒冰加特林"] = SkillType.New({
         ["技能名"] = "寒冰加特林",
@@ -95,8 +115,18 @@ local function LoadConfig()
             "攻击1_寒冰加特林"
         },
         ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "寒冰加特林_入口",
         ["目标模式"] = "敌人",
-        ["启用后坐力"] = false
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 0,
+            ["最大垂直后坐力"] = 0,
+            ["垂直后坐力恢复"] = 0,
+            ["水平后坐力"] = 0.2,
+            ["最大水平后坐力"] = 0,
+            ["水平后坐力恢复"] = 0,
+            ["后坐力冷却时间"] = 0
+        }
     }),
     ["攻击1_寒冰加特林"] = SkillType.New({
         ["技能名"] = "攻击1_寒冰加特林",
@@ -160,8 +190,18 @@ local function LoadConfig()
             "攻击1_寒冰射手"
         },
         ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "寒冰射手_入口",
         ["目标模式"] = "敌人",
-        ["启用后坐力"] = false
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 0,
+            ["最大垂直后坐力"] = 0,
+            ["垂直后坐力恢复"] = 0,
+            ["水平后坐力"] = 0.2,
+            ["最大水平后坐力"] = 0,
+            ["水平后坐力恢复"] = 0,
+            ["后坐力冷却时间"] = 0
+        }
     }),
     ["火焰豌豆"] = SkillType.New({
         ["技能名"] = "火焰豌豆",
@@ -173,8 +213,18 @@ local function LoadConfig()
             "攻击1_火焰豌豆"
         },
         ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "火焰豌豆_入口",
         ["目标模式"] = "敌人",
-        ["启用后坐力"] = false
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 0,
+            ["最大垂直后坐力"] = 0,
+            ["垂直后坐力恢复"] = 0,
+            ["水平后坐力"] = 0.2,
+            ["最大水平后坐力"] = 0,
+            ["水平后坐力恢复"] = 0,
+            ["后坐力冷却时间"] = 0
+        }
     }),
     ["攻击1_火焰豌豆"] = SkillType.New({
         ["技能名"] = "攻击1_火焰豌豆",
@@ -276,8 +326,18 @@ local function LoadConfig()
             "射速1_高速加特林"
         },
         ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "高速加特林_入口",
         ["目标模式"] = "敌人",
-        ["启用后坐力"] = false
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 0,
+            ["最大垂直后坐力"] = 0,
+            ["垂直后坐力恢复"] = 0,
+            ["水平后坐力"] = 0.2,
+            ["最大水平后坐力"] = 0,
+            ["水平后坐力恢复"] = 0,
+            ["后坐力冷却时间"] = 0
+        }
     }),
     ["射速1_高速加特林"] = SkillType.New({
         ["技能名"] = "射速1_高速加特林",
@@ -306,8 +366,18 @@ local function LoadConfig()
             "射速1_高速射手"
         },
         ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "高速射手_入口",
         ["目标模式"] = "敌人",
-        ["启用后坐力"] = false
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 0,
+            ["最大垂直后坐力"] = 0,
+            ["垂直后坐力恢复"] = 0,
+            ["水平后坐力"] = 0.2,
+            ["最大水平后坐力"] = 0,
+            ["水平后坐力恢复"] = 0,
+            ["后坐力冷却时间"] = 0
+        }
     }),
     ["射速1_高速射手"] = SkillType.New({
         ["技能名"] = "射速1_高速射手",
@@ -326,8 +396,81 @@ local function LoadConfig()
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false
     }),
+    ["副-坚果"] = SkillType.New({
+        ["技能名"] = "副-坚果",
+        ["显示名"] = "坚果",
+        ["最大等级"] = 1,
+        ["技能描述"] = "坚果拥有极厚血量，可以抵御僵尸的伤害。",
+        ["是入口技能"] = true,
+        ["技能分类"] = 1,
+        ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "副_召唤_坚果",
+        ["目标模式"] = "自己",
+        ["位置偏移"] = {
+            200,
+            0,
+            0
+        },
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 3,
+            ["最大垂直后坐力"] = 8,
+            ["垂直后坐力恢复"] = 5,
+            ["水平后坐力"] = 3,
+            ["最大水平后坐力"] = 6,
+            ["水平后坐力恢复"] = 2,
+            ["后坐力冷却时间"] = 0.5
+        }
+    }),
+    ["副-椰子炮"] = SkillType.New({
+        ["技能名"] = "副-椰子炮",
+        ["显示名"] = "豌豆射手",
+        ["最大等级"] = 1,
+        ["技能描述"] = "豌豆射手可谓你的第一道防线，他们朝来犯的僵尸射击豌豆。",
+        ["是入口技能"] = true,
+        ["技能分类"] = 1,
+        ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "副_召唤_豌豆射手",
+        ["目标模式"] = "自己",
+        ["位置偏移"] = {
+            200,
+            0,
+            0
+        },
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 3,
+            ["最大垂直后坐力"] = 8,
+            ["垂直后坐力恢复"] = 5,
+            ["水平后坐力"] = 3,
+            ["最大水平后坐力"] = 6,
+            ["水平后坐力恢复"] = 2,
+            ["后坐力冷却时间"] = 0.5
+        }
+    }),
     ["副-樱桃炸弹"] = SkillType.New({
         ["技能名"] = "副-樱桃炸弹",
+        ["显示名"] = "樱桃炸弹",
+        ["最大等级"] = 1,
+        ["技能描述"] = "豌豆射手可谓你的第一道防线，他们朝来犯的僵尸射击豌豆。",
+        ["是入口技能"] = true,
+        ["技能分类"] = 1,
+        ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "副-樱桃炸弹-飞弹",
+        ["目标模式"] = "位置",
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 3,
+            ["最大垂直后坐力"] = 8,
+            ["垂直后坐力恢复"] = 5,
+            ["水平后坐力"] = 3,
+            ["最大水平后坐力"] = 6,
+            ["水平后坐力恢复"] = 2,
+            ["后坐力冷却时间"] = 0.5
+        }
+    }),
+    ["副-火爆辣椒"] = SkillType.New({
+        ["技能名"] = "副-火爆辣椒",
         ["显示名"] = "樱桃炸弹",
         ["最大等级"] = 1,
         ["技能描述"] = "豌豆射手可谓你的第一道防线，他们朝来犯的僵尸射击豌豆。",
@@ -372,6 +515,32 @@ local function LoadConfig()
             ["水平后坐力恢复"] = 2,
             ["后坐力冷却时间"] = 0.5
         }
+    }),
+    ["副-钢铁地刺"] = SkillType.New({
+        ["技能名"] = "副-钢铁地刺",
+        ["显示名"] = "坚果",
+        ["最大等级"] = 1,
+        ["技能描述"] = "使踩过的僵尸受到持续伤害。",
+        ["是入口技能"] = true,
+        ["技能分类"] = 1,
+        ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "副_召唤_地刺",
+        ["目标模式"] = "自己",
+        ["位置偏移"] = {
+            200,
+            0,
+            0
+        },
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 3,
+            ["最大垂直后坐力"] = 8,
+            ["垂直后坐力恢复"] = 5,
+            ["水平后坐力"] = 3,
+            ["最大水平后坐力"] = 6,
+            ["水平后坐力恢复"] = 2,
+            ["后坐力冷却时间"] = 0.5
+        }
     })
 }loaded = true
 
@@ -381,7 +550,7 @@ for _, skillType in pairs(SkillTypeConfig.config) do
     if skillType.isEntrySkill then
         table.insert(entrySkills, skillType)
     end
-    
+
     if skillType.nextSkills then
         local nextSkills = {}
         for _, skillName in ipairs(skillType.nextSkills) do
@@ -423,5 +592,78 @@ function SkillTypeConfig.GetEntrySkills()
     end
     return entrySkills
 end
+
+---@class SkillTree
+---@field mainSkill SkillType 主技能（入口技能）
+---@field branches SkillType[] 分支技能列表
+---获取技能树数据结构，按主卡分组
+---@param skillCategory number 技能分类 (0=主卡, 1=副卡)
+---@return table<string, SkillTree> 技能树映射表，key为主技能名称
+function SkillTypeConfig.GetSkillTrees(skillCategory)
+    if not loaded then
+        LoadConfig()
+    end
+
+    local skillTrees = {} ---@type table<string, SkillTree>
+
+    -- 遍历所有技能配置，找到指定分类的入口技能
+    for skillName, skillType in pairs(SkillTypeConfig.config) do
+        -- 筛选条件：是入口技能 且 属于指定分类
+        if skillType.isEntrySkill and skillType.skillType == skillCategory then
+            gg.log("构建技能树 - 找到主卡:", skillType.name, "分类:", skillCategory)
+
+            -- 创建技能树结构
+            local skillTree = {
+                mainSkill = skillType,
+                branches = {} ---@type SkillType[]
+            }
+
+            -- 收集该主卡的所有分支技能
+            if skillType.nextSkills then
+                for _, nextSkill in ipairs(skillType.nextSkills) do
+                    table.insert(skillTree.branches, nextSkill)
+                    gg.log("  - 添加分支技能:", nextSkill.name)
+                end
+            end
+
+            -- 以主技能名称作为key存储技能树
+            skillTrees[skillType.name] = skillTree
+            gg.log("技能树构建完成:", skillType.name, "包含", #skillTree.branches, "个分支技能")
+        end
+    end
+
+    gg.log("技能树构建完成，共", gg.table2str(skillTrees), "个技能树")
+    return skillTrees
+end
+
+---打印技能树结构（美化输出）
+---@param skillTrees table<string, SkillTree> 技能树映射表
+function SkillTypeConfig.PrintSkillTrees(skillTrees)
+    gg.log("========== 技能树结构 ==========")
+
+    for mainSkillName, skillTree in pairs(skillTrees) do
+        gg.log("📋 主卡:", mainSkillName)
+        gg.log("  └── 主技能:", skillTree.mainSkill.name)
+        gg.log("  └── 分支技能数量:", #skillTree.branches)
+
+        for i, branch in ipairs(skillTree.branches) do
+            local prefix = (i == #skillTree.branches) and "      └──" or "      ├──"
+            gg.log(prefix, "分支" .. i .. ":", branch.name)
+
+            -- 如果分支技能还有下一技能，继续显示
+            if branch.nextSkills and #branch.nextSkills > 0 then
+                for j, nextSkill in ipairs(branch.nextSkills) do
+                    local nextPrefix = (i == #skillTree.branches) and "          " or "      │   "
+                    nextPrefix = nextPrefix .. ((j == #branch.nextSkills) and "└──" or "├──")
+                    gg.log(nextPrefix, "下级:", nextSkill.name)
+                end
+            end
+        end
+        gg.log("") -- 空行分隔
+    end
+
+    gg.log("========== 技能树结构结束 ==========")
+end
+
 
 return SkillTypeConfig

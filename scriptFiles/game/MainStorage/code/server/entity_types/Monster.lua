@@ -163,7 +163,7 @@ function _M:TryFindTarget(detectRange)
     -- 获取当前位置
     local currentPos = self:GetPosition()
     -- 在场景中检测范围内的敌人
-    local enemies = self.scene:OverlapBoxEntity(currentPos, Vector3.New(detectRange, detectRange, detectRange), Vector3.New(0, 0, 0), enemyGroup)
+    local enemies = self.scene:OverlapBox(currentPos, Vector3.New(detectRange, detectRange, detectRange), Vector3.New(0, 0, 0), enemyGroup)
     -- 找到最近的有效目标
     local nearestTarget = nil
     local minDistanceSq = detectRangeSq
