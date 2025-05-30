@@ -40,23 +40,10 @@ timer.Interval = 60   -- 循环间隔多少秒 (1秒=10帧)
 timer.Callback = SaveAll
 timer:Start()
 
-
---读取玩家技能数据
----@class SkillDataItem
----@field skill string 技能类型名称，用于查找SkillTypeConfig
----@field level number 技能等级
----@field slot number 装备槽位 (0表示未装备，1表示装备)
-
----@class CloudSkillData
----@field uin number 玩家UIN
----@field skills table<string, SkillDataItem> 技能数据表，键为skillId
-
----@param uin_ number 玩家UIN
----@return number, CloudSkillData  -- 返回码(0成功,1失败)和技能数据
 --读取玩家技能数据
 function MCloudDataMgr.ReadSkillData( uin_ )
     local ret_, ret2_ = cloudService:GetTableOrEmpty( 'sk' .. uin_ )
-    gg.log( '获取玩家技能数据信息', 'sk' .. uin_, ret_, ret2_ )
+    gg.log( '获取玩家技能数据信息', 'pd' .. uin_, ret_, ret2_ )
     if  ret_ then
         if  ret2_ and ret2_.uin == uin_ then
             return 0, ret2_

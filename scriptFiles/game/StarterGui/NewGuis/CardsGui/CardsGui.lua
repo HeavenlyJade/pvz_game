@@ -78,7 +78,7 @@ function CardsGui:OnInit(node, config)
     self.qualityListMap = {} ---@type table<string, string> -- 构建反射的品质按钮名->品质名字典
     self.qualityLists = {} ---@type table<string, ViewList> -- 品质列表
     -- 初始化技能数据
-    self.skills = {} ---@type table<string, Table>
+    self.skills = {} ---@type table<string, Skill>
     self.equippedSkills = {} ---@type table<number, string>
 
     -- 当前显示的卡片类型 ("主卡" 或 "副卡")
@@ -98,15 +98,6 @@ function CardsGui:OnInit(node, config)
 
 end
 
--- 发送技能保存数据到服务器
-function CardsGui:SendSkillSaveData()
-    gg.network_channel:FireServer({
-        cmd = "SkillRequest_Save", -- 你可以自定义事件名
-        skillData = self.skills
-    })
-end
-
-
 -- 处理技能同步数据
 function CardsGui:HandleSkillSync(data)
     -- gg.log("CardsGui:HandleSkillSync", data)
@@ -116,42 +107,42 @@ function CardsGui:HandleSkillSync(data)
     self.skills = {}
     self.equippedSkills = {}
 
-    -- 客户端不能直接调用服务端代码
-    -- for skillId, skillData in pairs(data.skillData.skills) do
-    --     -- 创建技能对象
-    --     local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
-    --     local skill = Skill.New(nil, skillData)
-    --     self.skills[skillId] = skill
+    -- 反序列化技能数据
+    for skillId, skillData in pairs(data.skillData.skills) do
+        -- 创建技能对象
+        local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
+        local skill = Skill.New(nil, skillData)
+        self.skills[skillId] = skill
 
-    --     -- 记录已装备的技能
-    --     if skill.equipSlot > 0 then
-    --         self.equippedSkills[skill.equipSlot] = skillId
-    --     end
-    -- end
+        -- 记录已装备的技能
+        if skill.equipSlot > 0 then
+            self.equippedSkills[skill.equipSlot] = skillId
+        end
+    end
 
     -- 更新UI显示
-    -- self:UpdateSkillDisplay()
+    self:UpdateSkillDisplay()
 end
 
 -- 更新技能显示
--- function CardsGui:UpdateSkillDisplay()
---     -- 更新技能按钮显示
---     for slot, skillId in pairs(self.equippedSkills) do
---         local skill = self.skills[skillId]
---         if skill and self.skillButtons[slot] then
---             -- 更新技能按钮显示
---             self.skillButtons[slot].Title = skill.skillType.name
---             -- 可以添加更多UI更新逻辑
---         end
---     end
--- end
+function CardsGui:UpdateSkillDisplay()
+    -- 更新技能按钮显示
+    for slot, skillId in pairs(self.equippedSkills) do
+        local skill = self.skills[skillId]
+        if skill and self.skillButtons[slot] then
+            -- 更新技能按钮显示
+            self.skillButtons[slot].Title = skill.skillType.name
+            -- 可以添加更多UI更新逻辑
+        end
+    end
+end
 
--- function CardsGui:Display(title, content, confirmCallback, cancelCallback)
---     self.qualityList.Title = title
---     self.mainCardButton.Title = content
---     self.confirmCallback = confirmCallback
---     self.cancelCallback = cancelCallback
--- end
+function CardsGui:Display(title, content, confirmCallback, cancelCallback)
+    self.qualityList.Title = title
+    self.mainCardButton.Title = content
+    self.confirmCallback = confirmCallback
+    self.cancelCallback = cancelCallback
+end
 
 -- ========== 卡片切换功能 ==========
 
@@ -169,10 +160,13 @@ function CardsGui:UpdateCardDisplay(cardType)
     if self.mainCardComponent then
         local showMain = (cardType == "主卡")
         self.mainCardComponent:SetVisible(showMain)
+        -- gg.log("主卡组件显示状态:", showMain)
     end
+
     if self.subCardComponent then
         local showSub = (cardType == "副卡")
         self.subCardComponent:SetVisible(showSub)
+        -- gg.log("副卡组件显示状态:", showSub)
     end
 end
 
@@ -267,6 +261,7 @@ function CardsGui:CloneMainCardButtons(skillMainTrees)
     -- 销毁列表模板
     ListTemplate.node:Destroy()
 end
+
 
 -- 为技能树克隆纵列表
 function CardsGui:CloneVerticalListsForSkillTrees(skillMainTrees)
@@ -382,6 +377,7 @@ function CardsGui:CloneVerticalListsForSkillTrees(skillMainTrees)
             -- gg.log("  - 分支技能数量:", #skillTree.branches)
 
             -- 为这个纵列表设置分支技能
+            self:SetupBranchSkillsForVerticalList(clonedVerticalList, skillTree.branches, mainSkillName)
             local verticalListTemplate = self:Get("框体/主卡/加点框/"..newListName, ViewList) ---@type ViewList
             self.skillLists[newListName] = verticalListTemplate
 
@@ -400,6 +396,25 @@ function CardsGui:CloneVerticalListsForSkillTrees(skillMainTrees)
     end)
 
     -- gg.log("纵列表克隆完成")
+end
+
+-- 为纵列表设置分支技能
+function CardsGui:SetupBranchSkillsForVerticalList(verticalListNode, branchSkills, mainSkillName)
+    -- gg.log("为纵列表设置分支技能:", mainSkillName, "分支数量:", #branchSkills)
+
+    -- 在这里可以设置每个分支技能对应的UI元素
+    -- 比如克隆卡框、设置技能图标和信息等
+
+    for i, branchSkill in ipairs(branchSkills) do
+        -- gg.log("  - 设置分支技能", i, ":", branchSkill.name)
+
+        -- 这里可以根据需要克隆和设置分支技能的UI
+        -- 例如：
+        -- 1. 克隆卡框
+        -- 2. 设置技能图标
+        -- 3. 设置技能描述
+        -- 4. 绑定点击事件
+    end
 end
 
 -- 克隆分支技能的卡框
@@ -553,6 +568,7 @@ function CardsGui:LoadSubCardsAndClone()
             end
         end
     end
+
 
     subListTemplate.node:Destroy()
     print("副卡全部生成完毕，模板已销毁")

@@ -116,7 +116,7 @@ function _M:OnInit(info_)
         } -- monster melee
     }
     self.modelPlayer = nil  ---@type ModelPlayer
-    
+
     -- 描边效果计时器
     self.outlineTimer = nil
 end
@@ -185,7 +185,7 @@ end
 function _M:RefreshStats()
     if not self.actor then return end
     self:ResetStats("EQUIP")
-    
+
     -- 遍历所有需要触发的属性类型并刷新
     for statName, triggerFunc in pairs(TRIGGER_STAT_TYPES) do
         local value = self:GetStat(statName)
@@ -588,12 +588,11 @@ function _M:Hurt(amount, damager, isCrit)
         self.combatTime = 10 -- 设置战斗时间为10秒
         -- 显示伤害数字
         if damager.isPlayer then
-            local targetPos = self:GetCenterPosition()
             damager:showDamage(amount, {
                 cr = isCrit and 1 or 0
-            }, targetPos + (damager:GetCenterPosition() - targetPos):Normalize() * self:GetSize().x)
+            })
         end
-        
+
         -- 显示受伤描边效果
         if self.actor then
             self.actor.OutlineActive = true
@@ -601,7 +600,7 @@ function _M:Hurt(amount, damager, isCrit)
                 if self.actor then
                     self.actor.OutlineActive = false
                 end
-            end, 0.2, nil, "outline_" .. self.uuid)
+            end, 0.5, nil, "outline_" .. self.uuid)
         end
     end
 
@@ -645,16 +644,16 @@ end
 --- 死亡处理
 function _M:Die()
     if self.isDead then return end
-    
+
     self.isDead = true
     self.deathWaitTime = self.isPlayer and 30 or 60
-    
+
     -- 停止导航
     self.actor:StopNavigate()
     if self.modelPlayer then
         self.modelPlayer:OnDead()
     end
-    
+
     -- 如果是玩家，发送死亡状态到客户端
     if self.isPlayer then
         gg.network_channel:fireClient(self.uin, {
@@ -662,7 +661,7 @@ function _M:Die()
             v = 'dead'
         })
     end
-    
+
     -- 发布死亡事件
     ServerEventManager.Publish("EntityDeadEvent", { entity = self })
 end
@@ -807,9 +806,10 @@ function _M:createHpBar(root_)
 end
 
 -- 显示伤害飘字，闪避，升级
-function _M:showDamage(number_, eff_, position)
+function _M:showDamage(number_, eff_)
     -- 无伤害，无特殊效果
     print("showDamage", number_, eff_)
+    local position = self:GetCenterPosition()
     gg.network_channel:fireClient(self.uin, {
         cmd = "ShowDamage",
         amount = number_,
@@ -953,7 +953,7 @@ end
 -- tick刷新
 function _M:update()
     self.tick = self.tick + 1
-    
+
     -- 处理死亡状态
     if self.isDead then
         if self.deathWaitTime > 0 then
@@ -975,21 +975,21 @@ end
 function _M:CompleteRespawn()
     self.isDead = false
     self.deathWaitTime = 0
-    
+
     -- 重置属性
     self:resetBattleData(true)
-    
+
     -- 重置目标
     if self.isPlayer then
         self.target = nil
     end
-    
+
     -- 重置战斗时间
     self.combatTime = 0
     if self.modelPlayer then
         self.modelPlayer:SwitchState("idle")
     end
-    
+
     -- 同步状态到客户端
     if self.isPlayer then
         gg.network_channel:fireClient(self.uin, {

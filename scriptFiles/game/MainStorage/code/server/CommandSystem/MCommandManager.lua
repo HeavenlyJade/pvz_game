@@ -13,7 +13,7 @@ local MailCommand = require(MainStorage.code.server.CommandSystem.commands.MailC
 
 -- local QuestCommands = require(MainStorage.code.server.CommandSystem.commands.MQuestCommands)     ---@type QuestCommands
 -- local PlayerCommands = require(MainStorage.code.server.CommandSystem.commands.MPlayerCommands)   ---@type PlayerCommands
-local SkillCommands = require(MainStorage.code.server.CommandSystem.commands.MSkillCommands)     ---@type SkillCommands
+-- local SkillCommands = require(MainStorage.code.server.CommandSystem.commands.MSkillCommands)     ---@type SkillCommands
 -- local SystemCommands = require(MainStorage.code.server.CommandSystem.commands.MSystemCommands)   ---@type SystemCommands
 local json = require(MainStorage.code.common.json)
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
@@ -36,9 +36,6 @@ CommandManager.handlers = {
     ["quest"] = QuestCommand.main,
        -- 邮件相关命令
     ["mail"] = MailCommand.main,
-
-    -- 玩家技能相关命令
-    ["loadDefSkill"] = SkillCommands.LoadDefSkill,
     -- ["装备"] = {},
 
     -- -- 玩家属性相关
