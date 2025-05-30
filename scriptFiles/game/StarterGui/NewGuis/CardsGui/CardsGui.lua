@@ -181,10 +181,12 @@ end
 function CardsGui:LoadMainCardsAndClone()
     gg.log("开始读取主卡数据并克隆节点...")
     local skillMainTrees = SkillTypeConfig.GetSkillTrees(0)
-    gg.log("skillMainTrees", skillMainTrees)
+    local datat =SkillTypeConfig.BuildSkillForest(0)
+    gg.log("datat", datat)
+
 
     -- 使用美化的打印函数显示技能树结构
-    SkillTypeConfig.PrintSkillTrees(skillMainTrees)
+    SkillTypeConfig.PrintSkillForest(datat)
 
     -- 克隆纵列表
     self:CloneVerticalListsForSkillTrees(skillMainTrees)
