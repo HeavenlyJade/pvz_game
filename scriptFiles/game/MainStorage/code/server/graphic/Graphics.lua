@@ -8,18 +8,38 @@ local Graphic = ClassMgr.Class("Graphic")
 
 -- 从模板创建新的特效对象
 local function CreateParticle(particleName)
-    local fxTemplate = MainStorage["特效"][particleName]
-    if not fxTemplate then
-        fxTemplate = game.WorkSpace["特效"][particleName]
+    if particleName == "" then
+        return nil
     end
-    if fxTemplate then
-        return fxTemplate:Clone()
+    local node = MainStorage
+    local fullPath = ""
+    local lastPart = ""
+    
+    -- 遍历路径的每一部分
+    for part in particleName:gmatch("[^/]+") do
+        if part ~= "" then
+            lastPart = part
+            if not node then
+                return nil
+            end
+            node = node[part]
+            if fullPath == "" then
+                fullPath = part
+            else
+                fullPath = fullPath .. "/" .. part
+            end
+        end
     end
-    return nil
+    
+    if not node then
+        return nil
+    end
+    
+    return node:Clone()
 end
 
 function Graphic:OnInit( data )
-    self.offset = data["偏移"] or Vector3.New(0,0,0)
+    self.offset = gg.Vec3.new(data["偏移"]) or gg.Vec3.zero()
     self.targeter = data["目标"]
     self.targeterPath = data["目标场景名"]
     self.delay = data["延迟"] or 0
@@ -29,7 +49,7 @@ function Graphic:OnInit( data )
 end
 
 function Graphic:GetTarget(caster, target)
-    if self.targeter == "目标" then
+    if self.targeter == "目标" or self.targeter == "击中目标" then
         return target
     elseif self.targeter == "自己" then
         return caster
@@ -42,18 +62,83 @@ end
 ---@param caster Entity
 ---@param target Entity
 ---@param param CastParam
-function Graphic:PlayAt(caster, target, param)
+---@param actions table
+function Graphic:PlayAt(caster, target, param, actions)
     local c = self:GetTarget(caster, target)
     if self.delay > 0 then
         ServerScheduler.add(function ()
-            self:PlayAtReal(caster, c, param)
+            self:PlayAtReal(caster, c, param, actions)
         end, self.delay)
     else
-        self:PlayAtReal(caster, c, param)
+        self:PlayAtReal(caster, c, param, actions)
     end
 end
 
-function Graphic:PlayAtReal(caster, target, param)
+---@param caster Entity
+---@param target Entity
+---@param param CastParam
+---@param actions table
+function Graphic:PlayAtReal(caster, target, param, actions)
+    local isCancelled = false
+    local currentRepeat = 0
+    
+    local function addCancelFunction(effect, repeatIndex)
+        local effectCancel = function()
+            if effect.Enabled then
+                effect.Enabled = false
+                effect:Destroy()
+            end
+        end
+        table.insert(actions, effectCancel)
+        return effectCancel
+    end
+    
+    local function playEffect()
+        if isCancelled then 
+            return 
+        end
+        
+        -- 创建并设置效果对象
+        local effect = self:CreateEffect(target)
+        if not effect then 
+            return 
+        end
+        
+        -- 添加取消函数
+        local effectCancel = addCancelFunction(effect, currentRepeat + 1)
+        
+        currentRepeat = currentRepeat + 1
+        
+        -- 设置持续时间
+        if self.duration > 0 then
+            ServerScheduler.add(function()
+                if not isCancelled then
+                    effectCancel()
+                end
+            end, self.duration)
+        end
+        
+        -- 设置下一次重复
+        if currentRepeat < self.repeatCount and self.repeatDelay > 0 then
+            ServerScheduler.add(playEffect, self.repeatDelay)
+        end
+    end
+    
+    -- 启动第一次播放
+    playEffect()
+end
+
+-- 子类需要实现的抽象方法
+function Graphic:GetType()
+    return "Graphic"
+end
+
+function Graphic:GetName()
+    return "Unknown"
+end
+
+function Graphic:CreateEffect(target)
+    return nil
 end
 
 ---@class ParticleGraphic:Graphic
@@ -66,83 +151,40 @@ function ParticleGraphic:OnInit( data )
     self.boundToBone = data["绑定挂点"] or nil
 end
 
----@return fun()[]|nil 调用后取消特效
-function ParticleGraphic:PlayAtReal(caster, target, param)
+function ParticleGraphic:GetType()
+    return "特效"
+end
+
+function ParticleGraphic:GetName()
+    return self.particleName
+end
+
+function ParticleGraphic:CreateEffect(target)
     local scene = target.scene
     local container
     if self.boundToEntity and target.isEntity then
         container = target.actor
-        print(string.format("[特效] %s: 绑定到实体 %s", self.particleName, target.name))
     else
         container = game.WorkSpace["Ground"][scene.name]["世界特效"]
-        print(string.format("[特效] %s: 绑定到世界特效容器 %s", self.particleName, scene.name))
     end
     
     if not container then
-        print(string.format("[特效] %s: 找不到容器", self.particleName))
         return nil
     end
     
-    local isCancelled = false
-    local cancelFunctions = {}
-    local currentRepeat = 0
+    local fx = CreateParticle(self.particleName)
+    if not fx then return nil end
     
-    local function playEffect()
-        if isCancelled then 
-            print(string.format("[特效] %s: 已取消播放", self.particleName))
-            return 
-        end
-        
-        -- 创建新的特效对象
-        local fx = CreateParticle(self.particleName)
-        if not fx then 
-            print(string.format("[特效] %s: 创建特效对象失败", self.particleName))
-            return 
-        end
-        
-        -- 设置特效位置和父节点
-        fx:SetParent(container)
-        if not self.boundToEntity then
-            fx.LocalPosition = target:GetPosition()
-        end
-        fx.Enabled = true
-        print(string.format("[特效] %s: 第%d次播放", self.particleName, currentRepeat + 1))
-        
-        -- 为每个特效创建独立的取消函数
-        local fxCancel = function()
-            if fx.Enabled then
-                fx.Enabled = false
-                fx:Destroy()
-                print(string.format("[特效] %s: 第%d次播放被取消并销毁", self.particleName, currentRepeat + 1))
-            end
-        end
-        table.insert(cancelFunctions, fxCancel)
-        
-        currentRepeat = currentRepeat + 1
-        
-        -- 设置持续时间
-        if self.duration > 0 then
-            print(string.format("[特效] %s: 设置持续时间 %.1f秒", self.particleName, self.duration))
-            ServerScheduler.add(function()
-                if not isCancelled then
-                    fxCancel()
-                end
-            end, self.duration)
-        end
-        
-        -- 设置下一次重复
-        if currentRepeat < self.repeatCount and self.repeatDelay > 0 then
-            print(string.format("[特效] %s: 设置下次重复延迟 %.1f秒", self.particleName, self.repeatDelay))
-            ServerScheduler.add(playEffect, self.repeatDelay)
-        end
+    fx:SetParent(container)
+    if not self.boundToEntity then
+        fx.Position = (self.offset + target:GetCenterPosition()):ToVector3()
+        gg.log("Position", target:GetCenterPosition(), self.offset, target.actor.Position)
+    else
+        fx.LocalPosition = self.offset:ToVector3()
     end
+    fx.Enabled = true
     
-    -- 启动第一次播放
-    print(string.format("[特效] %s: 开始播放 (重复次数: %d, 持续时间: %.1f, 重复延迟: %.1f)", 
-        self.particleName, self.repeatCount, self.duration, self.repeatDelay))
-    playEffect()
-    
-    return cancelFunctions
+    return fx
 end
 
 ---@class AnimationGraphic:Graphic
@@ -193,14 +235,68 @@ function CameraShakeGraphic:PlayAtReal(caster, target, param)
     end
 end
 
+---@class ModelGraphic:Graphic
+local ModelGraphic = ClassMgr.Class("ModelGraphic", Graphic)
+function ModelGraphic:OnInit( data )
+    Graphic.OnInit(self, data)
+    self.modelName = data["模型对象"]
+    self.stateMachine = data["模型状态机"]
+    self.animationName = data["播放动画"]
+    self.boundToEntity = data["绑定实体"] or false
+    self.boundToBone = data["绑定挂点"] or nil
+end
+
+function ModelGraphic:GetType()
+    return "模型"
+end
+
+function ModelGraphic:GetName()
+    return self.modelName
+end
+
+function ModelGraphic:CreateEffect(target)
+    local scene = target.scene
+    local container
+    if self.boundToEntity and target.isEntity then
+        container = target.actor
+    else
+        container = game.WorkSpace["Ground"][scene.name]["世界特效"]
+    end
+    
+    if not container then
+        return nil
+    end
+    
+    local model = CreateParticle(self.modelName)
+    if not model then return nil end
+    
+    model:SetParent(container)
+    if not self.boundToEntity then
+        model.LocalPosition = target:GetPosition()
+    end
+    model.Enabled = true
+    
+    -- 播放动画
+    if self.animationName and self.animationName ~= "" then
+        local modelPlayer = model.Animator
+        if modelPlayer then
+            modelPlayer:Play(self.animationName, 0, 0)
+        end
+    end
+    
+    return model
+end
+
 ---@class Graphics
 ---@field ParticleGraphic ParticleGraphic
 ---@field AnimationGraphic AnimationGraphic
 ---@field CameraShakeGraphic CameraShakeGraphic
+---@field ModelGraphic ModelGraphic
 local loaders = {
     ParticleGraphic = ParticleGraphic,
     AnimationGraphic = AnimationGraphic,
     CameraShakeGraphic = CameraShakeGraphic,
+    ModelGraphic = ModelGraphic,
 }
 
 --- 加载特效配置
@@ -224,206 +320,3 @@ end
 
 loaders["Load"] = Load
 return loaders
-
--- local MainStorage = game:GetService('MainStorage')
--- local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
--- local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
-
--- ---@class Graphic:Class
--- local Graphic = ClassMgr.Class("Graphic")
--- local graphicPool = {}
-
--- -- 特效对象池
--- local particlePools = {} -- 按特效名称分类的对象池
-
--- -- 从对象池获取特效对象
--- local function GetParticleFromPool(particleName)
---     if not particlePools[particleName] then
---         particlePools[particleName] = {}
---     end
-    
---     local pool = particlePools[particleName]
---     -- 查找可用的特效对象
---     for _, fx in ipairs(pool) do
---         if not fx.Enabled then
---             return fx
---         end
---     end
-    
---     -- 如果没有可用的，创建新的
---     local fxTemplate = game.WorkSpace["特效"][particleName]
---     if fxTemplate then
---         local newFx = fxTemplate:Clone()
---         table.insert(pool, newFx)
---         return newFx
---     end
-    
---     return nil
--- end
-
-
--- function Graphic:OnInit( data )
---     self.offset = data["偏移"] or Vector3.New(0,0,0)
---     self.targeter = data["目标"]
---     self.targeterPath = data["目标场景名"]
---     self.delay = data["延迟"] or 0
---     self.duration = data["持续时间"] or 0
---     self.repeatCount = data["重复次数"] or 1
---     self.repeatDelay = data["重复延迟"] or 0
--- end
-
--- function Graphic:GetTarget(caster, target)
---     if self.targeter == "目标" then
---         return target
---     elseif self.targeter == "自己" then
---         return caster
---     else
---         local scene = target.scene ---@type Scene
---         return scene.node2Entity[scene:Get(self.targeterPath)]
---     end
--- end
-
--- ---@param caster Entity
--- ---@param target Entity
--- ---@param param CastParam
--- function Graphic:PlayAt(caster, target, param)
---     if self.delay > 0 then
---         ServerScheduler.add(function ()
---             self:PlayAtReal(caster, target, param)
---         end, self.delay )
---     else
---         self:PlayAtReal(caster, target, param)
---     end
--- end
-
--- function Graphic:PlayAtReal(caster, target, param)
--- end
-
--- ---@class ParticleGraphic:Graphic
--- local ParticleGraphic = ClassMgr.Class("ParticleGraphic", Graphic)
--- function ParticleGraphic:OnInit( data )
---     Graphic.OnInit(self, data)
---     self.particleName = data["特效对象"]
---     self.particleAssetId = data["特效资产"] or nil
---     self.boundToEntity = data["绑定实体"] or false
---     self.boundToBone = data["绑定挂点"] or nil
--- end
-
--- ---@return fun()[]|nil 调用后取消特效
--- function ParticleGraphic:PlayAtReal(caster, target, param)
---     local scene = target.scene
---     local container
---     if self.boundToEntity and target.isEntity then
---         container = target.actor
---         print(string.format("[特效] %s: 绑定到实体 %s", self.particleName, target.name))
---     else
---         container = game.WorkSpace["Ground"][scene.name]["世界特效"]
---         print(string.format("[特效] %s: 绑定到世界特效容器 %s", self.particleName, scene.name))
---     end
-    
---     if not container then
---         print(string.format("[特效] %s: 找不到容器", self.particleName))
---         return nil
---     end
-    
---     local isCancelled = false
---     local cancelFunctions = {}
---     local currentRepeat = 0
-    
---     local function playEffect()
---         if isCancelled then 
---             print(string.format("[特效] %s: 已取消播放", self.particleName))
---             return 
---         end
-        
---         -- 每次重复都获取新的特效对象
---         local fx = GetParticleFromPool(self.particleName)
---         if not fx then 
---             print(string.format("[特效] %s: 获取特效对象失败", self.particleName))
---             return 
---         end
-        
---         -- 设置特效位置和父节点
---         fx:SetParent(container)
---         fx.Enabled = true
---         print(string.format("[特效] %s: 第%d次播放", self.particleName, currentRepeat + 1))
-        
---         -- 为每个特效创建独立的取消函数
---         local fxCancel = function()
---             if fx.Enabled then
---                 fx.Enabled = false
---                 print(string.format("[特效] %s: 第%d次播放被取消", self.particleName, currentRepeat + 1))
---             end
---         end
---         table.insert(cancelFunctions, fxCancel)
-        
---         currentRepeat = currentRepeat + 1
-        
---         -- 设置持续时间
---         if self.duration > 0 then
---             print(string.format("[特效] %s: 设置持续时间 %.1f秒", self.particleName, self.duration))
---             ServerScheduler.add(function()
---                 if not isCancelled then
---                     fxCancel()
---                 end
---             end, self.duration, 0, true)
---         end
-        
---         -- 设置下一次重复
---         if currentRepeat < self.repeatCount and self.repeatDelay > 0 then
---             print(string.format("[特效] %s: 设置下次重复延迟 %.1f秒", self.particleName, self.repeatDelay))
---             ServerScheduler.add(playEffect, self.repeatDelay, 0, true)
---         end
---     end
-    
---     -- 启动第一次播放
---     print(string.format("[特效] %s: 开始播放 (重复次数: %d, 持续时间: %.1f, 重复延迟: %.1f)", 
---         self.particleName, self.repeatCount, self.duration, self.repeatDelay))
---     playEffect()
-    
---     return cancelFunctions
--- end
-
--- ---@class AnimationGraphic:Graphic
--- local AnimationGraphic = ClassMgr.Class("AnimationGraphic", Graphic)
--- function AnimationGraphic:OnInit( data )
---     Graphic.OnInit(self, data)
---     self.animationName = data["播放动画"]
---     self.playbackSpeed = data["播放速度"]
--- end
-
--- function AnimationGraphic:PlayAtReal(caster, target, param)
---     if target.modelPlayer then
---         target.modelPlayer:SwitchState(self.animationName, self.playbackSpeed)
---     end
--- end
-
--- ---@class Graphics
--- ---@field ParticleGraphic ParticleGraphic
--- ---@field AnimationGraphic AnimationGraphic
--- local loaders = {
---     ParticleGraphic = ParticleGraphic,
---     AnimationGraphic = AnimationGraphic,
--- }
-
--- --- 加载特效配置
--- ---@param effectsData table[]|nil 特效配置数组
--- ---@return Graphic[] 特效实例数组
--- local function Load(effectsData)
---     if not effectsData then return {} end
-    
---     local effects = {}
---     for _, effectData in ipairs(effectsData) do
---         if effectData["_type"] then
---             local effectClass = loaders[effectData["_type"]]
---             if effectClass then
---                 local effect = effectClass.New(effectData)
---                 table.insert(effects, effect)
---             end
---         end
---     end
---     return effects
--- end
-
--- loaders["Load"] = Load
--- return loaders

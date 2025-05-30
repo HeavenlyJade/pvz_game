@@ -4,6 +4,7 @@ local TagHandler = require(MainStorage.code.common.config_type.tags.TagHandler) 
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local Battle = require(MainStorage.code.server.Battle) ---@type Battle
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 
 ---@class SpellTag : TagHandler
 local SpellTag = ClassMgr.Class("SpellTag", TagHandler)
@@ -20,7 +21,13 @@ function SpellTag:OnInit(data)
     self.cancel = data["取消"] or false ---@type boolean
     self.modifyValues = data["修改数值"] or {} ---@type OverrideValue[]
     self.overrideParams = data["复写参数"] or {} ---@type OverrideParam[]
-    self.subSpell = data["释放魔法"] or {} ---@type SubSpell[]
+    self.subSpell = {}
+    if data["释放魔法"] then
+        for _, subSpellData in ipairs(data["释放魔法"]) do
+            local subSpell = SubSpell.New(subSpellData)
+            table.insert(self.subSpell, subSpell)
+        end
+    end
     self.subSpellInheritPower = data["释放魔法继承威力"] or false ---@type boolean
 end
 

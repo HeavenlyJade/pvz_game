@@ -12,6 +12,7 @@ local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@
 local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local cloudService      = game:GetService("CloudService")     --- @type CloudService
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 
 
 
@@ -50,17 +51,25 @@ function _M:OnInit(info_)
     self.news = {} ---@type table<string, table> --红点路径
     self.skills = {} ---@type table<string, Skill>
     self.equippedSkills = {} ---@type table<number, string>
+    self.skillCastabilityTask = nil ---@type number 技能可释放状态检查任务ID
 
     self:SubscribeEvent("CastSpell", function (evt)
         if evt.player == self then
             local skill = self.skills[evt.skill]
             if skill.equipSlot > 0 and skill.skillType.activeSpell then
                 local param = CastParam.New()
-                param.lookDirection = evt.direction
-                if skill.skillType.activeSpell:Cast(self, nil, param) then
+                if evt.targetPos then
+                    param.lookDirection = (evt.targetPos - self:GetCenterPosition()):Normalize()
+                else
+                    param.lookDirection = evt.direction
+                end
+                local target = nil
+                if skill.skillType.targetMode == "位置" then
+                    target = gg.Vec3.new(evt.targetPos)
+                end
+                if skill.skillType.activeSpell:Cast(self, target, param) then
                     -- 获取技能冷却时间
                     local cooldown = self:GetCooldown(skill.skillType.activeSpell.spellName)
-                    print("cooldown", skill.skillType.activeSpell.spellName, cooldown)
                     if cooldown > 0 then
                         -- 发送冷却更新到客户端
                         gg.network_channel:fireClient(self.uin, {
@@ -69,10 +78,14 @@ function _M:OnInit(info_)
                             cooldown = cooldown
                         })
                     end
+                    self:_updateCastability()
                 end
             end
         end
     end)
+
+    -- 启动技能可释放状态检查任务
+    self:StartSkillCastabilityCheck()
 end
 
 _M.GenerateUUID = function(self)
@@ -142,6 +155,7 @@ end
 
 ---@override
 function _M:Die()
+    self:StopSkillCastabilityCheck()
     -- 发布死亡事件
     local debug_traceback = debug.traceback()
     gg.log("Player died, stack trace:", debug_traceback)
@@ -539,6 +553,47 @@ function _M:UpdateQuestsData()
         cmd = 'UpdateQuestsData',
         quests = quests
     })
+end
+
+---@private
+function _M:_updateCastability()
+    local castabilityData = {}
+        
+    -- 遍历所有装备的技能
+    for skillId, skill in pairs(self.skills) do
+        if skill.equipSlot > 0 and skill.skillType.activeSpell then
+            -- 检查技能是否可以释放
+            local canCast = skill.skillType.activeSpell:CanCast(self, nil, nil, nil, false)
+            castabilityData[skillId] = canCast
+        end
+    end
+
+    -- 发送到客户端
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "UpdateSkillCastability",
+        castabilityData = castabilityData
+    })
+end
+
+-- 启动技能可释放状态检查任务
+function _M:StartSkillCastabilityCheck()
+    -- 如果已有任务在运行，先停止它
+    if self.skillCastabilityTask then
+        ServerScheduler.cancel(self.skillCastabilityTask)
+    end
+
+    -- 创建新的定时任务，每秒检查一次
+    self.skillCastabilityTask = ServerScheduler.add(function ()
+        self:_updateCastability()
+    end, 0, 1.0) -- 立即开始，每秒执行一次
+end
+
+-- 停止技能可释放状态检查任务
+function _M:StopSkillCastabilityCheck()
+    if self.skillCastabilityTask then
+        ServerScheduler.cancel(self.skillCastabilityTask)
+        self.skillCastabilityTask = nil
+    end
 end
 
 return _M

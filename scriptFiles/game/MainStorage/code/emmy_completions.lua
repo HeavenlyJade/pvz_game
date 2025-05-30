@@ -384,6 +384,7 @@
 ---@field Rotation Quaternion 全局旋转
 ---@field LocalPosition Vector3 局部坐标
 ---@field LocalEuler Vector3 局部欧拉角
+---@field LocalScale Vector3 局部欧拉角
 ---@field CubeBorderEnable boolean 立方体边框是否被禁止
 ---@field Layer LayerIndexDesc 灯光层级
 ---@field ForwardDir Vector3 看向指定方向
@@ -1100,7 +1101,7 @@
 ---@field Gravity_direction Vector3 重力方向
 ---@field Gravity number 重力
 ---@field Lifespan number 持续时长
----@field Mid_ponumber number 中点
+---@field Mid_point number 中点
 ---@field Emitrate number 发射的
 ---@field Length number 长
 ---@field Width number 宽
@@ -1171,7 +1172,7 @@
 ---@field CameraType CameraType 摄像机类型
 ---@field CameraSubject SandboxNode 摄像机子节点
 ---@field ViewportSize Vector2 描述客户端视口的尺寸（以像素为单位）
----@field ViewportPonumberToRay fun(self: Camera, x: number, y: number, depth: number) Ray 以朝向摄像机的方向，通过给定的距摄像机的深度，在视口上的某个位置创建单位射线（以像素为单位）
+---@field ViewportPointToRay fun(self: Camera, x: number, y: number, depth: number):Ray 以朝向摄像机的方向，通过给定的距摄像机的深度，在视口上的某个位置创建单位射线（以像素为单位）
 ---@field WorldToViewportPonumber fun(self: Camera, position: Vector3) Vector3 将一个世界坐标position转换到摄像机视口坐标
 ---@field WorldToUIPonumber fun(self: Camera, position: Vector3) Vector3 将3D节点世界坐标position转UI节点坐标
 
@@ -1375,12 +1376,19 @@
 ---@field GetMicroPhoneStatusClient fun(self: VoiceChatService) boolean 获取麦克风状态 fun(客户端方法)
 
 
+---@class ReflexMap
+---@field normal Vector3 击中时的法线
+---@field obj SandboxNode 击中的对象
+---@field isHit boolean 是否击中
+---@field distance number 击中距离
+---@field position Vector3 击中位置
+
 ---@class WorldService
 ---@field PrnumberLog fun(self: WorldService, szLog: string) None 打印日志
 ---@field GetRangeXZ fun(self: WorldService) ReflexTuple 的坐标
 ---@field GetUIScale fun(self: WorldService) Vector2 获取UI布局的缩放尺寸
----@field RaycastClosest fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 射线段检测，返回最近的碰撞物
----@field RaycastAll fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 射线段检测，返回所有碰撞物，最多128个
+---@field RaycastClosest fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table):ReflexMap 射线段检测，返回最近的碰撞物
+---@field RaycastAll fun(self: WorldService, origin: Vector3, unitDir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table):ReflexMap 射线段检测，返回所有碰撞物，最多128个
 ---@field SweepBoxAll fun(self: WorldService, center: Vector3, shape: Vector3, direction: Vector3, angle: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描全部
 ---@field SweepCapsuleAll fun(self: WorldService, radius: number, p0: Vector3, p1: Vector3, dir: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描胶囊全部
 ---@field SweepSphereAll fun(self: WorldService, radius: number, center: Vector3, direction: Vector3, distance: number, isIgnoreTrigger: boolean, filterGroup: Table) ReflexMap 扫描球全部
@@ -1907,7 +1915,7 @@
 
 
 
----@class UIRoot3D
+---@class UIRoot3D:Transform
 ---@field Scale Vector2 UI节点缩放倍数
 ---@field Rotation number UI节点旋转度数
 ---@field UIPosition Vector2

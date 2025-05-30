@@ -1,5 +1,3 @@
-local print = print
-local setmetatable = setmetatable
 local SandboxNode = SandboxNode
 local Vector3 = Vector3
 local Enum = Enum
@@ -19,6 +17,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
 local Battle = require(MainStorage.code.server.Battle) ---@type Battle
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 
 -- local StartPlayer = game:GetService("StartPlayer")
 -- local MainServer = require( game:GetService("MainStorage"):WaitForChild('code').server.MServerMain )
@@ -55,6 +54,7 @@ _M.TRIGGER_STAT_TYPES = TRIGGER_STAT_TYPES
 function _M:OnInit(info_)
     self.spawnPos = info_.position
     self.name = nil
+    self.isDestroyed = false
     self:GenerateUUID()
     self.isEntity = true
     self.isPlayer = false
@@ -116,6 +116,9 @@ function _M:OnInit(info_)
         } -- monster melee
     }
     self.modelPlayer = nil  ---@type ModelPlayer
+    
+    -- 描边效果计时器
+    self.outlineTimer = nil
 end
 
 ---@protected
@@ -166,7 +169,7 @@ function _M:GetPosition()
 end
 
 function _M:GetCenterPosition()
-    return gg.vec.Add3(self:GetPosition(), 0, self.actor.Size.y/2, 0)
+    return gg.vec.Add3(self:GetPosition(), 0, self:GetSize().y/2, 0)
 end
 
 function _M:GetDirection()
@@ -499,7 +502,6 @@ function _M:AddStat(statName, amount, source, refresh)
 
     self.stats[source][statName] = self.stats[source][statName] + amount
 
-    -- 这里应该有触发属性类型逻辑，但需要根据具体游戏逻辑实现
     if self.actor and refresh and TRIGGER_STAT_TYPES[statName] then
         TRIGGER_STAT_TYPES[statName](self, self:GetStat(statName))
     end
@@ -585,14 +587,21 @@ function _M:Hurt(amount, damager, isCrit)
         -- 进入战斗状态
         self.combatTime = 10 -- 设置战斗时间为10秒
         -- 显示伤害数字
-        if self.scene then
-            self:showDamage(amount, {
+        if damager.isPlayer then
+            local targetPos = self:GetCenterPosition()
+            damager:showDamage(amount, {
                 cr = isCrit and 1 or 0
-            })
+            }, targetPos + (damager:GetCenterPosition() - targetPos):Normalize() * self:GetSize().x)
         end
-        -- 更新血条
-        if self.hp_bar then
-            self.hp_bar.FillAmount = self.health / self.maxHealth
+        
+        -- 显示受伤描边效果
+        if self.actor then
+            self.actor.OutlineActive = true
+            ServerScheduler.add(function()
+                if self.actor then
+                    self.actor.OutlineActive = false
+                end
+            end, 0.2, nil, "outline_" .. self.uuid)
         end
     end
 
@@ -798,75 +807,19 @@ function _M:createHpBar(root_)
 end
 
 -- 显示伤害飘字，闪避，升级
-function _M:showDamage(number_, eff_)
-
+function _M:showDamage(number_, eff_, position)
     -- 无伤害，无特殊效果
-    if number_ == 0 then
-        if not next(eff_) then
-            return -- 没有特别效果
-        end
-    end
-
-    local damage_billboard = SandboxNode.new('UIBillboard', self.actor)
-    damage_billboard.Name = 'dmg'
-    damage_billboard.Billboard = true
-    damage_billboard.CanCollide = false -- 避免产生物理碰撞
-    damage_billboard.ResolutionLevel = Enum.ResolutionLevel.R4X
-
-    local xx = gg.rand_int_between(-10, 10)
-    local yy = gg.rand_int_between(-10, 10)
-
-    if self.isPlayer then
-        damage_billboard.Size2d = Vector2.New(5, 5)
-        damage_billboard.LocalPosition = Vector3.New(xx, 258 + yy, 0)
-    else
-        damage_billboard.Size2d = Vector2.New(8, 8)
-        damage_billboard.LocalPosition = Vector3.New(xx, 330 + yy, 0)
-    end
-
-    local function wrap_thread(time_)
-        local function long_call(damage_billboard_)
-            wait(time_)
-            damage_billboard_:Destroy()
-        end
-        coroutine.work(long_call, damage_billboard) -- 立即返回，long_call转入协程执行
-    end
-
-    if eff_.dodge == 1 then
-        -- 闪避
-        local number_level = gg.createTextLabel(damage_billboard, '闪避')
-        number_level.TitleColor = ColorQuad.New(255, 255, 255, 255) -- 白色字
-        wrap_thread(1)
-
-    elseif eff_.levelup then
-        -- 升级
-        local number_level = gg.createTextLabel(damage_billboard, '等级升级到' .. eff_.levelup)
-        number_level.TitleColor = ColorQuad.New(255, 255, 255, 255) -- 白色字
-        wrap_thread(2.5)
-
-    elseif eff_.bag_full == 1 then
-        local number_level = gg.createTextLabel(damage_billboard, '背包已满')
-        number_level.TitleColor = ColorQuad.New(255, 255, 255, 255) -- 白色字
-        wrap_thread(1)
-
-    else
-        -- 伤害值
-        local number_level = gg.createTextLabel(damage_billboard, '-' .. number_)
-
-        if self.isPlayer then
-            number_level.TitleColor = ColorQuad.New(255, 0, 0, 255) -- 红色字
-        else
-            if eff_ and eff_.cr == 1 then
-                damage_billboard.Size2d = Vector2.New(16, 16)
-                number_level.TitleColor = ColorQuad.New(255, 255, 0, 255) -- 黄字
-            else
-                number_level.TitleColor = ColorQuad.New(255, 255, 255, 255) -- 白色字
-            end
-        end
-
-        wrap_thread(1)
-    end
-
+    print("showDamage", number_, eff_)
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "ShowDamage",
+        amount = number_,
+        isCrit = eff_.cr == 1,
+        position = {
+            x = position.x,
+            y = position.y,
+            z = position.z
+        }
+    })
 end
 
 -- 在actor头顶上显示一个文字

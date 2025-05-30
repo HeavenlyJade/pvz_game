@@ -101,6 +101,7 @@ function MobType:Spawn(position, level, scene)
     monster_:ChangeScene(scene)
     scene.monsters[monster_.uuid] = monster_
     scene.node2Entity[monster_.actor] = monster_
+    monster_:RefreshStats()
     return monster_
 end
 

@@ -76,6 +76,7 @@ local _lastTouchPos = Vec2.new(0, 0)
 local _currentTouchPos = Vec2.new(0, 0)
 local _rotation = Quat.new(1, 0, 0, 0)
 local _lastTouchTimeEnd = 0
+local _touchStartTime = 0  -- Add touch start time variable
 
 local _viewDirty = true
 local _projectionDirty = true
@@ -155,7 +156,7 @@ function CameraController.SetActive(active)
                         if _isTouching then
                             CameraController.OnTouchMoved(
                                 _currentTouchPos.x + inputObj.Delta.x,
-                                _currentTouchPos.y + inputObj.Delta.y,
+                                _currentTouchPos.y - inputObj.Delta.y,
                                 inputObj.TouchId
                             )
                         end
@@ -322,6 +323,17 @@ function CameraController.ThirdPersonUpdate(dt)
 
     -- 保存当前旋转状态
     _rotation = orient
+end
+
+function CameraController.RaytraceScene(filterGroup)
+    local winSize = _camera.WindowSize
+    local ray_   =  _camera:ViewportPointToRay( winSize.x/2, winSize.y/2, 12800 )
+    local result = game.WorldService:RaycastClosest(ray_.Origin, ray_.Direction, 12800, true, filterGroup)
+    print("result", result.obj, result.position, result.normal)
+    if result.isHit then
+        return ray_.Origin + ray_.Direction * result.distance
+    end
+    return nil
 end
 
 --获取摄像机朝向，未抖动
@@ -561,6 +573,7 @@ function CameraController.OnTouchStarted(x, y, touchId)
     _currentTouchPos.x = x
     _currentTouchPos.y = y
     _canSightTouch = false
+    _touchStartTime = os.clock()  -- Use os.clock() instead of game.TimeService:GetTime()
 end
 
 function CameraController.EnableSightTouch()
@@ -578,8 +591,10 @@ function CameraController.OnTouchMoved(x, y, touchId)
     _currentTouchPos.y = y
 
     local delta = _currentTouchPos - _lastTouchPos
+    local currentTime = os.clock()  -- Use os.clock() instead of game.TimeService:GetTime()
+    local elapsedTime = currentTime - _touchStartTime
 
-    if _inputEnabled then
+    if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
         if _alignWhenMoving and _lockedOnTarget then
             CameraController.InputMove(0, delta.y)
         else

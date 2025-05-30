@@ -71,7 +71,7 @@ end
 
 --- 执行子魔法
 ---@param caster Entity 施法者
----@param target Entity|Vector3 目标
+---@param target Entity|Vector3|Vec3 目标
 ---@param param CastParam|nil 参数
 ---@return boolean 是否成功释放
 function SubSpell:Cast(caster, target, param)

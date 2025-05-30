@@ -9,11 +9,13 @@ local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 ---@field remaining number Remaining ticks before execution
 ---@field taskId number Unique identifier for the task
 ---@field rounds number For time wheel implementation (number of wheel rotations needed)
+---@field key string|nil Optional key for task identification
 
 print("ServerScheduler INIT")
 ---@class ServerScheduler
 local ServerScheduler = {
     tasks = {},  -- All tasks by ID
+    tasksByKey = {}, -- Tasks by key
     nextTaskId = 1,
     
     -- Time wheel configuration
@@ -38,8 +40,14 @@ end
 ---@param func function The function to execute
 ---@param delay number Delay in seconds before first execution
 ---@param repeatInterval? number Repeat interval in seconds (0 for one-time execution)
+---@param key? string Optional key for task identification
 ---@return number taskId The ID of the created task
-function ServerScheduler.add(func, delay, repeatInterval)
+function ServerScheduler.add(func, delay, repeatInterval, key)
+    -- 如果提供了key，取消同key的任务
+    if key and ServerScheduler.tasksByKey[key] then
+        ServerScheduler.cancel(ServerScheduler.tasksByKey[key])
+    end
+
     local taskId = ServerScheduler.nextTaskId
     ServerScheduler.nextTaskId = ServerScheduler.nextTaskId + 1
     
@@ -59,10 +67,14 @@ function ServerScheduler.add(func, delay, repeatInterval)
         repeatInterval = repeatInterval * 30,
         remaining = delay,
         taskId = taskId,
-        rounds = rounds
+        rounds = rounds,
+        key = key
     }
     
     ServerScheduler.tasks[taskId] = task
+    if key then
+        ServerScheduler.tasksByKey[key] = taskId
+    end
     table.insert(ServerScheduler.timeWheel[slot], task)
     
     return taskId
@@ -72,7 +84,14 @@ end
 ---@param taskId number The ID of the task to cancel
 ---@return nil
 function ServerScheduler.cancel(taskId)
-    ServerScheduler.tasks[taskId] = nil
+    local task = ServerScheduler.tasks[taskId]
+    if task then
+        -- 如果任务有关联的key，清除key映射
+        if task.key then
+            ServerScheduler.tasksByKey[task.key] = nil
+        end
+        ServerScheduler.tasks[taskId] = nil
+    end
     -- The task will be removed from the wheel when its slot is processed
 end
 

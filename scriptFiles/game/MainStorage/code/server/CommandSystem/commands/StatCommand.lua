@@ -39,7 +39,7 @@ function StatCommand.showStat(params, player)
         end
     end
     
-    player:SendChatText(statText)
+    print(statText)
     return true
 end
 

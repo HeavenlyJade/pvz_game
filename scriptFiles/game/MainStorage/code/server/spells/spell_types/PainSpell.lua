@@ -3,6 +3,8 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local Battle            = require(MainStorage.code.server.Battle)    ---@type Battle
+local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
+local DamageAmplifier = require(MainStorage.code.common.config_type.modifier.DamageAmplifier) ---@type DamageAmplifier
 
 
 ---@class PainSpell:Spell
@@ -10,8 +12,8 @@ local Battle            = require(MainStorage.code.server.Battle)    ---@type Ba
 ---@field baseMultiplier number 基础倍率
 ---@field extraStats table<string, number> 额外属性
 ---@field elementType string 元素类型
----@field damageAmplifiers DamageAmplifier[] 基于释放者的属性增加伤害
----@field targetDamageAmplifiers DamageAmplifier[] 基于目标的属性增加伤害
+---@field damageAmplifier DamageAmplifier[] 基于释放者的属性增加伤害
+---@field targetDamageAmplifier DamageAmplifier[] 基于目标的属性增加伤害
 local PainSpell = ClassMgr.Class("PainSpell", Spell)
 
 function PainSpell:OnInit(data)
@@ -20,8 +22,8 @@ function PainSpell:OnInit(data)
     self.baseMultiplier = data["基础倍率"] or 1
     self.extraStats = data["额外属性"] or {}
     self.elementType = data["元素类型"] or "无"
-    self.damageAmplifiers = data["属性增伤"] or {}
-    self.targetDamageAmplifiers = data["目标属性增伤"] or {}
+    self.damageAmplifier = DamageAmplifier.Load(data["属性增伤"]) ---@type DamageAmplifier[]
+    self.targetDamageAmplifier = DamageAmplifier.Load(data["目标属性增伤"]) ---@type DamageAmplifier[]
 end
 
 --- 实际执行魔法
@@ -51,19 +53,21 @@ function PainSpell:CastReal(caster, target, param)
     end
     
     -- 处理释放者属性增伤
-    if #self.damageAmplifiers > 0 then
-        for _, amplifier in ipairs(self.damageAmplifiers) do
+    gg.log("self.damageAmplifier", self.spellName, self.damageAmplifier)
+    if self.damageAmplifier then
+        for _, amplifier in ipairs(self.damageAmplifier) do
             local modifier = amplifier:GetModifier(caster, damage, multiplier, param)
+            gg.log("属性增伤", modifier)
             if modifier then
-                battle:AddModifier(modifier)
+                battle:AddModifier(modifier.source, modifier.modifierType, modifier.amount)
             end
         end
     end
     
     
     -- 处理目标属性增伤
-    if #self.targetDamageAmplifiers > 0 then
-        for _, amplifier in ipairs(self.targetDamageAmplifiers) do
+    if self.targetDamageAmplifier then
+        for _, amplifier in ipairs(self.targetDamageAmplifier) do
             local modifier = amplifier:GetModifier(target, damage, multiplier, param)
             if modifier then
                 battle:AddModifier(modifier)

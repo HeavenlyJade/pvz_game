@@ -117,13 +117,32 @@ function HudCards:OnEquipSkillCooldownUpdate(data)
     skill.cooldownCache = data.cooldown
 end
 
+-- 处理技能可释放状态更新事件
+---@param data {cmd: string, castabilityData: table<string, boolean>}
+function HudCards:OnUpdateSkillCastability(data)
+    if not data or not data.castabilityData then return end
+    
+    -- 遍历所有卡片
+    for i = 1, self.cardsList:GetChildCount() do
+        local card = self.cardsList:GetChild(i) ---@type ViewButton
+        local skillId = equippedSkills[i + 1]
+        
+        if skillId then
+            local canCast = data.castabilityData[skillId]
+            if canCast ~= nil then
+                card:SetTouchEnable(canCast)
+            end
+        end
+    end
+end
+
 function HudCards:UpdateCardsDisplay()
     if not self.cardsList then return end
     self.cardsList:SetElementSize(#equippedSkills - 1)
     -- 遍历所有卡片
     for i = 1, self.cardsList:GetChildCount() do
         local card = self.cardsList:GetChild(i) ---@type ViewButton
-        local skillId = equippedSkills[i]
+        local skillId = equippedSkills[i + 1]
         local skill = skills[skillId]
         card.node["Title"].Title = skill.skillType.displayName
         card.node["Text"].Title = tostring(skill.level)
@@ -141,6 +160,11 @@ function HudCards:OnInit(node, config)
     -- 注册技能冷却更新事件监听
     ClientEventManager.Subscribe("EquipSkillCooldownUpdate", function(data)
         self:OnEquipSkillCooldownUpdate(data)
+    end)
+    
+    -- 注册技能可释放状态更新事件监听
+    ClientEventManager.Subscribe("UpdateSkillCastability", function(data)
+        self:OnUpdateSkillCastability(data)
     end)
     
     -- 创建冷却更新任务
@@ -199,7 +223,7 @@ function HudCards:OnInit(node, config)
             local postProcessing = game.WorkSpace["Environment"].PostProcessing
             postProcessing.ChromaticAberrationIntensity = 1
             postProcessing.ChromaticAberrationStartOffset = 0.4
-            postProcessing.ChromaticAberrationIterationStep = 0.01
+            postProcessing.ChromaticAberrationIterationStep = 0.0
             postProcessing.ChromaticAberrationIterationSamples = 1
             
             self:SetFov(75)
@@ -208,19 +232,14 @@ function HudCards:OnInit(node, config)
             if self.selectedCardIndex then
                 local skillId = equippedSkills[self.selectedCardIndex + 1]
                 if skillId then
-                    local camera = game.WorkSpace.CurrentCamera
-                    local direction = CameraController.GetRealForward(0, 0)
-                    local targetPos = camera.LookFocus
-                    
-                    -- 记录技能释放时间
+                    local direction = CameraController.GetForward()
+                    local targetPos = CameraController.RaytraceScene({1})
                     lastCastTimes[skillId] = os.clock()
-                    
-                    gg.log("skillId", targetPos)
                     gg.network_channel:FireServer({
                         cmd = "CastSpell",
                         skill = skillId,
-                        direction = direction,
-                        targetPos = targetPos
+                        targetPos = targetPos,
+                        direction = direction
                     })
                 end
             end

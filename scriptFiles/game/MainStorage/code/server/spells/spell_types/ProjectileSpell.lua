@@ -23,11 +23,8 @@ local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSp
 ---@field projectileID number 飞弹ID
 ---@field duration number 飞弹持续时间
 ---@field canPassThroughTerrain boolean 是否可以穿过地形
----@field startTime number 飞弹生成时间
 ---@field projectilePool table<Actor> 飞弹对象池
 ---@field maxPoolSize number 对象池最大大小
----@field updateCount number 更新计数
----@field destroyCount number 销毁计数
 ---@field initialAngleOffset Vec2 初始角度修改
 ---@field gravity number 重力
 ---@field trackingSpeed number 追踪目标速度
@@ -38,13 +35,17 @@ local ProjectileSpell = ClassMgr.Class("ProjectileSpell", Spell)
 ---@field caster Entity 施法者
 ---@field direction Vec3 飞行方向
 ---@field baseDirection Vec3 基础方向
+---@field size Vec3
 ---@field param CastParam 参数
 ---@field hitTargets table<Entity, boolean> 已命中目标
 ---@field lastHitTimes table<Entity, number> 上次命中时间
 ---@field remainingHits number 剩余命中次数
 ---@field moveConnection SBXConnection 移动更新连接
 ---@field velocity Vec3 当前速度
+---@field destroyCount number 销毁计数
 ---@field target Entity|nil 追踪目标
+---@field startTime number 飞弹生成时间
+---@field updateCount number 更新计数
 local ProjectileItem = {}
 
 function ProjectileSpell:OnInit(data)
@@ -66,7 +67,7 @@ function ProjectileSpell:OnInit(data)
     self.projectilePool = {}
     self.maxPoolSize = data["对象池大小"] or 20
     
-    self.subSpellsOnEnd = {}
+    self.subSpellsOnEnd = {} ---@type SubSpell[]
     if data["结束子魔法"] then
         for _, subSpellData in ipairs(data["结束子魔法"]) do
             local subSpell = SubSpell.New(subSpellData)
@@ -88,7 +89,7 @@ function ProjectileSpell:GenerateId()
 end
 
 --- 从对象池获取飞弹Actor
----@return Actor
+---@return Actor|nil
 function ProjectileSpell:GetProjectileFromPool()
     if #self.projectilePool > 0 then
         return table.remove(self.projectilePool)
@@ -128,7 +129,7 @@ end
 --- 创建飞弹
 ---@param position Vec3 生成位置
 ---@param direction Vec3 飞行方向
----@param baseDirection Vector3 基础方向
+---@param baseDirection Vec3 基础方向
 ---@param caster Entity 施法者
 ---@param param CastParam 参数
 function ProjectileSpell:CreateProjectile(position, direction, baseDirection, caster, param)
@@ -136,10 +137,23 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
     local actor = self:GetProjectileFromPool()
     if not actor then
         local originalActor = MainStorage["飞弹"][self.projectileModel] ---@type Actor
-        if not originalActor then
+        if not originalActor and game.WorkSpace["飞弹"] then
             originalActor = game.WorkSpace["飞弹"][self.projectileModel] ---@type Actor
         end
+        if not originalActor then
+            if self.printInfo then
+                print(string.format("%s: 飞弹模型不存在 - %s", self.spellName, self.projectileModel))
+            end
+            return
+        end
         actor = originalActor:Clone()
+        if self.printInfo then
+            print(string.format("%s: 创建新的飞弹Actor", self.spellName))
+        end
+    else
+        if self.printInfo then
+            print(string.format("%s: 从对象池获取飞弹Actor", self.spellName))
+        end
     end
     
     actor.Parent = caster.scene.node["世界特效"]
@@ -195,11 +209,14 @@ function ProjectileSpell:UpdateProjectile(id)
     end
     
     -- 应用追踪
-    if self.trackingSpeed > 0 and item.target and item.target:CanBeTargeted() then
+    if self.trackingSpeed > 0 and item.target and (not self:IsEntity(item.target) or item.target:CanBeTargeted()) then
         local targetPos = Vec3.new(item.target:GetPosition())
         local currentPos = Vec3.new(item.actor.Position)
         local toTarget = (targetPos - currentPos):Normalized()
         item.velocity = item.velocity + toTarget * self.trackingSpeed
+        if self.printInfo and item.updateCount % 60 == 0 then
+            print(string.format("%s: 飞弹正在追踪目标，当前速度: %.1f", self.spellName, item.velocity:Length()))
+        end
     end
     
     -- 更新位置
@@ -230,7 +247,7 @@ function ProjectileSpell:UpdateProjectile(id)
     end
     
     -- 检查碰撞
-    local hitTargets = item.caster.scene:OverlapBox(
+    local hitTargets = item.caster.scene:OverlapBoxEntity(
         Vec3.new(item.actor.Position) + Vec3.new(0, item.size.y / 2, 0):ToVector3(),
         item.size:ToVector3(),
         item.actor.LocalEuler,
@@ -276,7 +293,14 @@ function ProjectileSpell:HandleProjectileHit(id, target)
     
     -- 检查是否可以命中目标
     if not self:CanHitTarget(item, target) then
+        if self.printInfo then
+            print(string.format("%s: 飞弹无法命中目标 %s (已命中或冷却中)", self.spellName, target.name))
+        end
         return
+    end
+    
+    if self.printInfo then
+        print(string.format("%s: 飞弹命中目标 %s", self.spellName, target.name))
     end
     
     -- 执行子魔法
@@ -285,6 +309,7 @@ function ProjectileSpell:HandleProjectileHit(id, target)
             subSpell:Cast(item.caster, target, item.param)
         end
     end
+    self:PlayEffect(self.castEffects, item.caster, target, item.param, "击中目标")
     
     -- 更新命中记录
     item.hitTargets[target] = true
@@ -324,11 +349,18 @@ function ProjectileSpell:DestroyProjectile(id)
     local item = self.activeProjectiles[id]
     if not item then return end
 
+    if self.printInfo then
+        print(string.format("%s: 销毁飞弹，剩余飞弹数: %d", self.spellName, self.projectileCount - 1))
+    end
+
     -- 在飞弹消失位置释放结束子魔法
     if #self.subSpellsOnEnd > 0 then
         local finalPosition = Vec3.new(item.actor.Position)
         for _, subSpell in ipairs(self.subSpellsOnEnd) do
-            subSpell:Cast(item.caster, nil, item.param, finalPosition)
+            subSpell:Cast(item.caster, finalPosition, item.param)
+        end
+        if self.printInfo then
+            print(string.format("%s: 释放结束子魔法", self.spellName))
         end
     end
 
@@ -348,15 +380,32 @@ end
 ---@param param CastParam 参数
 ---@return boolean 是否成功释放
 function ProjectileSpell:CastReal(caster, target, param)
+    if self.printInfo then
+        print(string.format([[
+%s: 开始释放飞弹魔法
+- 施法者: %s
+- 目标: %s]], 
+            self.spellName, caster.name, target and target.name or "无"))
+    end
+
     -- 确定生成位置
     local position
     if self.spawnAtCaster then
         position = caster:GetCenterPosition()
+        if self.printInfo then
+            print(string.format("%s: 在施法者位置生成飞弹", self.spellName))
+        end
     else
         if not target then
+            if self.printInfo then
+                print(string.format("%s: 没有目标，无法生成飞弹", self.spellName))
+            end
             return false
         end
         position = target:GetCenterPosition()
+        if self.printInfo then
+            print(string.format("%s: 在目标位置生成飞弹", self.spellName))
+        end
     end
 
     local baseDirection
@@ -400,10 +449,11 @@ function ProjectileSpell:CastReal(caster, target, param)
     -- 生成所有散射
     for i = 1, shootCount do
         local currentAngle = startAngle + (angleStep * (i - 1))
+        local angleRad = math.rad(currentAngle)
         local currentDirection = Vec3.new(
-            baseDirection.x * math.cos(currentAngle) - baseDirection.y * math.sin(currentAngle),
-            baseDirection.x * math.sin(currentAngle) + baseDirection.y * math.cos(currentAngle),
-            baseDirection.z
+            baseDirection.x * math.cos(angleRad) - baseDirection.z * math.sin(angleRad),
+            baseDirection.y,
+            baseDirection.x * math.sin(angleRad) + baseDirection.z * math.cos(angleRad)
         )
         local delay = shootDelay * (i - 1)
         self:SpawnProjectile(Vec3.new(position), currentDirection, Vec3.new(baseDirection), caster, param, delay)

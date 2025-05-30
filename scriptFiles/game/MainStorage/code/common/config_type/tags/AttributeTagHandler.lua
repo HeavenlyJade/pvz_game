@@ -37,7 +37,7 @@ function AttributeTag:TriggerReal(caster, target, castParam, param, log)
     end
     
     -- 处理基于自身属性的增伤
-    if #self.damageAmplifier > 0 then
+    if self.damageAmplifier then
         for _, item in ipairs(self.damageAmplifier) do
             local modifier = item:GetModifier(caster, 0, 1 + castParam.power, castParam)
             if modifier then
@@ -52,7 +52,7 @@ function AttributeTag:TriggerReal(caster, target, castParam, param, log)
     end
     
     -- 处理基于目标属性的增伤
-    if #self.targetDamageAmplifier > 0 then
+    if self.targetDamageAmplifier then
         for _, item in ipairs(self.targetDamageAmplifier) do
             local modifier = item:GetModifier(target:GetCreature(), 0, 1 + castParam.power, castParam)
             if modifier then

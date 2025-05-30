@@ -34,6 +34,8 @@ function ClientMain.start_client()
     timer.Interval = 0.03  -- 循环间隔多少秒 (1秒=20帧)
     timer.Callback = ClientMain.update
     timer:Start()     -- 启动定时器
+    
+    require(MainStorage.code.client.DamagePool)
 end
 
 

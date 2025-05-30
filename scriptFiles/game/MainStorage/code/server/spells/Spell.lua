@@ -5,6 +5,7 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Graphics
+local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 
 
 
@@ -86,14 +87,16 @@ function Spell:GetName(target)
         return "[无目标]"
     elseif type(target) == "userdata" then
         return tostring(target)
-    else
+    elseif target.Is and target:Is("Entity") then
         return target.name
+    else
+        return tostring(target)
     end
 end
 
 --- 执行魔法
 ---@param caster Entity 施法者
----@param target Entity|Vector3|nil 目标
+---@param target Entity|Vector3|Vec3|nil 目标
 ---@param param? CastParam 参数
 ---@return boolean 是否成功释放
 function Spell:Cast(caster, target, param)
@@ -112,11 +115,9 @@ function Spell:Cast(caster, target, param)
             if self.requireTarget then
                 -- 获取施法者面前的敌人
                 local casterPos = caster:GetPosition()
-                local ret_table = caster.scene:SelectCylinderTargets(casterPos, 5000, 5000, caster:GetEnemyGroup(), nil)
-                gg.log("ret_table", casterPos, ret_table)
+                local ret_table = caster.scene:OverlapSphereEntity(casterPos, 5000, caster:GetEnemyGroup(), nil)
                 for _, hit in pairs(ret_table) do
                     if hit ~= caster then
-                        gg.log("hit", hit)
                         target = hit
                         break
                     end
@@ -134,6 +135,25 @@ function Spell:Cast(caster, target, param)
     local log = {}
     if not self:CanCast(caster, target, param, log) then
         if self.printInfo then
+            print(table.concat(log, "\n"))
+        end
+        return false
+    end
+
+    -- 广播魔法释放事件
+    local castEvent = {
+        caster = caster,
+        target = target,
+        spell = self,
+        param = param,
+        cancelled = false
+    }
+    ServerEventManager.Publish("SpellCastEvent", castEvent)
+    
+    -- 如果事件被取消，则释放失败
+    if castEvent.cancelled then
+        if self.printInfo then
+            log[#log + 1] = string.format("%s：魔法释放被取消", self.spellName)
             print(table.concat(log, "\n"))
         end
         return false
@@ -206,13 +226,15 @@ end
 ---@param playFrom Entity|Vector3 播放起点
 ---@param playAt Entity|Vector3 播放终点
 ---@param param CastParam 参数
+---@param targetMode? string
 ---@return Action[] 特效动作数组
-function Spell:PlayEffect(effects, playFrom, playAt, param)
+function Spell:PlayEffect(effects, playFrom, playAt, param, targetMode)
     if not effects then return nil end
     local actions = {}
     for i, effect in ipairs(effects) do
-        if effect then
-            actions[i] = effect:PlayAt(playFrom, playAt, param)
+        if effect and (not targetMode or targetMode == effect.targeter) then
+            print("播放特效", effect.targeter, playFrom, playAt)
+            effect:PlayAt(playFrom, playAt, param, actions)
         end
     end
     return actions
@@ -229,14 +251,21 @@ end
 
 function Spell:GetPosition(target)
     if type(target) == "userdata" then
-        return target
+        return gg.Vec3.new(target)
     else
-        return target:GetPosition()
+        if type(target) == "table" and target.Is and target:Is("Entity") then
+            return gg.Vec3.new(target:GetPosition())
+        else
+            return target
+        end
     end
 end
 
 function Spell:IsEntity(target)
-    return type(target) ~= "userdata"
+    if type(target) == "table" and target.Is and target:Is("Entity") then
+        return true
+    end
+    return false
 end
 
 --- 检查是否可以释放魔法
@@ -244,16 +273,23 @@ end
 ---@param target Entity|Vector3 目标
 ---@param param CastParam 参数
 ---@param log? string[] 日志数组
+---@param checkCd? boolean 是否检查冷却 
 ---@return boolean 是否可以释放
-function Spell:CanCast(caster, target, param, log)
-    if self.cooldown > 0 and caster:IsCoolingdown(self.spellName) then
+function Spell:CanCast(caster, target, param, log, checkCd)
+    if not param then
+        param = CastParam.New()
+    end
+    if checkCd == nil then
+        checkCd = true
+    end
+    if checkCd and self.cooldown > 0 and caster:IsCoolingdown(self.spellName) then
         if log then
             log[#log + 1] = string.format("%s：冷却中", self.spellName)
         end
         return false
     end
 
-    if self.targetCooldown > 0 and self:IsEntity(target) and caster:IsCoolingdown(self.spellName, target) then
+    if checkCd and self.targetCooldown > 0 and self:IsEntity(target) and caster:IsCoolingdown(self.spellName, target) then
         if log then
             log[#log + 1] = string.format("%s：对该目标冷却中", self.spellName)
         end
@@ -274,7 +310,7 @@ function Spell:CanCast(caster, target, param, log)
         return false
     end
 
-    if #self.targetConditions > 0 then
+    if #self.targetConditions > 0 and self:IsEntity(target) then
         for _, condition in ipairs(self.targetConditions) do
             local stop = condition:Check(caster, target, param)
             if stop then break end

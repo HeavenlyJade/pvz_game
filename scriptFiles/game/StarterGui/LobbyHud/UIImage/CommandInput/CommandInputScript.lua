@@ -1,4 +1,3 @@
-
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 
@@ -28,6 +27,14 @@ local function inputBegan( inputObj, bGameProcessd )
                 commandHistoryIndex = commandHistoryIndex - 1
             end
             commandInput.Title = commandHistory[commandHistoryIndex]
+        elseif inputObj.KeyCode == Enum.KeyCode.F12.Value then
+            if #commandHistory > 0 then
+                local lastCommand = commandHistory[#commandHistory]
+                gg.network_channel:FireServer({ 
+                    cmd = "ClientExecuteCommand", command = lastCommand 
+                })
+                commandInput.Title = lastCommand
+            end
         end
     end
 end

@@ -4,6 +4,7 @@ local TagHandler = require(MainStorage.code.common.config_type.tags.TagHandler) 
 local DamageAmplifier = require(MainStorage.code.common.config_type.modifier.DamageAmplifier) ---@type DamageAmplifier
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
+local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 
 
 ---@class DamageTag : TagHandler
@@ -21,7 +22,13 @@ function DamageTag:OnInit(data)
     self.critDamage = data["增加暴击伤害"] or 0 ---@type number
     self.damageAmplifier = DamageAmplifier.Load(data["属性增伤"]) ---@type DamageAmplifier[]
     self.targetDamageAmplifier = DamageAmplifier.Load(data["目标属性增伤"]) ---@type DamageAmplifier[]
-    self.subSpell = data["释放魔法"] or {} ---@type SubSpell[]
+    self.subSpell = {}
+    if data["释放魔法"] then
+        for _, subSpellData in ipairs(data["释放魔法"]) do
+            local subSpell = SubSpell.New(subSpellData)
+            table.insert(self.subSpell, subSpell)
+        end
+    end
     self.subSpellInheritPower = data["释放魔法继承威力"] or false ---@type boolean
     self.subSpellPower = data["释放魔法威力增加"] or .0 ---@type number
 end
@@ -121,7 +128,7 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
     end
     
     -- 处理基于自身属性的增伤
-    if #self.damageAmplifier > 0 then
+    if self.damageAmplifier then
         for _, item in ipairs(self.damageAmplifier) do
             local modifier = item:GetModifier(caster, baseDamage, 1, castParam)
             if modifier then
@@ -134,7 +141,7 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
     end
     
     -- 处理基于目标属性的增伤
-    if #self.targetDamageAmplifier > 0 then
+    if self.targetDamageAmplifier then
         for _, item in ipairs(self.targetDamageAmplifier) do
             local modifier = item:GetModifier(target:GetCreature(), baseDamage, 1, castParam)
             if modifier then

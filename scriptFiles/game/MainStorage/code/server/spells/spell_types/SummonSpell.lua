@@ -66,7 +66,6 @@ function SummonSpell:OnPostBattle(battle)
     -- 检查是否是主人的战斗
     local attacker = battle.attacker
     local summons = self.summonerSummons[attacker]
-    gg.log("OnPostBattle", attacker, summons)
     if not summons then return end
 
     -- 如果主人有目标，让没有目标的召唤物攻击该目标
@@ -74,7 +73,6 @@ function SummonSpell:OnPostBattle(battle)
 
     -- 遍历主人的所有召唤物
     for _, summon in ipairs(summons) do
-        gg.log("OnPostBattle", summon, summon.target, summon.isEntity)
         if summon and summon.isEntity and not summon.target then
             summon:SetTarget(target)
         end

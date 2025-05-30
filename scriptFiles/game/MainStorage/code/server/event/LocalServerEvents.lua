@@ -22,3 +22,10 @@
 ---@class NpcInteractionEvent : SEvent
 ---@field player Player 交互的玩家
 ---@field npc Npc 被交互的NPC
+
+---@class SpellCastEvent : SEvent
+---@field caster Entity 施法者
+---@field target Entity|Vector3 目标
+---@field spell Spell 魔法
+---@field param CastParam 参数
+---@field cancelled boolean 是否取消释放

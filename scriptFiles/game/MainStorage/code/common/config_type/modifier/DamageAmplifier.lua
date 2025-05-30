@@ -10,10 +10,10 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local DamageAmplifier = ClassMgr.Class("DamageAmplifier")
 
 ---@param data table[] 伤害修改器数组
----@return DamageAmplifier[] 伤害修改器实例数组
+---@return DamageAmplifier[]|nil 伤害修改器实例数组
 function DamageAmplifier.Load(data)
     if data == nil then
-        return {}
+        return nil
     end
     local amplifiers = {}
     for _, item in ipairs(data) do
@@ -33,11 +33,14 @@ end
 ---@param baseValue number 基础数值
 ---@param multiplier number 倍率
 ---@param castParam CastParam 施法参数
----@return table 伤害修改器
+---@return table|nil 伤害修改器
 function DamageAmplifier:GetModifier(caster, baseValue, multiplier, castParam)
-    local amount = caster:GetStat(self.statType, {
-        castParam = castParam
-    })
+    local amount
+    if self.statType then
+        amount = caster:GetStat(self.statType, nil, nil, castParam)
+    else
+        amount = 1
+    end
     if self.multiplyBaseValue then
         amount = amount * baseValue
     end

@@ -70,7 +70,6 @@ function Battle:AddDamageModifier(modifier)
 end
 
 function Battle:AddModifier(source, modifierType, amount)
-    print("AddModifier", self, self.AddDamageModifier, source, modifierType, amount)
     self:AddDamageModifier({
         source = source,
         modifierType = modifierType,

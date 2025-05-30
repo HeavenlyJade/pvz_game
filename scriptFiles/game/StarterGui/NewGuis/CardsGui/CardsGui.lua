@@ -198,7 +198,7 @@ end
 function CardsGui:CloneMainCardButtons(skillMainTrees)
     local qualityList = uiConfig.qualityList or {"UR", "SSR", "SR", "R", "N"}
     local qualityListMap = uiConfig.qualityListMap or {}
-    
+
 
     local ListTemplate = self:Get('框体/主卡/选择列表/列表', ViewList) ---@type ViewList
     -- 克隆品质列表
@@ -210,10 +210,10 @@ function CardsGui:CloneMainCardButtons(skillMainTrees)
         listClone.Visible = false         -- 默认不可见
         local viewListObj = ViewList.New(listClone, self, "框体/主卡/选择列表/" .. qualityName)
         self.qualityLists[quality] = viewListObj
-        
+
         listClone['主卡_1']:Destroy()
     end
-    
+
 
     local templateNodeRef = self:Get('框体/主卡/选择列表/列表/主卡_1', ViewButton)
 
@@ -550,10 +550,10 @@ function CardsGui:LoadSubCardsAndClone()
     local allSkills = SkillTypeConfig.GetAll()
     for name, skill in pairs(allSkills) do
         if skill.skillType == 1 and skill.isEntrySkill then
-            local quality = skill.quality 
+            local quality = skill.quality
             local listNode = self.subQualityLists[quality]
             if listNode then
-       
+
                 local clonedNode = subCardTemplate.node:Clone()
                 clonedNode.Name = skill.name
                 clonedNode.Parent = listNode.node
