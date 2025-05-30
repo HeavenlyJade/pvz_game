@@ -243,8 +243,20 @@ end
 --------------------------------------------------
 -- 技能系统方法
 --------------------------------------------------
+--装载配置的文件的技能
+function _M:LoadingConfSkills()
+    local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
+    local allSkills = SkillTypeConfig.GetAll()
+    for skillName, skillType in pairs(allSkills) do
+        
+        local skillData = { skill = skillName,level = 0,slot = 0}
+        local skill = Skill.New(self, skillData)
+        self.skills[skillName] = skill
 
+    end
+end
 -- 初始化技能数据
+
 function _M:initSkillData()
     -- 从云数据读取
     local ret1_, cloud_data_ = cloudDataMgr.ReadSkillData(self.uin)

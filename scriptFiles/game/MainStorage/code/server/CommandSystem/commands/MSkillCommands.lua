@@ -9,11 +9,8 @@ local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr)  ---@type MC
 ---@class SkillCommands
 local SkillCommands = {}
 
--- 命令执行器工厂
-local CommandExecutors = {}
-
--- 解锁技能执行器
-function CommandExecutors.UnlockSkill(params, player)
+-- --装载配置的文件的技能
+function SkillCommands.UnlockSkill(params, player)
     if params.category ~= "技能" then return false end
     
     local skillType = params.subcategory  -- 火系, 水系等
@@ -58,88 +55,5 @@ function CommandExecutors.UnlockSkill(params, player)
     return true
 end
 
--- 设置技能等级执行器
-function CommandExecutors.SetSkillLevel(params, player)
-    if params.category ~= "技能" then return false end
-    
-    local skillId = tonumber(params.subcategory)
-    
-    if params.action ~= "等级" then return false end
-    
-    local level = tonumber(params.value)
-    
-    -- 检查技能是否存在
-    if not player:HasSkill(skillId) then
-        gg.log("玩家未拥有技能: " .. skillId)
-        return false
-    end
-    
-    player:SetSkillLevel(skillId, level)
-    
-    -- 通知客户端
-    gg.network_channel:fireClient(player.uin, {
-        cmd = "cmd_client_show_msg",
-        txt = common_config.skill_def[skillId].name .. " 等级提升至 " .. level,
-        color = ColorQuad.New(0, 255, 0, 255)
-    })
-    
-    return true
-end
-
--- 添加武魂执行器
-function CommandExecutors.AddSoulWeapon(params, player)
-    if params.category ~= "武魂" then return false end
-    
-    if params.subcategory == "随机" then
-        -- 添加随机武魂
-        player:AddRandomSoulWeapon()
-        
-        -- 通知客户端
-        gg.network_channel:fireClient(player.uin, {
-            cmd = "cmd_client_show_msg",
-            txt = "获得随机武魂!",
-            color = ColorQuad.New(0, 255, 0, 255)
-        })
-        
-        return true
-    else
-        -- 添加指定武魂
-        local soulType = params.subcategory
-        player:AddSoulWeapon(soulType)
-        
-        -- 通知客户端
-        gg.network_channel:fireClient(player.uin, {
-            cmd = "cmd_client_show_msg",
-            txt = "获得武魂: " .. soulType,
-            color = ColorQuad.New(0, 255, 0, 255)
-        })
-        
-        return true
-    end
-end
-
--- 命令映射表
-local CommandMapping = {
-    ["解锁"] = CommandExecutors.UnlockSkill,
-    ["设置"] = CommandExecutors.SetSkillLevel,
-    ["添加"] = CommandExecutors.AddSoulWeapon,
-}
-
--- 命令执行函数
-function SkillCommands.Execute(command, params, player)
-    local executor = CommandMapping[command]
-    if not executor then
-        gg.log("未知技能命令: " .. command)
-        return false
-    end
-    
-    return executor(params, player)
-end
-
--- 兼容旧版接口
-SkillCommands.handlers = {}
-for command, executor in pairs(CommandMapping) do
-    SkillCommands.handlers[command] = executor
-end
 
 return SkillCommands

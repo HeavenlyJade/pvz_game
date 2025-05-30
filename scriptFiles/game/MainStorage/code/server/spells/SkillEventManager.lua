@@ -48,27 +48,27 @@ SkillEventManager.NOTIFY = {
 -- 兼容旧版事件名称（用于过渡）
 SkillEventManager.EVENTS = {
     -- 客户端请求事件
-    REQUEST_GET_LIST = SkillEventManager.REQUEST.GET_LIST,
-    REQUEST_LEARN = SkillEventManager.REQUEST.LEARN,
-    REQUEST_UPGRADE = SkillEventManager.REQUEST.UPGRADE,
-    REQUEST_EQUIP = SkillEventManager.REQUEST.EQUIP,
-    REQUEST_UNEQUIP = SkillEventManager.REQUEST.UNEQUIP,
-    REQUEST_GET_DETAIL = SkillEventManager.REQUEST.GET_DETAIL,
-    REQUEST_GET_AVAILABLE = SkillEventManager.REQUEST.GET_AVAILABLE,
+    REQUEST_GET_LIST      = SkillEventManager.REQUEST.GET_LIST,      -- 客户端请求获取技能列表
+    REQUEST_LEARN         = SkillEventManager.REQUEST.LEARN,         -- 客户端请求学习技能
+    REQUEST_UPGRADE       = SkillEventManager.REQUEST.UPGRADE,       -- 客户端请求升级技能
+    REQUEST_EQUIP         = SkillEventManager.REQUEST.EQUIP,         -- 客户端请求装备技能
+    REQUEST_UNEQUIP       = SkillEventManager.REQUEST.UNEQUIP,       -- 客户端请求卸下技能
+    REQUEST_GET_DETAIL    = SkillEventManager.REQUEST.GET_DETAIL,    -- 客户端请求获取技能详情
+    REQUEST_GET_AVAILABLE = SkillEventManager.REQUEST.GET_AVAILABLE, -- 客户端请求获取可学习技能列表
     
     -- 服务器响应事件
-    RESPONSE_LIST = SkillEventManager.RESPONSE.LIST,
-    RESPONSE_LEARN = SkillEventManager.RESPONSE.LEARN,
-    RESPONSE_UPGRADE = SkillEventManager.RESPONSE.UPGRADE,
-    RESPONSE_EQUIP = SkillEventManager.RESPONSE.EQUIP,
-    RESPONSE_UNEQUIP = SkillEventManager.RESPONSE.UNEQUIP,
-    RESPONSE_DETAIL = SkillEventManager.RESPONSE.DETAIL,
-    RESPONSE_AVAILABLE = SkillEventManager.RESPONSE.AVAILABLE,
-    RESPONSE_ERROR = SkillEventManager.RESPONSE.ERROR,
+    RESPONSE_LIST         = SkillEventManager.RESPONSE.LIST,         -- 服务器响应：返回技能列表
+    RESPONSE_LEARN        = SkillEventManager.RESPONSE.LEARN,        -- 服务器响应：返回学习技能结果
+    RESPONSE_UPGRADE      = SkillEventManager.RESPONSE.UPGRADE,      -- 服务器响应：返回升级技能结果
+    RESPONSE_EQUIP        = SkillEventManager.RESPONSE.EQUIP,        -- 服务器响应：返回装备技能结果
+    RESPONSE_UNEQUIP      = SkillEventManager.RESPONSE.UNEQUIP,      -- 服务器响应：返回卸下技能结果
+    RESPONSE_DETAIL       = SkillEventManager.RESPONSE.DETAIL,       -- 服务器响应：返回技能详情
+    RESPONSE_AVAILABLE    = SkillEventManager.RESPONSE.AVAILABLE,    -- 服务器响应：返回可学习技能列表
+    RESPONSE_ERROR        = SkillEventManager.RESPONSE.ERROR,        -- 服务器响应：操作失败，返回错误信息
     
     -- 服务器通知事件
-    NOTIFY_SKILL_CHANGED = SkillEventManager.NOTIFY.SKILL_CHANGED,
-    NOTIFY_SKILL_UNLOCKED = SkillEventManager.NOTIFY.SKILL_UNLOCKED
+    NOTIFY_SKILL_CHANGED  = SkillEventManager.NOTIFY.SKILL_CHANGED,  -- 服务器通知：技能发生变化（如学习、升级、装备、卸下等）
+    NOTIFY_SKILL_UNLOCKED = SkillEventManager.NOTIFY.SKILL_UNLOCKED  -- 服务器通知：新技能解锁
 }
 
 --[[
@@ -246,6 +246,28 @@ end
 客户端请求处理部分 - 处理客户端事件
 ===================================
 ]]
+
+
+
+function SkillEventManager.LoadAllSkillsToSelf(evt)
+
+    local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig)
+    local allSkills = SkillTypeConfig.GetAll()
+    local skills = {}
+    local env_player = evt.player
+    local uin = env_player.uin
+    local player = gg.getPlayerByUin(uin)
+    for skillName, skillType in pairs(allSkills) do
+        skills[skillName] = {
+            skill = skillName,
+            level = 0,
+            slot = 0
+        }
+    end
+    
+end
+
+
 
 --- 处理获取技能列表请求
 --- ---@param evt table 事件数据
