@@ -12,28 +12,28 @@ function TagHandler:OnInit( data )
     self.m_tagType = data["m_tagType"] ---@type TagType
     self.m_tagIndex = data["m_tagIndex"] ---@type number
     self.m_trigger = data["m_trigger"] ---@type string
-    self.priority = data["优先级"] ---@type number
-    self.coolDown = data["冷却"] ---@type number
-    self.power = data["每级增强"] ---@type number
-    self.chance = data["几率"] ---@type number
-    self.selfCondition = data["自身条件"] ---@type Modifiers
-    self.targetCondition = data["目标条件"] ---@type Modifiers
-    self.upgradeValues = data["升级增加数值"] or {} ---@type UpgradeValue[]
-end
-
-function TagHandler:GetUpgradeValue(paramName, defaultValue, power)
-    if not self.upgradeValues then return defaultValue end
-    
-    local result = defaultValue
-    local adder2 = 0
-    
-    -- 检查全局升级
-    for _, upgrade in ipairs(self.upgradeValues) do
-        if upgrade.paramName == paramName then
-            adder2 = adder2 + result * upgrade.number * (power - 1)
+    self["优先级"] = data["优先级"] ---@type number
+    self["冷却"] = data["冷却"] ---@type number
+    self["每级增强"] = data["每级增强"] ---@type number
+    self["几率"] = data["几率"] ---@type number
+    self["自身条件"] = data["自身条件"] ---@type Modifiers
+    self["目标条件"] = data["目标条件"] ---@type Modifiers
+    self["升级增加数值"] = {} ---@type table<string, number>
+    if data["升级增加数值"] then
+        for _, upgrade in ipairs(data["升级增加数值"]) do
+            self["升级增加数值"][upgrade.paramName] = upgrade.number
         end
     end
+end
+
+function TagHandler:GetUpgradeValue(paramName, power, defaultValue)
+    local result = defaultValue or self[paramName]
+    if not self["升级增加数值"] then return result end
     
+    local adder2 = 0
+    if self["升级增加数值"][paramName] then
+        adder2 = adder2 + result * self["升级增加数值"][paramName] * (power - 1)
+    end
     return result + adder2
 end
 
@@ -42,9 +42,9 @@ function TagHandler:CanTriggerReal(caster, target, castParam, param, log)
 end
 
 function TagHandler:CanTrigger(caster, target, param, log)
-    if self.chance > 0 and math.random() > (self.chance / 100.0) then
+    if self["几率"] > 0 and math.random() > (self["几率"] / 100.0) then
         if self.printMessage then 
-            table.insert(log, string.format("%s.%s触发失败：几率检定失败 设定=%d%%", self.m_tagType.id, self.m_tagIndex, self.chance))
+            table.insert(log, string.format("%s.%s触发失败：几率检定失败 设定=%d%%", self.m_tagType.id, self.m_tagIndex, self["几率"]))
         end
         return false
     end
@@ -56,15 +56,15 @@ function TagHandler:CanTrigger(caster, target, param, log)
         return false
     end
     
-    if self.coolDown > 0 and caster:IsCoolingdown(self.m_tagType.id .. "." .. self.m_tagIndex) then
+    if self["冷却"] > 0 and caster:IsCoolingdown(self.m_tagType.id .. "." .. self.m_tagIndex) then
         if self.printMessage then 
-            table.insert(log, string.format("%s.%s触发失败：冷却中 冷却时间=%d秒", self.m_tagType.id, self.m_tagIndex, self.coolDown))
+            table.insert(log, string.format("%s.%s触发失败：冷却中 冷却时间=%d秒", self.m_tagType.id, self.m_tagIndex, self["冷却"]))
         end
         return false
     end
     
-    if #self.selfCondition.modifiers > 0 then
-        for i, item in ipairs(self.selfCondition.modifiers) do
+    if #self["自身条件"].modifiers > 0 then
+        for i, item in ipairs(self["自身条件"].modifiers) do
             local stop = item:Check(caster, caster, param)
             if stop then break end
             if param.cancelled then
@@ -78,13 +78,13 @@ function TagHandler:CanTrigger(caster, target, param, log)
     
     if param.cancelled then
         if self.printMessage then 
-            table.insert(log, string.format("%s.%s触发失败：自身条件检查后被取消",                 self.m_tagType.id, self.m_tagIndex))
+            table.insert(log, string.format("%s.%s触发失败：自身条件检查后被取消", self.m_tagType.id, self.m_tagIndex))
         end
         return false
     end
     
-    if #self.targetCondition.modifiers > 0 then
-        for i, item in ipairs(self.targetCondition.modifiers) do
+    if #self["目标条件"].modifiers > 0 then
+        for i, item in ipairs(self["目标条件"].modifiers) do
             local stop = item:Check(caster, target, param)
             if stop then break end
             if param.cancelled then
@@ -133,10 +133,10 @@ function TagHandler:TriggerIn(caster, target, tag, param, log)
     end
     
     table.insert(castParam.skipTags, self.m_tagType.id)
-    castParam.power = castParam.power * (1 + (tag.level - 1) * self.power)
+    castParam.power = castParam.power * (1 + (tag.level - 1) * self["每级增强"])
     
-    if self.coolDown > 0 then
-        caster:SetCooldown(self.m_tagType.id .. "." .. self.m_tagIndex, self.coolDown)
+    if self["冷却"] > 0 then
+        caster:SetCooldown(self.m_tagType.id .. "." .. self.m_tagIndex, self["冷却"])
     end
     
     if not self:TriggerReal(caster, target, castParam, param, log) then

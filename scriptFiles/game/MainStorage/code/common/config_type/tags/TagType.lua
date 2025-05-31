@@ -1,4 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 local EquipingTag     = require(MainStorage.code.common.config_type.tags.EquipingTag)    ---@type EquipingTag
 
@@ -39,16 +40,18 @@ function TagType:GetDescription(level)
     -- 处理 [词条序号.属性.数组索引] 格式
     result = string.gsub(result, "%[(%d+)%.([^%.]+)%.(%d+)%]", function(index, fieldName, arrayIndex)
         index = tonumber(index)
-        arrayIndex = tonumber(arrayIndex) - 1 -- Convert to 0-based index
+        arrayIndex = tonumber(arrayIndex) -- Convert to 0-based index
         if index > 0 and index <= #self.functions then
             local handler = self.functions[index]
+            gg.log("result ", result, handler, fieldName, arrayIndex)
             
             -- 处理修改数值
-            if fieldName == "修改数值" and handler.modifyValues and handler.modifyValues[arrayIndex + 1] then
-                local modifier = handler.modifyValues[arrayIndex + 1]
+            if fieldName == "修改数值" and handler["修改数值"] and handler["修改数值"][arrayIndex] then
+                local modifier = handler["修改数值"][arrayIndex]
+                gg.log("修改数值", modifier, modifier.paramValue)
                 if modifier and modifier.paramValue then
-                    local finalRate = modifier.paramValue.rate * handler:GetUpgradeValue("modifyValueRate", 1, level)
-                    local isPercentage = modifier.paramValue.modifyType == 0 or modifier.paramValue.modifyType == 2
+                    local finalRate = modifier.paramValue["倍率"] * handler:GetUpgradeValue("修改数值倍率", level, 1)
+                    local isPercentage = modifier.paramValue["增加类型"] == "增加"
                     local percentageSign = isPercentage and "%" or ""
                     if modifier.paramValue.attributeType and modifier.paramValue.attributeType.name then
                         return string.format("%.1f%s%s", finalRate, percentageSign, modifier.paramValue.attributeType.name)
@@ -59,14 +62,14 @@ function TagType:GetDescription(level)
             end
             
             -- 处理属性增伤
-            if fieldName == "属性增伤" and handler.attributeDamage and handler.attributeDamage[arrayIndex + 1] then
-                local element = handler.attributeDamage[arrayIndex + 1]
+            if fieldName == "属性增伤" and handler["属性增伤"] and handler["属性增伤"][arrayIndex] then
+                local element = handler["属性增伤"][arrayIndex]
                 if element then
-                    local finalRate = element.rate * handler:GetUpgradeValue("attributeDamageRate", 1, level)
-                    local isPercentage = element.modifyType == 0 or element.modifyType == 2
+                    local finalRate = element.multiplier * handler:GetUpgradeValue("属性增伤倍率", level, 1)
+                    local isPercentage = element.addType == "增加"
                     local percentageSign = isPercentage and "%" or ""
-                    if element.attributeType and element.attributeType.name then
-                        return string.format("%.1f%s%s", finalRate, percentageSign, element.attributeType.name)
+                    if element.statType then
+                        return string.format("%.1f%s%s", finalRate, percentageSign, element.statType)
                     else
                         return string.format("%.1f%s", finalRate, percentageSign)
                     end
@@ -79,12 +82,13 @@ function TagType:GetDescription(level)
     -- 处理 [词条序号.属性] 格式
     result = string.gsub(result, "%[(%d+)%.([^%]]+)%]", function(index, fieldName)
         index = tonumber(index)
+        gg.log("result ", result, index, fieldName)
         if index > 0 and index <= #self.functions then
             local handler = self.functions[index]
             local value = handler[fieldName]
             if type(value) == "number" then
                 -- 应用升级值增加
-                local finalValue = handler:GetUpgradeValue(fieldName, value, level)
+                local finalValue = handler:GetUpgradeValue(fieldName, level)
                 return string.format("%.1f", finalValue)
             end
             return tostring(value or "")
