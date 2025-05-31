@@ -12,7 +12,8 @@ function TagType:OnInit(data)
     self.data = data
     self.id = data["名字"]
     self.maxLevel = data["最高等级"]
-    self.description = data["描述"]
+    -- self.description = data["描述"]
+    self.description = data["详细属性"]
     self.functions = {}
     for _, tagHandler in ipairs(data["功能"]) do
         local tagHandlerClass = require(MainStorage.code.common.config_type.tags[tagHandler["类型"]])

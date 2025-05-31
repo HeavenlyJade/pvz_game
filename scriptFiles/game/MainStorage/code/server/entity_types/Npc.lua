@@ -33,9 +33,7 @@ function _M:OnInit(npcData, actor)
     self.interactCommands  = npcData["互动指令"]
     self.interactIcon      = npcData["互动图标"]
     self.target            = nil
-    actor.CubeBorderEnable = true                      --debug显示碰撞方块
     actor.CollideGroupID   = 1
-    actor.EnablePhysics = true
     if npcData["状态机"] then
         self:SetAnimationController(npcData["状态机"]) 
     end

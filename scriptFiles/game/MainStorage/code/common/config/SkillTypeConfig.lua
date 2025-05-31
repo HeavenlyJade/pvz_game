@@ -286,7 +286,10 @@ local function LoadConfig()
             "攻击1_词条_豌豆射手"
         },
         ["目标模式"] = "敌人",
-        ["启用后坐力"] = false
+        ["启用后坐力"] = false,
+        ["升级需求素材"] = {
+            ["阳光"] = "50+(30*LVL)"
+        }
     }),
     ["生命1_豌豆"] = SkillType.New({
         ["技能名"] = "生命1_豌豆",
@@ -766,6 +769,7 @@ function SkillTypeConfig.GetSkillTrees(skillCategory)
     for skillName, skillType in pairs(SkillTypeConfig.config) do
         -- 筛选条件：是入口技能 且 属于指定分类
         if skillType.isEntrySkill and skillType.skillType == skillCategory then
+            gg.log("构建技能树 - 找到主卡:", skillType.name, "分类:", skillCategory)
 
             -- 创建技能树结构
             local skillTree = {
@@ -777,11 +781,13 @@ function SkillTypeConfig.GetSkillTrees(skillCategory)
             if skillType.nextSkills then
                 for _, nextSkill in ipairs(skillType.nextSkills) do
                     table.insert(skillTree.branches, nextSkill)
+                    gg.log("  - 添加分支技能:", nextSkill.name)
                 end
             end
 
             -- 以主技能名称作为key存储技能树
             skillTrees[skillType.name] = skillTree
+            gg.log("技能树构建完成:", skillType.name, "包含", #skillTree.branches, "个分支技能")
         end
     end
 
@@ -789,140 +795,33 @@ function SkillTypeConfig.GetSkillTrees(skillCategory)
     return skillTrees
 end
 
---- 构建技能森林（多根树结构）
----@param skillCategory number 技能分类 (0=主卡, 1=副卡)
----@return table 森林结构，每个元素是一棵技能树的根节点
-function SkillTypeConfig.BuildSkillForest(skillCategory)
-    if not loaded then
-        LoadConfig()
-    end
-    
-    local forest = {} ---@type SkillTree[]
-    local nodeCache = {} ---@type table<string, SkillTree> -- 节点缓存
-    
-    -- 查找根节点（没有父节点的技能）
-    local function isRoot(skillName)
-        local skillType = SkillTypeConfig.config[skillName]
-        if not skillType or skillType.skillType ~= skillCategory then return false end
-        if skillType.isEntrySkill then
-            return true
-        end
-        if not skillType.prerequisite or #skillType.prerequisite == 0 then
-            return true
-        end
-        return false
-    end
-    
-    -- 递归构建技能树
-    ---@param skillName string
-    ---@param pathSet table<string, boolean> 当前路径集合，用于检测循环引用
-    ---@return SkillTree|nil
-    local function buildTree(skillName, pathSet)
-        if pathSet[skillName] then
-            gg.log("检测到技能树循环引用: " .. skillName)
-            return nil
-        end
-        local skillType = SkillTypeConfig.config[skillName]
-        if not skillType or skillType.skillType ~= skillCategory then
-            return nil
-        end
-        -- 检查缓存中是否已有该节点
-        if nodeCache[skillName] then
-            return nodeCache[skillName]
-        end
-        local treeNode = {
-            name = skillName,
-            data = skillType,
-            children = {}
-        }
-        nodeCache[skillName] = treeNode
-        -- 创建新的路径集合（包含当前节点）
-        local newPathSet = {}
-        for k, v in pairs(pathSet) do
-            newPathSet[k] = v
-        end
-        newPathSet[skillName] = true
-        -- 递归添加子节点
-        if skillType.nextSkills then
-            for _, nextSkill in ipairs(skillType.nextSkills) do
-                local childName = nextSkill.name
-                local childTree = buildTree(childName, newPathSet)
-                if childTree then
-                    table.insert(treeNode.children, childTree)
+---打印技能树结构（美化输出）
+---@param skillTrees table<string, SkillTree> 技能树映射表
+function SkillTypeConfig.PrintSkillTrees(skillTrees)
+    gg.log("========== 技能树结构 ==========")
+
+    for mainSkillName, skillTree in pairs(skillTrees) do
+        gg.log("📋 主卡:", mainSkillName)
+        gg.log("  └── 主技能:", skillTree.mainSkill.name)
+        gg.log("  └── 分支技能数量:", #skillTree.branches)
+
+        for i, branch in ipairs(skillTree.branches) do
+            local prefix = (i == #skillTree.branches) and "      └──" or "      ├──"
+            gg.log(prefix, "分支" .. i .. ":", branch.name)
+
+            -- 如果分支技能还有下一技能，继续显示
+            if branch.nextSkills and #branch.nextSkills > 0 then
+                for j, nextSkill in ipairs(branch.nextSkills) do
+                    local nextPrefix = (i == #skillTree.branches) and "          " or "      │   "
+                    nextPrefix = nextPrefix .. ((j == #branch.nextSkills) and "└──" or "├──")
+                    gg.log(nextPrefix, "下级:", nextSkill.name)
                 end
             end
         end
-        return treeNode
-    end
-    -- 构建森林（所有根节点）
-    for skillName, _ in pairs(SkillTypeConfig.config) do
-        if isRoot(skillName) and not nodeCache[skillName] then
-            local tree = buildTree(skillName, {})
-            if tree then
-                table.insert(forest, tree)
-            end
-        end
-    end
-    -- 处理非根节点但有多个父节点的情况
-    for skillName, skillType in pairs(SkillTypeConfig.config) do
-        if skillType.skillType == skillCategory and not nodeCache[skillName] then
-            local treeNode = {
-                name = skillName,
-                data = skillType,
-                children = {}
-            }
-            nodeCache[skillName] = treeNode
-            if skillType.nextSkills then
-                for _, nextSkill in ipairs(skillType.nextSkills) do
-                    local childName = nextSkill.name
-                    local childTree = nodeCache[childName] or buildTree(childName, {[skillName] = true})
-                    if childTree then
-                        table.insert(treeNode.children, childTree)
-                    end
-                end
-            end
-        end
-    end
-    return forest
-end
-
---- 按层级打印技能森林
----@param forest table 技能森林结构
-function SkillTypeConfig.PrintSkillForest(forest)
-    gg.log("========== 技能森林结构 ==========")
-
-    local printed = {} -- 用table引用做key，防止重复递归打印
-
-    local function printTree(node, level, isLast)
-        local prefix = ""
-        for i = 1, level - 1 do
-            prefix = prefix .. "│   "
-        end
-        if level > 0 then
-            prefix = prefix .. (isLast and "└── " or "├── ")
-        end
-        local skillType = node.data
-        local entryMark = skillType.isEntrySkill and "🚪 " or ""
-        local typeMark = skillType.skillType == 1 and "[副] " or "[主] "
-        -- 用table引用判断是否已打印
-        if printed[node] then
-            gg.log(prefix .. entryMark .. typeMark .. node.name .. " (已在其他分支展开)")
-            return
-        end
-        gg.log(prefix .. entryMark .. typeMark .. node.name)
-        printed[node] = true
-        for i, child in ipairs(node.children) do
-            printTree(child, level + 1, i == #node.children)
-        end
-    end
-
-    for i, tree in ipairs(forest) do
-        gg.log("🌳 技能树 " .. i)
-        printTree(tree, 0, true)
         gg.log("") -- 空行分隔
     end
 
-    gg.log("========== 森林结构结束 ==========")
+    gg.log("========== 技能树结构结束 ==========")
 end
 
 return SkillTypeConfig

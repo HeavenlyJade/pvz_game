@@ -4,7 +4,7 @@ local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type
 local soundPlayer = game:GetService("StarterGui")["UISound"] ---@type Sound
 
 ---@class ViewButton:ViewComponent
----@field New fun(node: SandboxNode, ui: ViewBase, path?: string): ViewButton
+---@field New fun(node: SandboxNode, ui: ViewBase, path?: string, realButtonPath?: string): ViewButton
 local  ViewButton = ClassMgr.Class("ViewButton", ViewComponent)
 
 
@@ -19,8 +19,12 @@ end
 
 function ViewButton:OnTouchOut()
     if self.isHover then
-        self.img.Icon = self.hoverImg
-        self.img.FillColor = self.hoverColor
+        if self.hoverImg then
+            self.img.Icon = self.hoverImg
+        end
+        if self.hoverColor then
+            self.img.FillColor = self.hoverColor
+        end
     else
         self.img.Icon = self.normalImg
         self.img.FillColor = self.normalColor
@@ -53,8 +57,12 @@ end
 
 function ViewButton:OnTouchIn(vector2)
     if not self.enabled then return end
-    self.img.Icon = self.clickImg
-    self.img.FillColor = self.clickColor
+    if self.clickImg then
+        self.img.Icon = self.clickImg
+    end
+    if self.clickColor then
+        self.img.FillColor = self.clickColor
+    end
     if self.soundPress and soundPlayer then
         soundPlayer.SoundPath = self.soundPress
         soundPlayer:PlaySound()
@@ -95,8 +103,12 @@ end
 function ViewButton:OnHoverIn()
     if not self.enabled then return end
     self.isHover = true
-    self.img.Icon = self.hoverImg
-    self.img.FillColor = self.hoverColor
+    if self.hoverImg then
+        self.img.Icon = self.hoverImg
+    end
+    if self.hoverColor then
+        self.img.FillColor = self.hoverColor
+    end
     if self.soundHover and soundPlayer then
         soundPlayer.SoundPath = self.soundHover
         soundPlayer:PlaySound()
@@ -120,14 +132,18 @@ function ViewButton:OnClick()
     end
 end
 
-function ViewButton:OnInit(node, ui, path)
+function ViewButton:OnInit(node, ui, path, realButtonPath)
     ViewComponent.OnInit(self, node, ui, path)
     self.childClickImgs = {    }
     self.enabled = true
-    local img = node
     self.img = node ---@type UIImage
+    if realButtonPath then
+        self.img = self.img[realButtonPath]
+    end
+    local img = self.img
+    print("img", self.img.Name, realButtonPath)
     self.img.ClickPass = false
-    self.clickCb = nil
+    self.clickCb = nil ---@type function(ui:ViewBase, button:ViewButton)
     self.touchBeginCb = nil
     self.touchMoveCb = nil
     self.touchEndCb = nil
@@ -182,6 +198,7 @@ function ViewButton:OnInit(node, ui, path)
     end)
 
     for _, child in ipairs(img.Children) do ---@type UIComponent
+        print("Building ViewButton", child.Name, child:GetAttribute("继承按钮"))
         if child:IsA("UIImage") and child:GetAttribute("继承按钮") then
             local clickImg = child:GetAttribute("图片-点击")---@type string
             local hoverImg = child:GetAttribute("图片-悬浮") ---@type string
