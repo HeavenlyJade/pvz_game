@@ -26,7 +26,7 @@ function SkillType:OnInit(data)
     ---客户端
     self.isEntrySkill = data["是入口技能"] or false
     self.nextSkills = data["下一技能"]
-    self.prerequisite = {} ---@type SkillType[]
+    self.prerequisite = {} ---@type string[] --- 父节点名字
     self.targetMode = data["目标模式"]
     self.skillType = data["技能分类"]
     self.upgradeCosts = data["升级需求素材"]
@@ -88,6 +88,16 @@ function SkillType:GetToStringParams()
     return {
         name = self.name
     }
+end
+
+--- 向prerequisite添加父节点名字，已存在则跳过
+function SkillType:AddPrerequisite(parentName)
+    for _, name in ipairs(self.prerequisite) do
+        if name == parentName then
+            return -- 已存在，跳过
+        end
+    end
+    table.insert(self.prerequisite, parentName)
 end
 
 return SkillType

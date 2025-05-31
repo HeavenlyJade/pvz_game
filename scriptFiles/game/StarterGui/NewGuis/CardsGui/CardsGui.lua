@@ -6,6 +6,7 @@ local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewB
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
 local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
+local SkillTypeUtils = require(MainStorage.code.common.conf_utils.SkillTypeUtils) ---@type SkillTypeUtils
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
 
 local uiConfig = {
@@ -183,13 +184,15 @@ end
 
 -- 读取主卡数据并克隆节点
 function CardsGui:LoadMainCardsAndClone()
-    local skillMainTrees = SkillTypeConfig.GetSkillTrees(0)
+    ---@type SkillTreeNode[]
+    local skillMainTrees = SkillTypeUtils.BuildSkillForest(0)
     -- 使用美化的打印函数显示技能树结构
-    SkillTypeConfig.PrintSkillTrees(skillMainTrees)
-    -- 克隆纵列表
-    self:CloneVerticalListsForSkillTrees(skillMainTrees)
+    ---SkillTypeUtils.PrintSkillForest(skillMainTrees)
+ 
     -- 克隆主卡选择按钮
     self:CloneMainCardButtons(skillMainTrees)
+    -- 克隆节能树纵列表
+    self:CloneVerticalListsForSkillTrees(skillMainTrees)
 end
 
 function CardsGui:CloneMainCardButtons(skillMainTrees)
@@ -210,11 +213,12 @@ function CardsGui:CloneMainCardButtons(skillMainTrees)
     end) ---@type ViewList
     -- 遍历主卡，设置图标和名称
     local index = 1
-    for mainSkillName, skillTree in pairs(skillMainTrees) do
-        local skillType = skillTree.mainSkill
+    for skillName, rootNode in pairs(skillMainTrees) do
+        local mainSkillName = rootNode.name
+        local skillType = rootNode.data
         local child = ListTemplate:GetChild(index)
         child.extraParams["skillId"] = skillType.name
-        
+        child.node.Name = skillType.name
         if skillType.icon and skillType.icon ~= "" then
             local iconNode = child.node['图标']
             if iconNode then
@@ -228,6 +232,7 @@ end
 
 -- 注册技能卡片的ViewButton
 function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
+    gg.log("RegisterSkillCardButton",cardFrame, skill, lane, position)
     local viewButton = ViewButton.New(cardFrame, self, nil, "卡框背景")
     viewButton.extraParams = {
         skillId = skill.name,
@@ -282,6 +287,7 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
     -- 设置技能名称
     local nameNode = cardFrame["技能名"]
     if nameNode then
+        gg.log("设置技能名称:", nameNode,nameNode.Title, skill.displayName,skill)
         nameNode.Title = skill.displayName
     end
 
@@ -302,153 +308,241 @@ end
 
 -- 为技能树克隆纵列表
 function CardsGui:CloneVerticalListsForSkillTrees(skillMainTrees)
-    local verticalListTemplate = self:Get("框体/主卡/加点框/纵列表", ViewList) ---@type ViewList
+    local verticalListTemplate = self:Get("框体/主卡/加点框/纵列表", ViewList)
     if not verticalListTemplate or not verticalListTemplate.node then
         return
     end
-
-    -- 为每个主卡技能克隆纵列表
+    
     for mainSkillName, skillTree in pairs(skillMainTrees) do
-        -- 克隆纵列表节点
         local clonedVerticalList = verticalListTemplate.node:Clone()
-        if clonedVerticalList then
-            -- 设置克隆节点的名称：主卡技能名字
-            clonedVerticalList.Name = mainSkillName
-            clonedVerticalList.Parent = verticalListTemplate.node.Parent
-            clonedVerticalList.Visible = false
+        clonedVerticalList.Name = mainSkillName
+        clonedVerticalList.Parent = verticalListTemplate.node.Parent
+        clonedVerticalList.Visible = false
+        
+        local mainCardFrame = clonedVerticalList["主卡框"]
+        local mainCardNode = skillTree.data
+        if mainCardFrame then
+            self:RegisterSkillCardButton(mainCardFrame, mainCardNode, 0, 2)
+        end
+        
+        local listTemplate = clonedVerticalList["列表_1"]
+        if not listTemplate then return end
+        
+        -- ===== 修复后的DAG处理算法 =====
+        local nodeDepth = {}         -- 节点深度
+        local nodePositions = {}     -- 节点位置
+        local layers = {}            -- 按深度分组的节点
+        local layerNodes = {}        -- 存储每层的节点和位置信息
+        local parentMap = {}         -- 父节点映射
+        local processed = {}         -- 标记已处理的节点，防止重复处理
 
-            -- 注册主卡（第一层）的ViewButton
-            local mainCardFrame = clonedVerticalList["主卡框"]
-            if mainCardFrame then
-                self:RegisterSkillCardButton(mainCardFrame, skillTree.mainSkill, 0, 2)
+        -- 初始化根节点
+        nodeDepth[skillTree] = 0
+        nodePositions[skillTree] = 2
+        layers[0] = {skillTree}
+        layerNodes[0] = {{node = skillTree, position = 2}}
+        processed[skillTree] = true  -- 标记根节点已处理
+
+        -- 添加根节点的所有直接子节点到队列
+        local queue = {}
+        for _, child in ipairs(skillTree.children) do
+           if not processed[child] then  -- 只添加未处理的节点
+               table.insert(queue, child)
+               parentMap[child] = {skillTree}
+               processed[child] = true   -- 立即标记为已处理，防止重复入队
+           else
+               -- 如果子节点已经处理过，只更新其父节点关系
+               parentMap[child] = parentMap[child] or {}
+               table.insert(parentMap[child], skillTree)
+           end
+        end
+
+        -- BFS遍历所有节点
+        while #queue > 0 do
+           local node = table.remove(queue, 1)
+           local parents = parentMap[node] or {}
+           
+           -- 计算节点深度 = 所有父节点最大深度+1
+           local maxParentDepth = -1
+           for _, parent in ipairs(parents) do
+               if nodeDepth[parent] and nodeDepth[parent] > maxParentDepth then
+                   maxParentDepth = nodeDepth[parent]
+               end
+           end
+           local depth = maxParentDepth + 1
+           nodeDepth[node] = depth
+           
+           -- 添加到层级（每个节点只添加一次）
+           layers[depth] = layers[depth] or {}
+           table.insert(layers[depth], node)
+           
+           -- 初始化当前层的节点位置表
+           layerNodes[depth] = layerNodes[depth] or {}
+           
+           -- ===== 改进的位置分配算法 =====
+           -- 1. 收集所有父节点位置
+           local parentPositions = {}
+           for _, parent in ipairs(parents) do
+               if nodePositions[parent] then
+                   table.insert(parentPositions, nodePositions[parent])
+               end
+           end
+           -- 2. 计算理想位置（父节点位置的中位数）
+           table.sort(parentPositions)
+           local medianPos = parentPositions[math.ceil(#parentPositions/2)] or 2
+           -- 3. 检查同层是否已有相同位置的节点
+           local targetPos = medianPos
+           local positionTaken = {}
+           for _, existingItem in ipairs(layerNodes[depth]) do
+               positionTaken[existingItem.position] = true
+           end
+           -- 4. 特殊处理：当同一层有两个节点时，分别放在位置1和3
+           local currentLayerNodes = layerNodes[depth] or {}
+           local currentLayerCount = #currentLayerNodes
+           if currentLayerCount == 1 then
+               -- 第一个节点的位置
+               local firstNodePos = currentLayerNodes[1].position
+               -- 如果第一个节点不在位置1，调整到位置1
+               if firstNodePos ~= 1 then
+                   currentLayerNodes[1].position = 1
+                   nodePositions[currentLayerNodes[1].node] = 1
+               end
+               -- 当前节点设为位置3
+               targetPos = 3
+           else
+               -- 其他情况使用原来的位置分配逻辑
+               if positionTaken[targetPos] then
+                   local candidatePositions = {}
+                   for pos = 1, 3 do
+                       if not positionTaken[pos] then
+                           table.insert(candidatePositions, pos)
+                       end
+                   end
+                   if #candidatePositions > 0 then
+                       table.sort(candidatePositions, function(a, b)
+                           return math.abs(a - medianPos) < math.abs(b - medianPos)
+                       end)
+                       targetPos = candidatePositions[1]
+                   end
+               end
+           end
+           -- 5. 分配最终位置
+           nodePositions[node] = targetPos
+           -- 存储当前节点到层节点表
+           table.insert(layerNodes[depth], {node = node, position = targetPos})
+           
+           -- ===== 处理子节点（防止重复） =====
+           for _, child in ipairs(node.children) do
+               if not processed[child] then
+                   -- 子节点未处理过，加入队列
+                   table.insert(queue, child)
+                   parentMap[child] = {node}
+                   processed[child] = true  -- 立即标记为已处理
+               else
+                   -- 子节点已处理过，只更新父节点关系
+                   parentMap[child] = parentMap[child] or {}
+                   table.insert(parentMap[child], node)
+               end
+           end
+        end
+        
+        -- ===== 渲染UI层级 =====
+        local maxDepth = 0
+        for depth in pairs(layers) do
+            if depth > maxDepth then maxDepth = depth end
+        end
+        
+        -- 打印层节点信息（调试用）
+        gg.log("技能树层级信息:", mainSkillName)
+        for depth = 0, maxDepth do
+            if layerNodes[depth] then
+                local depthInfo = string.format("深度 %d: ", depth)
+                for _, item in ipairs(layerNodes[depth]) do
+                    depthInfo = depthInfo .. string.format("%s [%s] (位置 %d), ", item.node.data.name, tostring(item.node), item.position)                end
+                gg.log(depthInfo)
             end
-
-            -- 获取列表_1作为模板
-            local listTemplate = clonedVerticalList["列表_1"]
-            if not listTemplate then return end
-
-            -- 获取最大层级数
-            local maxLane = 0
-            for lane, _ in pairs(skillTree.skills) do
-                maxLane = math.max(maxLane, lane)
-            end
-
-            -- 从第二层开始创建列表（第一层是入口技能）
-            for lane = 1, maxLane do
-                local laneSkills = skillTree:GetLane(lane)
-                if #laneSkills > 0 then
-                    -- 克隆列表模板
+        end
+        
+        for depth = 0, maxDepth do
+            if layers[depth] then
+                if depth == 0 then
+                    -- 根节点已在主卡框处理
+                else
                     local clonedList = listTemplate:Clone()
-                    clonedList.Name = "列表_" .. lane
+                    clonedList.Name = "列表_" .. depth
                     clonedList.Parent = clonedVerticalList
-
-                    -- 为这一层的每个技能设置卡框
-                    local skillCount = #laneSkills
-                    local positions = {}
                     
-                    -- 根据技能数量决定位置
-                    if skillCount == 1 then
-                        positions = {2} -- 只有一个技能时放在2号位
-                    elseif skillCount == 2 then
-                        positions = {1, 3} -- 有两个技能时放在1号和3号位
-                    else
-                        -- 超过两个技能时按顺序排列
-                        for i = 1, skillCount do
-                            positions[i] = i
-                        end
-                    end
-
-                    -- 隐藏所有卡框
+                    -- 初始化所有卡框为不可见
                     for i = 1, 3 do
                         local cardFrame = clonedList["卡框_" .. i]
-                        if cardFrame then
-                            cardFrame.Visible = false
-                        end
+                        if cardFrame then cardFrame.Visible = false end
                     end
-
-                    -- 设置每个技能的卡框
-                    for i, skill in ipairs(laneSkills) do
-                        if skill then
-                            local position = positions[i]
-                            if position and position <= 3 then
-                                local cardFrame = clonedList["卡框_" .. position]
-                                if cardFrame then
-                                    cardFrame.Visible = true
-                                    cardFrame.Name = skill.name
-
-                                    -- 注册为ViewButton
-                                    self:RegisterSkillCardButton(cardFrame, skill, lane, position)
-
-                                    -- 处理箭头显示
-                                    local nextSkills = skill.nextSkills or {}
-                                    local nextPositions = {}
-                                    
-                                    -- 在下一层找到这个技能的位置
-                                    local nextLaneSkills = skillTree:GetLane(lane + 1)
-                                    local nextLaneCount = #nextLaneSkills
-                                    local nextLanePositions = {}
-                                    
-                                    -- 根据下一层的技能数量决定位置
-                                    if nextLaneCount == 1 then
-                                        nextLanePositions = {2} -- 只有一个技能时放在2号位
-                                    elseif nextLaneCount == 2 then
-                                        nextLanePositions = {1, 3} -- 有两个技能时放在1号和3号位
-                                    else
-                                        -- 超过两个技能时按顺序排列
-                                        for i = 1, nextLaneCount do
-                                            nextLanePositions[i] = i
-                                        end
-                                    end
-
-                                    -- 找到每个下一技能的实际位置
-                                    for _, nextSkill in ipairs(nextSkills) do
-                                        for nextPos, nextLaneSkill in ipairs(nextLaneSkills) do
-                                            if nextLaneSkill.name == nextSkill.name then
-                                                table.insert(nextPositions, nextLanePositions[nextPos])
-                                                break
+                    
+                    -- 使用 layerNodes 表来渲染节点
+                    for _, item in ipairs(layerNodes[depth] or {}) do
+                        local node = item.node
+                        local position = item.position
+                        
+                        if position and position >= 1 and position <= 3 then
+                            local cardFrame = clonedList["卡框_" .. position]
+                            if cardFrame then
+                                cardFrame.Visible = true
+                                cardFrame.Name = node.data.name
+                                self:RegisterSkillCardButton(cardFrame, node.data, depth, position)
+                                
+                                -- ===== 箭头处理逻辑 =====
+                                -- 获取所有箭头元素
+                                local upRightArrow = cardFrame["上右"]
+                                local downRightArrow = cardFrame["下右"]
+                                local rightArrow = cardFrame["箭头右"]
+                                
+                                -- 初始化所有箭头为不可见
+                                if upRightArrow then upRightArrow.Visible = false end
+                                if downRightArrow then downRightArrow.Visible = false end
+                                if rightArrow then rightArrow.Visible = false end
+                                
+                                -- 如果没有子节点，不需要显示箭头
+                                if #node.children == 0 then
+                                  
+                                    -- 这里直接用空语句代替即可
+                                else
+                                    -- 获取直接子节点的位置
+                                    local childPositions = {}
+                                    for _, child in ipairs(node.children) do
+                                        if layerNodes[depth + 1] then
+                                            for _, childItem in ipairs(layerNodes[depth + 1]) do
+                                                if childItem.node == child then
+                                                    table.insert(childPositions, childItem.position)
+                                                    break
+                                                end
                                             end
                                         end
                                     end
-
-                                    -- 根据下一技能的位置显示/隐藏箭头
-                                    local upRightArrow = cardFrame["上右"]
-                                    local downRightArrow = cardFrame["下右"]
-                                    local rightArrow = cardFrame["箭头右"]
-
-                                    if upRightArrow then
-                                        upRightArrow.Visible = false
-                                    end
-                                    if downRightArrow then
-                                        downRightArrow.Visible = false
-                                    end
-                                    if rightArrow then
-                                        rightArrow.Visible = false
-                                    end
-
-                                    -- 根据当前技能位置和下一技能位置决定显示哪个箭头
-                                    for k, nextPos in pairs(nextPositions) do
-                                        if position == 1 then -- 当前技能在左边
-                                            if nextPos == 1 then
+                                    
+                                    -- 根据当前节点位置和子节点位置显示箭头
+                                    for _, childPos in ipairs(childPositions) do
+                                        if position == 1 then -- 当前节点在左边
+                                            if childPos == 1 then
                                                 if rightArrow then rightArrow.Visible = true end
-                                            elseif nextPos == 2 then
+                                            elseif childPos == 2 then
                                                 if downRightArrow then downRightArrow.Visible = true end
-                                            elseif nextPos == 3 then
+                                            else -- childPos == 3
                                                 if downRightArrow then downRightArrow.Visible = true end
                                             end
-                                        elseif position == 2 then -- 当前技能在中间
-                                            if nextPos == 1 then
+                                        elseif position == 2 then -- 当前节点在中间
+                                            if childPos == 1 then
                                                 if upRightArrow then upRightArrow.Visible = true end
-                                            elseif nextPos == 2 then
+                                            elseif childPos == 2 then
                                                 if rightArrow then rightArrow.Visible = true end
-                                            elseif nextPos == 3 then
+                                            else -- childPos == 3
                                                 if downRightArrow then downRightArrow.Visible = true end
                                             end
-                                        elseif position == 3 then -- 当前技能在右边
-                                            if nextPos == 1 then
+                                        else -- position == 3 当前节点在右边
+                                            if childPos == 1 then
                                                 if upRightArrow then upRightArrow.Visible = true end
-                                            elseif nextPos == 2 then
+                                            elseif childPos == 2 then
                                                 if upRightArrow then upRightArrow.Visible = true end
-                                            elseif nextPos == 3 then
+                                            else -- childPos == 3
                                                 if rightArrow then rightArrow.Visible = true end
                                             end
                                         end
@@ -459,123 +553,15 @@ function CardsGui:CloneVerticalListsForSkillTrees(skillMainTrees)
                     end
                 end
             end
-
-            -- 销毁列表模板
-            listTemplate:Destroy()
-
-            -- 将克隆节点包装成ViewList对象
-            local verticalList = ViewList.New(clonedVerticalList, self, "框体/主卡/加点框/" .. mainSkillName)
-            self.skillLists[mainSkillName] = verticalList
         end
+        
+        listTemplate:Destroy()
+        local verticalList = ViewList.New(clonedVerticalList, self, "框体/主卡/加点框/" .. mainSkillName)
+        self.skillLists[mainSkillName] = verticalList
     end
-
-    -- 销毁模板节点
+    
     if verticalListTemplate and verticalListTemplate.node then
         verticalListTemplate.node:Destroy()
-    end
-end
-
--- 为纵列表设置分支技能
-function CardsGui:SetupBranchSkillsForVerticalList(verticalListNode, branchSkills, mainSkillName)
-    -- gg.log("为纵列表设置分支技能:", mainSkillName, "分支数量:", #branchSkills)
-
-    -- 在这里可以设置每个分支技能对应的UI元素
-    -- 比如克隆卡框、设置技能图标和信息等
-
-    for i, branchSkill in ipairs(branchSkills) do
-        -- gg.log("  - 设置分支技能", i, ":", branchSkill.name)
-
-        -- 这里可以根据需要克隆和设置分支技能的UI
-        -- 例如：
-        -- 1. 克隆卡框
-        -- 2. 设置技能图标
-        -- 3. 设置技能描述
-        -- 4. 绑定点击事件
-    end
-end
-
--- 克隆分支技能的卡框
-function CardsGui:CloneBranchSkillCards(branchListNode, branchSkill)
-    -- gg.log("开始克隆分支技能卡框:", branchSkill.name)
-
-    -- 获取卡框模板（假设第一个卡框作为模板）
-    local cardTemplate = nil
-    for _, child in ipairs(branchListNode.Children) do
-        if child.Name:find("卡框") then
-            cardTemplate = child
-            break
-        end
-    end
-
-    if not cardTemplate then
-        -- gg.log("警告：找不到卡框模板在分支列表:", branchSkill.name)
-        return
-    end
-
-    -- 1. 首先为二级节点本身克隆卡框（如射速1_豌豆、攻击1_豌豆、生命1_豌豆）
-    local branchCard = cardTemplate:Clone()
-    if branchCard then
-        branchCard.Name = branchSkill.name
-        branchCard.Parent = branchListNode
-
-        -- 设置二级节点的卡框资源
-        if branchSkill.icon and branchSkill.icon ~= "" then
-            local iconNode = branchCard:FindFirstChild("图标")
-            if iconNode then
-                iconNode.Icon = branchSkill.icon
-                -- gg.log("设置二级节点卡框图标:", branchSkill.name, "图标:", branchSkill.icon)
-            end
-        end
-
-        -- 判断是否为最后节点（没有下一级技能）
-        local isLastNode = not branchSkill.nextSkills or #branchSkill.nextSkills == 0
-        if isLastNode then
-            local arrowNode = branchCard:FindFirstChild("箭头右")
-            if arrowNode then
-                arrowNode.Visible = false
-                -- gg.log("隐藏箭头右，分支节点为最后节点:", branchSkill.name)
-            end
-        end
-
-        -- gg.log("成功克隆二级节点卡框:", branchSkill.name)
-    else
-        -- gg.log("克隆二级节点卡框失败:", branchSkill.name)
-    end
-
-    -- 2. 然后为三级节点（下一级技能）克隆卡框
-    local nextSkills = branchSkill.nextSkills or {}
-    -- gg.log("分支技能", branchSkill.name, "的下级技能数量:", #nextSkills)
-
-    -- 为每个下级技能克隆卡框
-    for i, nextSkill in ipairs(nextSkills) do
-        local clonedCard = cardTemplate:Clone()
-        if clonedCard then
-            -- 设置名字为三级节点的名字
-            clonedCard.Name = nextSkill.name
-            clonedCard.Parent = branchListNode
-
-            -- 设置对应三级节点的卡框资源
-            if nextSkill.icon and nextSkill.icon ~= "" then
-                -- 查找卡框下的图标节点
-                local iconNode = clonedCard:FindFirstChild("图标")
-                if iconNode then
-                    iconNode.Icon = nextSkill.icon
-                    -- gg.log("设置三级节点卡框图标:", nextSkill.name, "图标:", nextSkill.icon)
-                else
-                    -- gg.log("警告：找不到三级节点卡框的图标节点:", nextSkill.name)
-                end
-            end
-
-            -- gg.log("成功克隆三级节点卡框:", nextSkill.name)
-        else
-            -- gg.log("克隆三级节点卡框失败:", nextSkill.name)
-        end
-    end
-
-    -- 销毁初始卡框模板
-    if cardTemplate then
-        cardTemplate:Destroy()
-        -- gg.log("销毁分支技能卡框模板:", branchSkill.name)
     end
 end
 
