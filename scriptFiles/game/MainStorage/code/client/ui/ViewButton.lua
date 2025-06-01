@@ -126,8 +126,6 @@ function ViewButton:OnHoverIn()
 end
 
 function ViewButton:OnClick()
-
-    gg.log("点击事件",self.extraParams,self)
     if not self.enabled then return end
     if self.clickCb then
         self.clickCb(self.ui, self)

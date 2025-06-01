@@ -19,8 +19,7 @@ local SkillEventManager = {}
 -- 客户端请求事件
 SkillEventManager.REQUEST = {
     GET_LIST = "SkillRequest_GetList",
-    LEARN = "SkillRequest_Learn",
-    UPGRADE = "SkillRequest_Upgrade",
+    LEARN = "SkillRequest_LearnUpgrade",
     EQUIP = "SkillRequest_Equip",
     UNEQUIP = "SkillRequest_Unequip",
     GET_DETAIL = "SkillRequest_GetDetail",
@@ -30,8 +29,7 @@ SkillEventManager.REQUEST = {
 -- 服务器响应事件
 SkillEventManager.RESPONSE = {
     LIST = "SkillResponse_List",
-    LEARN = "SkillResponse_Learn",
-    UPGRADE = "SkillResponse_Upgrade",
+    LEARN = "SkillResponse_LearnUpgrade",
     EQUIP = "SkillResponse_Equip",
     UNEQUIP = "SkillResponse_Unequip",
     DETAIL = "SkillResponse_Detail",
@@ -41,7 +39,6 @@ SkillEventManager.RESPONSE = {
 
 -- 服务器通知事件
 SkillEventManager.NOTIFY = {
-    SKILL_CHANGED = "SkillNotify_Changed",
     SKILL_UNLOCKED = "SkillNotify_Unlocked"
 }
 
@@ -50,10 +47,8 @@ SkillEventManager.EVENTS = {
     -- 客户端请求事件
     -- 获取技能列表
     REQUEST_GET_LIST = SkillEventManager.REQUEST.GET_LIST,
-    -- 学习技能
+    -- 学习/升级技能
     REQUEST_LEARN = SkillEventManager.REQUEST.LEARN,
-    -- 升级技能
-    REQUEST_UPGRADE = SkillEventManager.REQUEST.UPGRADE,
     -- 装备技能
     REQUEST_EQUIP = SkillEventManager.REQUEST.EQUIP,
     -- 卸下技能
@@ -68,8 +63,6 @@ SkillEventManager.EVENTS = {
     RESPONSE_LIST = SkillEventManager.RESPONSE.LIST,
     -- 返回学习技能结果
     RESPONSE_LEARN = SkillEventManager.RESPONSE.LEARN,
-    -- 返回升级技能结果
-    RESPONSE_UPGRADE = SkillEventManager.RESPONSE.UPGRADE,
     -- 返回装备技能结果
     RESPONSE_EQUIP = SkillEventManager.RESPONSE.EQUIP,
     -- 返回卸下技能结果
@@ -82,7 +75,6 @@ SkillEventManager.EVENTS = {
     RESPONSE_ERROR = SkillEventManager.RESPONSE.ERROR,
     
     -- 服务器通知事件
-    NOTIFY_SKILL_CHANGED = SkillEventManager.NOTIFY.SKILL_CHANGED,
     NOTIFY_SKILL_UNLOCKED = SkillEventManager.NOTIFY.SKILL_UNLOCKED
 }
 
@@ -148,9 +140,6 @@ function SkillEventManager.RegisterEventHandlers()
     -- 学习技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.LEARN, SkillEventManager.HandleLearnSkill)
     
-    -- 升级技能
-    ServerEventManager.Subscribe(SkillEventManager.REQUEST.UPGRADE, SkillEventManager.HandleUpgradeSkill)
-    
     -- 装备技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.EQUIP, SkillEventManager.HandleEquipSkill)
     
@@ -193,67 +182,17 @@ end
 ===================================
 ]]
 
---- 发送错误响应给客户端
----@param evt table 事件参数
----@param errorCode number 错误码
----@param extraData table|nil 额外数据
-function SkillEventManager.SendErrorResponse(evt, errorCode, extraData)
-    local env_player = evt.player
-    local uin = env_player.uin
-    local response = {
-        success = false,
-        errorCode = errorCode,
-        message = SkillEventManager.ERROR_MESSAGES[errorCode] or "未知错误"
-    }
-    
-    if extraData then
-        for k, v in pairs(extraData) do
-            response[k] = v
-        end
-    end
-    
-    gg.network_channel:fireClient(uin, {
-        cmd = SkillEventManager.RESPONSE.ERROR,
-        data = response
-    })
-end
-
 --- 发送成功响应给客户端
 ---@param evt table 事件参数
 ---@param eventName string 响应事件名称
 ---@param data table 响应数据
 function SkillEventManager.SendSuccessResponse(evt, eventName, data)
     local uin = evt.uin or evt.player
-    -- data.success = true
-    -- data.errorCode = SkillEventManager.ERROR_CODES.SUCCESS
     
-    -- gg.network_channel:fireClient(uin, {
-    --     cmd = eventName,
-    --     data = data
-    -- })
-end
-
---- 发送技能变化通知
----@param evt table 事件参数
----@param skillName string 技能名称
----@param changeType string 变化类型
-function SkillEventManager.NotifySkillChanged(evt, skillName, changeType)
-    local uin = evt.uin or evt.player
     gg.network_channel:fireClient(uin, {
-        cmd = SkillEventManager.NOTIFY.SKILL_CHANGED,
-        data = {
-            skillName = skillName,
-            changeType = changeType,
-            timestamp = os.time()
-        }
+        cmd = eventName,
+        data = data
     })
-end
-
---- 获取错误消息
----@param errorCode number 错误码
----@return string 错误消息
-function SkillEventManager.GetErrorMessage(errorCode)
-    return SkillEventManager.ERROR_MESSAGES[errorCode] or "未知错误"
 end
 
 --[[
@@ -269,7 +208,6 @@ function SkillEventManager.HandleGetSkillList(evt)
     gg.log("处理获取技能列表请求",evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "GetSkillList")
     if not player then
-        SkillEventManager.SendErrorResponse(evt, errorCode)
         return
     end
 
@@ -302,118 +240,42 @@ function SkillEventManager.HandleGetSkillList(evt)
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LIST, responseData)
 end
 
---- 处理学习技能请求
+--- 处理技能研究/升级请求
 ---@param evt table 事件数据 {uin, skillName}
 function SkillEventManager.HandleLearnSkill(evt)
+    gg.log("处理学习技能请求",evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "LearnSkill")
     if not player then
-        SkillEventManager.SendErrorResponse(evt, errorCode)
         return
     end
-    
+
     -- 从evt中获取技能名称
-    local skillName = evt.skillName or evt.skill
+    local skillName = evt.skillName 
     if not skillName then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
+        local text = "技能名称不能为空"
+        gg.log(text)
         return
     end
     
     -- 验证技能是否存在
     local skillType = SkillTypeConfig.Get(skillName)
     if not skillType then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_FOUND)
+        local text ="技能配置文件不存在"..skillName.."玩家"..player.name
+        gg.log(text)
         return
-    end
-    
-    -- 检查是否已学会
-    if player.skills and player.skills[skillName] then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_ALREADY_LEARNED)
-        return
-    end
+    end 
     
     -- TODO: 检查学习条件（前置技能、资源等）
     
     -- 创建技能实例
-    if not player.skills then
-        player.skills = {}
-    end
-    
-    local skill = Skill.New(player, {
-        skill = skillName,
-        level = evt.level or 1,
-        slot = 0
-    })
-    
-    player.skills[skillName] = skill
-    
-    -- 保存数据
+    player:UpgradeSkill(skillType)
+    local now_skill = player.skills[skillName]
     player:saveSkillConfig()
-    
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LEARN, {
         skillName = skillName,
-        level = skill.level
+        level = now_skill.level,
+        slot = now_skill.equipSlot
     })
-    
-    -- 发送技能变化通知
-    SkillEventManager.NotifySkillChanged(evt, skillName, "learned")
-end
-
---- 处理升级技能请求
----@param evt table 事件数据 {uin, skillName, targetLevel}
-function SkillEventManager.HandleUpgradeSkill(evt)
-    local player, errorCode = SkillEventManager.ValidatePlayer(evt, "UpgradeSkill")
-    if not player then
-        SkillEventManager.SendErrorResponse(evt, errorCode)
-        return
-    end
-    
-    -- 从evt中提取参数
-    local skillName = evt.skillName or evt.skill
-    local targetLevel = evt.targetLevel or evt.level or (evt.currentLevel and evt.currentLevel + 1) or 1
-    
-    if not skillName or targetLevel < 1 then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
-        return
-    end
-    
-    -- 检查是否拥有该技能
-    local skill = player.skills and player.skills[skillName]
-    if not skill then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_LEARNED)
-        return
-    end
-    
-    -- 检查等级限制
-    if targetLevel > skill.skillType.maxLevel then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.MAX_LEVEL_REACHED)
-        return
-    end
-    
-    if targetLevel <= skill.level then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
-        return
-    end
-    
-    -- TODO: 检查升级资源
-    
-    -- 记录旧等级
-    local oldLevel = skill.level
-    
-    -- 执行升级
-    local success = skill:Upgrade(targetLevel)
-    if success then
-        player:saveSkillConfig()
-        
-        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, {
-            skillName = skillName,
-            oldLevel = oldLevel,
-            newLevel = targetLevel
-        })
-        
-        SkillEventManager.NotifySkillChanged(evt, skillName, "upgraded")
-    else
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INSUFFICIENT_RESOURCES)
-    end
 end
 
 --- 处理装备技能请求
@@ -421,7 +283,6 @@ end
 function SkillEventManager.HandleEquipSkill(evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "EquipSkill")
     if not player then
-        SkillEventManager.SendErrorResponse(evt, errorCode)
         return
     end
     
@@ -430,14 +291,12 @@ function SkillEventManager.HandleEquipSkill(evt)
     local slot = evt.slot or evt.slotIndex
     
     if not skillName or not slot or slot < 1 or slot > 6 then -- 假设最多6个技能槽
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
         return
     end
     
     -- 检查技能是否存在
     local skill = player.skills and player.skills[skillName]
     if not skill then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_LEARNED)
         return
     end
     
@@ -448,10 +307,10 @@ function SkillEventManager.HandleEquipSkill(evt)
             skillName = skillName,
             slot = slot
         })
-        
-        SkillEventManager.NotifySkillChanged(evt, skillName, "equipped")
     else
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SLOT_OCCUPIED)
+        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.ERROR, {
+            errorCode = SkillEventManager.ERROR_CODES.SLOT_OCCUPIED
+        })
     end
 end
 
@@ -460,21 +319,18 @@ end
 function SkillEventManager.HandleUnequipSkill(evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "UnequipSkill")
     if not player then
-        SkillEventManager.SendErrorResponse(evt, errorCode)
         return
     end
     
     -- 从evt中提取参数
     local slot = evt.slot or evt.slotIndex
     if not slot or slot < 1 or slot > 6 then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
         return
     end
     
     -- 获取当前装备的技能
     local equippedSkill = player.equippedSkills and player.equippedSkills[slot]
     if not equippedSkill then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_SLOT)
         return
     end
     
@@ -487,10 +343,10 @@ function SkillEventManager.HandleUnequipSkill(evt)
             skillName = skillName,
             slot = slot
         })
-        
-        SkillEventManager.NotifySkillChanged(evt, skillName, "unequipped")
     else
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_SLOT)
+        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.ERROR, {
+            errorCode = SkillEventManager.ERROR_CODES.INVALID_SLOT
+        })
     end
 end
 
@@ -499,21 +355,18 @@ end
 function SkillEventManager.HandleGetSkillDetail(evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "GetSkillDetail")
     if not player then
-        SkillEventManager.SendErrorResponse(evt, errorCode)
         return
     end
     
     -- 从evt中提取参数
     local skillName = evt.skillName or evt.skill
     if not skillName then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
         return
     end
     
     -- 获取技能配置
     local skillType = SkillTypeConfig.Get(skillName)
     if not skillType then
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_FOUND)
         return
     end
     
@@ -548,7 +401,6 @@ end
 function SkillEventManager.HandleGetAvailableSkills(evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "GetAvailableSkills")
     if not player then
-        SkillEventManager.SendErrorResponse(evt, errorCode)
         return
     end
     

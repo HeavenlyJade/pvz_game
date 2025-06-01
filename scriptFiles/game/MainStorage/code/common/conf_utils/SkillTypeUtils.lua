@@ -31,9 +31,7 @@ local function LinkNodes(parent, child)
     end
     if not table_contains(child.parents, parent) then
         table.insert(child.parents, parent)
-        if child.data and child.data.AddPrerequisite then
-            child.data:AddPrerequisite(parent.name) --- 向对应的技能添加父节点名字
-        end
+       
     end
 end
 

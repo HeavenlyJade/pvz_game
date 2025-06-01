@@ -30,106 +30,6 @@ local MainServer = {};
 local initFinished = false;
 local waitingPlayers = {} -- 存储等待初始化的玩家
 
--- 定义命令处理器模块
-local CommandHandlers = {}
-
--- 处理键盘按键
-function CommandHandlers.handleKey(uin_, args)
-    -- 键盘按键处理逻辑
-end
-
--- 处理使用物品
-function CommandHandlers.handleBtnUseItem(uin_, args)
-    bagMgr.handleBtnUseItem(uin_, args)
-end
-
--- 处理分解
-function CommandHandlers.handleBtnDecompose(uin_, args)
-    bagMgr.handleBtnDecompose(uin_, args)
-end
-
--- 处理合成
-function CommandHandlers.handleBtnCompose(uin_, args)
-    bagMgr.handleBtnCompose(uin_, args)
-end
-
--- 处理心跳
-function CommandHandlers.handleHeartbeat(uin_, args)
-    gg.network_channel:fireClient(uin_, { cmd='cmd_heartbeat', msg='ok', uin=uin_ })
-end
-
--- 处理请求玩家数据
-function CommandHandlers.handleReqPlayerData(uin_, args)
-    local player_ = gg.server_players_list[uin_]
-    if player_ then
-        player_:rsyncData(1)
-    end
-end
--- 处理玩家任务的获取数据
-function CommandHandlers.handleGetGameTaskData(uin_, args)
-	local player_ = gg.server_players_list[uin_]
-    if player_ then
-        player_:UpdateQuestsData()
-    end
-end
-
-function CommandHandlers.handleCompleteTask(uin_, args)
-    local player_ = gg.server_players_list[uin_]
-    if player_ then
-        player_:handleCompleteTask(args.task_id)
-    end
-end
-
-
--- 处理请求玩家物品
-function CommandHandlers.handlePlayerItemsReq(uin_, args)
-    bagMgr.s2c_PlayerBagItems(uin_, args)
-end
-
--- 处理玩家物品变化
-function CommandHandlers.handlePlayerItemsChange(uin_, args)
-    bagMgr.handlePlayerItemsChange(uin_, args)
-end
-
--- 处理工作空间变化完成
-function CommandHandlers.handleChangeWorkSpaceOk(uin_, args)
-    MTerrain.handleChangeWorkSpaceOk(uin_, args.v)
-end
-
--- 处理地图切换
-function CommandHandlers.handleChangeMap(uin_, args)
-    MTerrain.changeMap(uin_, args.v)
-end
-
--- 处理使用所有盒子/物品
-function CommandHandlers.handleUseAllBox(uin_, args)
-    bagMgr.handleUseAllBox(uin_, args)
-end
-
-
--- 客户端对入参命令表
-local COMMAND_DISPATCH = {
-    cmd_key = CommandHandlers.handleKey,
-    cmd_btn_press = CommandHandlers.handleClientBtn,
-    cmd_btn_use_item = CommandHandlers.handleBtnUseItem,
-    cmd_btn_decompose = CommandHandlers.handleBtnDecompose,
-    cmd_btn_compose = CommandHandlers.handleBtnCompose,
-    cmd_pick_actor = CommandHandlers.handlePickActor,
-    cmd_heartbeat = CommandHandlers.handleHeartbeat,
-    cmd_aoe_select_pos = CommandHandlers.handleAoeSelectPos,
-    cmd_player_skill_req = CommandHandlers.handlePlayerSkillReq,
-    cmd_select_skill = CommandHandlers.handlePlayerSelectSkill,
-    cmd_req_player_data = CommandHandlers.handleReqPlayerData,
-    cmd_player_items_req = CommandHandlers.handlePlayerItemsReq,
-    cmd_player_items_change = CommandHandlers.handlePlayerItemsChange,
-    cmd_change_workspace_ok = CommandHandlers.handleChangeWorkSpaceOk,
-    cmd_change_map = CommandHandlers.handleChangeMap,
-    cmd_use_all_box = CommandHandlers.handleUseAllBox,
-    cmd_dp_all_low_eq = CommandHandlers.handleDpAllLowEq,
-    cmd_player_input = CommandHandlers.handlePlayerInput,
-	cmd_client_game_task_data = CommandHandlers.handleGetGameTaskData,
-    cmd_complete_task = CommandHandlers.handleCompleteTask,
-}
 
 function MainServer.start_server()
     math.randomseed(os.time() + os.clock())
@@ -291,32 +191,26 @@ end
 
 --建立网络通道
 function MainServer.createNetworkChannel()
-    gg.log('createNetworkChannel server side')
     --begin listen
     gg.network_channel = MainStorage:WaitForChild("NetworkChannel")
     gg.network_channel.OnServerNotify:Connect(MainServer.OnServerNotify)
+    gg.log('服务端的网络通道建立完成')
+
 end
 
 --消息回调 (优化版本，使用命令表和错误处理)
 function MainServer.OnServerNotify(uin_, args)
     -- 参数校验
+    gg.log("uin_, args",uin_, args)
     if type(args) ~= 'table' then return end
     if not args.cmd then return end
 
-    -- 获取处理器
-    local handler = COMMAND_DISPATCH[args.cmd]
-    if not handler then
-        local player_ = gg.getPlayerByUin(uin_)
-        args.player = player_
-        ServerEventManager.Publish(args.cmd, args)
-        return
-    end
+    gg.log("OnServerNotify",args.cmd, uin_)
+    local player_ = gg.getPlayerByUin(uin_)
+    args.player = player_
+    ServerEventManager.Publish(args.cmd, args)
+    return
 
-    -- 执行处理
-    local success, err = pcall(handler, uin_, args)
-    if not success then
-        gg.log("[ERROR] Command handler failed:", args.cmd, err)
-    end
 end
 
 --开启update
