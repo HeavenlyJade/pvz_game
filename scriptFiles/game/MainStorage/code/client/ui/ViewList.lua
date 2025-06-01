@@ -25,6 +25,7 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
     for _, child in pairs(self.node.Children) do
         local childName = child.Name
         local num = childName:match("_([0-9]+)")
+        print("Init ViewList", path, ui.className, num)
         if num then
             if not self.childNameTemplate then
                 local pos = childName:find("_") -- 找到 _ 的位置
@@ -77,6 +78,7 @@ end
 function ViewList:SetElementSize(size)
     for i = 1, size do
         if not self.childrens[i] then
+            gg.log("SetElementSize", self.path, self.ui.className, self.childrens)
             local child = self.childrens[1].node:Clone()
             child:SetParent(self.node)
             child.Name = self.childNameTemplate .. i

@@ -260,9 +260,8 @@ function MainServer.player_enter_game(player)
     local mail_player_data_ = gg.cloudMailData:OnPlayerLogin(uin_)
     player_.bag = cloud_player_bag_
     player_.mail = mail_player_data_
-
     gg.server_players_list[uin_] = player_
-    gg.server_players_name_list[player.Name] = player_
+    gg.server_players_name_list[player.Nickname] = player_
 
     actor_.Size = Vector3.New(120, 160, 120)      --碰撞盒子的大小
     actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置

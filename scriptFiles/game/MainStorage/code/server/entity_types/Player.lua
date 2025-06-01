@@ -244,6 +244,7 @@ end
 -- 技能系统方法
 --------------------------------------------------
 
+
 -- 初始化技能数据
 function _M:initSkillData()
     -- 从云数据读取
@@ -265,25 +266,7 @@ end
 
 -- 保存技能配置
 function _M:saveSkillConfig()
-    local skillData = {
-        uin = self.uin,
-        skills = {}
-    }
-    -- 保存所有技能数据
-    for skillId, skill in pairs(self.skills) do
-        skillData.skills[skillId] = {
-            skill = skill.skillType.name,
-            level = skill.level,
-            slot = skill.equipSlot
-        }
-    end
-    cloudService:SetTableAsync( 'sk' .. self.uin, skillData, function ( ret_ )
-        if  not ret_ then
-            gg.log("保存玩家技能失败", 'sk' .. self.uin, skillData )
-        else
-            gg.log("保存玩家技能成功", 'sk' .. self.uin, skillData )
-        end
-    end )
+    cloudDataMgr.SaveSkillConfig(self)
 end
 
 -- 同步技能数据到客户端
@@ -429,6 +412,7 @@ end
 function _M:Save()
     cloudDataMgr.SavePlayerData(self.uin, true)
     cloudDataMgr.SaveGameTaskData(self)
+    cloudDataMgr.SaveSkillConfig(self)
     self.bag:Save()
 end
 

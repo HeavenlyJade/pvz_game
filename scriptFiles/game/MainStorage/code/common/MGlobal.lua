@@ -476,6 +476,7 @@ function gg.getLivingByName(name_)
             end
         end
     end
+    gg.log("gg.server_players_name_list",gg.server_players_name_list)
     return gg.server_players_name_list[name_]
 end
 
@@ -483,6 +484,7 @@ end
 ---@param uin_ number 玩家ID
 ---@return Player|nil 玩家实例
 function gg.getPlayerByUin(uin_)
+    gg.log("gg.getPlayerByUin",gg.server_players_list)
     if gg.server_players_list[uin_] then
         return gg.server_players_list[uin_];
     end

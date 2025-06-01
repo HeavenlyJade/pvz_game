@@ -7,6 +7,8 @@ local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type
 local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local SkillTypeUtils = require(MainStorage.code.common.conf_utils.SkillTypeUtils) ---@type SkillTypeUtils
+--local MainCards = require(MainStorage.code.client.ui.CardsGui.MainCards)
+
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
 
 local uiConfig = {
@@ -75,7 +77,10 @@ function CardsGui:OnInit(node, config)
     self.mainCardFrame = self:Get("框体/主卡/加点框/纵列表/主卡框", ViewButton) ---@type ViewButton
     self.skillButtons = {} ---@type table<string, ViewButton> -- 主卡按钮框
     self.skillLists = {} ---@type table<string, ViewList>     -- 主卡技能树列表
+
     self.subQualityLists ={} ---@type table<string, ViewList> -- 副卡品级列表
+    self.mainQualityLists = {} ---@type table<string, ViewList> -- 主卡品质列表 UR:Viewlist
+
     self.qualityListMap = {} ---@type table<string, string> -- 构建反射的品质按钮名->品质名字典
     -- 初始化技能数据
     self.skills = {} ---@type table<string, Skill>
@@ -90,8 +95,8 @@ function CardsGui:OnInit(node, config)
     -- 设置默认显示主卡
     self:SwitchToCardType(self.currentCardType)
     self:LoadMainCardsAndClone()
-    -- self:LoadSubCardsAndClone()
-    -- self:BindQualityButtonEvents()
+    self:LoadSubCardsAndClone()
+    self:BindQualityButtonEvents()
     ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
         self:HandleSkillSync(data)
     end)
@@ -100,7 +105,7 @@ end
 
 -- 处理技能同步数据
 function CardsGui:HandleSkillSync(data)
-    -- gg.log("CardsGui:HandleSkillSync", data)
+    gg.log("获取来自服务端的技能数据", data)
     if not data or not data.skillData then return end
 
     -- 清空现有技能数据
@@ -185,54 +190,87 @@ end
 -- 读取主卡数据并克隆节点
 function CardsGui:LoadMainCardsAndClone()
     ---@type SkillTreeNode[]
-    local skillMainTrees = SkillTypeUtils.BuildSkillForest(0)
+    --local skillMainTrees = SkillTypeUtils.BuildSkillForest(0)
+    local skillMainTrees = SkillTypeUtils.lastForest
+    if not skillMainTrees then
+        skillMainTrees = SkillTypeUtils.BuildSkillForest(0)
+        SkillTypeUtils.lastForest = skillMainTrees
+    end
     -- 使用美化的打印函数显示技能树结构
     ---SkillTypeUtils.PrintSkillForest(skillMainTrees)
- 
+    -- 克隆技能树纵列表
+    self:CloneVerticalListsForSkillTrees(skillMainTrees)
     -- 克隆主卡选择按钮
     self:CloneMainCardButtons(skillMainTrees)
-    -- 克隆节能树纵列表
-    self:CloneVerticalListsForSkillTrees(skillMainTrees)
 end
 
+
 function CardsGui:CloneMainCardButtons(skillMainTrees)
-    local ListTemplate = self:Get('框体/主卡/选择列表/列表', ViewList, function(child)
+
+    local mainCardButton = function(childNode   ,SkillName)
         --由于不希望"发光"相应点击,真正的按钮是 按钮/卡框背景
-        local clonedButton = ViewButton.New(child, self, nil, "卡框背景")
-        self.skillButtons[child.Name] = clonedButton
+        gg.log("克隆主卡按钮",childNode.Name,SkillName)
+        local clonedButton = ViewButton.New(childNode, self, nil, "卡框背景")
+        clonedButton.extraParams = {skillId = SkillName}
+        self.skillButtons[SkillName] = clonedButton
         clonedButton.clickCb = function(ui, button)
-            local mainSkillName = button.extraParams["skillId"]
-            local currentList = self.skillLists[mainSkillName]
+            local SkillName = button.extraParams["skillId"]
+            local currentList = self.skillLists[SkillName]
             if currentList then
                 for name, vlist in pairs(self.skillLists) do
-                    vlist:SetVisible(name == mainSkillName)
+                    vlist:SetVisible(name == SkillName)
                 end
             end
         end
         return clonedButton
-    end) ---@type ViewList
-    -- 遍历主卡，设置图标和名称
+    end
+
+    local ListTemplate = self:Get('框体/主卡/选择列表/列表', ViewList) ---@type ViewList
+
+    -- 生成品质的viewlist
+    -- local qualityList = uiConfig.qualityList 
+    -- local qualityListMap = uiConfig.qualityListMap
+    -- for _, quality in ipairs(qualityList) do
+    --     local listClone = ListTemplate.node:Clone()
+    --     listClone.Name =quality
+    --     listClone.Parent = ListTemplate.node.Parent
+    --     local viewListObj = ViewList.New(listClone, self, "框体/主卡/选择列表/列表" .. quality)
+    --     self.mainQualityLists[quality] = viewListObj
+    -- end
+    gg.log("mainQualityLists",self.mainQualityLists)
     local index = 1
+    -- local qualityIndexMap = {}
+    -- for _, quality in ipairs(qualityList) do
+    --     qualityIndexMap[quality] = 1
+    -- end
     for skillName, rootNode in pairs(skillMainTrees) do
-        local mainSkillName = rootNode.name
+        gg.log("skillName",skillName,rootNode.data)
         local skillType = rootNode.data
+        local mainSkillName = skillType.name
+        local quality = skillType.quality or "N"
+        -- local QulityListNode = self.mainQualityLists[quality]
+        -- local curIndex = qualityIndexMap[quality]
+        -- qualityIndexMap[quality] = curIndex + 1
         local child = ListTemplate:GetChild(index)
-        child.extraParams["skillId"] = skillType.name
-        child.node.Name = skillType.name
+
+        child.extraParams["skillId"] = mainSkillName
+        child.node.Name = skillType.name 
         if skillType.icon and skillType.icon ~= "" then
             local iconNode = child.node['图标']
             if iconNode then
                 iconNode.Icon = skillType.icon
             end
         end
+        gg.log("模板克隆的孩子节点",child)
+
+        mainCardButton(child.node,mainSkillName)
         index = index + 1
     end
-    ListTemplate:HideChildrenFrom(index)
+    gg.log("skillButtons",self.skillButtons)
 end
 
 -- 注册技能卡片的ViewButton
 function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
-    gg.log("RegisterSkillCardButton",cardFrame, skill, lane, position)
     local viewButton = ViewButton.New(cardFrame, self, nil, "卡框背景")
     viewButton.extraParams = {
         skillId = skill.name,

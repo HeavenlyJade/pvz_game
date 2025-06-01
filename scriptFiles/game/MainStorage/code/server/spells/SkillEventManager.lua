@@ -48,22 +48,37 @@ SkillEventManager.NOTIFY = {
 -- 兼容旧版事件名称（用于过渡）
 SkillEventManager.EVENTS = {
     -- 客户端请求事件
+    -- 获取技能列表
     REQUEST_GET_LIST = SkillEventManager.REQUEST.GET_LIST,
+    -- 学习技能
     REQUEST_LEARN = SkillEventManager.REQUEST.LEARN,
+    -- 升级技能
     REQUEST_UPGRADE = SkillEventManager.REQUEST.UPGRADE,
+    -- 装备技能
     REQUEST_EQUIP = SkillEventManager.REQUEST.EQUIP,
+    -- 卸下技能
     REQUEST_UNEQUIP = SkillEventManager.REQUEST.UNEQUIP,
+    -- 获取技能详情
     REQUEST_GET_DETAIL = SkillEventManager.REQUEST.GET_DETAIL,
+    -- 获取可学习技能列表
     REQUEST_GET_AVAILABLE = SkillEventManager.REQUEST.GET_AVAILABLE,
     
     -- 服务器响应事件
+    -- 返回技能列表
     RESPONSE_LIST = SkillEventManager.RESPONSE.LIST,
+    -- 返回学习技能结果
     RESPONSE_LEARN = SkillEventManager.RESPONSE.LEARN,
+    -- 返回升级技能结果
     RESPONSE_UPGRADE = SkillEventManager.RESPONSE.UPGRADE,
+    -- 返回装备技能结果
     RESPONSE_EQUIP = SkillEventManager.RESPONSE.EQUIP,
+    -- 返回卸下技能结果
     RESPONSE_UNEQUIP = SkillEventManager.RESPONSE.UNEQUIP,
+    -- 返回技能详情
     RESPONSE_DETAIL = SkillEventManager.RESPONSE.DETAIL,
+    -- 返回可学习技能列表
     RESPONSE_AVAILABLE = SkillEventManager.RESPONSE.AVAILABLE,
+    -- 返回错误信息
     RESPONSE_ERROR = SkillEventManager.RESPONSE.ERROR,
     
     -- 服务器通知事件

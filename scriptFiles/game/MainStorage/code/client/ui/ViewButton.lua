@@ -2,7 +2,7 @@ local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
 local soundPlayer = game:GetService("StarterGui")["UISound"] ---@type Sound
-
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@class ViewButton:ViewComponent
 ---@field New fun(node: SandboxNode, ui: ViewBase, path?: string, realButtonPath?: string): ViewButton
 local  ViewButton = ClassMgr.Class("ViewButton", ViewComponent)
@@ -126,6 +126,8 @@ function ViewButton:OnHoverIn()
 end
 
 function ViewButton:OnClick()
+
+    gg.log("点击事件",self.extraParams,self)
     if not self.enabled then return end
     if self.clickCb then
         self.clickCb(self.ui, self)
@@ -141,7 +143,7 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
         self.img = self.img[realButtonPath]
     end
     local img = self.img
-    print("img", self.img.Name, realButtonPath)
+    -- print("img", self.img.Name, realButtonPath)
     self.img.ClickPass = false
     self.clickCb = nil ---@type function(ui:ViewBase, button:ViewButton)
     self.touchBeginCb = nil
@@ -172,7 +174,6 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     end
     
     self.isHover = false
-    
     img.RollOver:Connect(function(node, isOver, vector2)
         self:OnHoverIn()
     end)
