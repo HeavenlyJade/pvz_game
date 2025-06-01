@@ -10,6 +10,50 @@ function SkillTree:OnInit()
     self.mainSkill = nil ---@type SkillType 入口技能
 end
 
+function SkillTree:SetSkillAt(x, y, skillType)
+    if not self.skills[y] then
+        self.skills[y] = {}
+    end
+    self.skills[y][x] = skillType
+end
+
+function SkillTree:GetLane(lane)
+    return self.skills[lane] or {}
+end
+
+function SkillTree:Print()
+    local ClientScheduler = require(MainStorage.code.client.ClientScheduler)
+    local output = "========== 技能树结构 ==========\n"
+    
+    -- 获取最大层级数
+    local maxLane = 0
+    for lane, _ in pairs(self.skills) do
+        maxLane = math.max(maxLane, lane)
+    end
+    
+    -- 竖向显示技能树
+    for lane = 0, maxLane do
+        local laneSkills = self:GetLane(lane)
+        if #laneSkills > 0 then
+            output = output .. string.format("第%d层: ", lane + 1)
+            local skillNames = {}
+            for _, skill in ipairs(laneSkills) do
+                if skill then
+                    table.insert(skillNames, skill.name)
+                end
+            end
+            output = output .. table.concat(skillNames, ", ") .. "\n"
+        end
+    end
+    
+    output = output .. "========== 技能树结构结束 =========="
+    
+    -- 使用ClientScheduler延迟打印
+    ClientScheduler.add(function()
+        print(output)
+    end, 0.1) -- 延迟0.1秒打印
+end
+
 -- 递归构建技能树
 local function BuildSkillTreeRecursive(skillType, currentLane, currentIndex, skillTree)
     if not skillType then return end
@@ -793,49 +837,44 @@ function SkillTypeConfig.GetEntrySkills()
     return entrySkills
 end
 
-function SkillTree:SetSkillAt(x, y, skillType)
-    if not self.skills[y] then
-        self.skills[y] = {}
+---获取技能树数据结构，按主卡分组
+---@param skillCategory number 技能分类 (0=主卡, 1=副卡)
+---@return table<string, SkillTree> 技能树映射表，key为主技能名称
+function SkillTypeConfig.GetSkillTrees(skillCategory)
+    if not loaded then
+        LoadConfig()
     end
-    self.skills[y][x] = skillType
-end
 
-function SkillTree:GetLane(lane)
-    return self.skills[lane] or {}
-end
+    local skillTrees = {} ---@type table<string, SkillTree>
 
-function SkillTree:Print()
-    local ClientScheduler = require(MainStorage.code.client.ClientScheduler)
-    local output = "========== 技能树结构 ==========\n"
-    
-    -- 获取最大层级数
-    local maxLane = 0
-    for lane, _ in pairs(self.skills) do
-        maxLane = math.max(maxLane, lane)
-    end
-    
-    -- 竖向显示技能树
-    for lane = 0, maxLane do
-        local laneSkills = self:GetLane(lane)
-        if #laneSkills > 0 then
-            output = output .. string.format("第%d层: ", lane + 1)
-            local skillNames = {}
-            for _, skill in ipairs(laneSkills) do
-                if skill then
-                    table.insert(skillNames, skill.name)
-                end
-            end
-            output = output .. table.concat(skillNames, ", ") .. "\n"
+    -- 遍历所有技能配置，找到指定分类的入口技能
+    for skillName, skillType in pairs(SkillTypeConfig.config) do
+        -- 筛选条件：是入口技能 且 属于指定分类
+        if skillType.isEntrySkill and skillType.skillType == skillCategory then
+            gg.log("构建技能树 - 找到主卡:", skillType.name, "分类:", skillCategory)
+
+            -- 创建技能树结构
+            local skillTree = SkillTree.New()
+            
+            -- 从入口技能开始递归构建技能树
+            BuildSkillTreeRecursive(skillType, 0, 1, skillTree)
+
+            -- 以主技能名称作为key存储技能树
+            skillTrees[skillType.name] = skillTree
+            gg.log("技能树构建完成:", skillType.name)
         end
     end
-    
-    output = output .. "========== 技能树结构结束 =========="
-    
-    -- 使用ClientScheduler延迟打印
-    ClientScheduler.add(function()
-        print(output)
-    end, 0.1) -- 延迟0.1秒打印
+
+    return skillTrees
 end
 
+---打印技能树结构（美化输出）
+---@param skillTrees table<string, SkillTree> 技能树映射表
+function SkillTypeConfig.PrintSkillTrees(skillTrees)
+    for mainSkillName, skillTree in pairs(skillTrees) do
+        print("📋 主卡: " .. mainSkillName)
+        skillTree:Print()
+    end
+end
 
 return SkillTypeConfig
