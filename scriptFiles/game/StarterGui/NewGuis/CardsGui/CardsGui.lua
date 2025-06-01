@@ -65,8 +65,7 @@ function CardsGui:OnInit(node, config)
     self.mainQualityLists = {} ---@type table<string, ViewList> -- 主卡品质列表 UR:Viewlist
 
     self.qualityListMap = {} ---@type table<string, string> -- 构建反射的品质按钮名->品质名字典
-    -- 玩家的技能数据
-    self.skills = {} ---@type table<string, table>
+    -- 玩家的装备槽数据数据
     self.equippedSkills = {} ---@type table<number, string>
     --- 玩家来自服务器的当前是技能数据
     self.ServerSkills = {} ---@type table<string, table>
@@ -129,16 +128,27 @@ function CardsGui:HandleSkillSync(data)
         if skillData.slot > 0 then
             self.equippedSkills[skillData.slot] = skillName
         end
+        --- 更新技能树的节点显示
+        self:UpdateSkillTreeNodeDisplay(skillName)
     end
     -- 更新UI显示
     self:UpdateSkillDisplay()
 end
-
--- 更新技能显示
+function CardsGui:UpdateSkillTreeNodeDisplay(skillName)
+    local skillTreeButton = self.mainCardButtondict[skillName]
+    
+    local skillType = SkillTypeConfig.Get(skillName)
+    gg.log("UpdateSkillTreeNodeDisplay11",skillTreeButton.node.Name,skillTreeButton.node)
+    if skillTreeButton.node then
+        self:SetSkillLevelOnCardFrame(skillTreeButton.node, skillType)
+    end
+    
+end
+-- 更新技能树上面的按钮显示
 function CardsGui:UpdateSkillDisplay()
     -- 更新技能按钮显示
     for slot, skillId in pairs(self.equippedSkills) do
-        local skill = self.skills[skillId]
+        local skill = self.ServerSkills[skillId]
         if skill and self.skillButtons[slot] then
             -- 更新技能按钮显示
             self.skillButtons[slot].Title = skill.skillType.name
@@ -148,8 +158,9 @@ function CardsGui:UpdateSkillDisplay()
 end
 
 --- 处理技能学习/升级响应
-function CardsGui:OnSkillLearnUpgradeResponse(data)
-    gg.log("收到技能学习/升级响应", data)
+function CardsGui:OnSkillLearnUpgradeResponse(response)
+    gg.log("收到技能学习/升级响应", response)
+    local data = response.data
     local skillName = data.skillName
     local serverlevel = data.level
     local serverslot = data.slot
@@ -164,7 +175,8 @@ function CardsGui:OnSkillLearnUpgradeResponse(data)
             skill =skillName
         }
     end
-    self:UpdateSkillDisplay()
+    self:UpdateSkillTreeNodeDisplay(skillName)
+    -- self:UpdateSkillDisplay()
 end
 
 function CardsGui:Display(title, content, confirmCallback, cancelCallback)
@@ -300,7 +312,7 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
     viewButton.clickCb = function(ui, button)
         local skillId = button.extraParams.skillId
         local skill = SkillTypeConfig.Get(skillId)
-        local skillInst = self.skills[skillId]
+        local skillInst = self.ServerSkills[skillId]
         local skillLevel = 0
         local attributeButton = self.attributeButton.node
         if skillInst then
@@ -319,8 +331,7 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
         local descPostTitleNode =attributeButton["列表_强化后"]["强化标题"]
         local descPreNode = attributeButton["列表_强化前"]["属性_1"]
         local descPostNode = attributeButton["列表_强化后"]["属性_1"]
-        local MainResearchNode = attributeButton["主卡_研究"]
-        local MainEnhancementNode   =attributeButton["主卡_装备"]
+
         descPreTitleNode.Title = string.format("等级 %d/%d", skillLevel, skill.maxLevel)
         local descPre = {}
         for _, tag in pairs(skill.passiveTags) do
@@ -335,27 +346,31 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
             end
             descPostNode.Title = table.concat(descPost, "\n")
         end
-        local curCardSkillData = self.skills[skillId]
+        gg.log("self.ServerSkills",self.ServerSkills)
+        gg.log("skillId",skillId)
+        local curCardSkillData = self.ServerSkills[skillId]
+        gg.log("curCardSkillData1",curCardSkillData)
         ---@ type SkillType
         local curSkillType =  SkillTypeConfig.Get(skillId)
         local prerequisite = curSkillType.prerequisite
-        local existsPrerequisite = false
-        for i,preSkillType in ipairs(prerequisite) do
-            if self.ServerSkills[preSkillType.name] then
-                existsPrerequisite = true
+        local existsPrerequisite = true
+        for i, preSkillType in ipairs(prerequisite) do
+            if not self.ServerSkills[preSkillType.name] then
+                existsPrerequisite = false
+                break
             end
         end
         local skillLevel = 0
         if curCardSkillData or existsPrerequisite then
             self.confirmPointsButton:SetTouchEnable(true)
             self.EquipmentSkillsButton:SetTouchEnable(true)
-            MainEnhancementNode.Visible = true
             if curCardSkillData then
                 skillLevel = curCardSkillData.level
             end
             local maxLevel = skill.maxLevel
             local levelNode = cardFrame["等级"]
             if levelNode then
+                gg.log("设置技能等级",string.format("%d/%d", skillLevel, maxLevel))
                 levelNode.Title = string.format("%d/%d", skillLevel, maxLevel)
             end
         else 
@@ -379,20 +394,29 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
         gg.log("设置技能名称:", nameNode,nameNode.Title, skill.displayName,skill)
         nameNode.Title = skill.displayName
     end
-
     -- 设置技能等级
-    local skillInst = self.skills[skill.name]
+
+    self:SetSkillLevelOnCardFrame(cardFrame, skill)
+    gg.log("skill.name",skill.name)
+    self.mainCardButtondict[skill.name] = viewButton
+    return viewButton
+end
+
+function CardsGui:SetSkillLevelOnCardFrame(cardFrame, skill)
+    local skillInst = self.ServerSkills[skill.name]
+    local severSkill = self.ServerSkills[skill.name]
     local skillLevel = 0
-    if skillInst then
+    if severSkill then
+        skillLevel = severSkill.level
+    elseif skillInst then
         skillLevel = skillInst.level
     end
     local descNode = cardFrame["等级"]
+    gg.log("SetSkillLevelOnCardFrame",descNode,skillInst,skillLevel)
     if descNode then
         local maxLevel = skill.maxLevel or 1
         descNode.Title = string.format("%d/%d", skillLevel, maxLevel)
     end
-    self.mainCardButtondict[ skill.name] = viewButton
-    return viewButton
 end
 
 -- 为技能树克隆纵列表
@@ -744,6 +768,7 @@ function CardsGui:BindQualityButtonEvents()
         end
     end
 end
+
 
 return CardsGui.New(script.Parent, uiConfig)
 

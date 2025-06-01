@@ -206,7 +206,7 @@ function _M:RefreshStats()
             for _, tagType in ipairs(skill.skillType.passiveTags) do
                 local tag = tagType:FactoryEquipingTag("SKILL-" .. skillId, skill.level)
                 self:AddTagHandler(tag)
-                gg.log(string.format("添加技能词条: %s (等级 %d)", tagType.name, skill.level))
+				--gg.log(string.format("添加技能词条: %s (等级 %d)", tagType.name, skill.level))
             end
         end
     end

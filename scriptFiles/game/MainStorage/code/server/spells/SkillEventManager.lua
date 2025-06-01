@@ -162,6 +162,7 @@ end
 function SkillEventManager.ValidatePlayer(evt, eventName)
     local env_player = evt.player
     local uin = env_player.uin
+    gg.log("env_player",env_player,uin)
     if not uin then
         gg.log("事件 " .. eventName .. " 缺少玩家UIN参数")
         return nil, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS
@@ -187,8 +188,8 @@ end
 ---@param eventName string 响应事件名称
 ---@param data table 响应数据
 function SkillEventManager.SendSuccessResponse(evt, eventName, data)
-    local uin = evt.uin or evt.player
-    
+    local uin = evt.player.uin
+
     gg.network_channel:fireClient(uin, {
         cmd = eventName,
         data = data
@@ -271,11 +272,14 @@ function SkillEventManager.HandleLearnSkill(evt)
     player:UpgradeSkill(skillType)
     local now_skill = player.skills[skillName]
     player:saveSkillConfig()
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LEARN, {
+    gg.log("技能升级成功",skillName, now_skill.level, now_skill.equipSlot)
+    local responseData = {
         skillName = skillName,
         level = now_skill.level,
         slot = now_skill.equipSlot
-    })
+    }
+    gg.log("发送技能升级响应",responseData)
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LEARN, responseData)
 end
 
 --- 处理装备技能请求
