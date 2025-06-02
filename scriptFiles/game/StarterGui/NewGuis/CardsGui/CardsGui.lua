@@ -118,7 +118,7 @@ function CardsGui:HandleSkillSync(data)
 
     self.ServerSkills = {}
     self.equippedSkills = {}
-
+    local serverskillMainTrees = {} ---@type table<string, table>
     -- 反序列化技能数据
     for skillName, skillData in pairs(skillDataDic) do
         -- 创建技能对象
@@ -128,11 +128,16 @@ function CardsGui:HandleSkillSync(data)
         if skillData.slot > 0 then
             self.equippedSkills[skillData.slot] = skillName
         end
+        local skillType = SkillTypeConfig.Get(skillName)
+        if skillType and skillType.isEntrySkill then
+            serverskillMainTrees[skillName] = {data=skillType}
+        end
         --- 更新技能树的节点显示
         self:UpdateSkillTreeNodeDisplay(skillName)
     end
     -- 更新UI显示
     self:UpdateSkillDisplay()
+    self:CloneMainCardButtons(serverskillMainTrees)
 end
 function CardsGui:UpdateSkillTreeNodeDisplay(skillName)
     local skillTreeButton = self.mainCardButtondict[skillName]
@@ -232,14 +237,14 @@ function CardsGui:LoadMainCardsAndClone()
     ---SkillTypeUtils.PrintSkillForest(skillMainTrees)
     -- 克隆技能树纵列表
     self:CloneVerticalListsForSkillTrees(skillMainTrees)
-    -- 克隆主卡选择按钮
-    self:CloneMainCardButtons(skillMainTrees)
+    -- 克隆主卡选择按钮 使用而是在服务器返回的数据后绑定
+    --self:CloneMainCardButtons(skillMainTrees)
 end
 
 
 function CardsGui:CloneMainCardButtons(skillMainTrees)
 
-    local mainCardButton = function(childNode   ,SkillName)
+    local mainCardButton = function(childNode  ,SkillName)
         --由于不希望"发光"相应点击,真正的按钮是 按钮/卡框背景
         gg.log("克隆主卡按钮",childNode.Name,SkillName)
         local clonedButton = ViewButton.New(childNode, self, nil, "卡框背景")
@@ -269,7 +274,6 @@ function CardsGui:CloneMainCardButtons(skillMainTrees)
     --     local viewListObj = ViewList.New(listClone, self, "框体/主卡/选择列表/列表" .. quality)
     --     self.mainQualityLists[quality] = viewListObj
     -- end
-    gg.log("mainQualityLists",self.mainQualityLists)
     local index = 1
     -- local qualityIndexMap = {}
     -- for _, quality in ipairs(qualityList) do
@@ -362,13 +366,17 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
         end
         local skillLevel = 0
         if curCardSkillData or existsPrerequisite then
-            self.confirmPointsButton:SetTouchEnable(true)
             self.EquipmentSkillsButton:SetTouchEnable(true)
             if curCardSkillData then
                 skillLevel = curCardSkillData.level
             end
             local maxLevel = skill.maxLevel
             local levelNode = cardFrame["等级"]
+            if skillLevel ==maxLevel then
+                self.confirmPointsButton:SetTouchEnable(false)
+            else
+                self.confirmPointsButton:SetTouchEnable(true)
+            end
             if levelNode then
                 gg.log("设置技能等级",string.format("%d/%d", skillLevel, maxLevel))
                 levelNode.Title = string.format("%d/%d", skillLevel, maxLevel)
