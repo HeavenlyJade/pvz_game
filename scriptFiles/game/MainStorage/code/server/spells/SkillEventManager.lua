@@ -6,115 +6,17 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
 local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
+local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
 
 ---@class SkillEventManager
 local SkillEventManager = {}
 
---[[
-===================================
-事件定义部分
-===================================
-]]
-
--- 客户端请求事件
-SkillEventManager.REQUEST = {
-    GET_LIST = "SkillRequest_GetList",
-    LEARN = "SkillRequest_LearnUpgrade",
-    EQUIP = "SkillRequest_Equip",
-    UNEQUIP = "SkillRequest_Unequip",
-    GET_DETAIL = "SkillRequest_GetDetail",
-    GET_AVAILABLE = "SkillRequest_GetAvailable"
-}
-
--- 服务器响应事件
-SkillEventManager.RESPONSE = {
-    LIST = "SkillResponse_List",
-    LEARN = "SkillResponse_LearnUpgrade",
-    EQUIP = "SkillResponse_Equip",
-    UNEQUIP = "SkillResponse_Unequip",
-    DETAIL = "SkillResponse_Detail",
-    AVAILABLE = "SkillResponse_Available",
-    ERROR = "SkillResponse_Error"
-}
-
--- 服务器通知事件
-SkillEventManager.NOTIFY = {
-    SKILL_UNLOCKED = "SkillNotify_Unlocked"
-}
-
--- 兼容旧版事件名称（用于过渡）
-SkillEventManager.EVENTS = {
-    -- 客户端请求事件
-    -- 获取技能列表
-    REQUEST_GET_LIST = SkillEventManager.REQUEST.GET_LIST,
-    -- 学习/升级技能
-    REQUEST_LEARN = SkillEventManager.REQUEST.LEARN,
-    -- 装备技能
-    REQUEST_EQUIP = SkillEventManager.REQUEST.EQUIP,
-    -- 卸下技能
-    REQUEST_UNEQUIP = SkillEventManager.REQUEST.UNEQUIP,
-    -- 获取技能详情
-    REQUEST_GET_DETAIL = SkillEventManager.REQUEST.GET_DETAIL,
-    -- 获取可学习技能列表
-    REQUEST_GET_AVAILABLE = SkillEventManager.REQUEST.GET_AVAILABLE,
-    
-    -- 服务器响应事件
-    -- 返回技能列表
-    RESPONSE_LIST = SkillEventManager.RESPONSE.LIST,
-    -- 返回学习技能结果
-    RESPONSE_LEARN = SkillEventManager.RESPONSE.LEARN,
-    -- 返回装备技能结果
-    RESPONSE_EQUIP = SkillEventManager.RESPONSE.EQUIP,
-    -- 返回卸下技能结果
-    RESPONSE_UNEQUIP = SkillEventManager.RESPONSE.UNEQUIP,
-    -- 返回技能详情
-    RESPONSE_DETAIL = SkillEventManager.RESPONSE.DETAIL,
-    -- 返回可学习技能列表
-    RESPONSE_AVAILABLE = SkillEventManager.RESPONSE.AVAILABLE,
-    -- 返回错误信息
-    RESPONSE_ERROR = SkillEventManager.RESPONSE.ERROR,
-    
-    -- 服务器通知事件
-    NOTIFY_SKILL_UNLOCKED = SkillEventManager.NOTIFY.SKILL_UNLOCKED
-}
-
---[[
-===================================
-错误码和错误消息定义
-===================================
-]]
-
--- 错误码定义
-SkillEventManager.ERROR_CODES = {
-    SUCCESS = 0,
-    PLAYER_NOT_FOUND = 1,
-    SKILL_NOT_FOUND = 2,
-    SKILL_ALREADY_LEARNED = 3,
-    SKILL_NOT_LEARNED = 4,
-    MAX_LEVEL_REACHED = 5,
-    INSUFFICIENT_RESOURCES = 6,
-    INVALID_SLOT = 7,
-    SLOT_OCCUPIED = 8,
-    SKILL_NOT_AVAILABLE = 9,
-    PERMISSION_DENIED = 10,
-    INVALID_PARAMETERS = 11
-}
-
--- 错误消息映射
-SkillEventManager.ERROR_MESSAGES = {
-    [SkillEventManager.ERROR_CODES.SUCCESS] = "操作成功",
-    [SkillEventManager.ERROR_CODES.PLAYER_NOT_FOUND] = "玩家不存在",
-    [SkillEventManager.ERROR_CODES.SKILL_NOT_FOUND] = "技能不存在",
-    [SkillEventManager.ERROR_CODES.SKILL_ALREADY_LEARNED] = "技能已学会",
-    [SkillEventManager.ERROR_CODES.SKILL_NOT_LEARNED] = "尚未学会该技能",
-    [SkillEventManager.ERROR_CODES.MAX_LEVEL_REACHED] = "技能已达最大等级",
-    [SkillEventManager.ERROR_CODES.INSUFFICIENT_RESOURCES] = "资源不足",
-    [SkillEventManager.ERROR_CODES.INVALID_SLOT] = "无效的装备槽位",
-    [SkillEventManager.ERROR_CODES.SLOT_OCCUPIED] = "装备槽位已被占用",
-    [SkillEventManager.ERROR_CODES.SKILL_NOT_AVAILABLE] = "技能不可学习",
-    [SkillEventManager.ERROR_CODES.PERMISSION_DENIED] = "权限不足",
-    [SkillEventManager.ERROR_CODES.INVALID_PARAMETERS] = "参数无效"
-}
+-- 将配置从event_skill.lua导入到当前模块
+SkillEventManager.REQUEST = SkillEventConfig.REQUEST
+SkillEventManager.RESPONSE = SkillEventConfig.RESPONSE
+SkillEventManager.NOTIFY = SkillEventConfig.NOTIFY
+SkillEventManager.ERROR_CODES = SkillEventConfig.ERROR_CODES
+SkillEventManager.ERROR_MESSAGES = SkillEventConfig.ERROR_MESSAGES
 
 --[[
 ===================================
@@ -134,11 +36,11 @@ end
 
 --- 注册所有事件处理器
 function SkillEventManager.RegisterEventHandlers()
-    -- 获取技能列表
-    ServerEventManager.Subscribe(SkillEventManager.REQUEST.GET_LIST, SkillEventManager.HandleGetSkillList)
-    
     -- 学习技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.LEARN, SkillEventManager.HandleLearnSkill)
+    
+    -- 升级技能
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.UPGRADE, SkillEventManager.HandleUpgradeSkill)
     
     -- 装备技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.EQUIP, SkillEventManager.HandleEquipSkill)
@@ -146,13 +48,7 @@ function SkillEventManager.RegisterEventHandlers()
     -- 卸下技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.UNEQUIP, SkillEventManager.HandleUnequipSkill)
     
-    -- 获取技能详情
-    ServerEventManager.Subscribe(SkillEventManager.REQUEST.GET_DETAIL, SkillEventManager.HandleGetSkillDetail)
-    
-    -- 获取可学习技能
-    ServerEventManager.Subscribe(SkillEventManager.REQUEST.GET_AVAILABLE, SkillEventManager.HandleGetAvailableSkills)
-    
-    gg.log("已注册 " .. 7 .. " 个技能事件处理器")
+    gg.log("已注册 " .. 4 .. " 个技能事件处理器")
 end
 
 --- 验证玩家和基础参数
@@ -196,52 +92,29 @@ function SkillEventManager.SendSuccessResponse(evt, eventName, data)
     })
 end
 
+--- 发送错误响应给客户端
+---@param evt table 事件参数
+---@param errorCode number 错误码
+function SkillEventManager.SendErrorResponse(evt, errorCode)
+    local uin = evt.player.uin
+    local errorMessage = SkillEventConfig.GetErrorMessage(errorCode)
+    
+    gg.network_channel:fireClient(uin, {
+        cmd = SkillEventManager.RESPONSE.ERROR,
+        data = {
+            errorCode = errorCode,
+            errorMessage = errorMessage
+        }
+    })
+end
+
 --[[
 ===================================
 客户端请求处理部分 - 处理客户端事件
 ===================================
 ]]
 
---- 处理获取技能列表请求
---- ---@param evt table 事件数据
-
-function SkillEventManager.HandleGetSkillList(evt)
-    gg.log("处理获取技能列表请求",evt)
-    local player, errorCode = SkillEventManager.ValidatePlayer(evt, "GetSkillList")
-    if not player then
-        return
-    end
-
-    local skillList = {}
-    local equippedSkills = {}
-    -- 已拥有的技能
-    for skillName, skill in pairs(player.skills or {}) do
-        table.insert(skillList, {
-            name = skillName,
-            icon = skill.skillType.icon,
-            level = skill.level,
-            nextSkills = skill.skillType.nextSkills,
-            maxLevel = skill.skillType.maxLevel,
-            equipped = skill.equipSlot > 0,
-            equipSlot = skill.equipSlot,
-            description = skill:GetDescription()
-        })
-        -- 装备槽位信息
-        if skill.equipSlot > 0 then
-            equippedSkills[skill.equipSlot] = skillName
-        end
-    end
-    
-    -- 构建响应数据（包含树状结构）
-    local responseData = {
-        skills = skillList,
-        equippedSkills = equippedSkills
-    }
-    gg.log("发送技能列表响应，包含", #skillList, "个技能")
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LIST, responseData)
-end
-
---- 处理技能研究/升级请求
+--- 处理技能学习请求
 ---@param evt table 事件数据 {uin, skillName}
 function SkillEventManager.HandleLearnSkill(evt)
     gg.log("处理学习技能请求",evt)
@@ -253,33 +126,117 @@ function SkillEventManager.HandleLearnSkill(evt)
     -- 从evt中获取技能名称
     local skillName = evt.skillName 
     if not skillName then
-        local text = "技能名称不能为空"
-        gg.log(text)
+        gg.log("技能名称不能为空")
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
         return
     end
     
     -- 验证技能是否存在
     local skillType = SkillTypeConfig.Get(skillName)
     if not skillType then
-        local text ="技能配置文件不存在"..skillName.."玩家"..player.name
-        gg.log(text)
+        gg.log("技能配置文件不存在: " .. skillName .. " 玩家: " .. player.name)
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_FOUND)
         return
     end 
     
+    -- 检查玩家是否已拥有该技能
+    local existingSkill = player.skills and player.skills[skillName]
+    if existingSkill then
+        gg.log("玩家已拥有该技能: " .. skillName)
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_ALREADY_LEARNED)
+        return
+    end
+    
     -- TODO: 检查学习条件（前置技能、资源等）
     
-    -- 创建技能实例
-    player:UpgradeSkill(skillType)
-    local now_skill = player.skills[skillName]
+    -- 创建并学习新技能
+    local success = player:LearnSkill(skillType)
+    if not success then
+        gg.log("技能学习失败: " .. skillName)
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.UPGRADE_FAILED)
+        return
+    end
+    
+    local newSkill = player.skills[skillName]
     player:saveSkillConfig()
-    gg.log("技能升级成功",skillName, now_skill.level, now_skill.equipSlot)
+    
+    gg.log("技能学习成功", skillName, "等级:", newSkill.level, "装备槽:", newSkill.equipSlot)
+    
     local responseData = {
         skillName = skillName,
-        level = now_skill.level,
-        slot = now_skill.equipSlot
+        level = newSkill.level,
+        slot = newSkill.equipSlot,
+        isNewSkill = true
     }
-    gg.log("发送技能升级响应",responseData)
+    
+    gg.log("发送技能学习响应", responseData)
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LEARN, responseData)
+end
+
+--- 处理技能升级请求
+---@param evt table 事件数据 {uin, skillName}
+function SkillEventManager.HandleUpgradeSkill(evt)
+    gg.log("处理升级技能请求", evt)
+    local player, errorCode = SkillEventManager.ValidatePlayer(evt, "UpgradeSkill")
+    if not player then
+        return
+    end
+
+    -- 从evt中获取技能名称
+    local skillName = evt.skillName 
+    if not skillName then
+        gg.log("技能名称不能为空")
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
+        return
+    end
+    
+    -- 验证技能是否存在于配置中
+    local skillType = SkillTypeConfig.Get(skillName)
+    if not skillType then
+        gg.log("技能配置文件不存在: " .. skillName .. " 玩家: " .. player.name)
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_FOUND)
+        return
+    end 
+    
+    -- 检查玩家是否已拥有该技能
+    local existingSkill = player.skills and player.skills[skillName]
+    if not existingSkill then
+        gg.log("玩家未拥有该技能，无法升级: " .. skillName)
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_OWNED)
+        return
+    end
+    
+    -- 检查是否已达到最大等级
+    if existingSkill.level >= skillType.maxLevel then
+        gg.log("技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.MAX_LEVEL_REACHED)
+        return
+    end
+    
+    -- TODO: 检查升级条件（资源、前置技能等级等）
+    
+    -- 执行技能升级
+    local success = player:UpgradeSkill(skillType)
+    if not success then
+        gg.log("技能升级失败: " .. skillName)
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.UPGRADE_FAILED)
+        return
+    end
+    
+    local upgradedSkill = player.skills[skillName]
+    player:saveSkillConfig()
+    
+    gg.log("技能升级成功", skillName, "新等级:", upgradedSkill.level, "装备槽:", upgradedSkill.equipSlot)
+    
+    local responseData = {
+        skillName = skillName,
+        level = upgradedSkill.level,
+        slot = upgradedSkill.equipSlot,
+        maxLevel = skillType.maxLevel
+    }
+    
+    gg.log("发送技能升级响应", responseData)
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, responseData)
 end
 
 --- 处理装备技能请求
@@ -352,100 +309,6 @@ function SkillEventManager.HandleUnequipSkill(evt)
             errorCode = SkillEventManager.ERROR_CODES.INVALID_SLOT
         })
     end
-end
-
---- 处理获取技能详情请求
----@param evt table 事件数据 {uin, skillName}
-function SkillEventManager.HandleGetSkillDetail(evt)
-    local player, errorCode = SkillEventManager.ValidatePlayer(evt, "GetSkillDetail")
-    if not player then
-        return
-    end
-    
-    -- 从evt中提取参数
-    local skillName = evt.skillName or evt.skill
-    if not skillName then
-        return
-    end
-    
-    -- 获取技能配置
-    local skillType = SkillTypeConfig.Get(skillName)
-    if not skillType then
-        return
-    end
-    
-    -- 构建详情数据
-    local detail = {
-        name = skillName,
-        displayName = skillType.displayName,
-        description = skillType.description,
-        maxLevel = skillType.maxLevel,
-        isEntrySkill = skillType.isEntrySkill,
-        owned = false,
-        level = 0,
-        equipped = false,
-        equipSlot = 0
-    }
-    
-    -- 如果玩家拥有该技能，添加实例数据
-    local skill = player.skills and player.skills[skillName]
-    if skill then
-        detail.owned = true
-        detail.level = skill.level
-        detail.equipped = skill.equipSlot > 0
-        detail.equipSlot = skill.equipSlot
-        detail.description = skill:GetDescription()
-    end
-    
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.DETAIL, detail)
-end
-
---- 处理获取可学习技能请求
----@param evt table 事件数据 {uin}
-function SkillEventManager.HandleGetAvailableSkills(evt)
-    local player, errorCode = SkillEventManager.ValidatePlayer(evt, "GetAvailableSkills")
-    if not player then
-        return
-    end
-    
-    local availableSkills = {}
-    
-    -- 获取入口技能
-    for _, skillType in ipairs(SkillTypeConfig.GetEntrySkills()) do
-        if not (player.skills and player.skills[skillType.skillName]) then
-            table.insert(availableSkills, {
-                name = skillType.skillName,
-                displayName = skillType.displayName,
-                description = skillType.description,
-                maxLevel = skillType.maxLevel,
-                isEntrySkill = true
-            })
-        end
-    end
-    
-    -- 获取已有技能的后续技能
-    if player.skills then
-        for skillName, skill in pairs(player.skills) do
-            if skill.skillType.nextSkills then
-                for _, nextSkillType in ipairs(skill.skillType.nextSkills) do
-                    if not player.skills[nextSkillType.skillName] then
-                        table.insert(availableSkills, {
-                            name = nextSkillType.skillName,
-                            displayName = nextSkillType.displayName,
-                            description = nextSkillType.description,
-                            maxLevel = nextSkillType.maxLevel,
-                            isEntrySkill = false,
-                            prerequisite = skillName
-                        })
-                    end
-                end
-            end
-        end
-    end
-    
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.AVAILABLE, {
-        availableSkills = availableSkills
-    })
 end
 
 return SkillEventManager

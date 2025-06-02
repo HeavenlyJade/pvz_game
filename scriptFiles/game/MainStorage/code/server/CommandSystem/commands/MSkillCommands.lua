@@ -6,6 +6,7 @@ local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_config = require(MainStorage.code.common.MConfig)  ---@type common_config
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr)  ---@type MCloudDataMgr
 local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
+local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
 ---@class SkillCommands
 local SkillCommands = {}
 
@@ -39,6 +40,15 @@ function SkillCommands.unlock(params, player)
     local test = "技能解锁成功: " .. skillName.."玩家:"..player.name
     gg.log(test)
     player:SendChatText(test)
+    local responseData = {
+        skillName = skillName,
+        level = skill.level,
+        slot = skill.equipSlot
+    }
+    gg.network_channel:fireClient(player.uin, {
+        cmd = SkillEventConfig.RESPONSE.LEARN,
+        data = responseData
+    })
 end
 
 
