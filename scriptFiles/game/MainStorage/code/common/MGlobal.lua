@@ -1036,6 +1036,38 @@ function gg.playerTeleportToPostion(player_, pos_, scene_name_)
 
 end
 
+---@param node SandboxNode
+---@param path string
+---@return SandboxNode|nil
+function gg.GetChild(node, path)
+    local root = node
+    local cacheKey = path
+    local fullPath = ""
+    local lastPart = ""
+    for part in path:gmatch("[^/]+") do -- 用/分割字符串
+        if part ~= "" then
+            lastPart = part
+            if not node then
+                gg.log(string.format("[%s]获取路径[%s]失败: 在[%s]处节点不存在", root.Name, path,
+                    fullPath))
+                return nil
+            end
+            node = node[part]
+            if fullPath == "" then
+                fullPath = part
+            else
+                fullPath = fullPath .. "/" .. part
+            end
+        end
+    end
+
+    if not node then
+        gg.log(string.format("[%s]获取路径[%s]失败: 最终节点[%s]不存在", root.Name, path, lastPart))
+        return nil
+    end
+    return node
+end
+
 -- 选择一个目标（客户端侧）(debug使用)
 ---@return SandboxNode|nil 选中的目标
 function gg.clientPickObjectMiddle()

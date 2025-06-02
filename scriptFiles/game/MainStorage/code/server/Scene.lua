@@ -64,6 +64,7 @@ end
 
 ---@return SandboxNode
 function _M:Get(path)
+    print(debug.traceback())
     local node = self.node
     local lastPart = ""
     for part in path:gmatch("[^/]+") do -- 用/分割字符串

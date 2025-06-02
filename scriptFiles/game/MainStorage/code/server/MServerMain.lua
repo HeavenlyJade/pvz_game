@@ -175,6 +175,7 @@ function MainServer.player_enter_game(player)
 
     player_:initSkillData()                 --- 加载玩家技能
     player_:RefreshStats()               --重生 --刷新战斗属性
+    player_:SetHealth(player_.maxHealth)
 end
 
 --玩家离开游戏

@@ -13,6 +13,7 @@ local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local cloudService      = game:GetService("CloudService")     --- @type CloudService
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
 
 
 
@@ -157,10 +158,16 @@ end
 function _M:Die()
     self:StopSkillCastabilityCheck()
     -- 发布死亡事件
-    local debug_traceback = debug.traceback()
-    gg.log("Player died, stack trace:", debug_traceback)
     ServerEventManager.Publish("PlayerDeadEvent", { player = self })
     Entity.Die(self)
+    gg.network_channel:fireClient(self.uin, {
+        cmd = 'cmd_player_actor_stat',
+        v = 'dead'
+    })
+end
+
+---@protected
+function _M:DestroyObject()
 end
 
 function _M:ExecuteCommand(command, castParam)
@@ -238,6 +245,11 @@ function _M:RefreshStats()
         local value = self:GetStat(statName)
         triggerFunc(self, value)
     end
+end
+
+function _M:SendEvent(eventName, data)
+    data.cmd = eventName
+    gg.network_channel:fireClient(self.uin, data)
 end
 
 --------------------------------------------------
@@ -460,6 +472,16 @@ function _M:SendChatText( text, ... )
         text = string.format(text, ...)
     end
     self:SendHoverText(text)
+    print(text)
+end
+
+function _M:SetHealth(health)
+    print("SetHealth", self.name, health)
+    Entity.SetHealth(self, health)
+    self:SendEvent("UpdateHealth", {
+        h = self.health,
+        mh = self.maxHealth
+    })
 end
 
 function _M:SendHoverText( text, ... )
@@ -578,6 +600,78 @@ function _M:StopSkillCastabilityCheck()
         ServerScheduler.cancel(self.skillCastabilityTask)
         self.skillCastabilityTask = nil
     end
+end
+
+-- 静态匹配队列
+_M.matchQueue = {} ---@type table<string, Player>
+_M.currentLevel = nil ---@type Level
+
+---加入匹配队列
+---@param levelType LevelType
+function _M:Queue(levelType)
+    -- 如果已经在队列中，直接返回
+    if _M.matchQueue[self.uin] then
+        self:SendChatText("你已经在匹配队列中")
+        return
+    end
+
+    -- 检查是否满足进入条件
+    if not levelType.entryConditions:Check(self) then
+        self:SendChatText("不满足进入条件")
+        return
+    end
+
+    -- 加入队列
+    _M.matchQueue[self.uin] = self
+    self:SendChatText("已加入匹配队列")
+
+    -- 检查是否可以开始游戏
+    if #_M.matchQueue >= levelType.maxPlayers then
+        _M:StartLevel(levelType)
+    end
+end
+
+---从匹配队列中移除
+function _M:LeaveQueue()
+    if _M.matchQueue[self.uin] then
+        _M.matchQueue[self.uin] = nil
+        self:SendChatText("已离开匹配队列")
+    end
+end
+
+---开始关卡
+---@param levelType LevelType
+function _M.StartLevel(levelType)
+    -- 创建新的关卡实例
+    local level = Level.New(levelType)
+    _M.currentLevel = level
+
+    -- 将队列中的玩家添加到关卡
+    for _, player in pairs(_M.matchQueue) do
+        level:AddPlayer(player)
+    end
+
+    -- 清空匹配队列
+    _M.matchQueue = {}
+
+    -- 开始关卡
+    level:Start()
+
+    -- 通知所有玩家
+    for _, player in pairs(level.players) do
+        player:SendChatText("匹配成功，关卡开始！")
+    end
+end
+
+---设置玩家视角
+---@param euler Vector3 旋转角度
+function _M:SetCameraView(euler)
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "UpdateCameraView",
+        x = euler.x,
+        y = euler.y,
+        z = euler.z,
+    })
 end
 
 return _M

@@ -156,8 +156,12 @@ function MeleeBehavior:OnInit()
             end
         end
         -- 检查距离
-        local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
-        return distanceSq <= (behavior["脱战距离"] or 20) ^ 2
+        local escapeRange = behavior["脱战距离"] or 0
+        if escapeRange > 0 then
+            local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
+            return distanceSq <= escapeRange ^ 2
+        end
+        return true
     end
     
     ---@param self MeleeBehavior
@@ -205,7 +209,8 @@ function MeleeBehavior:OnInit()
         local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), targetPos)
         
         -- 如果距离太远，退出战斗
-        if distanceSq > (behavior["脱战距离"] or 20) ^ 2 then
+        local escapeRange = behavior["脱战距离"] or 0
+        if escapeRange > 0 and distanceSq > escapeRange ^ 2 then
             entity:SetCurrentBehavior(nil)
             return
         end
@@ -260,8 +265,12 @@ function MeleeBehavior:OnInit()
         end
         
         local behavior = entity:GetCurrentBehavior()
-        local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
-        return distanceSq > (behavior["脱战距离"] or 20) ^ 2
+        local escapeRange = behavior["脱战距离"] or 0
+        if escapeRange > 0 then
+            local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
+            return distanceSq > escapeRange ^ 2
+        end
+        return false
     end
     
     ---@param self MeleeBehavior

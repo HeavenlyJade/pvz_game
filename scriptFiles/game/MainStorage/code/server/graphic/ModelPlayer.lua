@@ -54,10 +54,12 @@ function ModelPlayer:CanTransitTo(transition)
 end
 
 ---@private
+---@param key string
+---@return number
 function ModelPlayer:PlayTransition(key)
     local transitions = self:GetTransition()
     if not transitions then
-        return
+        return 0
     end
     local validAnims = {}
     -- gg.log("PlayTransition", key, transitions)
@@ -79,8 +81,9 @@ function ModelPlayer:PlayTransition(key)
     end
     if #validAnims > 0 then
         local randomAnim = validAnims[math.random(1, #validAnims)]
-        self:SwitchState(randomAnim)
+        return self:SwitchState(randomAnim)
     end
+    return 0
 end
 
 function ModelPlayer:OnStand()
@@ -99,7 +102,7 @@ function ModelPlayer:OnAttack()
 end
 function ModelPlayer:OnDead()
     -- print("OnDead")
-    self:PlayTransition("死亡时")
+    return self:PlayTransition("死亡时")
 end
 
 ---@param stateId string

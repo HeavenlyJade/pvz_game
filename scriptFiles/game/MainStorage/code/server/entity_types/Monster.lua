@@ -343,7 +343,7 @@ function _M:UpdateBehavior()
             if BehaviorTree[behaviorType] and BehaviorTree[behaviorType]:CanEnter(self, behavior) then
                 self.currentBehavior = behavior
                 BehaviorTree[behaviorType]:OnEnter(self)
-                -- gg.log("EnterBehavior", self, behaviorType)
+                gg.log("EnterBehavior", self, behaviorType)
                 break
             end
         end

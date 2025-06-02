@@ -9,7 +9,7 @@ local CameraController = require(MainStorage.code.client.camera.CameraController
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 -- local ShakeBeh = require(MainStorage.code.client.camera.ShakeBeh) ---@type ShakeBeh
 local tweenInfo = TweenInfo.New(0.2, Enum.EasingStyle.Linear)
-local TweenService = game:GetService('TweenService')
+local TweenService = game:GetService('TweenService') ---@type TweenService
 
 ---@class BattleHud:ViewBase
 local BattleHud = ClassMgr.Class("BattleHud", ViewBase)
@@ -17,7 +17,7 @@ local localPlayer = nil ---@type Player
 local uiConfig = {
     uiName = "BattleHud",
     layer = 0,
-    hideOnInit = false, -- 初始隐藏，当玩家靠近NPC时显示
+    hideOnInit = not MainStorage:GetAttribute("初始是战斗状态"), -- 初始隐藏，当玩家靠近NPC时显示
     initHudInteract = false
 }
 
@@ -45,6 +45,9 @@ function BattleHud:Close()
     -- if localPlayer then
     --     localPlayer.CameraMode = Enum.CameraModel.Classic
     -- end
+    ViewBase.Close(self)
+    ViewBase.GetUI("HudAvatar"):Open()
+    ViewBase.GetUI("HudMenu"):Open()
     CameraController.SetActive(false)
     if updateTaskId then
         ClientScheduler.cancel(updateTaskId)
@@ -60,6 +63,12 @@ local recoil = nil
 function BattleHud:Open()
     -- localPlayer = game:GetService("Players").LocalPlayer
     -- localPlayer.CameraMode = Enum.CameraModel.LockFirstPerson
+    if self._isInit or not MainStorage:GetAttribute("初始是战斗状态")  then
+        ViewBase.Open(self)
+        ViewBase.GetUI("HudAvatar"):Close()
+        ViewBase.GetUI("HudMenu"):Close()
+    end
+    self._isInit = true
     if updateTaskId then
         ClientScheduler.cancel(updateTaskId)
     end
@@ -222,7 +231,24 @@ function BattleHud:SendCastSpellEvent(skillId)
 end
 
 function BattleHud:OnInit(node, config)
-    -- 注册技能同步事件监听
+    self.healthBar = self:Get("血条/进度条").node
+    self.healthText = self:Get("血条/生命值").node
+    ClientEventManager.Subscribe("UpdateHealth", function(data)
+        self.healthBar.FillAmount = data.h / data.mh
+        self.healthText.Title = string.format("%d/%d", math.ceil(data.h), math.ceil(data.mh))
+    end)
+
+    local approaching = self:Get("大波僵尸").node
+    approaching.Visible = false
+    self.hitIndicator = self:Get("击中提示").node
+    self.hitIndicator.Visible = false
+    self.hitIndicator.FillColor = ColorQuad.New(255, 255, 255, 0)
+    
+    -- 伤害累计相关变量
+    self.accumulatedDamage = 0
+    self.lastDamageTime = 0
+    self.damageUpdateTask = nil
+    
     ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
         self:OnSyncPlayerSkills(data)
     end)
@@ -231,6 +257,101 @@ function BattleHud:OnInit(node, config)
     ClientEventManager.Subscribe("EquipSkillCooldownUpdate", function(data)
         self:OnEquipSkillCooldownUpdate(data)
     end)
+    
+    ClientEventManager.Subscribe("ShowDamage", function(data)
+        local currentTime = os.clock()
+        
+        -- 如果距离上次伤害超过0.1秒，重置累计伤害
+        if currentTime - self.lastDamageTime > 0.1 then
+            self.accumulatedDamage = 0
+        end
+        
+        -- 累加伤害
+        self.accumulatedDamage = math.min(10, self.accumulatedDamage + data.percent)
+        self.lastDamageTime = currentTime
+        
+        -- 更新指示器
+        self.hitIndicator.Visible = true
+        self.hitIndicator.Scale = Vector2.New(0.7 + self.accumulatedDamage, 0.7 + self.accumulatedDamage)
+        self.hitIndicator.FillColor = ColorQuad.New(255, 255, 255, 255)
+        
+        -- 重置透明度更新任务
+        if not self.damageUpdateTask then
+            self.damageUpdateTask = ClientScheduler.add(function()
+                local alpha = self.hitIndicator.FillColor.a - 30
+                if alpha <= 0 then
+                    self.hitIndicator.Visible = false
+                    self.hitIndicator.FillColor = ColorQuad.New(255, 255, 255, 0)
+                    ClientScheduler.cancel(self.damageUpdateTask)
+                    self.damageUpdateTask = nil
+                else
+                    self.hitIndicator.FillColor = ColorQuad.New(255, 255, 255, alpha)
+                end
+            end, 0.06, 0.06)
+        end
+    end)
+
+    -- 注册战斗开始事件监听
+    ClientEventManager.Subscribe("BattleStartEvent", function(data)
+        self:Open()
+        -- 重置后座力
+        accumulatedVerticalRecoil = 0
+        accumulatedHorizontalRecoil = 0
+        lastShotTime = 0
+        -- 设置进度条
+        if data.waveHealths and data.totalHealth then
+            local waveCount = #data.waveHealths
+            self.progress:SetElementSize(waveCount - 1)
+            local progressWidth = self.progress.node["进度条"].Size.x
+            -- 计算每个波次的生命百分比
+            local accumulatedPercent = 0
+            for i = 1, waveCount - 1 do
+                local waveHealth = data.waveHealths[i]
+                local healthPercent = waveHealth / data.totalHealth
+                accumulatedPercent = accumulatedPercent + healthPercent
+                
+                -- 设置波次标记的位置
+                local child = self.progress:GetChild(i)
+                if child then
+                    child.node.Position = Vector2.New(progressWidth * (1-accumulatedPercent), 0)
+                end
+            end
+            -- 保存波次生命数据用于后续计算
+            self.waveHealths = data.waveHealths
+            self.totalHealth = data.totalHealth
+            self.currentWaveIndex = 1
+        end
+    end)
+
+    -- 注册波次生命更新事件监听
+    ClientEventManager.Subscribe("WaveHealthUpdate", function(data)
+        if not self.waveHealths or not self.totalHealth then return end
+        
+        -- 检查波次是否发生变化
+        if data.waveIndex ~= self.currentWaveIndex then
+            self.currentWaveIndex = data.waveIndex
+            self:PlayWaveApproaching()
+        end
+        
+        local previousWavesHealth = 0
+        for i = data.waveIndex + 1, #self.waveHealths do
+            previousWavesHealth = previousWavesHealth + self.waveHealths[i]
+        end
+        previousWavesHealth = previousWavesHealth / self.totalHealth
+        self.progress.node["进度条"].FillAmount = previousWavesHealth + data.healthPercent * (self.waveHealths[data.waveIndex] / self.totalHealth)
+    end)
+
+    -- 注册战斗结束事件监听
+    ClientEventManager.Subscribe("BattleEndEvent", function(data)
+        self:Close()
+        -- 重置后座力
+        accumulatedVerticalRecoil = 0
+        accumulatedHorizontalRecoil = 0
+        lastShotTime = 0
+        self.currentWaveIndex = nil
+    end)
+
+    self.progress = self:Get("击杀进度条", ViewList)
     
     self.fireIcon = self:Get("开火", ViewButton)
     self.fireIcon.node.TouchBegin:Connect(
@@ -272,6 +393,25 @@ function BattleHud:OnInit(node, config)
             )
         end
     )
+end
+
+---播放波次接近动画
+function BattleHud:PlayWaveApproaching()
+    local approaching = self:Get("大波僵尸").node
+    approaching.Visible = true
+    approaching.Scale = Vector2.New(3,3)
+    approaching.FillColor = ColorQuad.New(255, 255, 255, 0)
+    local scaleTween = TweenService:Create(approaching, TweenInfo.New(1, Enum.EasingStyle.Quad), 
+        {Scale = Vector2.New(1,1), FillColor = ColorQuad.New(255, 255, 255, 255)})
+    scaleTween:Play()
+    scaleTween.Completed:Connect(function ()
+        local fadeOut = TweenService:Create(approaching, TweenInfo.New(3, Enum.EasingStyle.Quad), 
+            {FillColor = ColorQuad.New(255, 255, 255, 0)})
+        fadeOut:Play()
+        fadeOut.Completed:Connect(function ()
+            approaching.Visible = false
+        end)
+    end)
 end
 
 return BattleHud.New(script.Parent, uiConfig)

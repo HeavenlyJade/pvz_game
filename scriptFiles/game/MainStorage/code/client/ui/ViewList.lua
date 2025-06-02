@@ -76,6 +76,9 @@ end
 
 ---@param size number
 function ViewList:SetElementSize(size)
+    if size < 0 then
+        size = 0
+    end
     for i = 1, size do
         if not self.childrens[i] then
             gg.log("SetElementSize", self.path, self.ui.className, self.childrens)

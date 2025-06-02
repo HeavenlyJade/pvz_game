@@ -9,6 +9,7 @@ local MobCommand = require(MainStorage.code.server.CommandSystem.commands.MobCom
 local SpellCommand = require(MainStorage.code.server.CommandSystem.commands.SpellCommand)   ---@type SpellCommand
 local StatCommand = require(MainStorage.code.server.CommandSystem.commands.StatCommand)   ---@type StatCommand
 local QuestCommand = require(MainStorage.code.server.CommandSystem.commands.QuestCommands)   ---@type QuestCommand
+local LevelCommand = require(MainStorage.code.server.CommandSystem.commands.LevelCommand)   ---@type LevelCommand
 local MailCommand = require(MainStorage.code.server.CommandSystem.commands.MailCommand) ---@type MailCommand
 local SkillCommands = require(MainStorage.code.server.CommandSystem.commands.MSkillCommands)     ---@type SkillCommands
 
@@ -34,6 +35,7 @@ CommandManager.handlers = {
     ["skill"] = SpellCommand.skill,
     ["showStat"] = StatCommand.showStat,
     ["quest"] = QuestCommand.main,
+    ["level"] = LevelCommand.enter,
        -- 邮件相关命令
     ["mail"] = MailCommand.main,
         -- 玩家技能相关命令
