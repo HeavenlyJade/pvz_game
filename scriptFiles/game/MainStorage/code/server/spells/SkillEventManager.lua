@@ -198,18 +198,44 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         return
     end 
     
-    -- 检查玩家是否已拥有该技能
-    local existingSkill = player.skills and player.skills[skillName]
-    if not existingSkill then
-        gg.log("玩家未拥有该技能，无法升级: " .. skillName)
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_OWNED)
-        return
-    end
-    
-    -- 检查是否已达到最大等级
-    if existingSkill.level >= skillType.maxLevel then
-        gg.log("技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.MAX_LEVEL_REACHED)
+    -- 根据技能类型进行不同的检查
+    if skillType.skillType == 0 then
+        -- 主卡技能：检查父类技能是否存在
+        local prerequisite = skillType.prerequisite or {}
+        for i, preSkillType in ipairs(prerequisite) do
+            if not (player.skills and player.skills[preSkillType.name]) then
+                gg.log("父类技能不存在，无法升级: " .. skillName .. " 缺少前置技能: " .. preSkillType.name)
+                SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_AVAILABLE)
+                return
+            end
+        end
+        -- 检查玩家是否已拥有该技能
+        local existingSkill = player.skills and player.skills[skillName]
+        -- 检查是否已达到最大等级
+        if existingSkill and existingSkill.level >= skillType.maxLevel then
+            gg.log("技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
+            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.MAX_LEVEL_REACHED)
+            return
+        end
+        
+    elseif skillType.skillType == 1 then
+        -- 副卡技能：只检查技能是否存在
+        local existingSkill = player.skills and player.skills[skillName]
+        if not existingSkill then
+            gg.log("副卡技能不存在，无法升级: " .. skillName)
+            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_OWNED)
+            return
+        end
+        
+        -- 检查是否已达到最大等级
+        if existingSkill.level >= skillType.maxLevel then
+            gg.log("副卡技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
+            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.MAX_LEVEL_REACHED)
+            return
+        end
+    else
+        gg.log("未知的技能类型: " .. skillName .. " 类型: " .. (skillType.skillType or "nil"))
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_FOUND)
         return
     end
     
