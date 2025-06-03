@@ -7,6 +7,10 @@ local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type
 local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local SkillTypeUtils = require(MainStorage.code.common.conf_utils.SkillTypeUtils) ---@type SkillTypeUtils
+local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
+
+--local MainCards = require(MainStorage.code.client.ui.CardsGui.MainCards)
+
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
 
 local uiConfig = {
@@ -21,24 +25,6 @@ local uiConfig = {
 
 ---@class CardsGui:ViewBase
 local CardsGui = ClassMgr.Class("CardsGui", ViewBase)
-
----@param viewButton ViewButton
-function CardsGui:RegisterMenuButton(viewButton)
-    if not viewButton then return end
-    viewButton:SetTouchEnable(true)
-    -- 设置新的点击回调
-    viewButton.clickCb = function(ui, button)
-        if button.node.Name == "关闭" then
-            self:Close()
-        end
-        -- 发送菜单点击事件到服务器
-        -- gg.network_channel:FireServer({
-        --     cmd = "MenuClicked",
-        --     buttonName = button.node.Name
-        -- })
-          end
-end
-
 -- 注册主卡/副卡按钮事件
 function CardsGui:RegisterCardButtons()
     -- 主卡按钮点击事件
@@ -59,6 +45,7 @@ function CardsGui:RegisterCardButtons()
     end
 end
 
+
 ---@override
 function CardsGui:OnInit(node, config)
     ViewBase.OnInit(self, node, config)
@@ -66,75 +53,184 @@ function CardsGui:OnInit(node, config)
     self.mainCardButton = self:Get("框体/标题/卡片/主卡", ViewButton) ---@type ViewButton
     self.subCardButton = self:Get("框体/标题/卡片/副卡", ViewButton) ---@type ViewButton
     self.closeButton = self:Get("框体/关闭", ViewButton) ---@type ViewButton
-    self.attributeButton = self:Get("框体/属性", ViewComponent) ---@type ViewComponent
+    self.attributeButton = self:Get("框体/主卡属性", ViewComponent) ---@type ViewComponent
+    self.subCardAttributeButton = self:Get("框体/副卡属性", ViewComponent) ---@type ViewComponent
     self.mainCardComponent = self:Get("框体/主卡", ViewComponent) ---@type ViewComponent
     self.subCardComponent = self:Get("框体/副卡", ViewComponent) ---@type ViewComponent
+    self.confirmPointsButton = self:Get("框体/主卡属性/主卡_研究", ViewButton) ---@type ViewButton
+    self.EquipmentSkillsButton = self:Get("框体/主卡属性/主卡_装备", ViewButton) ---@type ViewButton
 
-    self.confirmPointsButton = self:Get("框体/属性/主卡_研究", ViewButton) ---@type ViewButton
+    self.SubcardEnhancementButton = self:Get("框体/副卡属性/副卡_强化", ViewButton) ---@type ViewButton
+    self.SubcardAllEnhancementButton = self:Get("框体/副卡属性/副卡一键强化", ViewButton) ---@type ViewButton
+
     self.selectionList = self:Get("框体/主卡/选择列表", ViewList) ---@type ViewList
     self.mainCardFrame = self:Get("框体/主卡/加点框/纵列表/主卡框", ViewButton) ---@type ViewButton
     self.skillButtons = {} ---@type table<string, ViewButton> -- 主卡按钮框
     self.skillLists = {} ---@type table<string, ViewList>     -- 主卡技能树列表
+    self.mainCardButtondict = {} ---@type table<string, ViewButton> -- 主卡技能树的按钮
+    self.subCardButtondict = {} ---@type table<string, ViewButton> -- 副卡技能的按钮
     self.subQualityLists ={} ---@type table<string, ViewList> -- 副卡品级列表
-    self.qualityListMap = {} ---@type table<string, string> -- 构建反射的品质按钮名->品质名字典
-    -- 初始化技能数据
-    self.skills = {} ---@type table<string, Skill>
-    self.equippedSkills = {} ---@type table<number, string>
+    self.mainQualityLists = {} ---@type table<string, ViewList> -- 主卡品质列表 UR:Viewlist
 
+    self.qualityListMap = {} ---@type table<string, string> -- 构建反射的品质按钮名->品质名字典
+    -- 玩家的装备槽数据数据
+    self.equippedSkills = {} ---@type table<number, string>
+    --- 玩家来自服务器的当前是技能数据
+    self.ServerSkills = {} ---@type table<string, table>
+    -- 当前点击主卡技能树的按钮
+    ---@type ViewButton
+    self.currentMCardButtonName = nil
+    self.currentSubCardButtonName = nil
     -- 当前显示的卡片类型 ("主卡" 或 "副卡")
     self.currentCardType = "主卡"
     self.closeButton.clickCb = function ()
         self:Close()
     end
+
+    self:RegisterMainCardFunctionButtons()
     self:RegisterCardButtons()
     -- 设置默认显示主卡
     self:SwitchToCardType(self.currentCardType)
     self:LoadMainCardsAndClone()
-    -- self:LoadSubCardsAndClone()
-    -- self:BindQualityButtonEvents()
+    self:BindQualityButtonEvents()
     ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
         self:HandleSkillSync(data)
     end)
 
+    -- 监听技能学习/升级响应
+    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.UPGRADE, function(data)
+        self:OnSkillLearnUpgradeResponse(data)
+    end)
+
+    -- 监听单个新技能添加事件
+    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.LEARN, function(data)
+        self:HandleNewSkillAdd(data)
+    end)
 end
 
+-- 注册主卡功能按钮事件
+function CardsGui:RegisterMainCardFunctionButtons()
+    self.confirmPointsButton.clickCb = function (ui, button)
+        local skillName = self.currentMCardButtonName.extraParams["skillId"]
+        gg.log("主卡_研究发送升级了请求",skillName)
+        gg.network_channel:FireServer({
+            cmd = SkillEventConfig.REQUEST.UPGRADE,
+            skillName = skillName
+        })
+    end
+    self.EquipmentSkillsButton.clickCb = function (ui, button)
+        gg.log("主卡_装备发送了升级请求")
+        gg.network_channel:FireServer({
+            cmd = SkillEventConfig.REQUEST.EQUIP,
+            skillName = self.currentMCardButtonName.extraParams["skillId"]
+        })
+    end
+    if self.SubcardEnhancementButton then
+        self.SubcardEnhancementButton.clickCb = function(ui, button)
+            gg.log("副卡_强化发送了请求")
+            local skillName = self.currentSubCardButtonName.extraParams["skillId"]
+
+            gg.network_channel:FireServer({
+                cmd = SkillEventConfig.REQUEST.UPGRADE,
+                skillName = skillName
+            })
+        end
+    end
+    if self.SubcardAllEnhancementButton then
+        self.SubcardAllEnhancementButton.clickCb = function(ui, button)
+            gg.log("副卡一键强化发送了请求")
+            local skillName = self.currentSubCardButtonName.extraParams["skillId"]
+
+            gg.network_channel:FireServer({
+                cmd = SkillEventConfig.REQUEST.EQUIP,
+                skillName = skillName
+
+            })
+        end
+    end
+end
 -- 处理技能同步数据
 function CardsGui:HandleSkillSync(data)
-    -- gg.log("CardsGui:HandleSkillSync", data)
+    gg.log("获取来自服务端的技能数据", data)
     if not data or not data.skillData then return end
+    local skillDataDic = data.skillData.skills
 
-    -- 清空现有技能数据
-    self.skills = {}
+    self.ServerSkills = {}
     self.equippedSkills = {}
-
+    local serverSkillMainTrees = {} ---@type table<string, table>
+    local serverSubskillDic = {} ---@type table<string, table>
     -- 反序列化技能数据
-    for skillId, skillData in pairs(data.skillData.skills) do
+    for skillName, skillData in pairs(skillDataDic) do
         -- 创建技能对象
-        local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
-        local skill = Skill.New(nil, skillData)
-        self.skills[skillId] = skill
-
+        gg.log("服务端加载的玩家技能",skillName,skillData)
+        self.ServerSkills[skillName] = skillData
         -- 记录已装备的技能
-        if skill.equipSlot > 0 then
-            self.equippedSkills[skill.equipSlot] = skillId
+        if skillData.slot > 0 then
+            self.equippedSkills[skillData.slot] = skillName
         end
+    
+        local skillType = SkillTypeConfig.Get(skillName)
+        if skillType and skillType.isEntrySkill and skillType.skillType==0 then
+            serverSkillMainTrees[skillName] = {data=skillType}
+        elseif skillType and skillType.isEntrySkill and  skillType.skillType==1 then
+            serverSubskillDic[skillName] = {data=skillType,serverdata=skillData}
+        end
+        --- 更新技能树的节点显示
+        self:UpdateSkillTreeNodeDisplay(skillName)
     end
-
     -- 更新UI显示
-    self:UpdateSkillDisplay()
+    --- self:UpdateSkillDisplay()
+    --- 创建主卡的按钮
+    self:CloneMainCardButtons(serverSkillMainTrees)
+    self:LoadSubCardsAndClone(serverSubskillDic)
 end
 
--- 更新技能显示
-function CardsGui:UpdateSkillDisplay()
-    -- 更新技能按钮显示
-    for slot, skillId in pairs(self.equippedSkills) do
-        local skill = self.skills[skillId]
-        if skill and self.skillButtons[slot] then
-            -- 更新技能按钮显示
-            self.skillButtons[slot].Title = skill.skillType.name
-            -- 可以添加更多UI更新逻辑
-        end
+function CardsGui:UpdateSkillTreeNodeDisplay(skillName)
+    local skillTreeButton = self.mainCardButtondict[skillName]
+    
+    local skillType = SkillTypeConfig.Get(skillName)
+    if skillTreeButton and skillTreeButton.node then
+        self:SetSkillLevelOnCardFrame(skillTreeButton.node, skillType)
     end
+
+end
+
+function CardsGui:UpdateSubCardTreeNodeDisplay(skillName)
+    local skillTreeButton = self.subCardButtondict[skillName]
+    local skillType = SkillTypeConfig.Get(skillName)
+    if skillTreeButton and skillTreeButton.node then
+        self:SetSkillLevelSubCardFrame(skillTreeButton.node, skillType)
+    end
+end
+
+
+--- 处理技能学习/升级响应
+function CardsGui:OnSkillLearnUpgradeResponse(response)
+    gg.log("收到技能学习/升级响应", response)
+    local data = response.data
+    local skillName = data.skillName
+    local serverlevel = data.level
+    local serverslot = data.slot
+    local skillData = self.ServerSkills[skillName]
+    if skillData then
+        skillData.level = serverlevel
+        skillData.slot = serverslot
+    else
+        self.ServerSkills[skillName] = {
+            level = serverlevel,
+            slot = serverslot,
+            skill =skillName
+        }
+    end
+    local skillType = SkillTypeConfig.Get(skillName)
+    if skillType.skillType==1 then
+        self.SubcardEnhancementButton:SetTouchEnable(true)
+        self.SubcardAllEnhancementButton:SetTouchEnable(true)
+    elseif skillType.skillType==0  then
+        self:UpdateSkillTreeNodeDisplay(skillName)
+    end
+   
+    -- self:UpdateSkillDisplay()
 end
 
 function CardsGui:Display(title, content, confirmCallback, cancelCallback)
@@ -150,7 +246,6 @@ end
 function CardsGui:SwitchToCardType(cardType)
     self.currentCardType = cardType
     self:UpdateCardDisplay(cardType)
-    
     -- 根据卡片类型显示/隐藏品质列表
     if self.qualityList then
         self.qualityList:SetVisible(cardType == "副卡")
@@ -159,19 +254,17 @@ end
 
 -- 更新指定卡片类型的显示
 function CardsGui:UpdateCardDisplay(cardType)
-    -- gg.log("更新卡片显示:", cardType)
-
-    -- 显示/隐藏对应的卡片组件
     if self.mainCardComponent then
         local showMain = (cardType == "主卡")
         self.mainCardComponent:SetVisible(showMain)
-        -- gg.log("主卡组件显示状态:", showMain)
+        self.attributeButton:SetVisible(showMain)
+        self.subCardComponent:SetVisible(not showMain)
     end
-
     if self.subCardComponent then
         local showSub = (cardType == "副卡")
         self.subCardComponent:SetVisible(showSub)
-        -- gg.log("副卡组件显示状态:", showSub)
+        self.subCardAttributeButton:SetVisible(showSub)
+        self.attributeButton:SetVisible(not showSub)
     end
 end
 
@@ -185,54 +278,86 @@ end
 -- 读取主卡数据并克隆节点
 function CardsGui:LoadMainCardsAndClone()
     ---@type SkillTreeNode[]
-    local skillMainTrees = SkillTypeUtils.BuildSkillForest(0)
+    --local skillMainTrees = SkillTypeUtils.BuildSkillForest(0)
+    local skillMainTrees = SkillTypeUtils.lastForest
+    if not skillMainTrees then
+        skillMainTrees = SkillTypeUtils.BuildSkillForest(0)
+        SkillTypeUtils.lastForest = skillMainTrees
+    end
     -- 使用美化的打印函数显示技能树结构
     ---SkillTypeUtils.PrintSkillForest(skillMainTrees)
- 
-    -- 克隆主卡选择按钮
-    self:CloneMainCardButtons(skillMainTrees)
-    -- 克隆节能树纵列表
+    -- 克隆技能树纵列表
     self:CloneVerticalListsForSkillTrees(skillMainTrees)
+    -- 克隆主卡选择按钮 使用而是在服务器返回的数据后绑定
+    --self:CloneMainCardButtons(skillMainTrees)
 end
 
+
 function CardsGui:CloneMainCardButtons(skillMainTrees)
-    local ListTemplate = self:Get('框体/主卡/选择列表/列表', ViewList, function(child)
+
+    local mainCardButton = function(childNode  ,SkillName)
         --由于不希望"发光"相应点击,真正的按钮是 按钮/卡框背景
-        local clonedButton = ViewButton.New(child, self, nil, "卡框背景")
-        self.skillButtons[child.Name] = clonedButton
+        gg.log("克隆主卡按钮",childNode.Name,SkillName)
+        local clonedButton = ViewButton.New(childNode, self, nil, "卡框背景")
+        clonedButton.extraParams = {skillId = SkillName}
+        self.skillButtons[SkillName] = clonedButton
         clonedButton.clickCb = function(ui, button)
-            local mainSkillName = button.extraParams["skillId"]
-            local currentList = self.skillLists[mainSkillName]
+            local SkillName = button.extraParams["skillId"]
+            local currentList = self.skillLists[SkillName]
             if currentList then
                 for name, vlist in pairs(self.skillLists) do
-                    vlist:SetVisible(name == mainSkillName)
+                    vlist:SetVisible(name == SkillName)
                 end
             end
         end
         return clonedButton
-    end) ---@type ViewList
-    -- 遍历主卡，设置图标和名称
+    end
+
+    local ListTemplate = self:Get('框体/主卡/选择列表/列表', ViewList) ---@type ViewList
+
+    -- 生成品质的viewlist
+    -- local qualityList = uiConfig.qualityList 
+    -- local qualityListMap = uiConfig.qualityListMap
+    -- for _, quality in ipairs(qualityList) do
+    --     local listClone = ListTemplate.node:Clone()
+    --     listClone.Name =quality
+    --     listClone.Parent = ListTemplate.node.Parent
+    --     local viewListObj = ViewList.New(listClone, self, "框体/主卡/选择列表/列表" .. quality)
+    --     self.mainQualityLists[quality] = viewListObj
+    -- end
     local index = 1
+    -- local qualityIndexMap = {}
+    -- for _, quality in ipairs(qualityList) do
+    --     qualityIndexMap[quality] = 1
+    -- end
     for skillName, rootNode in pairs(skillMainTrees) do
-        local mainSkillName = rootNode.name
+        gg.log("skillName",skillName,rootNode.data)
         local skillType = rootNode.data
+        local mainSkillName = skillType.name
+        local quality = skillType.quality or "N"
+        -- local QulityListNode = self.mainQualityLists[quality]
+        -- local curIndex = qualityIndexMap[quality]
+        -- qualityIndexMap[quality] = curIndex + 1
         local child = ListTemplate:GetChild(index)
-        child.extraParams["skillId"] = skillType.name
-        child.node.Name = skillType.name
+
+        child.extraParams["skillId"] = mainSkillName
+        child.node.Name = skillType.name 
         if skillType.icon and skillType.icon ~= "" then
             local iconNode = child.node['图标']
             if iconNode then
                 iconNode.Icon = skillType.icon
             end
         end
+        gg.log("模板克隆的孩子节点",child)
+
+        mainCardButton(child.node,mainSkillName)
         index = index + 1
     end
-    ListTemplate:HideChildrenFrom(index)
+    gg.log("skillButtons",self.skillButtons)
 end
 
 -- 注册技能卡片的ViewButton
 function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
-    gg.log("RegisterSkillCardButton",cardFrame, skill, lane, position)
     local viewButton = ViewButton.New(cardFrame, self, nil, "卡框背景")
     viewButton.extraParams = {
         skillId = skill.name,
@@ -242,24 +367,26 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
     viewButton.clickCb = function(ui, button)
         local skillId = button.extraParams.skillId
         local skill = SkillTypeConfig.Get(skillId)
-        local skillInst = self.skills[skillId]
+        local skillInst = self.ServerSkills[skillId]
         local skillLevel = 0
+        local attributeButton = self.attributeButton.node
         if skillInst then
             skillLevel = skillInst.level
         end
-        local nameNode = self.attributeButton.node["卡片名字"]
+        local nameNode = attributeButton["卡片名字"]
         if nameNode then
             nameNode.Title = skill.displayName
         end
         -- 更新技能描述
-        local descNode = self.attributeButton.node["卡片介绍"]
+        local descNode = attributeButton["卡片介绍"]
         if descNode then
             descNode.Title = skill.description
         end
-        local descPreTitleNode = self.attributeButton.node["列表_强化前"]["强化标题"]
-        local descPostTitleNode = self.attributeButton.node["列表_强化后"]["强化标题"]
-        local descPreNode = self.attributeButton.node["列表_强化前"]["属性_1"]
-        local descPostNode = self.attributeButton.node["列表_强化后"]["属性_1"]
+        local descPreTitleNode = attributeButton["列表_强化前"]["强化标题"]
+        local descPostTitleNode =attributeButton["列表_强化后"]["强化标题"]
+        local descPreNode = attributeButton["列表_强化前"]["属性_1"]
+        local descPostNode = attributeButton["列表_强化后"]["属性_1"]
+
         descPreTitleNode.Title = string.format("等级 %d/%d", skillLevel, skill.maxLevel)
         local descPre = {}
         for _, tag in pairs(skill.passiveTags) do
@@ -274,6 +401,39 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
             end
             descPostNode.Title = table.concat(descPost, "\n")
         end
+        local curCardSkillData = self.ServerSkills[skillId]
+        ---@ type SkillType
+        local curSkillType =  SkillTypeConfig.Get(skillId)
+        local prerequisite = curSkillType.prerequisite
+        local existsPrerequisite = true
+        for i, preSkillType in ipairs(prerequisite) do
+            if not self.ServerSkills[preSkillType.name] then
+                existsPrerequisite = false
+                break
+            end
+        end
+        local skillLevel = 0
+        if curCardSkillData or existsPrerequisite then
+            self.EquipmentSkillsButton:SetTouchEnable(true)
+            if curCardSkillData then
+                skillLevel = curCardSkillData.level
+            end
+            local maxLevel = skill.maxLevel
+            local levelNode = cardFrame["等级"]
+            if skillLevel ==maxLevel then
+                self.confirmPointsButton:SetTouchEnable(false)
+            else
+                self.confirmPointsButton:SetTouchEnable(true)
+            end
+            if levelNode then
+                gg.log("设置技能等级",string.format("%d/%d", skillLevel, maxLevel))
+                levelNode.Title = string.format("%d/%d", skillLevel, maxLevel)
+            end
+        else 
+            self.confirmPointsButton:SetTouchEnable(false)
+            self.EquipmentSkillsButton:SetTouchEnable(false)
+        end
+        self.currentMCardButtonName = button
     end
 
     -- 设置图标
@@ -287,23 +447,61 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
     -- 设置技能名称
     local nameNode = cardFrame["技能名"]
     if nameNode then
-        gg.log("设置技能名称:", nameNode,nameNode.Title, skill.displayName,skill)
+        -- gg.log("设置技能名称:", nameNode,nameNode.Title, skill.displayName,skill)
         nameNode.Title = skill.displayName
     end
-
     -- 设置技能等级
-    local skillInst = self.skills[skill.name]
+
+    self:SetSkillLevelOnCardFrame(cardFrame, skill)
+    self.mainCardButtondict[skill.name] = viewButton
+    return viewButton
+end
+
+function CardsGui:SetSkillLevelOnCardFrame(cardFrame, skill)
+    local severSkill = self.ServerSkills[skill.name]
     local skillLevel = 0
-    if skillInst then
-        skillLevel = skillInst.level
+    if severSkill then
+        skillLevel = severSkill.level
     end
     local descNode = cardFrame["等级"]
     if descNode then
         local maxLevel = skill.maxLevel or 1
         descNode.Title = string.format("%d/%d", skillLevel, maxLevel)
     end
+end
 
-    return viewButton
+function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
+    local severSkill = self.ServerSkills[skill.name]
+    local skillLevel = 0
+    if severSkill then
+        skillLevel = severSkill.level
+    end
+    
+    -- 设置技能等级
+    local levelNode = cardFrame["强化等级"]
+    if levelNode then
+        levelNode.Title = "强化等级:" .. skillLevel
+    end
+    
+    -- 设置图标
+    if skill.icon and skill.icon ~= "" then
+        local iconNode = cardFrame["图标"]
+        if iconNode then
+            iconNode.Icon = skill.icon
+        end
+    end
+    
+    -- 设置技能名称
+    local nameNode = cardFrame["副卡名字"]
+    if nameNode then
+        nameNode.Title = skill.name
+    end
+    
+    -- 设置new标识的可见性
+    local newnode = cardFrame["new"]
+    if newnode then 
+        newnode.Visible = false 
+    end
 end
 
 -- 为技能树克隆纵列表
@@ -566,18 +764,20 @@ function CardsGui:CloneVerticalListsForSkillTrees(skillMainTrees)
 end
 
 -- 动态生成副卡列表
-function CardsGui:LoadSubCardsAndClone()
+---@params   SubskillList 副卡列表
+function CardsGui:LoadSubCardsAndClone(serverSubskillDic)
+    gg.log("副卡的技能数据SubskillList",serverSubskillDic)
     local qualityList = uiConfig.qualityList or {"UR", "SSR", "SR", "R", "N"}
     local subListTemplate = self:Get('框体/副卡/副卡列/副卡列表', ViewList) ---@type ViewList
 
-    local allSkills = SkillTypeConfig.GetAll()
     local subSkillsByQuality = {}
     for _, quality in ipairs(qualityList) do
         subSkillsByQuality[quality] = {}
     end
 
     -- 分类统计
-    for name, skill in pairs(allSkills) do
+    for name, skilldic in pairs(serverSubskillDic) do
+        local skill = skilldic.data
         if skill.skillType == 1 and skill.isEntrySkill then
             local quality = skill.quality or "N"
             if subSkillsByQuality[quality] then
@@ -585,7 +785,6 @@ function CardsGui:LoadSubCardsAndClone()
             end
         end
     end
-
     -- 克隆副卡品级列表
     for _, quality in ipairs(qualityList) do
         local listClone = subListTemplate.node:Clone()
@@ -593,11 +792,9 @@ function CardsGui:LoadSubCardsAndClone()
         listClone.Name = qualityName
         listClone.Parent = subListTemplate.node.Parent
         listClone.Visible = false
-
         -- 设置LineCount为该品质副卡数量
         local count = #subSkillsByQuality[quality]
         listClone.LineCount = count > 0 and count or 1
-
         self.subQualityLists[quality] = ViewList.New(listClone, self, "框体/副卡/副卡列/" .. qualityName)
         -- 清空模板下的副卡槽
         for _, child in ipairs(listClone.Children) do
@@ -607,33 +804,36 @@ function CardsGui:LoadSubCardsAndClone()
         end
     end
 
-    local subCardTemplate = self:Get('框体/副卡/副卡列/副卡列表/副卡槽_1', ViewButton) ---@type ViewButton
-    if not subCardTemplate or not subCardTemplate.node then return end
+    -- 获取副卡模板
+    local existingSubCard = nil
+    -- 直接使用固定的副卡模板路径，而不是从qualityList中查找
+    local subCardTemplate = self:Get('框体/副卡/副卡列/副卡列表/副卡槽_1', ViewButton)
+    if subCardTemplate and subCardTemplate.node then
+        existingSubCard = subCardTemplate.node
+    end
+
+    if not existingSubCard then return end
     -- 遍历副卡数据，按品级分组
-    local allSkills = SkillTypeConfig.GetAll()
-    for name, skill in pairs(allSkills) do
+    for name, skilldic in pairs(serverSubskillDic) do
+        local skill = skilldic.data
+        local serverdata = skilldic.serverdata
+        gg.log("serverdata",serverdata)
         if skill.skillType == 1 and skill.isEntrySkill then
             local quality = skill.quality
             local listNode = self.subQualityLists[quality]
             if listNode then
-
-                local clonedNode = subCardTemplate.node:Clone()
+                local clonedNode = existingSubCard:Clone()
                 clonedNode.Name = skill.name
                 clonedNode.Parent = listNode.node
                 clonedNode.Visible = true
-                -- 设置副卡名字和图标
-                local nameNode = clonedNode["副卡名字"]
-                if nameNode then nameNode.Title = skill.name end
-                local iconNode = clonedNode["图标"]
-                if iconNode and skill.icon and skill.icon ~= "" then
-                    iconNode.Icon = skill.icon
-                end
+                -- 使用统一的UI设置函数
+                self:SetSkillLevelSubCardFrame(clonedNode, skill)
+                local subCardButton = self:RegisterSubCardButton(clonedNode, skill, serverdata)
+                self.subCardButtondict[skill.name] = subCardButton
             end
         end
     end
-
-
-    subListTemplate.node:Destroy()
+    subListTemplate.node.Visible =false
     print("副卡全部生成完毕，模板已销毁")
 end
 
@@ -653,6 +853,298 @@ function CardsGui:BindQualityButtonEvents()
                 end
             end
         end
+    end
+end
+
+-- 注册副卡技能卡片的ViewButton（简化版）
+function CardsGui:RegisterSubCardButton(cardFrame, skill, serverData)
+    gg.log("RegisterSubCardButton",cardFrame, skill, serverData)
+    local viewButton = ViewButton.New(cardFrame, self, nil, "图标底图")
+    viewButton.extraParams = {
+        skillId = skill.name,
+        serverData = serverData
+    }
+    
+    viewButton.clickCb = function(ui, button)
+        local skillId = button.extraParams.skillId
+        local skill = SkillTypeConfig.Get(skillId)
+        local serverData = button.extraParams.serverData
+        local skillLevel = serverData and serverData.level or 0
+        -- 更新副卡属性面板
+        local attributeButton = self.subCardAttributeButton.node
+        local nameNode = attributeButton["卡片名字"]
+        if nameNode then
+            nameNode.Title = skill.displayName
+        end
+        
+        local descNode = attributeButton["卡片介绍"]
+        if descNode then
+            descNode.Title = skill.description
+        end
+        
+        -- 更新强化前后属性
+        local descPreTitleNode = attributeButton["列表_强化前"]["强化标题"]
+        local descPostTitleNode = attributeButton["列表_强化后"]["强化标题"]
+        local descPreNode = attributeButton["列表_强化前"]["属性_1"]
+        local descPostNode = attributeButton["列表_强化后"]["属性_1"]
+
+        descPreTitleNode.Title = string.format("等级 %d/%d", skillLevel, skill.maxLevel)
+        local descPre = {}
+        for _, tag in pairs(skill.passiveTags) do
+            table.insert(descPre, tag:GetDescription(skillLevel))
+        end
+        descPreNode.Title = table.concat(descPre, "\n")
+        
+        if skillLevel < skill.maxLevel then
+            descPostTitleNode.Title = string.format("等级 %d/%d", skillLevel+1, skill.maxLevel)
+            local descPost = {}
+            for _, tag in pairs(skill.passiveTags) do
+                table.insert(descPost, tag:GetDescription(skillLevel+1))
+            end
+            descPostNode.Title = table.concat(descPost, "\n")
+        else
+            descPostTitleNode.Title = "已满级"
+            descPostNode.Title = ""
+        end
+        -- 设置按钮状态
+        self.SubcardEnhancementButton:SetTouchEnable(skillLevel < skill.maxLevel)
+        self.currentSubCardButtonName = viewButton
+    end
+
+    return viewButton
+end
+
+-- 处理单个新技能添加
+function CardsGui:HandleNewSkillAdd(data)
+    gg.log("收到新技能添加数据", data)
+    if not data or not data.data then 
+        gg.log("新技能数据格式错误 - 缺少data字段")
+        return 
+    end
+    
+    local responseData = data.data
+    local skillName = responseData.skillName
+    local skillLevel = responseData.level or 0
+    local skillSlot = responseData.slot or 0
+    
+    if not skillName then
+        gg.log("新技能数据格式错误 - 缺少skillName")
+        return
+    end
+    
+    -- 构建技能数据
+    local skillData = {
+        level = skillLevel,
+        slot = skillSlot,
+        skill = skillName
+    }
+    
+    -- 更新服务端技能数据
+    self.ServerSkills[skillName] = skillData
+    
+    -- 记录已装备的技能
+    if skillSlot > 0 then
+        self.equippedSkills[skillSlot] = skillName
+    end
+    
+    -- 获取技能配置
+    local skillType = SkillTypeConfig.Get(skillName)
+    if not skillType or not skillType.isEntrySkill then
+        gg.log("技能不是入口技能，跳过UI生成", skillName)
+        return
+    end
+    
+    -- 根据技能类型生成对应的卡片
+    if skillType.skillType == 0 then
+        -- 主卡技能
+        self:AddNewMainCardSkill(skillName, skillType, skillData)
+    elseif skillType.skillType == 1 then
+        -- 副卡技能  
+        self:AddNewSubCardSkill(skillName, skillType, skillData)
+    end
+    
+    
+    gg.log("新技能添加完成", skillName, "等级:", skillLevel, "槽位:", skillSlot)
+end
+
+-- 添加新的主卡技能
+function CardsGui:AddNewMainCardSkill(skillName, skillType, skillData)
+    gg.log("添加新主卡技能", skillName)
+    
+    -- 检查是否已经存在该技能按钮
+    if self.skillButtons[skillName] then
+        gg.log("主卡技能按钮已存在，跳过创建", skillName)
+        return
+    end
+    
+    -- 获取选择列表模板
+    local selectionList = self.selectionList
+    if not selectionList then
+        gg.log("找不到主卡选择列表")
+        return
+    end
+    
+    -- 计算新的索引位置
+    local existingCount = 0
+    for _ in pairs(self.skillButtons) do
+        existingCount = existingCount + 1
+    end
+    local newIndex = existingCount + 1
+    
+    -- 创建新的主卡选择按钮
+    local newChild = selectionList:GetChild(newIndex)
+    if newChild then
+        newChild.extraParams = newChild.extraParams or {}
+        newChild.extraParams["skillId"] = skillName
+        newChild.node.Name = skillType.name
+        
+        -- 设置图标
+        if skillType.icon and skillType.icon ~= "" then
+            local iconNode = newChild.node['图标']
+            if iconNode then
+                iconNode.Icon = skillType.icon
+            end
+        end
+        
+        -- 创建按钮事件
+        local clonedButton = ViewButton.New(newChild.node, self, nil, "卡框背景")
+        clonedButton.extraParams = {skillId = skillName}
+        self.skillButtons[skillName] = clonedButton
+        
+        clonedButton.clickCb = function(ui, button)
+            local skillId = button.extraParams["skillId"]
+            local currentList = self.skillLists[skillId]
+            if currentList then
+                for name, vlist in pairs(self.skillLists) do
+                    vlist:SetVisible(name == skillId)
+                end
+            end
+        end
+        
+        -- 创建对应的技能树
+        self:CreateSkillTreeForNewMainCard(skillName, skillType)
+        
+        gg.log("新主卡技能按钮创建完成", skillName)
+    else
+        gg.log("无法获取新的列表项，可能需要扩展列表")
+    end
+end
+
+-- 为新主卡创建技能树
+function CardsGui:CreateSkillTreeForNewMainCard(skillName, skillType)
+    -- 构建单个技能的技能树
+    local skillTree = SkillTypeUtils.BuildSingleSkillTree(skillName)
+    if not skillTree then
+        gg.log("无法构建技能树", skillName)
+        return
+    end
+    
+    -- 获取纵列表模板
+    local verticalListParent = self:Get("框体/主卡/加点框", ViewComponent)
+    if not verticalListParent then
+        gg.log("找不到纵列表父节点")
+        return
+    end
+    
+    -- 创建新的纵列表
+    local firstVerticalList = nil
+    for name, vlist in pairs(self.skillLists) do
+        firstVerticalList = vlist.node
+        break
+    end
+    
+    if firstVerticalList then
+        local clonedVerticalList = firstVerticalList:Clone()
+        clonedVerticalList.Name = skillName
+        clonedVerticalList.Parent = verticalListParent.node
+        clonedVerticalList.Visible = false
+        
+        -- 设置主卡框
+        local mainCardFrame = clonedVerticalList["主卡框"]
+        if mainCardFrame then
+            self:RegisterSkillCardButton(mainCardFrame, skillType, 0, 2)
+        end
+        
+        -- 清理并重新创建技能树层级
+        self:CloneSkillTreeLevelsForSingleTree(clonedVerticalList, skillTree)
+        
+        -- 注册到技能列表
+        local verticalList = ViewList.New(clonedVerticalList, self, "框体/主卡/加点框/" .. skillName)
+        self.skillLists[skillName] = verticalList
+        
+        gg.log("新主卡技能树创建完成", skillName)
+    end
+end
+
+-- 为单个技能树克隆层级（简化版本）
+function CardsGui:CloneSkillTreeLevelsForSingleTree(verticalListNode, skillTree)
+    -- 清理现有的列表项（除了主卡框）
+    for _, child in ipairs(verticalListNode:GetChildren()) do
+        if string.find(child.Name, "列表_") then
+            child:Destroy()
+        end
+    end
+    
+    -- 使用简化的层级处理（这里可以复用原有的DAG算法逻辑）
+    -- 为了简化，我们先实现一个基础版本
+    local listTemplate = verticalListNode:FindFirstChild("列表_1")
+    if not listTemplate then
+        gg.log("找不到列表模板")
+        return
+    end
+    
+    -- 这里可以复用原有的CloneVerticalListsForSkillTrees中的DAG算法
+    -- 暂时使用简化版本处理单个技能树
+    gg.log("单个技能树层级创建完成")
+end
+
+-- 添加新的副卡技能
+function CardsGui:AddNewSubCardSkill(skillName, skillType, skillData)
+    gg.log("添加新副卡技能", skillName, skillType.quality)
+    
+    -- 检查是否已经存在该技能按钮
+    if self.subCardButtondict[skillName] then
+        gg.log("副卡技能按钮已存在，跳过创建", skillName)
+        return
+    end
+    
+    local quality = skillType.quality or "N"
+    local qualityList = self.subQualityLists[quality]
+    
+    if not qualityList then
+        gg.log("找不到对应品质的副卡列表", quality)
+        return
+    end
+    
+    -- 获取副卡模板
+    local existingSubCard = nil
+    -- 直接使用固定的副卡模板路径，而不是从qualityList中查找
+    local subCardTemplate = self:Get('框体/副卡/副卡列/副卡列表/副卡槽_1', ViewButton)
+    if subCardTemplate and subCardTemplate.node then
+        existingSubCard = subCardTemplate.node
+    end
+
+    if existingSubCard then
+        -- 克隆新的副卡节点
+        local clonedNode = existingSubCard:Clone()
+        clonedNode.Name = skillType.name
+        clonedNode.Parent = qualityList.node
+        clonedNode.Visible = true
+        
+        -- 设置副卡UI
+        self:SetSkillLevelSubCardFrame(clonedNode, skillType)
+        
+        -- 注册副卡按钮
+        local subCardButton = self:RegisterSubCardButton(clonedNode, skillType, skillData)
+        self.subCardButtondict[skillName] = subCardButton
+        
+        -- 更新列表的LineCount
+        local currentCount = qualityList.node.LineCount or 0
+        qualityList.node.LineCount = currentCount + 1
+        
+        gg.log("新副卡技能创建完成", skillName)
+    else
+        gg.log("找不到副卡模板")
     end
 end
 

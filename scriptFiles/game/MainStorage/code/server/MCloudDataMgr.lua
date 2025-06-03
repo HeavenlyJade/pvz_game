@@ -199,4 +199,26 @@ function MCloudDataMgr.SaveGameTaskData(player)
     end)
 end
 
+
+function MCloudDataMgr.SaveSkillConfig(player)
+    local skillData = {
+        uin = player.uin,
+        skills = {}
+    }
+    -- 保存所有技能数据
+    for skillId, skill in pairs(player.skills) do
+        skillData.skills[skillId] = {
+            skill = skill.skillType.name,
+            level = skill.level,
+            slot = skill.equipSlot
+        }
+    end
+    cloudService:SetTableAsync( 'sk' .. player.uin, skillData, function ( ret_ )
+        if  not ret_ then
+            gg.log("保存玩家技能失败", 'sk' .. player.uin, skillData )
+        else
+            gg.log("保存玩家技能成功", 'sk' .. player.uin, skillData )
+        end
+    end )
+end
 return MCloudDataMgr

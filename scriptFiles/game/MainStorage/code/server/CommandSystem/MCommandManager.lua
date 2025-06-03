@@ -9,11 +9,12 @@ local MobCommand = require(MainStorage.code.server.CommandSystem.commands.MobCom
 local SpellCommand = require(MainStorage.code.server.CommandSystem.commands.SpellCommand)   ---@type SpellCommand
 local StatCommand = require(MainStorage.code.server.CommandSystem.commands.StatCommand)   ---@type StatCommand
 local QuestCommand = require(MainStorage.code.server.CommandSystem.commands.QuestCommands)   ---@type QuestCommand
+local LevelCommand = require(MainStorage.code.server.CommandSystem.commands.LevelCommand)   ---@type LevelCommand
 local MailCommand = require(MainStorage.code.server.CommandSystem.commands.MailCommand) ---@type MailCommand
+local SkillCommands = require(MainStorage.code.server.CommandSystem.commands.MSkillCommands)     ---@type SkillCommands
 
 -- local QuestCommands = require(MainStorage.code.server.CommandSystem.commands.MQuestCommands)     ---@type QuestCommands
 -- local PlayerCommands = require(MainStorage.code.server.CommandSystem.commands.MPlayerCommands)   ---@type PlayerCommands
--- local SkillCommands = require(MainStorage.code.server.CommandSystem.commands.MSkillCommands)     ---@type SkillCommands
 -- local SystemCommands = require(MainStorage.code.server.CommandSystem.commands.MSystemCommands)   ---@type SystemCommands
 local json = require(MainStorage.code.common.json)
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
@@ -34,8 +35,12 @@ CommandManager.handlers = {
     ["skill"] = SpellCommand.skill,
     ["showStat"] = StatCommand.showStat,
     ["quest"] = QuestCommand.main,
+    ["level"] = LevelCommand.enter,
        -- 邮件相关命令
     ["mail"] = MailCommand.main,
+        -- 玩家技能相关命令
+    -- 装载默认的配置技能
+    ["loadSkill"] = SkillCommands.main,
     -- ["装备"] = {},
 
     -- -- 玩家属性相关
@@ -80,7 +85,12 @@ function CommandManager.ExecuteCommand(commandStr, player)
 
     -- 3. 解析JSON参数
     local params = json.decode(jsonStr)
-    if params["玩家"] then
+    gg.log("params",params)
+    if params["在线"] == "不在线" then
+        --- 用来处理玩家不在线的情况
+        --- 获取玩家
+   
+    elseif params["玩家"] then
         player = gg.getLivingByName(params["玩家"])
         if not player then
             gg.log("玩家不存在: " .. params["玩家"])

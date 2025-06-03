@@ -311,7 +311,7 @@
 
 
 ---@class TweenService
----@field Create fun(self: TweenService, node: SandboxNode, info: TweenInfo, map: table) SandboxNode 将暂停补间动画的播放
+---@field Create fun(self: TweenService, node: SandboxNode, info: TweenInfo, map: table):UITween 将暂停补间动画的播放
 
 
 ---@class UITween
@@ -319,7 +319,7 @@
 ---@field Play fun(self: UITween) void 将开始补间动画的播放
 ---@field Cancel fun(self: UITween) void 将停止补间动画的播放并重置它的变量
 ---@field Resume fun(self: UITween) void 将继续补间动画播放
----@field Completed fun(self: UITween, status: TweenStatus) None 补间动画结束时触发，会触发一个Completed通知
+---@field Completed Event<fun(self: UITween, status: TweenStatus)> None 补间动画结束时触发，会触发一个Completed通知
 
 
 ---@class Jonumber
@@ -2435,7 +2435,7 @@
 
 
 
----@class WorkSpace
+---@class WorkSpace:SandboxNode
 ---@field CurrentCamera Camera 当前相机（临时用）
 ---@field SceneId number 当前SceneId（仅编辑器展示）
 ---@field CoordBlockPosition fun(self: WorkSpace, pos: Vector3) WCoord 方块坐标

@@ -69,6 +69,7 @@ function _M:OnInit(info_)
     -- self.model_weapon = nil -- 武器
 
     self.isDead = false -- 是否已死亡
+    self.deleted = false -- 是否已删除
     self.deathWaitTime = 0 -- 死亡等待时间
     self.combatTime = 0 -- 战斗时间计数器
 
@@ -82,6 +83,8 @@ function _M:OnInit(info_)
     -- 战斗属性
     self.health = 0
     self.maxHealth = 0
+    ---@private 仅用于更新伤害标识,不要用于逻辑运算,获取准确值请用 self:GetStat("攻击")
+    self._attackCache = 0
     self.mana = 0
     self.maxMana = 0
     self.shield = 0
@@ -191,6 +194,7 @@ function _M:RefreshStats()
         local value = self:GetStat(statName)
         triggerFunc(self, value)
     end
+    self._attackCache = self:GetStat("攻击")
 end
 
 -- 词条系统 --------------------------------------------------------
@@ -590,7 +594,7 @@ function _M:Hurt(amount, damager, isCrit)
         if damager.isPlayer then
             damager:showDamage(amount, {
                 cr = isCrit and 1 or 0
-            })
+            }, self)
         end
 
         -- 显示受伤描边效果
@@ -606,8 +610,6 @@ function _M:Hurt(amount, damager, isCrit)
 
     -- 检查死亡
     if self.health <= 0 then
-        local debug_traceback = debug.traceback()
-        gg.log(self, "Health = 0, stack trace:", debug_traceback)
         self:Die()
     end
 end
@@ -641,29 +643,30 @@ function _M:AddShield(amount, source)
     end
 end
 
---- 死亡处理
+--- 开始处理死亡逻辑, 如果要移除对象, 请调用 DestroyObject
 function _M:Die()
     if self.isDead then return end
-
     self.isDead = true
-    self.deathWaitTime = self.isPlayer and 30 or 60
 
     -- 停止导航
     self.actor:StopNavigate()
+    local deathTime = 0
     if self.modelPlayer then
-        self.modelPlayer:OnDead()
+        deathTime = self.modelPlayer:OnDead()
     end
-
-    -- 如果是玩家，发送死亡状态到客户端
-    if self.isPlayer then
-        gg.network_channel:fireClient(self.uin, {
-            cmd = 'cmd_player_actor_stat',
-            v = 'dead'
-        })
-    end
-
     -- 发布死亡事件
-    ServerEventManager.Publish("EntityDeadEvent", { entity = self })
+    local evt = {
+        entity = self,
+        deathTime = deathTime
+    }
+    ServerEventManager.Publish("EntityDeadEvent", evt)
+    if evt.deathTime > 0 then
+        ServerScheduler.add(function()
+            self:DestroyObject()
+        end, evt.deathTime, nil, "destroy_" .. self.uuid)
+    else
+        self:DestroyObject()
+    end
 end
 
 function _M:GetEnemyGroup()
@@ -678,6 +681,10 @@ function _M:GetEnemyGroup()
 end
 
 function _M:DestroyObject()
+    if not self.isDead then
+        self:Die()
+    end
+    self.deleted = true
     self.actor:Destroy()
     ServerEventManager.UnsubscribeByKey(self.uuid)
 end
@@ -754,7 +761,7 @@ function _M:addExp(exp_)
             gg.log('addExp levelUp:', self.exp, self.level)
             self:showDamage(0, {
                 levelup = self.level
-            })
+            }, self)
 
             -- 展示特效
             self:showReviveEffect(self:GetPosition())
@@ -806,10 +813,13 @@ function _M:createHpBar(root_)
 end
 
 -- 显示伤害飘字，闪避，升级
-function _M:showDamage(number_, eff_)
+function _M:showDamage(number_, eff_, victim)
     -- 无伤害，无特殊效果
-    print("showDamage", number_, eff_)
-    local position = self:GetCenterPosition()
+    local victimPosition = victim:GetCenterPosition()
+    local position =victimPosition + ( self:GetCenterPosition() - victimPosition):Normalize() * victim:GetSize().x
+    if self._attackCache == 0 then
+        self._attackCache = self:GetStat("攻击")
+    end
     gg.network_channel:fireClient(self.uin, {
         cmd = "ShowDamage",
         amount = number_,
@@ -818,7 +828,8 @@ function _M:showDamage(number_, eff_)
             x = position.x,
             y = position.y,
             z = position.z
-        }
+        },
+        percent = 0.3 * number_ / self._attackCache
     })
 end
 

@@ -12,6 +12,8 @@ local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) 
 local SkillTypeUtils = {
     nodeCache = {},  ---@type SkillTreeNode[]
     forest = {}, ---@type table<string, SkillTreeNode> -- 节点缓存
+    lastForest = nil, ---@type table<string, SkillTreeNode> -- 最近一次构建的技能森林
+
 }
 
 -- 工具函数：判断表中是否包含某元素
@@ -29,9 +31,7 @@ local function LinkNodes(parent, child)
     end
     if not table_contains(child.parents, parent) then
         table.insert(child.parents, parent)
-        if child.data and child.data.AddPrerequisite then
-            child.data:AddPrerequisite(parent.name) --- 向对应的技能添加父节点名字
-        end
+       
     end
 end
 
@@ -221,4 +221,5 @@ function SkillTypeUtils.GetSkillTreeMaxDepth(node)
     return maxDepth + 1
 end
 
+SkillTypeUtils.lastForest = SkillTypeUtils.BuildSkillForest(0)
 return SkillTypeUtils

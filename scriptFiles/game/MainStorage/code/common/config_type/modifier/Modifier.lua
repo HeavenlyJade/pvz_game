@@ -33,11 +33,15 @@ function _M:OnInit(data)
 end
 
 function _M:GetTarget(caster, target, targeter, targeterPath)
-    if targeter == "目标" then
+    if not targeter or targeter == "目标" then
         return target
     elseif targeter == "自己" then
         return caster
     else
+        print("targeter", targeter)
+        if not targeterPath then
+            return target
+        end
         local scene = target.scene ---@type Scene
         return scene.node2Entity[scene:Get(targeterPath)]
     end

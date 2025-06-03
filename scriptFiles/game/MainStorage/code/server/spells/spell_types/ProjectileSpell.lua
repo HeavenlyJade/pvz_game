@@ -198,7 +198,6 @@ end
 
 --- 更新飞弹
 ---@param id number 飞弹ID
----@param dt number 帧间隔时间
 function ProjectileSpell:UpdateProjectile(id)
     local item = self.activeProjectiles[id] ---@type ProjectileItem
     if not item then return end
@@ -254,12 +253,33 @@ function ProjectileSpell:UpdateProjectile(id)
         item.caster:GetEnemyGroup()
     )
     if hitTargets and #hitTargets > 0 then
-        -- 遍历所有碰撞到的目标
+        -- 计算每个目标到飞弹起始位置的距离
+        local targetDistances = {}
+        local startPos = Vec3.new(item.actor.Position)
         for _, target in ipairs(hitTargets) do
-            -- 跳过施法者自身
             if target ~= item.caster then
-                self:HandleProjectileHit(id, target)
+                local targetPos = Vec3.new(target:GetPosition())
+                local distance = (targetPos - startPos):Length()
+                table.insert(targetDistances, {
+                    target = target,
+                    distance = distance
+                })
             end
+        end
+        
+        -- 按距离排序
+        table.sort(targetDistances, function(a, b)
+            return a.distance < b.distance
+        end)
+        
+        -- 只处理最近的 remainingHits 个目标
+        local hitsProcessed = 0
+        for _, targetData in ipairs(targetDistances) do
+            if hitsProcessed >= item.remainingHits then
+                break
+            end
+            self:HandleProjectileHit(id, targetData.target)
+            hitsProcessed = hitsProcessed + 1
         end
     end
     

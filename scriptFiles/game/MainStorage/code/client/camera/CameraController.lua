@@ -10,6 +10,7 @@ local Mat4x4 = require(MainStorage.code.common.math.Matrix4x4)
 local Mat3x4 = require(MainStorage.code.common.math.Matrix3x4)
 local MathDefines = require(MainStorage.code.common.math.MathDefines)
 local ShakeController = require(MainStorage.code.client.camera.ShakeController) ---@type ShakeController
+local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 
 ---@class CameraController
 local CameraController = {}
@@ -93,14 +94,13 @@ local _InputBeganEvent = nil
 local _InputEndedEvent = nil
 local _InputChangedEvent = nil
 
---初始化
-function CameraController.Init()
-    _owner = Players.LocalPlayer
-    _cameraMode = CameraController.CameraMode.ThirdPerson
-    _viewDirty = true
-    _projectionDirty = true
-end
 
+ClientEventManager.Subscribe("UpdateCameraView", function(data)
+    if data.x then
+        _mouseX = data.x
+        _mouseY = data.y + 180
+    end
+end)
 -- 在 CameraController.lua 中，替换 SetActive 函数中的鼠标处理部分：
 
 function CameraController.SetActive(active)

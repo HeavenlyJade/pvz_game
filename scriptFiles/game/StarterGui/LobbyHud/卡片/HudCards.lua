@@ -140,12 +140,14 @@ function HudCards:UpdateCardsDisplay()
     if not self.cardsList then return end
     self.cardsList:SetElementSize(#equippedSkills - 1)
     -- 遍历所有卡片
-    for i = 1, self.cardsList:GetChildCount() do
-        local card = self.cardsList:GetChild(i) ---@type ViewButton
-        local skillId = equippedSkills[i + 1]
-        local skill = skills[skillId]
-        card.node["Title"].Title = skill.skillType.displayName
-        card.node["Text"].Title = tostring(skill.level)
+    if #equippedSkills > 1 then
+        for i = 1, self.cardsList:GetChildCount() do
+            local card = self.cardsList:GetChild(i) ---@type ViewButton
+            local skillId = equippedSkills[i + 1]
+            local skill = skills[skillId]
+            card.node["Title"].Title = skill.skillType.displayName
+            card.node["Text"].Title = tostring(skill.level)
+        end
     end
 end
 

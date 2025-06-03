@@ -156,6 +156,10 @@ function _M:update_npc()
     end
 end
 
+---@protected
+function _M:DestroyObject()
+end
+
 -- 处理NPC交互
 function _M:HandleInteraction(player)
     gg.log("HandleInteraction", self.name, self.uuid, player.name, player.uuid)

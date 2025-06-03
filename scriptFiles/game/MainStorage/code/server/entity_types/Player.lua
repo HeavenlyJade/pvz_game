@@ -13,6 +13,7 @@ local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local cloudService      = game:GetService("CloudService")     --- @type CloudService
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
 
 
 
@@ -157,10 +158,16 @@ end
 function _M:Die()
     self:StopSkillCastabilityCheck()
     -- 发布死亡事件
-    local debug_traceback = debug.traceback()
-    gg.log("Player died, stack trace:", debug_traceback)
     ServerEventManager.Publish("PlayerDeadEvent", { player = self })
     Entity.Die(self)
+    gg.network_channel:fireClient(self.uin, {
+        cmd = 'cmd_player_actor_stat',
+        v = 'dead'
+    })
+end
+
+---@protected
+function _M:DestroyObject()
 end
 
 function _M:ExecuteCommand(command, castParam)
@@ -206,7 +213,7 @@ function _M:RefreshStats()
             for _, tagType in ipairs(skill.skillType.passiveTags) do
                 local tag = tagType:FactoryEquipingTag("SKILL-" .. skillId, skill.level)
                 self:AddTagHandler(tag)
-                gg.log(string.format("添加技能词条: %s (等级 %d)", tagType.name, skill.level))
+				--gg.log(string.format("添加技能词条: %s (等级 %d)", tagType.name, skill.level))
             end
         end
     end
@@ -240,10 +247,14 @@ function _M:RefreshStats()
     end
 end
 
+function _M:SendEvent(eventName, data)
+    data.cmd = eventName
+    gg.network_channel:fireClient(self.uin, data)
+end
+
 --------------------------------------------------
 -- 技能系统方法
 --------------------------------------------------
-
 -- 初始化技能数据
 function _M:initSkillData()
     -- 从云数据读取
@@ -265,25 +276,7 @@ end
 
 -- 保存技能配置
 function _M:saveSkillConfig()
-    local skillData = {
-        uin = self.uin,
-        skills = {}
-    }
-    -- 保存所有技能数据
-    for skillId, skill in pairs(self.skills) do
-        skillData.skills[skillId] = {
-            skill = skill.skillType.name,
-            level = skill.level,
-            slot = skill.equipSlot
-        }
-    end
-    cloudService:SetTableAsync( 'sk' .. self.uin, skillData, function ( ret_ )
-        if  not ret_ then
-            gg.log("保存玩家技能失败", 'sk' .. self.uin, skillData )
-        else
-            gg.log("保存玩家技能成功", 'sk' .. self.uin, skillData )
-        end
-    end )
+    cloudDataMgr.SaveSkillConfig(self)
 end
 
 -- 同步技能数据到客户端
@@ -429,6 +422,7 @@ end
 function _M:Save()
     cloudDataMgr.SavePlayerData(self.uin, true)
     cloudDataMgr.SaveGameTaskData(self)
+    cloudDataMgr.SaveSkillConfig(self)
     self.bag:Save()
 end
 
@@ -476,6 +470,16 @@ function _M:SendChatText( text, ... )
         text = string.format(text, ...)
     end
     self:SendHoverText(text)
+    print(text)
+end
+
+function _M:SetHealth(health)
+    print("SetHealth", self.name, health)
+    Entity.SetHealth(self, health)
+    self:SendEvent("UpdateHealth", {
+        h = self.health,
+        mh = self.maxHealth
+    })
 end
 
 function _M:SendHoverText( text, ... )
@@ -594,6 +598,78 @@ function _M:StopSkillCastabilityCheck()
         ServerScheduler.cancel(self.skillCastabilityTask)
         self.skillCastabilityTask = nil
     end
+end
+
+-- 静态匹配队列
+_M.matchQueue = {} ---@type table<string, Player>
+_M.currentLevel = nil ---@type Level
+
+---加入匹配队列
+---@param levelType LevelType
+function _M:Queue(levelType)
+    -- 如果已经在队列中，直接返回
+    if _M.matchQueue[self.uin] then
+        self:SendChatText("你已经在匹配队列中")
+        return
+    end
+
+    -- 检查是否满足进入条件
+    if not levelType.entryConditions:Check(self) then
+        self:SendChatText("不满足进入条件")
+        return
+    end
+
+    -- 加入队列
+    _M.matchQueue[self.uin] = self
+    self:SendChatText("已加入匹配队列")
+
+    -- 检查是否可以开始游戏
+    if #_M.matchQueue >= levelType.maxPlayers then
+        _M:StartLevel(levelType)
+    end
+end
+
+---从匹配队列中移除
+function _M:LeaveQueue()
+    if _M.matchQueue[self.uin] then
+        _M.matchQueue[self.uin] = nil
+        self:SendChatText("已离开匹配队列")
+    end
+end
+
+---开始关卡
+---@param levelType LevelType
+function _M.StartLevel(levelType)
+    -- 创建新的关卡实例
+    local level = Level.New(levelType)
+    _M.currentLevel = level
+
+    -- 将队列中的玩家添加到关卡
+    for _, player in pairs(_M.matchQueue) do
+        level:AddPlayer(player)
+    end
+
+    -- 清空匹配队列
+    _M.matchQueue = {}
+
+    -- 开始关卡
+    level:Start()
+
+    -- 通知所有玩家
+    for _, player in pairs(level.players) do
+        player:SendChatText("匹配成功，关卡开始！")
+    end
+end
+
+---设置玩家视角
+---@param euler Vector3 旋转角度
+function _M:SetCameraView(euler)
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "UpdateCameraView",
+        x = euler.x,
+        y = euler.y,
+        z = euler.z,
+    })
 end
 
 return _M

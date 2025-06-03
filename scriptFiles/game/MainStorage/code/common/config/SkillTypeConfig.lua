@@ -10,6 +10,50 @@ function SkillTree:OnInit()
     self.mainSkill = nil ---@type SkillType 入口技能
 end
 
+function SkillTree:SetSkillAt(x, y, skillType)
+    if not self.skills[y] then
+        self.skills[y] = {}
+    end
+    self.skills[y][x] = skillType
+end
+
+function SkillTree:GetLane(lane)
+    return self.skills[lane] or {}
+end
+
+function SkillTree:Print()
+    local ClientScheduler = require(MainStorage.code.client.ClientScheduler)
+    local output = "========== 技能树结构 ==========\n"
+    
+    -- 获取最大层级数
+    local maxLane = 0
+    for lane, _ in pairs(self.skills) do
+        maxLane = math.max(maxLane, lane)
+    end
+    
+    -- 竖向显示技能树
+    for lane = 0, maxLane do
+        local laneSkills = self:GetLane(lane)
+        if #laneSkills > 0 then
+            output = output .. string.format("第%d层: ", lane + 1)
+            local skillNames = {}
+            for _, skill in ipairs(laneSkills) do
+                if skill then
+                    table.insert(skillNames, skill.name)
+                end
+            end
+            output = output .. table.concat(skillNames, ", ") .. "\n"
+        end
+    end
+    
+    output = output .. "========== 技能树结构结束 =========="
+    
+    -- 使用ClientScheduler延迟打印
+    ClientScheduler.add(function()
+        print(output)
+    end, 0.1) -- 延迟0.1秒打印
+end
+
 -- 递归构建技能树
 local function BuildSkillTreeRecursive(skillType, currentLane, currentIndex, skillTree)
     if not skillType then return end
@@ -327,6 +371,43 @@ local function LoadConfig()
         ["下一技能"] = {
             "双发豌豆"
         },
+        ["无需装备也可生效"] = true,
+        ["被动词条"] = {
+            "生命1_词条_豌豆射手"
+        },
+        ["目标模式"] = "敌人",
+        ["启用后坐力"] = false
+    }),
+    ["卷心菜投手"] = SkillType.New({
+        ["技能名"] = "卷心菜投手",
+        ["最大等级"] = 1,
+        ["技能描述"] = "卷心菜投手可以投射卷心菜",
+        ["技能品级"] = "UR",
+        ["是入口技能"] = true,
+        ["技能分类"] = 0,
+        ["下一技能"] = {""},
+        ["无需装备也可生效"] = false,
+        ["主动释放魔法"] = "卷心菜投手_入口",
+        ["目标模式"] = "敌人",
+        ["启用后坐力"] = true,
+        ["后坐力"] = {
+            ["垂直后坐力"] = 3,
+            ["最大垂直后坐力"] = 8,
+            ["垂直后坐力恢复"] = 5,
+            ["水平后坐力"] = 3,
+            ["最大水平后坐力"] = 6,
+            ["水平后坐力恢复"] = 2,
+            ["后坐力冷却时间"] = 0.5
+        }
+    }),
+    ["生命1_卷心菜投手"] = SkillType.New({
+        ["技能名"] = "生命1_卷心菜投手",
+        ["显示名"] = "攻击提升",
+        ["最大等级"] = 10,
+        ["技能描述"] = "[被动词条.1]",
+        ["技能品级"] = "UR",
+        ["是入口技能"] = false,
+        ["技能分类"] = 0,
         ["无需装备也可生效"] = true,
         ["被动词条"] = {
             "生命1_词条_豌豆射手"
@@ -793,49 +874,44 @@ function SkillTypeConfig.GetEntrySkills()
     return entrySkills
 end
 
-function SkillTree:SetSkillAt(x, y, skillType)
-    if not self.skills[y] then
-        self.skills[y] = {}
+---获取技能树数据结构，按主卡分组
+---@param skillCategory number 技能分类 (0=主卡, 1=副卡)
+---@return table<string, SkillTree> 技能树映射表，key为主技能名称
+function SkillTypeConfig.GetSkillTrees(skillCategory)
+    if not loaded then
+        LoadConfig()
     end
-    self.skills[y][x] = skillType
-end
 
-function SkillTree:GetLane(lane)
-    return self.skills[lane] or {}
-end
+    local skillTrees = {} ---@type table<string, SkillTree>
 
-function SkillTree:Print()
-    local ClientScheduler = require(MainStorage.code.client.ClientScheduler)
-    local output = "========== 技能树结构 ==========\n"
-    
-    -- 获取最大层级数
-    local maxLane = 0
-    for lane, _ in pairs(self.skills) do
-        maxLane = math.max(maxLane, lane)
-    end
-    
-    -- 竖向显示技能树
-    for lane = 0, maxLane do
-        local laneSkills = self:GetLane(lane)
-        if #laneSkills > 0 then
-            output = output .. string.format("第%d层: ", lane + 1)
-            local skillNames = {}
-            for _, skill in ipairs(laneSkills) do
-                if skill then
-                    table.insert(skillNames, skill.name)
-                end
-            end
-            output = output .. table.concat(skillNames, ", ") .. "\n"
+    -- 遍历所有技能配置，找到指定分类的入口技能
+    for skillName, skillType in pairs(SkillTypeConfig.config) do
+        -- 筛选条件：是入口技能 且 属于指定分类
+        if skillType.isEntrySkill and skillType.skillType == skillCategory then
+            gg.log("构建技能树 - 找到主卡:", skillType.name, "分类:", skillCategory)
+
+            -- 创建技能树结构
+            local skillTree = SkillTree.New()
+            
+            -- 从入口技能开始递归构建技能树
+            BuildSkillTreeRecursive(skillType, 0, 1, skillTree)
+
+            -- 以主技能名称作为key存储技能树
+            skillTrees[skillType.name] = skillTree
+            gg.log("技能树构建完成:", skillType.name)
         end
     end
-    
-    output = output .. "========== 技能树结构结束 =========="
-    
-    -- 使用ClientScheduler延迟打印
-    ClientScheduler.add(function()
-        print(output)
-    end, 0.1) -- 延迟0.1秒打印
+
+    return skillTrees
 end
 
+---打印技能树结构（美化输出）
+---@param skillTrees table<string, SkillTree> 技能树映射表
+function SkillTypeConfig.PrintSkillTrees(skillTrees)
+    for mainSkillName, skillTree in pairs(skillTrees) do
+        print("📋 主卡: " .. mainSkillName)
+        skillTree:Print()
+    end
+end
 
 return SkillTypeConfig
