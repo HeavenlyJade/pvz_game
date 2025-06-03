@@ -225,10 +225,6 @@ function Vec3:GetPosition()
     return self
 end
 
-function Vec3:GetCenterPosition()
-    return self
-end
-
 --获取归一化向量
 function Vec3:Normalized()
     local mag = self:Magnitude()

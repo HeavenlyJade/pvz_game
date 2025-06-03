@@ -8,7 +8,7 @@ local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) 
 ---@field player Player 玩家实例
 ---@field skillType SkillType 技能类型
 ---@field level number 技能等级
----@field equipSlot number 装备槽位
+---@field equipSlot number 装备槽位 主卡 1000 副卡 2000--2003
 ---@field cooldownCache number 冷却缓存
 local Skill = ClassMgr.Class("Skill")
 

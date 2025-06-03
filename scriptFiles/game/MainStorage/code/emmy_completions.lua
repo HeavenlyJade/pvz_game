@@ -399,8 +399,8 @@
 ---@field SetWorldPosition fun(self: Transform, x: number, y: number, z: number) None 设置全局位置
 ---@field SetWorldScale fun(self: Transform, x: number, y: number, z: number) None 设置全局缩放
 ---@field SetWorldEuler fun(self: Transform, x: number, y: number, z: number) None 设置全局欧拉角
----@field LookAt fun(self: Transform, pos: Vector3, y: boolean) None 看向指定位置
----@field LookAtObject fun(self: Transform, x: Transform, y?: boolean) None 看向指定位置
+---@field LookAt fun(self: Transform, x: Vector3, y: boolean) None 看向指定位置
+---@field LookAtObject fun(self: Transform, x: SceneTransObject, y?: boolean) None 看向指定位置
 
 
 ---@class BindAttachment

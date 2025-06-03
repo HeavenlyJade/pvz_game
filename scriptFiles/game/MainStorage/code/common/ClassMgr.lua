@@ -42,7 +42,6 @@ end
 ---@field ToString fun(self:Class) : string
 ---@field GetToStringParams fun(self:Class) : table{number, any}
 ---@field New fun(...: any): any 返回本类的实例
----@field Is fun(self:Class, className: string): boolean 判断实例是否继承自指定类名
 local Class = {}
 
 
@@ -79,23 +78,12 @@ function ClassMgr.Class( name, ...)
 		return instance.className .. gg.table2str(paramsStr)
 	end
 
-	cls.Is = function(instance, className)
-		local current = instance
-		while current do
-			if current.className == className then
-				return true
-			end
-			current = current.super
-		end
-		return false
-	end
-
 	local create = nil
 	create = function(instance, c, ...)
 		if c.super and create then
             create(instance, c.super, ...)
         end
-		instance.className = name
+		c.className = name
         if c.OnInit then
             c.OnInit(instance, ...)
         end

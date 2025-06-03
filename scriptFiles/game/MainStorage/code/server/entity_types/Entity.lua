@@ -1,3 +1,15 @@
+local SandboxNode = SandboxNode
+local Vector3 = Vector3
+local Enum = Enum
+local math = math
+local Vector2 = Vector2
+local ColorQuad = ColorQuad
+local wait = wait
+local game = game
+local pairs = pairs
+local coroutine = coroutine
+local next = next
+
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
@@ -231,7 +243,7 @@ function _M:RebuildTagHandlers()
             -- 如果有多个处理器，按优先级排序
             if #self.tagHandlers[key] > 1 then
                 table.sort(self.tagHandlers[key], function(a, b)
-                    return a.handlers[key][1]["优先级"] < b.handlers[key][1]["优先级"]
+                    return a.handlers[key][1].priority < b.handlers[key][1].priority
                 end)
             end
         end
@@ -955,7 +967,7 @@ end
 
 -- 无法被攻击状态
 function _M:CanBeTargeted()
-    return not self.isDead and not self.deleted
+    return not self.isDead
 end
 
 -- tick刷新
