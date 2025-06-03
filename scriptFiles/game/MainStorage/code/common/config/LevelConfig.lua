@@ -1,16 +1,18 @@
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
-local LevelType = require(MainStorage.code.common.config_type.LevelType) ---@type LevelType
     
 ---@class LevelConfig
 local LevelConfig = {}
 local loaded = false
 
 local function LoadConfig()
+    local LevelType = require(MainStorage.code.common.config_type.LevelType) ---@type LevelType
     LevelConfig.config ={
     ["测试关卡"] = LevelType.New({
         ["关卡ID"] = "测试关卡",
+        ["开始玩家"] = 1,
+        ["增加额外玩家时间"] = 1,
         ["关卡波次"] = {
             {
                 ["刷新波次"] = {

@@ -10,6 +10,8 @@ local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@typ
 local tweenInfo = TweenInfo.New(0.2, Enum.EasingStyle.Linear)
 local TweenService = game:GetService('TweenService')
 
+
+
 ---@class HudCards:ViewBase
 local HudCards = ClassMgr.Class("HudCards", ViewBase)
 
@@ -19,15 +21,16 @@ local uiConfig = {
     hideOnInit = false,
 }
 
+
 -- 缓存技能数据
 ---@type table<string, Skill>
 local skills = {}
 ---@type table<number, string>
 local equippedSkills = {}
-
 -- 施法相关变量
 local lastCastTimes = {}  -- 记录每个技能的释放时间
 local updateTaskId = nil
+
 
 function HudCards:SetFov(fov)
     if self.cameraTween then
@@ -151,8 +154,23 @@ function HudCards:UpdateCardsDisplay()
     end
 end
 
+
+
+function HudCards:OnDestroy()
+    if updateTaskId then
+        ClientScheduler.cancel(updateTaskId)
+        updateTaskId = nil
+    end
+end
 function HudCards:OnInit(node, config)
     ViewBase.OnInit(self, node, config)
+    gg.log("HudCards:OnInit", node, config)
+    self.mainCardButton =  self:Get("主卡按钮", ViewButton) ---@type ViewButton
+    self.subCardList =  self:Get("副卡列表", ViewList) ---@type ViewList
+    
+    local localPlayerGui = gg.get_player_gui()
+    local MainCard = localPlayerGui["卡片"]["MainCard"]
+    gg.log("主卡按钮", MainCard)
     
     -- 注册技能同步事件监听
     ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
@@ -174,9 +192,9 @@ function HudCards:OnInit(node, config)
         self:UpdateCooldownDisplay()
     end, 0, 0.2)
     
-    self.cardsList = self:Get("卡片列表", ViewList, function(n)
+    self.cardsList = self:Get("副卡列表", ViewList, function(n)
         local button = ViewButton.New(n, self)
-        gg.log("卡片列表", button, button.node.Name)
+        gg.log("副卡列表", button, button.node.Name)
         
         -- 设置触摸回调
         button.touchBeginCb = function(ui, btn, vector2) 
@@ -281,11 +299,6 @@ function HudCards:OnInit(node, config)
     end) ---@type ViewList<ViewButton>
 end
 
-function HudCards:OnDestroy()
-    if updateTaskId then
-        ClientScheduler.cancel(updateTaskId)
-        updateTaskId = nil
-    end
-end
+
 
 return HudCards.New(script.Parent, uiConfig)

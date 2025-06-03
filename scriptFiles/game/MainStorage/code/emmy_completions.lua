@@ -4413,6 +4413,7 @@ Vector4 = {} ---@type Vector4
 ---@field FillMethod FillMethod
 ---@field CameraType CameraType
 ---@field EasingStyle EasingStyle
+---@field EasingDirection EasingDirection
 ---@field NodeSyncMode NodeSyncMode
 ---@field CameraModel CameraModel
 Enum = {} ---@type Enum

@@ -26,6 +26,7 @@ local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
 ---@field auto_attack_tick number 攻击间隔
 ---@field auto_wait_tick number 攻击等待计时
 ---@field nearbyNpcs table<Npc> 附近的NPC列表
+---@field actor MiniPlayer
 ---@field New fun( info_:table ):   Player
 local _M = ClassMgr.Class('Player', Entity)
 
@@ -53,6 +54,7 @@ function _M:OnInit(info_)
     self.skills = {} ---@type table<string, Skill>
     self.equippedSkills = {} ---@type table<number, string>
     self.skillCastabilityTask = nil ---@type number 技能可释放状态检查任务ID
+    self._moveMethod = nil
 
     self:SubscribeEvent("CastSpell", function (evt)
         if evt.player == self then
@@ -154,6 +156,23 @@ function _M:ExecuteCommands(commands, castParam)
     end
 end
 
+function _M:EnterBattle()
+    self:showReviveEffect(self:GetPosition())
+    for _, skill in pairs(self.skills) do
+        if skill.skillType.battleModel then
+            self:SetModel(skill.skillType.battleModel, skill.skillType.battleAnimator, skill.skillType.battleStateMachine)
+            break
+        end
+    end
+end
+
+function _M:ExitBattle()
+    self:showReviveEffect(self:GetPosition())
+    self:SetModel("sandboxSysId://ministudio/entity/player/defaultplayer/body.prefab", 
+    "sandboxSysId&restype=12://ministudio/entity/player/player12/Animation/OfficialController.controller", 
+    nil)
+end
+
 ---@override
 function _M:Die()
     self:StopSkillCastabilityCheck()
@@ -221,7 +240,7 @@ function _M:RefreshStats()
     -- 添加所有属性的基础值
     local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
     for statName, statType in pairs(StatTypeConfig.GetAll()) do
-        self:AddStat(statName, statType.baseValue, {source = "EQUIP", refresh = false})
+        self:AddStat(statName, statType.baseValue,"EQUIP", false)
     end
 
     -- 直接遍历bag_items，跳过c =0
@@ -231,7 +250,7 @@ function _M:RefreshStats()
                 if item and item.itemType then
                     -- 遍历装备的所有属性
                     for statName, amount in pairs(item:GetStat()) do
-                        self:AddStat(statName, amount, {source = "EQUIP", refresh = false})
+                        self:AddStat(statName, amount, "EQUIP", false)
                     end
                     for _, tag in ipairs(item.itemType.boundTags) do
                         self:AddTagHandler(TagTypeConfig.Get(tag):FactoryEquipingTag("EQUIP-", 1.0))
@@ -248,6 +267,12 @@ function _M:RefreshStats()
 end
 
 function _M:SendEvent(eventName, data)
+    if not data then
+        data = {}
+    end
+    if not eventName then
+        print("发送事件时未传入事件: ".. debug.traceback())
+    end
     data.cmd = eventName
     gg.network_channel:fireClient(self.uin, data)
 end
@@ -492,11 +517,30 @@ end
 -- 添加附近的NPC
 ---@param npc Npc
 function _M:AddNearbyNpc(npc)
-    gg.log("AddNearbyNpc", npc, npc.uuid)
     if not self.nearbyNpcs[npc.uuid] then
         self.nearbyNpcs[npc.uuid] = npc
         self:UpdateNearbyNpcsToClient()
     end
+end
+
+function _M:SetMoveable(moveable)
+    if moveable then
+        self:RefreshStats()
+    else
+        self.actor.Movespeed = 0
+    end
+    -- if not self._moveMethod then
+    --     self._moveMethod = {
+    --         self.actor.TouchMovementMode, self.actor.PCMovementMode
+    --     }
+    -- end
+    -- if moveable then
+    --     self.actor.TouchMovementMode = self._moveMethod[1]
+    --     self.actor.PCMovementMode = self._moveMethod[2]
+    -- else
+    --     self.actor.TouchMovementMode = Enum.DevTouchMovementMode.Scriptable
+    --     self.actor.PCMovementMode = Enum.DevPCMovementMode.Scriptable
+    -- end
 end
 
 -- 移除附近的NPC

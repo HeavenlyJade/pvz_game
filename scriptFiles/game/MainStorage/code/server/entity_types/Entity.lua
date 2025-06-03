@@ -134,6 +134,12 @@ function _M:SubscribeEvent(eventType, listener, priority)
 end
 
 
+function _M:SetModel(model, animator, stateMachine)
+    self.actor.ModelId = model
+    self.actor["Animator"].ControllerAsset = animator
+    self:SetAnimationController(stateMachine)
+end
+
 function _M:GetSize()
     local size = self.actor.Size
     local scale = self.actor.LocalScale
@@ -141,25 +147,30 @@ function _M:GetSize()
 end
 
 function _M:SetAnimationController(name)
-    local AnimationConfig = require(MainStorage.code.common.config.AnimationConfig) ---@type AnimationConfig
-    local ModelPlayer = require(MainStorage.code.server.graphic.ModelPlayer) ---@type ModelPlayer
-    local animator = self.actor.Animator
-    local animationConfig = AnimationConfig.Get(name)
-    if animator and animationConfig then
-        self.modelPlayer = ModelPlayer.New(animator, animationConfig)
-        self.actor.Walking:Connect(function(isWalking)
-            if isWalking then
-                self.modelPlayer:OnWalk()
-            end
-        end)
-        self.actor.Standing:Connect(function(isStanding)
-            if isStanding then
-                self.modelPlayer:OnStand()
-            end
-        end)
-        self.actor.Died:Connect(function()
-            self.modelPlayer:OnDead()
-        end)
+    if not name then
+        if self.modelPlayer then
+            self.modelPlayer.walkingTask:Disconnect()
+            self.modelPlayer.standingTaskId:Disconnect()
+            self.modelPlayer = nil
+        end
+    else
+        local AnimationConfig = require(MainStorage.code.common.config.AnimationConfig) ---@type AnimationConfig
+        local ModelPlayer = require(MainStorage.code.server.graphic.ModelPlayer) ---@type ModelPlayer
+        local animator = self.actor.Animator
+        local animationConfig = AnimationConfig.Get(name)
+        if animator and animationConfig then
+            self.modelPlayer = ModelPlayer.New(animator, animationConfig)
+            self.modelPlayer.walkingTask = self.actor.Walking:Connect(function(isWalking)
+                if isWalking then
+                    self.modelPlayer:OnWalk()
+                end
+            end)
+            self.modelPlayer.standingTaskId = self.actor.Standing:Connect(function(isStanding)
+                if isStanding then
+                    self.modelPlayer:OnStand()
+                end
+            end)
+        end
     end
 end
 
@@ -944,16 +955,14 @@ end
 
 -- 展示复活特效
 function _M:showReviveEffect(pos_)
-    local function thread_wrap()
-        local expl = SandboxNode.new('DefaultEffect', self.actor)
-        expl.AssetID = 'sandboxSysId://particles/item_137_red.ent'
+    local expl = SandboxNode.new('DefaultEffect', self.actor)
+    expl.AssetID = 'sandboxSysId://particles/item_137_red.ent'
 
-        expl.Position = Vector3.New(pos_.x, pos_.y, pos_.z)
-        expl.LocalScale = Vector3.New(3, 3, 3)
-        wait(1.5)
+    expl.Position = Vector3.New(pos_.x, pos_.y, pos_.z)
+    expl.LocalScale = Vector3.New(3, 3, 3)
+    ServerScheduler.add(function()
         expl:Destroy()
-    end
-    gg.thread_call(thread_wrap)
+    end, 1.5)
 end
 
 -- 无法被攻击状态
