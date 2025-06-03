@@ -104,6 +104,7 @@ function Spell:Cast(caster, target, param)
         param = CastParam.New()
     end
     param.realTarget = target
+    print(debug.traceback())
 
     if not caster then
         return false
@@ -229,6 +230,7 @@ end
 ---@param targetMode? string
 ---@return Action[] 特效动作数组
 function Spell:PlayEffect(effects, playFrom, playAt, param, targetMode)
+    gg.log("播放特效", self.spellName, playFrom, playAt, targetMode, effects)
     if not effects then return nil end
     local actions = {}
     for i, effect in ipairs(effects) do

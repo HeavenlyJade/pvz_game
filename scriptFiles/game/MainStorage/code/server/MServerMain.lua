@@ -16,6 +16,7 @@ local os   = os
 
 local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
+local common_config     = require(MainStorage.code.common.MConfig)    ---@type common_config
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 local Player       = require(MainStorage.code.server.entity_types.Player)          ---@type Player
 local MTerrain      = require(MainStorage.code.server.MTerrain)         ---@type MTerrain
@@ -168,11 +169,13 @@ function MainServer.player_enter_game(player)
     player_:setGameActor(actor_)     --player
     actor_.CollideGroupID = 4
     player_:ChangeScene('g0')       --默认g0大厅
+
+    player_:equipWeapon(common_config.assets_dict.model.model_sword)
     player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
+
     player_:initSkillData()                 --- 加载玩家技能
     player_:RefreshStats()               --重生 --刷新战斗属性
     player_:SetHealth(player_.maxHealth)
-    gg.log("玩家的加载数据完成", player_.name)
 end
 
 --玩家离开游戏

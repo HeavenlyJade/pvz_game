@@ -11,6 +11,7 @@ local MainStorage = game:GetService("MainStorage")
 local code = MainStorage:WaitForChild('code')
 local common = code:WaitForChild('common')
 common:WaitForChild('ClassMgr' )
+common:WaitForChild('MCEntitySpawn'):WaitForChild( 'MConfigScene' )
 
 local server = code:WaitForChild('server')
 

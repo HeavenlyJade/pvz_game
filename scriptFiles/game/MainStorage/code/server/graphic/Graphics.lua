@@ -49,14 +49,15 @@ function Graphic:OnInit( data )
 end
 
 function Graphic:GetTarget(caster, target)
-    if self.targeter == "目标" or self.targeter == "击中目标" then
+    if self.targeter == "目标" then
         return target
     elseif self.targeter == "自己" then
         return caster
-    else
+    elseif self.targeter == "场景" then
         local scene = target.scene ---@type Scene
         return scene.node2Entity[scene:Get(self.targeterPath)]
     end
+    return target
 end
 
 ---@param caster Entity
@@ -99,7 +100,7 @@ function Graphic:PlayAtReal(caster, target, param, actions)
         end
         
         -- 创建并设置效果对象
-        local effect = self:CreateEffect(target)
+        local effect = self:CreateEffect(target, caster.scene)
         if not effect then 
             return 
         end
@@ -137,7 +138,7 @@ function Graphic:GetName()
     return "Unknown"
 end
 
-function Graphic:CreateEffect(target)
+function Graphic:CreateEffect(target, scene)
     return nil
 end
 
@@ -159,8 +160,8 @@ function ParticleGraphic:GetName()
     return self.particleName
 end
 
-function ParticleGraphic:CreateEffect(target)
-    local scene = target.scene
+function ParticleGraphic:CreateEffect(target, scene)
+    gg.log("CreateEffect", target)
     local container
     if self.boundToEntity and target.isEntity then
         container = target.actor
@@ -178,7 +179,6 @@ function ParticleGraphic:CreateEffect(target)
     fx:SetParent(container)
     if not self.boundToEntity then
         fx.Position = (self.offset + target:GetCenterPosition()):ToVector3()
-        gg.log("Position", target:GetCenterPosition(), self.offset, target.actor.Position)
     else
         fx.LocalPosition = self.offset:ToVector3()
     end
@@ -254,8 +254,7 @@ function ModelGraphic:GetName()
     return self.modelName
 end
 
-function ModelGraphic:CreateEffect(target)
-    local scene = target.scene
+function ModelGraphic:CreateEffect(target, scene)
     local container
     if self.boundToEntity and target.isEntity then
         container = target.actor

@@ -9,6 +9,8 @@ local game         = game
 
 local MainStorage        = game:GetService("MainStorage")
 local gg                 = require(MainStorage.code.common.MGlobal) ---@type gg
+local common_config      = require(MainStorage.code.common.MConfig) ---@type common_config
+local common_const       = require(MainStorage.code.common.MConst) ---@type common_const
 local ClassMgr           = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Modifiers          = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
 local Entity             = require(MainStorage.code.server.entity_types.Entity) ---@type Entity

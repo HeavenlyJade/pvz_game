@@ -29,7 +29,9 @@ function _M:Check(caster, target, param)
         param = CastParam.New()
     end
     for _, modifier in ipairs(self.modifiers) do
-        modifier:Check(caster, target, param)
+        if modifier:Check(caster, target, param) then
+            break
+        end
     end
     return param
 end
