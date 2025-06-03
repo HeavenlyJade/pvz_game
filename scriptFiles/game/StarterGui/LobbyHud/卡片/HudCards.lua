@@ -7,6 +7,8 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local CameraController = require(MainStorage.code.client.camera.CameraController) ---@type CameraController
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
+local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
+
 local tweenInfo = TweenInfo.New(0.2, Enum.EasingStyle.Linear)
 local TweenService = game:GetService('TweenService')
 
@@ -76,10 +78,13 @@ function HudCards:UpdateCooldownDisplay()
 end
 
 -- 处理技能同步事件
----@param data {cmd: string, uin: number, skillData: {skills: table<string, {skill: string, level: number, slot: number}>}}
+
+---@param data SyncPlayerSkillsData
 function HudCards:OnSyncPlayerSkills(data)
     if not data or not data.skillData then return end
-    
+    gg.log("获取来自服务端的技能数据111", data)
+    if not data or not data.skillData then return end
+    local skillDataDic = data.skillData.skills
     -- 清空现有技能数据
     skills = {}
     equippedSkills = {}
@@ -90,7 +95,6 @@ function HudCards:OnSyncPlayerSkills(data)
         local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
         local skill = Skill.New(nil, skillData) ---@type Skill
         skills[skillId] = skill
-        
         -- 记录已装备的技能
         if skill.skillType.activeSpell then
             equippedSkills[skill.equipSlot] = skillId
@@ -156,6 +160,8 @@ end
 
 
 
+
+
 function HudCards:OnDestroy()
     if updateTaskId then
         ClientScheduler.cancel(updateTaskId)
@@ -167,13 +173,9 @@ function HudCards:OnInit(node, config)
     gg.log("HudCards:OnInit", node, config)
     self.mainCardButton =  self:Get("主卡按钮", ViewButton) ---@type ViewButton
     self.subCardList =  self:Get("副卡列表", ViewList) ---@type ViewList
-    
-    local localPlayerGui = gg.get_player_gui()
-    local MainCard = localPlayerGui["卡片"]["MainCard"]
-    gg.log("主卡按钮", MainCard)
-    
+
     -- 注册技能同步事件监听
-    ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
+    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SYNC_SKILLS, function(data)
         self:OnSyncPlayerSkills(data)
     end)
     
