@@ -1310,6 +1310,31 @@ function gg.ifClientBagFull()
     return true
 end
 
+-- 获得质量字符串
+local const_quality_name = {
+    [1] = '普通',
+    [2] = '精良',
+    [3] = '神器',
+    [4] = '史诗',
+    [5] = '传说',
+    [6] = '神話'
+}
+
+function gg.getQualityStr(quality_)
+    return const_quality_name[quality_] or '未知'
+end
+
+-- 获得质量颜色
+local const_quality_color = {
+    [1] = ColorQuad.New(255, 255, 255, 255), -- 白色
+    [2] = ColorQuad.New(0, 0, 255, 255), -- 蓝色
+    [3] = ColorQuad.New(255, 255, 0, 255), -- 黄金
+    [4] = ColorQuad.New(255, 0, 255, 255), -- 粉色
+    [5] = ColorQuad.New(255, 0, 0, 255) -- 红色
+}
+function gg.getQualityColor(quality_)
+    return const_quality_color[quality_] or ColorQuad.New(0, 0, 0, 255)
+end
 
 function gg.eval(expr)
     expr = expr:gsub("%s+", "")  -- 移除空格

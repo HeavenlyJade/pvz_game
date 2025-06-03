@@ -7,8 +7,6 @@ local ServerEventManager = require(MainStorage.code.server.event.ServerEventMana
 local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
 local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
-local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
-
 
 ---@class SkillEventManager
 local SkillEventManager = {}
@@ -270,88 +268,36 @@ end
 --- 处理装备技能请求
 ---@param evt table 事件数据 {uin, skillName, slot}
 function SkillEventManager.HandleEquipSkill(evt)
-    gg.log("处理装备技能请求", evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "EquipSkill")
     if not player then
         return
     end
-    gg.log("处理装备技能请求", player, errorCode)
-    
+
     -- 从evt中提取参数
     local skillName = evt.skillName or evt.skill
     local slot = evt.slot or evt.slotIndex
 
-    -- 参数验证
-    if not skillName then
-        gg.log("技能名称不能为空")
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
+    if not skillName or not slot or slot < 1 or slot > 6 then -- 假设最多6个技能槽
         return
     end
 
-    -- 1. 判断玩家技能是否存在，不存在就返回并打印日志
+    -- 检查技能是否存在
     local skill = player.skills and player.skills[skillName]
     if not skill then
-        gg.log("玩家技能不存在: " .. skillName .. " 玩家: " .. player.name)
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_OWNED)
         return
-    end
-
-    -- 获取技能类型配置
-    local skillType = SkillTypeConfig.Get(skillName)
-    if not skillType then
-        gg.log("技能配置不存在: " .. skillName)
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_FOUND)
-        return
-    end
-
-    -- 2. 判断是否是主卡技能，如果是主卡技能，就获取主卡的配置，然后替换卡槽
-    if skillType.skillType == 0 then -- 主卡技能
-        gg.log("检测到主卡技能: " .. skillName .. ", 获取主卡配置进行槽位替换")
-        
-        -- 获取主卡配置
-        local mainCardConfig = common_config.EquipmentSlot["主卡"]
-        if not mainCardConfig then
-            gg.log("主卡配置不存在")
-            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
-            return
-        end
-
-        -- 遍历主卡配置，找到第一个可用的主卡槽位
-        local mainCardSlot = nil
-        for slotId, slotName in pairs(mainCardConfig) do
-            mainCardSlot = slotId
-            break -- 取第一个主卡槽位
-        end
-
-        if not mainCardSlot then
-            gg.log("没有找到可用的主卡槽位")
-            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_SLOT)
-            return
-        end
-
-        -- 使用主卡槽位替换原来的slot参数
-        slot = mainCardSlot
-        gg.log("主卡技能使用槽位: " .. slot .. " (" .. mainCardConfig[slot] .. ")")
-    else
-        -- 副卡技能，验证槽位参数
-        if not slot  then
-            gg.log("副卡技能槽位参数无效: " .. tostring(slot))
-            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
-            return
-        end
     end
 
     -- 执行装备
     local success = player:EquipSkill(skillName, slot)
     if success then
-        gg.log("技能装备成功: " .. skillName .. " 槽位: " .. slot)
         SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
             skillName = skillName,
             slot = slot
         })
     else
-        gg.log("技能装备失败: " .. skillName .. " 槽位: " .. slot)
-        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SLOT_OCCUPIED)
+        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.ERROR, {
+            errorCode = SkillEventManager.ERROR_CODES.SLOT_OCCUPIED
+        })
     end
 end
 

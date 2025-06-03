@@ -93,11 +93,11 @@ function CardsGui:OnInit(node, config)
     self:SwitchToCardType(self.currentCardType)
     self:LoadMainCardsAndClone()
     self:BindQualityButtonEvents()
-    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SYNC_SKILLS, function(data)
+    ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
         self:HandleSkillSync(data)
     end)
 
-    -- 监听技能升级响应
+    -- 监听技能学习/升级响应
     ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.UPGRADE, function(data)
         self:OnSkillLearnUpgradeResponse(data)
     end)
@@ -119,11 +119,10 @@ function CardsGui:RegisterMainCardFunctionButtons()
         })
     end
     self.EquipmentSkillsButton.clickCb = function (ui, button)
-        gg.log("主卡_装备发送了装备的请求")
+        gg.log("主卡_装备发送了升级请求")
         gg.network_channel:FireServer({
             cmd = SkillEventConfig.REQUEST.EQUIP,
-            skillName = self.currentMCardButtonName.extraParams["skillId"],
-  
+            skillName = self.currentMCardButtonName.extraParams["skillId"]
         })
     end
     if self.SubcardEnhancementButton then
@@ -444,11 +443,8 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
             iconNode.Icon = skill.icon
         end
     end
-
-    -- 设置技能名称
     local nameNode = cardFrame["技能名"]
     if nameNode then
-        -- gg.log("设置技能名称:", nameNode,nameNode.Title, skill.displayName,skill)
         nameNode.Title = skill.displayName
     end
     -- 设置技能等级
