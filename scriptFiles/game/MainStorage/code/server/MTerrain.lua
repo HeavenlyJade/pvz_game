@@ -15,7 +15,6 @@ local ColorQuad = ColorQuad
 
 local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local common_config     = require(MainStorage.code.common.MConfig)    ---@type common_config
 --local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 
 local Scene   = require(MainStorage.code.server.Scene)           ---@type Scene
@@ -80,7 +79,6 @@ function MTerrain.initTeleportBackG0( scene_ )
         if  gx_ and gx_.tp0 then
             -- 传送门特效
             local expl = SandboxNode.new('DefaultEffect', gx_.tp0 )
-            expl.AssetID = common_config.assets_dict.effect.end_table_effect
             expl.LocalPosition = Vector3.New( 50, 150, 50 );        --位置
 
             local function touch_func(node, pos, normal)

@@ -62,6 +62,8 @@ function CardsGui:OnInit(node, config)
 
     self.SubcardEnhancementButton = self:Get("框体/副卡属性/副卡_强化", ViewButton) ---@type ViewButton
     self.SubcardAllEnhancementButton = self:Get("框体/副卡属性/副卡一键强化", ViewButton) ---@type ViewButton
+    self.SubcardEquipButton = self:Get("框体/副卡属性/副卡_装备", ViewButton) ---@type ViewButton
+
 
     self.selectionList = self:Get("框体/主卡/选择列表", ViewList) ---@type ViewList
     self.mainCardFrame = self:Get("框体/主卡/加点框/纵列表/主卡框", ViewButton) ---@type ViewButton
@@ -93,11 +95,11 @@ function CardsGui:OnInit(node, config)
     self:SwitchToCardType(self.currentCardType)
     self:LoadMainCardsAndClone()
     self:BindQualityButtonEvents()
-    ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
+    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SYNC_SKILLS, function(data)
         self:HandleSkillSync(data)
     end)
 
-    -- 监听技能学习/升级响应
+    -- 监听技能升级响应
     ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.UPGRADE, function(data)
         self:OnSkillLearnUpgradeResponse(data)
     end)
@@ -119,10 +121,11 @@ function CardsGui:RegisterMainCardFunctionButtons()
         })
     end
     self.EquipmentSkillsButton.clickCb = function (ui, button)
-        gg.log("主卡_装备发送了升级请求")
+        gg.log("主卡_装备发送了装备的请求")
         gg.network_channel:FireServer({
             cmd = SkillEventConfig.REQUEST.EQUIP,
-            skillName = self.currentMCardButtonName.extraParams["skillId"]
+            skillName = self.currentMCardButtonName.extraParams["skillId"],
+  
         })
     end
     if self.SubcardEnhancementButton then
@@ -148,10 +151,20 @@ function CardsGui:RegisterMainCardFunctionButtons()
             })
         end
     end
+    if self.SubcardEquipButton then
+        self.SubcardEquipButton.clickCb = function(ui, button)
+            gg.log("副卡_装备发送了请求")
+            local skillName = self.currentSubCardButtonName.extraParams["skillId"]
+            gg.network_channel:FireServer({
+                cmd = SkillEventConfig.REQUEST.EQUIP,
+                skillName = skillName
+            })
+        end
+    end
 end
 -- 处理技能同步数据
 function CardsGui:HandleSkillSync(data)
-    gg.log("获取来自服务端的技能数据", data)
+    gg.log("CardsGui获取来自服务端的技能数据", data)
     if not data or not data.skillData then return end
     local skillDataDic = data.skillData.skills
 
@@ -162,7 +175,6 @@ function CardsGui:HandleSkillSync(data)
     -- 反序列化技能数据
     for skillName, skillData in pairs(skillDataDic) do
         -- 创建技能对象
-        gg.log("服务端加载的玩家技能",skillName,skillData)
         self.ServerSkills[skillName] = skillData
         -- 记录已装备的技能
         if skillData.slot > 0 then
@@ -443,8 +455,11 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
             iconNode.Icon = skill.icon
         end
     end
+
+    -- 设置技能名称
     local nameNode = cardFrame["技能名"]
     if nameNode then
+        -- gg.log("设置技能名称:", nameNode,nameNode.Title, skill.displayName,skill)
         nameNode.Title = skill.displayName
     end
     -- 设置技能等级

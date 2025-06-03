@@ -22,6 +22,22 @@ local ClientEventListener = {
 ---@param listener fun(evt: table) 事件回调函数
 ---@param ... number 优先级，默认为10
 function ClientEventManager.Subscribe(eventType, listener, ...)
+    -- 参数验证
+    if not eventType then
+        gg.log("错误：eventType 不能为 nil",eventType,listener)
+        return
+    end
+    
+    if not listener then
+        gg.log("错误：listener 不能为 nil")
+        return
+    end
+    
+    -- 确保 _eventDictionary 不为 nil
+    if not ClientEventManager._eventDictionary then
+        ClientEventManager._eventDictionary = {}
+    end
+    
     local priority = ... or 10
     local l = {
         cb = listener,

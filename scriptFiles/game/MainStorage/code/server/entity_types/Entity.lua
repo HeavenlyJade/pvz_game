@@ -750,22 +750,22 @@ function _M:addExp(exp_)
     self.exp = self.exp + exp_
 
     local save_flag_ = false
-    if common_config.expLevelUp[self.level + 1] then
-        -- 是否升级
-        if self.exp >= common_config.expLevelUp[self.level + 1] then
-            self.level = self.level + 1
-            self:resetBattleData(true)
-            save_flag_ = true
+    -- if common_config.expLevelUp[self.level + 1] then
+    --     -- 是否升级
+    --     if self.exp >= common_config.expLevelUp[self.level + 1] then
+    --         self.level = self.level + 1
+    --         self:resetBattleData(true)
+    --         save_flag_ = true
 
-            gg.log('addExp levelUp:', self.exp, self.level)
-            self:showDamage(0, {
-                levelup = self.level
-            }, self)
+    --         gg.log('addExp levelUp:', self.exp, self.level)
+    --         self:showDamage(0, {
+    --             levelup = self.level
+    --         }, self)
 
-            -- 展示特效
-            self:showReviveEffect(self:GetPosition())
-        end
-    end
+    --         -- 展示特效
+    --         self:showReviveEffect(self:GetPosition())
+    --     end
+    -- end
 
     cloudDataMgr.SavePlayerData(self.uin, save_flag_) -- 加经验存盘
 end

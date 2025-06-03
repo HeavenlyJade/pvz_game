@@ -7,8 +7,13 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local CameraController = require(MainStorage.code.client.camera.CameraController) ---@type CameraController
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
+local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
+
+
 local tweenInfo = TweenInfo.New(0.2, Enum.EasingStyle.Linear)
 local TweenService = game:GetService('TweenService')
+
+
 
 ---@class HudCards:ViewBase
 local HudCards = ClassMgr.Class("HudCards", ViewBase)
@@ -19,15 +24,16 @@ local uiConfig = {
     hideOnInit = false,
 }
 
+
 -- 缓存技能数据
 ---@type table<string, Skill>
 local skills = {}
 ---@type table<number, string>
 local equippedSkills = {}
-
 -- 施法相关变量
 local lastCastTimes = {}  -- 记录每个技能的释放时间
 local updateTaskId = nil
+
 
 function HudCards:SetFov(fov)
     if self.cameraTween then
@@ -73,14 +79,21 @@ function HudCards:UpdateCooldownDisplay()
 end
 
 -- 处理技能同步事件
----@param data {cmd: string, uin: number, skillData: {skills: table<string, {skill: string, level: number, slot: number}>}}
+
+---@param data SyncPlayerSkillsData
 function HudCards:OnSyncPlayerSkills(data)
     if not data or not data.skillData then return end
-    
+    gg.log("获取来自服务端的技能数据111", data)
+    if not data or not data.skillData then return end
+    local skillDataDic = data.skillData.skills
     -- 清空现有技能数据
     skills = {}
     equippedSkills = {}
     lastCastTimes = {}  -- 清空冷却时间记录
+    
+    -- 清空卡片数据
+    self.mainCardData = {}
+    self.subCardData = {}
     
     -- 反序列化技能数据
     for skillId, skillData in pairs(data.skillData.skills) do
@@ -88,16 +101,38 @@ function HudCards:OnSyncPlayerSkills(data)
         local skill = Skill.New(nil, skillData) ---@type Skill
         skills[skillId] = skill
         
-        -- 记录已装备的技能
+        -- 获取技能类型配置
+        local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
+        local skillType = SkillTypeConfig.Get(skillId)
+        
+        if skillType then
+            -- 根据技能分类和槽位分别存储
+            if skillType.skillType == 0 then
+                -- 主卡技能：slot不等于0且是主卡类型
+                if skill.equipSlot and skill.equipSlot ~= 0 then
+                    self.mainCardData[skill.equipSlot] = skill
+                    gg.log("存储主卡技能:", skillId, "槽位:", skill.equipSlot)
+                end
+            elseif skillType.skillType == 1 then
+                -- 副卡技能：slot不等于0且是副卡类型
+                if skill.equipSlot and skill.equipSlot ~= 0 then
+                    self.subCardData[skill.equipSlot] = skill
+                    gg.log("存储副卡技能:", skillId, "槽位:", skill.equipSlot)
+                end
+            end
+        end
+        
+        -- 记录已装备的技能（保持原有逻辑）
         if skill.skillType.activeSpell then
             equippedSkills[skill.equipSlot] = skillId
         end
     end
-    
     -- 更新卡片列表显示
     self:UpdateCardsDisplay()
     
     gg.log("已同步技能数据:", skills, equippedSkills)
+    gg.log("主卡数据:", self.mainCardData)
+    gg.log("副卡数据:", self.subCardData)
 end
 
 -- 处理技能冷却更新事件
@@ -137,25 +172,120 @@ function HudCards:OnUpdateSkillCastability(data)
 end
 
 function HudCards:UpdateCardsDisplay()
+    -- 更新主卡显示
+    self:UpdateMainCardDisplay()
+    
+    -- 更新副卡显示
+    self:UpdateSubCardDisplay()
+end
+
+-- 更新主卡显示
+function HudCards:UpdateMainCardDisplay()
+    if not self.mainCardButton then return end
+    
+    -- 查找主卡数据（主卡槽位通常是1000）
+    local mainCardSkill = nil
+    for slotId, skill in pairs(self.mainCardData) do
+        mainCardSkill = skill
+        break -- 取第一个主卡（目前只有一个主卡槽位）
+    end
+    
+    if mainCardSkill and mainCardSkill.skillType then
+        -- 更新主卡按钮显示
+        local cardName = mainCardSkill.skillName
+        self.mainCardButton.node["框体"]["Text"].Title = cardName
+        gg.log("更新主卡显示:", mainCardSkill.skillName, "等级:", mainCardSkill.level)
+    else
+        self.mainCardButton.node["框体"]["Text"].Title = "未装备"
+        gg.log("更新主卡显示:")
+        if self.mainCardButton.node["Title"] then
+            self.mainCardButton.node["Title"].Title = "未装备"
+        end
+        if self.mainCardButton.node["Text"] then
+            self.mainCardButton.node["Text"].Title = ""
+        end
+        gg.log("主卡未装备")
+    end
+end
+
+-- 更新副卡显示
+function HudCards:UpdateSubCardDisplay()
     if not self.cardsList then return end
-    self.cardsList:SetElementSize(#equippedSkills - 1)
-    -- 遍历所有卡片
-    if #equippedSkills > 1 then
-        for i = 1, self.cardsList:GetChildCount() do
-            local card = self.cardsList:GetChild(i) ---@type ViewButton
-            local skillId = equippedSkills[i + 1]
-            local skill = skills[skillId]
-            card.node["Title"].Title = skill.skillType.displayName
-            card.node["Text"].Title = tostring(skill.level)
+    
+    -- 获取副卡槽位配置
+    local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
+    local subCardConfig = common_config.EquipmentSlot["副卡"]
+    if not subCardConfig then
+        gg.log("副卡配置不存在")
+        return
+    end
+    
+    -- 获取副卡槽位列表并排序
+    local subCardSlots = {}
+    for slotId, slotName in pairs(subCardConfig) do
+        table.insert(subCardSlots, slotId)
+    end
+    table.sort(subCardSlots) -- 按槽位ID排序
+    
+    -- 设置副卡列表大小
+    self.cardsList:SetElementSize(#subCardSlots)
+    
+    -- 遍历副卡槽位更新显示
+    for i = 1, self.cardsList:GetChildCount() do
+        local card = self.cardsList:GetChild(i) ---@type ViewButton
+        local slotId = subCardSlots[i]
+        local skill = self.subCardData[slotId]
+        
+        if skill and skill.skillType then
+            -- 有技能时显示技能信息
+            if card.node["Title"] then
+                card.node["Title"].Title = skill.skillType.displayName or skill.skillName
+            end
+            if card.node["Text"] then
+                card.node["Text"].Title = tostring(skill.level)
+            end
+            gg.log("更新副卡显示 槽位" .. slotId .. ":", skill.skillName, "等级:", skill.level)
+        else
+            -- 没有技能时显示空槽位
+            if card.node["Title"] then
+                card.node["Title"].Title = subCardConfig[slotId] or ("副卡" .. i)
+            end
+            if card.node["Text"] then
+                card.node["Text"].Title = ""
+            end
+            gg.log("副卡槽位" .. slotId .. "为空")
         end
     end
 end
 
+function HudCards:OnDestroy()
+    if updateTaskId then
+        ClientScheduler.cancel(updateTaskId)
+        updateTaskId = nil
+    end
+end
+
+function HudCards:RegisterEventFunction()
+    gg.log("self.CardpackButton",self.CardpackButton)
+
+    if self.CardpackButton then
+        self.CardpackButton.clickCb = function (ui, button)
+            gg.log(ViewBase["CardsGui"],"点击事件")
+            ViewBase["CardsGui"]:Open()
+        end
+    end
+    
+end
 function HudCards:OnInit(node, config)
     ViewBase.OnInit(self, node, config)
-    
+    gg.log("HudCards:OnInit", node, config)
+    self.mainCardButton =  self:Get("主卡按钮", ViewButton) ---@type ViewButton
+    self.subCardList =  self:Get("副卡列表", ViewList) ---@type ViewList
+    self.CardpackButton = self:Get("卡包", ViewButton) ---@type ViewButton
+    self.mainCardData = {} ---@type <string, Skill>
+    self.subCardData = {} ---@type <number, Skill>    
     -- 注册技能同步事件监听
-    ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
+    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SYNC_SKILLS, function(data)
         self:OnSyncPlayerSkills(data)
     end)
     
@@ -174,9 +304,9 @@ function HudCards:OnInit(node, config)
         self:UpdateCooldownDisplay()
     end, 0, 0.2)
     
-    self.cardsList = self:Get("卡片列表", ViewList, function(n)
+    self.cardsList = self:Get("副卡列表", ViewList, function(n)
         local button = ViewButton.New(n, self)
-        gg.log("卡片列表", button, button.node.Name)
+        gg.log("副卡列表", button, button.node.Name)
         
         -- 设置触摸回调
         button.touchBeginCb = function(ui, btn, vector2) 
@@ -279,13 +409,10 @@ function HudCards:OnInit(node, config)
         
         return button
     end) ---@type ViewList<ViewButton>
+    self:RegisterEventFunction()
+    gg.log("HudCards:OnInit完成")
 end
 
-function HudCards:OnDestroy()
-    if updateTaskId then
-        ClientScheduler.cancel(updateTaskId)
-        updateTaskId = nil
-    end
-end
+
 
 return HudCards.New(script.Parent, uiConfig)

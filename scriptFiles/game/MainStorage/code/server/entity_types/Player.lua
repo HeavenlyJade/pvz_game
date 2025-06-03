@@ -1,6 +1,5 @@
 local MainStorage   = game:GetService("MainStorage")
 local gg            = require(MainStorage.code.common.MGlobal) ---@type gg
-local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
 local common_const  = require(MainStorage.code.common.MConst) ---@type common_const
 local ClassMgr  = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 -- local TaskSystem = require(MainStorage.code.server.TaskSystem.MTaskSystem) ---@type TaskSystem
@@ -284,12 +283,13 @@ end
 function _M:initSkillData()
     -- 从云数据读取
     local ret1_, cloud_data_ = cloudDataMgr.ReadSkillData(self.uin)
+    gg.log("initSkillData", ret1_, cloud_data_)
     if ret1_ == 0 and cloud_data_ and cloud_data_.skills then
         -- 加载已保存的技能
         for skillId, skillData in pairs(cloud_data_.skills) do
             local skill = Skill.New(self, skillData)
             if not skill.skillType then
-                print(self.name .. "的技能不存在： " .. skillData["skill"])
+                gg.log(self.name .. "的技能不存在： " .. skillData["skill"])
             else
                 self.skills[skillId] = skill
             end
