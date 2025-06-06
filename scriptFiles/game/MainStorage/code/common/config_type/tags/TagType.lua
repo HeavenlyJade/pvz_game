@@ -26,9 +26,9 @@ function TagType:GetDescription(level)
     if not self.description or self.description == "" then
         return ""
     end
-    
+
     local result = self.description
-    
+
     -- 处理 [数字:每级增加倍率] 格式
     result = string.gsub(result, "%[(%d+):([%d%.]+)%]", function(baseValue, perLevel)
         baseValue = tonumber(baseValue)
@@ -36,7 +36,7 @@ function TagType:GetDescription(level)
         local finalValue = baseValue * (1 + (level - 1) * perLevel)
         return string.format("%.1f", finalValue)
     end)
-    
+
     -- 处理 [词条序号.属性.数组索引] 格式
     result = string.gsub(result, "%[(%d+)%.([^%.]+)%.(%d+)%]", function(index, fieldName, arrayIndex)
         index = tonumber(index)
@@ -44,7 +44,7 @@ function TagType:GetDescription(level)
         if index > 0 and index <= #self.functions then
             local handler = self.functions[index]
             gg.log("result ", result, handler, fieldName, arrayIndex)
-            
+
             -- 处理修改数值
             if fieldName == "修改数值" and handler["修改数值"] and handler["修改数值"][arrayIndex] then
                 local modifier = handler["修改数值"][arrayIndex]
@@ -60,7 +60,7 @@ function TagType:GetDescription(level)
                     end
                 end
             end
-            
+
             -- 处理属性增伤
             if fieldName == "属性增伤" and handler["属性增伤"] and handler["属性增伤"][arrayIndex] then
                 local element = handler["属性增伤"][arrayIndex]
@@ -78,7 +78,7 @@ function TagType:GetDescription(level)
         end
         return ""
     end)
-    
+
     -- 处理 [词条序号.属性] 格式
     result = string.gsub(result, "%[(%d+)%.([^%]]+)%]", function(index, fieldName)
         index = tonumber(index)
@@ -95,20 +95,20 @@ function TagType:GetDescription(level)
         end
         return ""
     end)
-    
+
     return result
 end
 
 function TagType:FactoryEquipingTag(prefix, level)
     prefix = prefix or "MISC-"
     level = level or 1.0
-    
+
     local equipingTag = EquipingTag.New()
     equipingTag.level = level
     equipingTag.id = prefix .. self.id
     equipingTag.tagType = self
     equipingTag.handlers = {}
-    
+
     for _, tagHandler in ipairs(self.functions) do
         tagHandler.m_tagType = self
         local key = tagHandler.m_trigger
@@ -117,7 +117,7 @@ function TagType:FactoryEquipingTag(prefix, level)
         end
         table.insert(equipingTag.handlers[key], tagHandler)
     end
-    
+
     return equipingTag
 end
 

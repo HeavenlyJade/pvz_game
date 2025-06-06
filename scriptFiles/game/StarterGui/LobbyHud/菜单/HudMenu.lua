@@ -79,7 +79,7 @@ function HudMenu:OnInit(node, config)
     -- 初始化对象池
     MoneyAddPool.template = self:Get("货币增加").node ---@type UITextLabel
     MoneyAddPool.template.Visible = false
-    
+
     self:RegisterMenuButton(self:Get("活动", ViewButton))
     self:RegisterMenuButton(self:Get("图鉴", ViewButton))
     self:RegisterMenuButton(self:Get("卡包", ViewButton))

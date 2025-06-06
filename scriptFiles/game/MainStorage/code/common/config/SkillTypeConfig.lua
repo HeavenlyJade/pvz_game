@@ -1346,4 +1346,44 @@ function SkillTypeConfig.GetEntrySkills()
     return entrySkills
 end
 
+---获取技能树数据结构，按主卡分组
+---@param skillCategory number 技能分类 (0=主卡, 1=副卡)
+---@return table<string, SkillTree> 技能树映射表，key为主技能名称
+function SkillTypeConfig.GetSkillTrees(skillCategory)
+    if not loaded then
+        LoadConfig()
+    end
+
+    local skillTrees = {} ---@type table<string, SkillTree>
+
+    -- 遍历所有技能配置，找到指定分类的入口技能
+    for skillName, skillType in pairs(SkillTypeConfig.config) do
+        -- 筛选条件：是入口技能 且 属于指定分类
+        if skillType.isEntrySkill and skillType.skillType == skillCategory then
+            gg.log("构建技能树 - 找到主卡:", skillType.name, "分类:", skillCategory)
+
+            -- 创建技能树结构
+            local skillTree = SkillTree.New()
+            
+            -- 从入口技能开始递归构建技能树
+            BuildSkillTreeRecursive(skillType, 0, 1, skillTree)
+
+            -- 以主技能名称作为key存储技能树
+            skillTrees[skillType.name] = skillTree
+            gg.log("技能树构建完成:", skillType.name)
+        end
+    end
+
+    return skillTrees
+end
+
+---打印技能树结构（美化输出）
+---@param skillTrees table<string, SkillTree> 技能树映射表
+function SkillTypeConfig.PrintSkillTrees(skillTrees)
+    for mainSkillName, skillTree in pairs(skillTrees) do
+        print("📋 主卡: " .. mainSkillName)
+        skillTree:Print()
+    end
+end
+
 return SkillTypeConfig

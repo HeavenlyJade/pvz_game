@@ -597,7 +597,7 @@ function SkillEventManager.HandleDestroySkill(evt)
     if destroyResult.success then
         -- 保存玩家数据
         player:saveSkillConfig()
-        
+
         -- 同步最新的技能数据到客户端
         player:syncSkillData()
 

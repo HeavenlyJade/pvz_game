@@ -17,7 +17,7 @@ function _M:OnInit(data)
             self.condition = conditionClass.New(data["条件"])
         end
     end
-    
+
     -- 设置其他属性
     self.targeter = data["目标"]
     self.targeterPath = data["目标场景名"]
@@ -58,7 +58,7 @@ function _M:Check(caster, target, param)
     end
     local stop = false
     if self.invert then success = not success end
-    
+
     if self.action == "必须" then
         if not success then param.cancelled = true end
     elseif self.action == "拒绝" then

@@ -16,10 +16,10 @@ local SkillCommands = {}
 function SkillCommands.unlock(params, player)
     local skillName = params["skillName"]
     local level = params["level"] or 1
-    
+
     -- 使用SkillCommon的验证方法
     local skillType, errorCode = SkillCommon.ValidateSkillLearn(player, skillName)
-    
+
     if errorCode ~= SkillEventConfig.ERROR_CODES.SUCCESS then
         local errorMsg = SkillCommon.FormatErrorMessage(
             "技能解锁失败: " .. SkillEventConfig.GetErrorMessage(errorCode),
@@ -29,7 +29,7 @@ function SkillCommands.unlock(params, player)
         SkillCommon.SendMessageAndLog(player, errorMsg, true)
         return
     end
-    
+
     -- 创建技能实例
     local skill = SkillCommon.CreateSkillInstance(player, skillName, level)
     if not skill then
@@ -37,11 +37,11 @@ function SkillCommands.unlock(params, player)
         SkillCommon.SendMessageAndLog(player, errorMsg, true)
         return
     end
-    
+
     -- 成功消息
     local successMsg = SkillCommon.FormatSuccessMessage("技能解锁成功", player, skillName)
     SkillCommon.SendMessageAndLog(player, successMsg, false)
-    
+
     -- 发送响应到客户端
     local responseData = {
         skillName = skillName,
@@ -58,10 +58,10 @@ end
 ---@param player Player
 function SkillCommands.destroy(params, player)
     local skillName = params["skillName"]
-    
+
     -- 使用SkillCommon的验证方法
     local skillType, skillInstance, errorCode = SkillCommon.ValidateSkillAndPlayer(player, skillName)
-    
+
     if errorCode ~= SkillEventConfig.ERROR_CODES.SUCCESS then
         local errorMsg = SkillCommon.FormatErrorMessage(
             "销毁技能失败: " .. SkillEventConfig.GetErrorMessage(errorCode),
@@ -71,18 +71,18 @@ function SkillCommands.destroy(params, player)
         SkillCommon.SendMessageAndLog(player, errorMsg, true)
         return
     end
-    
+
     gg.log("开始销毁技能: " .. skillName .. "，玩家:" .. player.name)
-    
+
     -- 执行销毁逻辑
     local destroyResult = SkillCommon.PerformSkillDestroy(player, skillName)
-    
+
     if destroyResult.success then
         -- 保存玩家数据
         player:saveSkillConfig()
         -- 同步最新的技能数据到客户端
         player:syncSkillData()
-        
+
         local successMsg = SkillCommon.FormatSuccessMessage(
             "技能销毁成功，同时销毁的技能: " .. table.concat(destroyResult.destroyedSkills, ", "),
             player,
@@ -119,12 +119,12 @@ function SkillCommands.main(params, player)
     local skillName = params["技能"]
     local level = params["等级"]
     local optype = params["类型"]
-    
+
     if not player then
         gg.log("玩家不存在: " .. uin)
         return false
     end
-    
+
     if optype == "解锁" then
         local args = {skillName = skillName, level = level}
         SkillCommands.unlock(args, player)

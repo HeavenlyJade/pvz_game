@@ -215,17 +215,11 @@ function LevelType:OnInit(data)
     -- 创建关卡实例
     self.levels = {}
     local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
-    for _, sceneData in ipairs(data["场景节点"] or {}) do
-        local scene = gg.server_scene_list[sceneData["场景"]]
-        local path = sceneData["路径"]
-        if scene and path then
-            local node = scene:Get(path)
-        if node then
-                table.insert(self.levels, Level.New(self, node, #self.levels + 1, scene))
-            else
-                print(string.format("Warning: Failed to find scene node at %s/%s", scene, path))
-            end
-        end
+    local scene = gg.server_scene_list[data["场景"]]
+    if scene then
+        table.insert(self.levels, Level.New(self, scene, #self.levels + 1))
+    else
+        print(string.format("Warning: Failed to find scene node at %s", data["场景"]))
     end
 end
 

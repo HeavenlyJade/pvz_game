@@ -36,7 +36,7 @@ function HudAvatar:OnInit(node, config)
     self:Get("头像背景/任务按钮", ViewButton).clickCb = function (ui, viewButton)
         self.questList:SetVisible(not self.questList.node.Enabled)
     end
-    
+
     ClientEventManager.Subscribe("UpdateQuestsData", function(evt)
         local evt = evt ---@type QuestsUpdate
         self.questList:SetElementSize(#evt.quests)
@@ -49,26 +49,26 @@ function HudAvatar:OnInit(node, config)
             ele:Get("任务数量").node.Title = string.format("%d/%d", child.count, child.countMax)
         end
     end)
-    
+
     ClientEventManager.Subscribe("NavigateTo", function(data)
         local stopRange = data.range ^ 2
         local vec = Vector3.New(data.pos[1], data.pos[2], data.pos[3])
         self.targetPos = vec
         Players.LocalPlayer.Character:NavigateTo(vec)
-        
+
         -- 取消之前的检查任务（如果存在）
         if self.navigationCheckTaskId then
             ClientScheduler.cancel(self.navigationCheckTaskId)
         end
-        
+
         -- 创建新的检查任务
         self.navigationCheckTaskId = ClientScheduler.add(function()
             local character = Players.LocalPlayer.Character ---@type MiniPlayer
             if not character then return end
-            
+
             local currentPos = character.Position
             local distance = gg.vec.DistanceSq3(currentPos, self.targetPos)
-            
+
             if distance <= stopRange then
                 character:StopNavigate()
                 gg.network_channel:FireServer({

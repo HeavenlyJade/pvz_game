@@ -80,7 +80,7 @@ function HudInteract:ShowInteract(interactOptions)
         gg.log("更新交互选项", i, option,button)
         button:Get("Text").node.Title = option.npcName
         if option.icon then
-            button:Get("图标").node.Icon = option.icon 
+            button:Get("图标").node.Icon = option.icon
         end
         button.index = i
     end

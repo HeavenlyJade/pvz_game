@@ -87,7 +87,7 @@ end
 function BuffActiveCondition:Check(modifier, caster, target)
     if not target.isEntity then return false end
     local creature = target ---@cast creature Entity
-    
+
     if self.buffKeyword == nil or self.buffKeyword == "" then
         local totalStacks = 0
         for _, buff in pairs(creature.activeBuffs) do
