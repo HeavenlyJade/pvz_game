@@ -142,7 +142,7 @@ function MTerrain.listenDynamicSceneOp()
             end
             --]]
 
-        elseif optype == 3 and result == 0 then -- 删除场景得时候            
+        elseif optype == 3 and result == 0 then -- 删除场景得时候
 
         end
     end)
@@ -186,7 +186,7 @@ function MTerrain.changeMap_ChangeWorkSpace( uin_, scene_name_ )
     gg.log( 'call changeMap:', uin_, scene_name_ )
 
     local player_ = gg.server_players_list[ uin_ ]
-    if  player_ then        
+    if  player_ then
         --if  player_.scene_name == scene_name_ then
             --gg.log( 'current scene_name not change, abort changeMap.', player_.uin, scene_name_ )
             --return

@@ -1,12 +1,3 @@
---- nnpc
-
-local setmetatable = setmetatable
-local SandboxNode  = SandboxNode
-local Vector3      = Vector3
-local ColorQuad    = ColorQuad
-local game         = game
-
-
 local MainStorage        = game:GetService("MainStorage")
 local gg                 = require(MainStorage.code.common.MGlobal) ---@type gg
 local ClassMgr           = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
@@ -25,7 +16,7 @@ local _M                 = ClassMgr.Class('Npc', Entity) --父类Entity
 function _M:OnInit(npcData, actor)
     Entity:OnInit({}) --父类初始化
     self.spawnPos          = actor.LocalPosition
-    self.actor             = actor
+    self:setGameActor(actor)
     self.name              = npcData["名字"]
     self.interactCondition = Modifiers.New(npcData["互动条件"])
     self.interactCommands  = npcData["互动指令"]
@@ -34,7 +25,7 @@ function _M:OnInit(npcData, actor)
     self.target            = nil
     actor.CollideGroupID   = 1
     if npcData["状态机"] then
-        self:SetAnimationController(npcData["状态机"]) 
+        self:SetAnimationController(npcData["状态机"])
     end
     -- self:setupNpcInteraction(actor, self.name)
     local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox

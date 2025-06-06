@@ -10,7 +10,8 @@ local ModelPlayer = ClassMgr.Class("ModelPlayer")
 
 
 ---@param animator Animator
-function ModelPlayer:OnInit(animator, stateConfig)
+function ModelPlayer:OnInit(name, animator, stateConfig)
+    self.name = name
     self.animator = animator
     self.finishTask = nil
     self.stateConfig = stateConfig
@@ -137,10 +138,10 @@ function ModelPlayer:SwitchState(stateId, speed)
             self:PlayTransition("无")
         end, playTime - 0.1)
     end
-    -- local playTime = self.animator:GetCurrentStatePlayedTime(0)
-    -- gg.log("playTime", stateId, playTime)
-    -- local playTimeByStr = self.animator:GetStatePlayedTime(stateId)
-    -- gg.log("playTimeByStr", stateId, playTimeByStr)
+    local playTime = self.animator:GetCurrentStatePlayedTime(0)
+    gg.log("playTime", stateId, playTime)
+    local playTimeByStr = self.animator:GetStatePlayedTime(stateId)
+    gg.log("playTimeByStr", stateId, playTimeByStr)
     self.currentState = state
     return playTime
 end

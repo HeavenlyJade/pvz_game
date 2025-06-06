@@ -18,23 +18,53 @@ local uiConfig = {
 
 function AfkHud:OnInit(node, config)
     ViewBase.OnInit(self, node, config)
-    local exitButton = self:Get("按钮", ViewButton)
-    self.gainSpeed = self:Get("获取速度") ---@type ViewComponent
-    exitButton.clickCb = function (ui, button)
-        -- 发送退出挂机状态事件到服务器
-        gg.network_channel:FireServer({
-            cmd = "ExitAfkSpot"
-        })
-        -- 关闭UI
-        self:Close()
-    end
+    self.gainSpeed = self:Get("挂机底图/获取速度") ---@type ViewComponent
+    
+    -- 用于跟踪阳光变化
+    self.lastSunlight = 0
+    self.lastUpdateTime = 0
+    self.sunlightPerSecond = 0
 
     -- 监听挂机点进入事件
-    ClientEventManager.Subscribe("AfkSpotEntered", function(data)
-        -- 更新获取速度显示
-        self.gainSpeed.node.Title = string.format("阳光: +%d/秒", data.rewardsPerSecond)
-        -- 显示UI
-        self:Open()
+    ClientEventManager.Subscribe("AfkSpotUpdate", function(data)
+        if data.enter then
+            self.lastUpdateTime = 0
+            self.gainSpeed.node.Title = "挂机中..."
+            self:Open()
+        else
+            self:Close()
+        end
+    end)
+
+    -- 监听阳光变化事件
+    ClientEventManager.Subscribe("SyncInventoryItems", function(evt)
+        if not evt.moneys or not self.displaying then return end
+        
+        -- 找到阳光货币（第二个货币）
+        local sunlight = 0
+        for _, money in ipairs(evt.moneys) do
+            if money.it == "阳光" then
+                sunlight = money.a
+                break
+            end
+        end
+        
+        local currentTime = os.time()
+        
+        -- 计算每秒增速
+        if self.lastUpdateTime > 0 then
+            local timeDiff = currentTime - self.lastUpdateTime
+            if timeDiff > 0 then
+                local sunlightDiff = sunlight - self.lastSunlight
+                self.sunlightPerSecond = sunlightDiff / timeDiff
+                -- 更新显示
+                self.gainSpeed.node.Title = string.format("+%.1f/秒", self.sunlightPerSecond)
+            end
+        end
+        
+        -- 更新上次的值
+        self.lastSunlight = sunlight
+        self.lastUpdateTime = currentTime
     end)
 end
 
@@ -47,6 +77,10 @@ end
 function AfkHud:Close()
     ViewBase.Close(self)
     ViewBase.GetUI("HudInteract"):Open()
+    -- 重置数据
+    self.lastSunlight = 0
+    self.lastUpdateTime = 0
+    self.sunlightPerSecond = 0
 end
 
 

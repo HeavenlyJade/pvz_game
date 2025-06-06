@@ -14,6 +14,7 @@ local AfkSpot = ClassMgr.Class("AfkSpot", Npc)
 
 function AfkSpot:OnInit(data, actor)
     Npc.OnInit(self, data, actor)
+    self.autoInteract = data["自动互动"] or false
     self.interval = data["间隔时间"] or 10
     self.subSpells = {}
     if data["定时释放魔法"] then

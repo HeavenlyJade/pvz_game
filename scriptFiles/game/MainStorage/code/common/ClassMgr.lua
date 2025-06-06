@@ -45,6 +45,12 @@ end
 ---@field Is fun(self:Class, className: string): boolean 判断实例是否继承自指定类名
 local Class = {}
 
+function ClassMgr.Is(inst, className)
+    if type(inst) == "table" then
+        return inst.Is and inst:Is(className)
+    end
+	return false
+end
 
 ---@generic T : Class
 ---@param name string 类名

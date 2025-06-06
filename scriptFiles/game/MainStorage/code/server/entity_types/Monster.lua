@@ -110,10 +110,7 @@ function _M:CreateModel(scene)
 
     -- 创建Actor
     local container = game.WorkSpace["Ground"][scene.name]["怪物"]
-    local actor_monster = MainStorage["怪物模型"][self.mobType.data["模型"]] ---@type Actor
-    if not actor_monster then
-        actor_monster = game.WorkSpace["怪物模型"][self.mobType.data["模型"]] ---@type Actor
-    end
+    local actor_monster = gg.GetChild(MainStorage["怪物模型"], self.mobType.data["模型"]) ---@type Actor
     actor_monster = actor_monster:Clone()
     actor_monster:SetParent(container)
     actor_monster.Enabled = true

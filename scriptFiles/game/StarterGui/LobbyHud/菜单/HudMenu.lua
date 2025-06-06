@@ -3,6 +3,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
+local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
 local TweenService = game:GetService("TweenService")
@@ -75,7 +76,6 @@ function HudMenu:OnInit(node, config)
     gg.log("菜单按钮HudMenu初始化")
     ViewBase.OnInit(self, node, config)
     self.selectingCard = 0
-    
     -- 初始化对象池
     MoneyAddPool.template = self:Get("货币增加").node ---@type UITextLabel
     MoneyAddPool.template.Visible = false
@@ -142,6 +142,7 @@ function HudMenu:OnInit(node, config)
             end
         end
     end)
+
 end
 
 return HudMenu.New(script.Parent, uiConfig)

@@ -28,6 +28,7 @@ CommandManager.handlers = {
     -- 物品相关
     ["give"] = ItemCommands.give,
     ["invsee"] = ItemCommands.invsee,
+    ["focusOn"] = SpellCommand.focusOn,
     ["clear"] = ItemCommands.clear,
     ["title"] = MiscCommands.title,
     ["spawnMob"] = MobCommand.spawnMob,
@@ -36,6 +37,9 @@ CommandManager.handlers = {
     ["showStat"] = StatCommand.showStat,
     ["quest"] = QuestCommand.main,
     ["level"] = LevelCommand.enter,
+    ["var"] = SpellCommand.var,
+    ["afk"] = SkillCommands.afk,
+    ["graphic"] = SpellCommand.graphic,
        -- 邮件相关命令
     ["mail"] = MailCommand.main,
         -- 玩家技能相关命令
@@ -85,7 +89,6 @@ function CommandManager.ExecuteCommand(commandStr, player)
 
     -- 3. 解析JSON参数
     local params = json.decode(jsonStr)
-    gg.log("params",params)
     if params["在线"] == "不在线" then
         --- 用来处理玩家不在线的情况
         --- 获取玩家

@@ -2913,7 +2913,7 @@
 
 
 ---@class TweenInfo
----@field New TweenInfo 构造
+---@field New fun(duration:number, style?:EasingStyle, direction?:EasingDirection, delayTime?:number, repeatCount?:number, reverse?:boolean) TweenInfo 构造
 ---@field EasingDirection number 缓动方向
 ---@field Time number 缓动时间
 ---@field DelayTime number 延迟时间

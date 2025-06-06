@@ -11,6 +11,7 @@ local function LoadConfig()
     LevelConfig.config ={
     ["测试关卡"] = LevelType.New({
         ["关卡ID"] = "测试关卡",
+        ["前置关卡"] = nil,
         ["关卡波次"] = {
             {
                 ["刷新波次"] = {
@@ -66,7 +67,14 @@ local function LoadConfig()
             "出生点/SpawnPos6"
         },
         ["刷怪点"] = {
-            "刷怪点/Cube"
+            "刷怪点/Cube",
+            "刷怪点/Cube_copy",
+            "刷怪点/Cube_copy_2",
+            "刷怪点/Cube_copy_3",
+            "刷怪点/Cube_copy_4",
+            "刷怪点/Cube_copy_5",
+            "刷怪点/Cube_copy_6",
+            "刷怪点/Cube_copy_7"
         },
         ["最大玩家数"] = 6,
         ["进入条件"] = Modifiers.New({

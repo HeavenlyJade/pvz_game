@@ -37,6 +37,8 @@ local TRIGGER_STAT_TYPES = {
 ---@field isRespawning boolean 是否正在复活
 ---@field New fun( info_:table ):Entity
 local _M = ClassMgr.Class("Entity") -- 父类 (子类： Player, Monster )
+_M.node2Entity = {}
+
 _M.TRIGGER_STAT_TYPES = TRIGGER_STAT_TYPES
 -- 新增属性
 function _M:OnInit(info_)
@@ -107,8 +109,6 @@ function _M:OnInit(info_)
         } -- monster melee
     }
     self.modelPlayer = nil  ---@type ModelPlayer
-
-    -- 描边效果计时器
     self.outlineTimer = nil
 end
 
@@ -135,19 +135,21 @@ function _M:GetSize()
 end
 
 function _M:SetAnimationController(name)
-    if not name then
-        if self.modelPlayer then
-            self.modelPlayer.walkingTask:Disconnect()
-            self.modelPlayer.standingTaskId:Disconnect()
-            self.modelPlayer = nil
-        end
-    else
+    if self.modelPlayer and self.modelPlayer.name == name then
+        return
+    end
+    if self.modelPlayer then
+        self.modelPlayer.walkingTask:Disconnect()
+        self.modelPlayer.standingTaskId:Disconnect()
+        self.modelPlayer = nil
+    end
+    if name then
         local AnimationConfig = require(MainStorage.code.common.config.AnimationConfig) ---@type AnimationConfig
         local ModelPlayer = require(MainStorage.code.server.graphic.ModelPlayer) ---@type ModelPlayer
         local animator = self.actor.Animator
         local animationConfig = AnimationConfig.Get(name)
         if animator and animationConfig then
-            self.modelPlayer = ModelPlayer.New(animator, animationConfig)
+            self.modelPlayer = ModelPlayer.New(name, animator, animationConfig)
             self.modelPlayer.walkingTask = self.actor.Walking:Connect(function(isWalking)
                 if isWalking then
                     self.modelPlayer:OnWalk()
@@ -158,6 +160,7 @@ function _M:SetAnimationController(name)
                     self.modelPlayer:OnStand()
                 end
             end)
+            print("SetAnimationController", name)
         end
     end
 end
@@ -684,7 +687,11 @@ function _M:DestroyObject()
         self:Die()
     end
     self.deleted = true
-    self.actor:Destroy()
+    if self.actor then
+        _M.node2Entity[self.actor] = nil
+        self.actor:Destroy()
+        self.actor = nil
+    end
     ServerEventManager.UnsubscribeByKey(self.uuid)
 end
 
@@ -709,7 +716,7 @@ end
 -- 设置游戏场景中使用的actor实例
 function _M:setGameActor(actor_)
     self.actor = actor_
-    -- self.actor:UseDefaultAnimation(false);     --取消默认动作(自行用代码控制)
+    _M.node2Entity[actor_] = self
 
     actor_.PhysXRoleType = Enum.PhysicsRoleType.BOX
     actor_.IgnoreStreamSync = false
@@ -815,7 +822,7 @@ end
 function _M:showDamage(number_, eff_, victim)
     -- 无伤害，无特殊效果
     local victimPosition = victim:GetCenterPosition()
-    local position =victimPosition + ( self:GetCenterPosition() - victimPosition):Normalize() * victim:GetSize().x
+    local position =victimPosition + ( self:GetCenterPosition() - victimPosition):Normalize()*2 * victim:GetSize().x
     if self._attackCache == 0 then
         self._attackCache = self:GetStat("攻击")
     end
@@ -825,7 +832,7 @@ function _M:showDamage(number_, eff_, victim)
         isCrit = eff_.cr == 1,
         position = {
             x = position.x,
-            y = position.y,
+            y = position.y + victim:GetSize().y,
             z = position.z
         },
         percent = 0.3 * number_ / self._attackCache
@@ -880,7 +887,6 @@ function _M:ChangeScene(new_scene)
     if type(new_scene) == "string" then
         new_scene = gg.server_scene_list[new_scene]
     end
-    gg.log("ChangeScene", self.scene, new_scene)
     if self.scene and self.scene == new_scene then
         return
     end
@@ -908,9 +914,6 @@ function _M:ChangeScene(new_scene)
     if self.isPlayer then
         new_scene:player_enter(self.uin)
     end
-
-    gg.log(new_scene.name, ' player_enter====', self.uin)
-
 end
 
 

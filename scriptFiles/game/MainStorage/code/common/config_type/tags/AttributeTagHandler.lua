@@ -24,7 +24,6 @@ function AttributeTag:OnInit(data)
 end
 
 function AttributeTag:TriggerReal(caster, target, castParam, param, log)
-    gg.log("TriggerReal", param)
     local battle = param ---@type Battle
     
     -- 处理基础属性增加

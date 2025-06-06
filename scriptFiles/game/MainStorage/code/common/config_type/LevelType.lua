@@ -268,17 +268,42 @@ end
 
 ---加入匹配队列
 ---@param player Player
+---@return boolean 成功进入
 function LevelType:Queue(player)
     -- 如果已经在队列中，直接返回
     if self.matchQueue[player.uin] then
         player:SendChatText("你已经在匹配队列中")
-        return
+        return false
     end
 
     local enterParam = self.entryConditions:Check(player, player)
     if enterParam.cancelled then
         player:SendChatText("不满足进入条件")
-        return
+        return false
+    end
+
+    if self.prerequisiteLevel then
+        -- TODO: 检查前置关卡是否完成
+        -- 这里需要实现前置关卡的检查逻辑
+    end
+
+    -- 检查前置变量
+    for varName, requiredValue in pairs(self.prerequisiteVars) do
+        local currentValue = player:GetVariable(varName) or 0
+        if currentValue < requiredValue then
+            player:SendChatText(string.format("不满足前置条件: %s 需要 %d", varName, requiredValue))
+            return false
+        end
+    end
+
+    -- 扣除变量
+    for varName, deductValue in pairs(self.deductVars) do
+        local currentValue = player:GetVariable(varName) or 0
+        if currentValue < deductValue then
+            player:SendChatText(string.format("资源不足: %s 需要 %d", varName, deductValue))
+            return false
+        end
+        player:AddVariable(varName, -deductValue)
     end
 
     -- 加入队列
@@ -301,7 +326,9 @@ function LevelType:Queue(player)
     -- 检查是否可以开始游戏
     if self:CanStartGame() then
         self:StartLevel()
+        return true
     end
+    return false
 end
 
 ---开始关卡

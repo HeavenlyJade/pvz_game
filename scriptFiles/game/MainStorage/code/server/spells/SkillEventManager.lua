@@ -276,7 +276,7 @@ function SkillEventManager.HandleEquipSkill(evt)
         return
     end
     gg.log("处理装备技能请求", player, errorCode)
-    
+
     -- 从evt中提取参数
     local skillName = evt.skillName or evt.skill
     local slot = evt.slot or evt.slotIndex
@@ -307,7 +307,7 @@ function SkillEventManager.HandleEquipSkill(evt)
     -- 2. 判断是否是主卡技能，如果是主卡技能，就获取主卡的配置，然后替换卡槽
     if skillType.skillType == 0 then -- 主卡技能
         gg.log("检测到主卡技能: " .. skillName .. ", 获取主卡配置进行槽位替换")
-        
+
         -- 获取主卡配置
         local mainCardConfig = common_config.EquipmentSlot["主卡"]
         if not mainCardConfig then
@@ -335,7 +335,7 @@ function SkillEventManager.HandleEquipSkill(evt)
     else
         -- 副卡技能，获取副卡配置并自动分配槽位
         gg.log("检测到副卡技能: " .. skillName .. ", 获取副卡配置进行槽位分配")
-        
+
         -- 1. 获取副卡配置
         local subCardConfig = common_config.EquipmentSlot["副卡"]
         if not subCardConfig then
@@ -343,20 +343,20 @@ function SkillEventManager.HandleEquipSkill(evt)
             SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
             return
         end
-        
+
         -- 2. 获取副卡key的list并排序（从小到大）
         local subCardSlots = {}
         for slotId, slotName in pairs(subCardConfig) do
             table.insert(subCardSlots, slotId)
         end
         table.sort(subCardSlots) -- 按槽位ID从小到大排序
-        
+
         gg.log("副卡槽位列表:", subCardSlots)
-        
+
         -- 3. 检查玩家的equippedSkills是否有空位
         local availableSlot = nil
         local maxSlot = nil
-        
+
         -- 遍历所有副卡槽位，寻找空位
         for _, slotId in ipairs(subCardSlots) do
             maxSlot = slotId -- 记录最大槽位
@@ -367,19 +367,19 @@ function SkillEventManager.HandleEquipSkill(evt)
                 break
             end
         end
-        
+
         -- 4. 如果没有空位，使用最大槽位
         if not availableSlot then
             availableSlot = maxSlot
             gg.log("没有空副卡槽位，使用最大槽位:", availableSlot, "(" .. subCardConfig[availableSlot] .. ")")
         end
-        
+
         if not availableSlot then
             gg.log("没有找到可用的副卡槽位")
             SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_SLOT)
             return
         end
-        
+
         -- 使用分配的副卡槽位
         slot = availableSlot
         gg.log("副卡技能使用槽位: " .. slot .. " (" .. subCardConfig[slot] .. ")")

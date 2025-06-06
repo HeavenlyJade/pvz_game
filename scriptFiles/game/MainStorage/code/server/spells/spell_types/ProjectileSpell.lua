@@ -480,9 +480,6 @@ function ProjectileSpell:CastReal(caster, target, param)
         self:SpawnProjectile(Vec3.new(position), currentDirection, Vec3.new(baseDirection), caster, param, delay)
     end
     
-    -- 播放释放特效
-    self:PlayEffect(self.projectileEffects, caster, target, param)
-    
     return true
 end
 

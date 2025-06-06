@@ -1,7 +1,9 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
+local gg            = require(MainStorage.code.common.MGlobal) ---@type gg
 local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
 local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 
 ---@enum QuestRefreshType
 local QuestRefreshType = {
@@ -15,7 +17,8 @@ local QuestRefreshType = {
 local QuestType = {
     NONE = "无类型",
     VARIABLE = "变量",
-    ITEM = "物品"
+    ITEM = "物品",
+    EVENT = "事件"
 }
 
 ---@class Quest:Class
@@ -34,8 +37,12 @@ function Quest:OnInit(data)
     
     self.questVariable = data["任务变量"]
     self.requiredItem = ItemTypeConfig.Get(data["需求物品"])
+    self.eventName = data["事件名"]
     self.completionRewards = data["完成奖励"] ---@type table<string, number>
     self.mailRewards = data["完成奖励_邮件"] ---@type table<string, number>
+    self.completionCommands = data["完成指令"] ---@type string[]
+    self.gotoSceneNode = data["前往场景节点"] ---@type string
+    self.focusOnUI = data["聚焦场景UI"]
     self.nextQuest = data["自动领取下一任务"]
     self.refreshType = data["刷新类型"] or QuestRefreshType.NONE
     
@@ -43,12 +50,34 @@ function Quest:OnInit(data)
     self.unfinishedCommands = data["未完成时执行指令"] or {} ---@type string[]
     self.showProgress = data["显示完成进度"]
     
-    -- Special fields for quest lists
     self.questList = data["任务列表"]
     self.rewardRequiredItem = data["奖励需求物品"]
     self.rewards = data["奖励"]
 end
 
+---@param player Player
+function Quest:OnClick(player)
+    if self.gotoSceneNode then
+        local node = gg.GetSceneNode(self.gotoSceneNode)
+        if not node then
+            gg.log("任务%s有不存在的节点%s", self.name, self.gotoSceneNode)
+            return
+        end
+        local cb = nil
+        local e = Entity.node2Entity[node] ---@cast e Npc
+        gg.log("e", node.Name, e)
+        if ClassMgr.Is(e, "Npc") then
+            cb = function ()
+                e:HandleInteraction(player)
+            end
+        end
+        player:NavigateTo(node.Position, math.max(node.Size.x, node.Size.z) + 100, cb)
+    end
+    if self.focusOnUI then
+        player.focusOnCommandsCb = self.focusOnUI["完成时执行指令"]
+        player:SendEvent("FocusOnUI", self.focusOnUI)
+    end
+end
 
 --玩家当前是否有此任务
 function Quest:Has(player)
@@ -63,6 +92,12 @@ function Quest:Has(player)
     end
     
     return false
+end
+
+function Quest:GetToStringParams()
+    return {
+        name = self.name
+    }
 end
 
 function Quest:Accept(player)

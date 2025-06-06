@@ -33,7 +33,7 @@ SkillEventConfig.RESPONSE = {
     ERROR = "SkillResponse_Error",
     UPGRADE = "SkillResponse_Upgrade",
     SYNC_SKILLS = "SyncPlayerSkills"
-    
+
 }
 
 -- 服务器通知事件

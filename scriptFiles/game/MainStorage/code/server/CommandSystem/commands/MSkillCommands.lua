@@ -51,8 +51,15 @@ function SkillCommands.unlock(params, player)
 end
 
 
-function SkillCommands.loadSkill(params, player)
-    -- 你的装载逻辑
+function SkillCommands.afk(params, player)
+    local action = params["操作"] or "进入挂机"
+    if action == "进入挂机" then
+        player:SendEvent("AfkSpotUpdate", {enter = true})
+        player:EnterBattle()
+    elseif action == "离开挂机" then
+        player:SendEvent("AfkSpotUpdate", {enter = false})
+        player:ExitBattle()
+    end
 end
 
 -- --装载配置的文件的技能

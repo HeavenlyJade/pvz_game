@@ -64,7 +64,7 @@ function TagHandler:CanTrigger(caster, target, param, log)
     
     if self["条件"] then
         for i, item in ipairs(self["条件"].modifiers) do
-            local stop = item:Check(caster, caster, param)
+            local stop = item:Check(caster, target, param)
             if stop then break end
             if param.cancelled then
                 if self.printMessage then 
