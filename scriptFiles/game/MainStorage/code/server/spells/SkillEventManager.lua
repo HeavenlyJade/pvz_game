@@ -400,38 +400,80 @@ function SkillEventManager.HandleEquipSkill(evt)
 end
 
 --- 处理卸下技能请求
----@param evt table 事件数据 {uin, slot}
+---@param evt table 事件数据 {uin, skillName} 或 {uin, slot}
 function SkillEventManager.HandleUnequipSkill(evt)
+    gg.log("处理卸下技能请求", evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "UnequipSkill")
     if not player then
         return
     end
 
-    -- 从evt中提取参数
+    local skillName = evt.skillName
     local slot = evt.slot or evt.slotIndex
-    if not slot or slot < 1 or slot > 6 then
+
+    -- 优先使用 skillName 参数（来自 CardsGui）
+    if skillName then
+        gg.log("通过技能名称卸下装备:", skillName)
+        
+        -- 验证技能是否存在
+        local skill = player.skills and player.skills[skillName]
+        if not skill then
+            gg.log("玩家技能不存在: " .. skillName .. " 玩家: " .. player.name)
+            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_OWNED)
+            return
+        end
+
+        -- 检查技能是否已装备
+        if skill.equipSlot == 0 then
+            gg.log("技能未装备，无法卸下: " .. skillName)
+            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_EQUIPPED)
+            return
+        end
+
+        slot = skill.equipSlot
+        gg.log("找到技能装备槽位:", skillName, "槽位:", slot)
+    elseif slot then
+        -- 兼容旧的通过槽位卸下的方式
+        gg.log("通过槽位卸下装备:", slot)
+        if slot < 1 or slot > 6 then
+            gg.log("无效的槽位:", slot)
+            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_SLOT)
+            return
+        end
+
+        -- 获取当前装备的技能
+        local equippedSkill = player.equippedSkills and player.equippedSkills[slot]
+        if not equippedSkill then
+            gg.log("槽位没有装备技能:", slot)
+            SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.SKILL_NOT_EQUIPPED)
+            return
+        end
+
+        skillName = equippedSkill.skillType.name
+    else
+        gg.log("缺少必要参数: skillName 或 slot")
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.INVALID_PARAMETERS)
         return
     end
 
-    -- 获取当前装备的技能
-    local equippedSkill = player.equippedSkills and player.equippedSkills[slot]
-    if not equippedSkill then
-        return
-    end
-
-    local skillName = equippedSkill.skillType.skillName
-
-    -- 执行卸下
+    -- 执行卸下操作
     local success = player:UnequipSkill(slot)
     if success then
-        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UNEQUIP, {
+        player:saveSkillConfig()
+        
+        gg.log("技能卸下成功:", skillName, "槽位:", slot)
+        
+        local responseData = {
             skillName = skillName,
-            slot = slot
-        })
+            slot = 0,  -- 卸下后槽位为0
+            level = player.skills[skillName].level
+        }
+        
+        gg.log("发送技能卸下响应", responseData)
+        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UNEQUIP, responseData)
     else
-        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.ERROR, {
-            errorCode = SkillEventManager.ERROR_CODES.INVALID_SLOT
-        })
+        gg.log("技能卸下失败:", skillName, "槽位:", slot)
+        SkillEventManager.SendErrorResponse(evt, SkillEventManager.ERROR_CODES.UNEQUIP_FAILED)
     end
 end
 

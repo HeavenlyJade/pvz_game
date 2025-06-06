@@ -49,8 +49,8 @@ local uiConfig = {
     uiName = "CardsGui",
     layer = 3,
     hideOnInit = true,
-    qualityList = {"UR", "SSR", "SR", "R", "N"},
-    qualityListMap = {["品质_5"]="N", ["品质_4"]="R", ["品质_3"]="SR", ["品质_2"]="SSR", ["品质_1"]="UR"},
+    qualityList = {"UR", "SSR", "SR", "R", "N","ALL"},
+    qualityListMap = {["品质_5"]="N", ["品质_4"]="R", ["品质_3"]="SR", ["品质_2"]="SSR", ["品质_1"]="UR",["品质_6"]="ALL" },
     mianCard ="主卡",
     Subcard = "副卡"
 }
@@ -91,10 +91,11 @@ function CardsGui:OnInit(node, config)
     self.subCardComponent = self:Get("框体/副卡", ViewComponent) ---@type ViewComponent
     self.confirmPointsButton = self:Get("框体/主卡属性/主卡_研究", ViewButton) ---@type ViewButton
     self.EquipmentSkillsButton = self:Get("框体/主卡属性/主卡_装备", ViewButton) ---@type ViewButton
-
+    self.mainCardUnEquipButton = self:Get("框体/主卡属性/主卡_卸下", ViewButton) ---@type ViewButton
     self.SubcardEnhancementButton = self:Get("框体/副卡属性/副卡_强化", ViewButton) ---@type ViewButton
     self.SubcardAllEnhancementButton = self:Get("框体/副卡属性/副卡一键强化", ViewButton) ---@type ViewButton
     self.SubcardEquipButton = self:Get("框体/副卡属性/副卡_装备", ViewButton) ---@type ViewButton
+    self.SubcardUnEquipButton = self:Get("框体/副卡属性/副卡_卸下", ViewButton) ---@type ViewButton
 
 
     self.selectionList = self:Get("框体/主卡/选择列表", ViewList) ---@type ViewList
@@ -162,6 +163,16 @@ function CardsGui:OnInit(node, config)
     ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.LEARN, function(data)
         self:HandleNewSkillAdd(data)
     end)
+
+    -- 监听技能装备响应
+    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.EQUIP, function(data)
+        self:OnSkillEquipResponse(data)
+    end)
+
+    -- 监听技能卸下响应
+    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.UNEQUIP, function(data)
+        self:OnSkillUnequipResponse(data)
+    end)
     
     -- 初始化研究装备按钮状态（默认隐藏）
     self:InitializeFunctionButtonsVisibility()
@@ -169,7 +180,7 @@ end
 
 -- === 新增方法：加载主卡配置 ===
 function CardsGui:LoadMainCardConfig()
-    gg.log("开始加载主卡配置")
+    -- gg.log("开始加载主卡配置")
     
     -- 强制重新构建技能森林以确保使用最新的修复逻辑
     local skillMainTrees = SkillTypeUtils.BuildSkillForest(0)
@@ -189,6 +200,8 @@ function CardsGui:LoadMainCardConfig()
             button = nil,
             position = #self.configMainCards,
             serverUnlocked = false,  -- 是否在服务端解锁
+            isEquipped = false,      -- 是否已装备 (新增)
+            equipSlot = 0,          -- 装备槽位 (新增)
             serverData = nil,
             configData = skillType
         }
@@ -198,7 +211,7 @@ end
 
 -- === 新增方法：初始化所有主卡按钮（禁用状态）===
 function CardsGui:InitializeMainCardButtons()
-    gg.log("开始初始化主卡按钮")
+    -- gg.log("开始初始化主卡按钮")
     
     local ListTemplate = self:Get('框体/主卡/选择列表/列表', ViewList) ---@type ViewList
     
@@ -248,9 +261,13 @@ end
 
 -- === 新增方法：初始化功能按钮可见性 ===
 function CardsGui:InitializeFunctionButtonsVisibility()
-    -- 主卡研究装备按钮默认隐藏
+    -- 主卡功能按钮默认隐藏
     self.confirmPointsButton:SetVisible(false)
     self.EquipmentSkillsButton:SetVisible(false)
+    
+    if self.mainCardUnEquipButton then
+        self.mainCardUnEquipButton:SetVisible(false)
+    end
     
     -- 副卡所有功能按钮默认隐藏
     self.SubcardEnhancementButton:SetVisible(false)
@@ -263,33 +280,95 @@ function CardsGui:InitializeFunctionButtonsVisibility()
         self.SubcardEquipButton:SetVisible(false)
     end
     
-    gg.log("功能按钮初始化完成，默认状态为隐藏")
+    if self.SubcardUnEquipButton then
+        self.SubcardUnEquipButton:SetVisible(false)
+    end
+    
+    -- gg.log("功能按钮初始化完成，默认状态为隐藏")
 end
 
--- === 新增调试方法：检查主卡按钮灰色状态 ===
+-- === 修改调试方法：检查主卡按钮完整状态 ===
 function CardsGui:DebugMainCardButtonsGrayState()
-    gg.log("=== 主卡按钮灰色状态调试 ===")
+    -- gg.log("=== 主卡按钮完整状态调试 ===")
     
     for _, skillName in ipairs(self.configMainCards) do
         local buttonState = self.mainCardButtonStates[skillName]
         if buttonState and buttonState.button then
             local isGrayed = buttonState.button.img.Grayed
             local serverUnlocked = buttonState.serverUnlocked
+            local isEquipped = buttonState.isEquipped
+            local equipSlot = buttonState.equipSlot
             local hasServerData = self.ServerSkills[skillName] ~= nil
             
-            gg.log(string.format("主卡 %s: 灰色=%s, 服务端解锁=%s, 有服务端数据=%s", 
-                skillName, tostring(isGrayed), tostring(serverUnlocked), tostring(hasServerData)))
+            -- gg.log(string.format("主卡 %s: 灰色=%s, 服务端解锁=%s, 已装备=%s, 槽位=%d, 有服务端数据=%s", 
+            --     skillName, tostring(isGrayed), tostring(serverUnlocked), tostring(isEquipped), equipSlot, tostring(hasServerData)))
         else
-            gg.log("主卡 " .. skillName .. ": 按钮不存在")
+            -- gg.log("主卡 " .. skillName .. ": 按钮不存在")
         end
     end
     
-    gg.log("=== 主卡按钮状态调试结束 ===")
+    -- gg.log("=== 主卡按钮状态调试结束 ===")
 end
 
--- === 修改方法：处理服务端主卡数据（不影响按钮点击，只记录数据）===
+-- === 新增方法：更新主卡装备状态 ===
+function CardsGui:UpdateMainCardEquipStatus(skillName, serverData)
+    local buttonState = self.mainCardButtonStates[skillName]
+    if buttonState and serverData then
+        local equipSlot = serverData.slot or 0
+        buttonState.isEquipped = equipSlot > 0
+        buttonState.equipSlot = equipSlot
+        
+        -- gg.log("更新主卡装备状态:", skillName, "槽位:", equipSlot, "已装备:", buttonState.isEquipped)
+    end
+end
+
+-- === 新增方法：设置主卡装备视觉效果 ===
+function CardsGui:SetMainCardEquippedVisual(skillName, isEquipped)
+    local buttonState = self.mainCardButtonStates[skillName]
+    if not buttonState or not buttonState.button then
+        return
+    end
+    
+    local button = buttonState.button
+    
+    if isEquipped then
+        -- 已装备：添加特殊视觉效果（例如边框发光、角标等）
+        -- 这里可以根据UI设计添加具体的视觉效果
+        -- 例如：设置特殊的边框颜色、添加装备角标等
+        
+        -- 示例：可以通过修改按钮的某个子节点来显示装备状态
+        local equipMark = button.node:FindFirstChild("装备标记")
+        if equipMark then
+            equipMark.Visible = true
+        end
+        
+        -- gg.log("设置主卡装备视觉效果:", skillName, "已装备")
+    else
+        -- 未装备：清除特殊视觉效果
+        local equipMark = button.node:FindFirstChild("装备标记")
+        if equipMark then
+            equipMark.Visible = false
+        end
+        
+        -- gg.log("清除主卡装备视觉效果:", skillName, "未装备")
+    end
+end
+
+-- === 新增工具方法：检查主卡是否已装备 ===
+function CardsGui:IsMainCardEquipped(skillName)
+    local buttonState = self.mainCardButtonStates[skillName]
+    return buttonState and buttonState.isEquipped or false
+end
+
+-- === 新增工具方法：获取主卡装备槽位 ===
+function CardsGui:GetMainCardEquipSlot(skillName)
+    local buttonState = self.mainCardButtonStates[skillName]
+    return buttonState and buttonState.equipSlot or 0
+end
+
+-- === 修改方法：处理服务端主卡数据（支持装备状态）===
 function CardsGui:ProcessServerMainCardData(serverSkillMainTrees)
-    gg.log("开始处理服务端主卡数据")
+    -- gg.log("开始处理服务端主卡数据")
     
     -- 首先确保所有主卡按钮的灰色状态正确
     for _, skillName in ipairs(self.configMainCards) do
@@ -301,31 +380,44 @@ function CardsGui:ProcessServerMainCardData(serverSkillMainTrees)
                 buttonState.serverUnlocked = true
                 buttonState.serverData = serverSkillMainTrees[skillName]
                 
+                -- 更新装备状态
+                self:UpdateMainCardEquipStatus(skillName, self.ServerSkills[skillName])
+                
                 -- 恢复按钮正常颜色（已解锁）
                 buttonState.button.img.Grayed = false
-                gg.log("✅ 主卡已解锁，恢复正常颜色:", skillName)
+                
+                -- 设置装备状态的视觉反馈
+                self:SetMainCardEquippedVisual(skillName, buttonState.isEquipped)
+                
+                -- gg.log("✅ 主卡已解锁，恢复正常颜色:", skillName, "已装备:", buttonState.isEquipped)
             else
                 -- 确保未解锁的主卡保持灰色
                 buttonState.serverUnlocked = false
+                buttonState.isEquipped = false
+                buttonState.equipSlot = 0
                 buttonState.serverData = nil
                 buttonState.button.img.Grayed = true
-                gg.log("⚫ 主卡未解锁，保持灰色:", skillName)
+                
+                -- 清除装备视觉效果
+                self:SetMainCardEquippedVisual(skillName, false)
+                
+                -- gg.log("⚫ 主卡未解锁，保持灰色:", skillName)
             end
         end
     end
     
-    gg.log("服务端主卡数据处理完成")
+    -- gg.log("服务端主卡数据处理完成")
     
-    -- 重新排序主卡按钮：已解锁的在前，未解锁的在后
+    -- 重新排序主卡按钮：已装备 > 已解锁未装备 > 未解锁
     self:SortAndUpdateMainCardLayout()
     
-    -- 调试：检查所有主卡按钮的灰色状态
+    -- 调试：检查所有主卡按钮的状态
     self:DebugMainCardButtonsGrayState()
 end
 
 -- === 新增方法：排序和更新主卡布局 ===
 function CardsGui:SortAndUpdateMainCardLayout()
-    gg.log("开始重新排序主卡按钮")
+    -- gg.log("开始重新排序主卡按钮")
     
     -- 使用table.sort进行排序：已解锁的排在前面
     local sortedCards = {}
@@ -336,33 +428,46 @@ function CardsGui:SortAndUpdateMainCardLayout()
     table.sort(sortedCards, function(a, b)
         local aState = self.mainCardButtonStates[a]
         local bState = self.mainCardButtonStates[b]
+        
+        local aEquipped = aState and aState.isEquipped or false
+        local bEquipped = bState and bState.isEquipped or false
         local aUnlocked = aState and aState.serverUnlocked or false
         local bUnlocked = bState and bState.serverUnlocked or false
         
-        -- 已解锁的排在前面
-        if aUnlocked and not bUnlocked then
+        -- 第一优先级：已装备
+        if aEquipped and not bEquipped then
+            return true
+        elseif not aEquipped and bEquipped then
+            return false
+        -- 第二优先级：已解锁但未装备
+        elseif aUnlocked and not bUnlocked then
             return true
         elseif not aUnlocked and bUnlocked then
             return false
         else
-            -- 同样状态的保持原有顺序
+            -- 同级保持原顺序
             return false
         end
     end)
     
     -- 统计并输出排序结果
+    local equippedCount = 0
     local unlockedCount = 0
     local lockedCount = 0
     for _, skillName in ipairs(sortedCards) do
         local buttonState = self.mainCardButtonStates[skillName]
-        if buttonState and buttonState.serverUnlocked then
-            unlockedCount = unlockedCount + 1
-        else
-            lockedCount = lockedCount + 1
+        if buttonState then
+            if buttonState.isEquipped then
+                equippedCount = equippedCount + 1
+            elseif buttonState.serverUnlocked then
+                unlockedCount = unlockedCount + 1
+            else
+                lockedCount = lockedCount + 1
+            end
         end
     end
     
-    gg.log("排序结果: 已解锁", unlockedCount, "个, 未解锁", lockedCount, "个")
+    -- gg.log("排序结果: 已装备", equippedCount, "个, 已解锁未装备", unlockedCount, "个, 未解锁", lockedCount, "个")
     
     -- 重新创建按钮而不是移动现有按钮（避免LayoutOrder错误）
     self:RecreateMainCardButtonsInOrder(sortedCards)
@@ -370,16 +475,16 @@ function CardsGui:SortAndUpdateMainCardLayout()
     -- 更新配置列表的顺序（保持数据一致性）
     self.configMainCards = sortedCards
     
-    gg.log("主卡按钮重新排序完成")
+    -- gg.log("主卡按钮重新排序完成")
 end
 
 -- === 新增方法：按顺序重新创建主卡按钮 ===
 function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
-    gg.log("按新顺序重新创建主卡按钮")
+    -- gg.log("按新顺序重新创建主卡按钮")
     
     local ListTemplate = self:Get('框体/主卡/选择列表/列表', ViewList) ---@type ViewList
     if not ListTemplate then
-        gg.log("错误：找不到主卡列表模板")
+        -- gg.log("错误：找不到主卡列表模板")
         return
     end
     
@@ -391,6 +496,8 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
             buttonData[skillName] = {
                 skillType = buttonState.configData,
                 serverUnlocked = buttonState.serverUnlocked,
+                isEquipped = buttonState.isEquipped,
+                equipSlot = buttonState.equipSlot,
                 serverData = buttonState.serverData
             }
         end
@@ -426,13 +533,21 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
                 button.extraParams = {skillId = skillName}
                 button:SetTouchEnable(true) -- 可点击
                 
-                -- 设置灰色状态
+                -- 设置灰色状态和装备视觉效果
                 if data.serverUnlocked then
                     button.img.Grayed = false  -- 已解锁：正常颜色
-                    gg.log("重新创建已解锁按钮:", skillName, "位置:", newIndex)
+                    
+                    -- 设置装备状态的视觉反馈
+                    self:SetMainCardEquippedVisual(skillName, data.isEquipped)
+                    
+                    -- gg.log("重新创建已解锁按钮:", skillName, "位置:", newIndex, "已装备:", data.isEquipped)
                 else
                     button.img.Grayed = true   -- 未解锁：灰色
-                    gg.log("重新创建未解锁按钮:", skillName, "位置:", newIndex)
+                    
+                    -- 清除装备视觉效果
+                    self:SetMainCardEquippedVisual(skillName, false)
+                    
+                    -- gg.log("重新创建未解锁按钮:", skillName, "位置:", newIndex)
                 end
                 
                 -- 绑定点击事件
@@ -446,38 +561,49 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
                 self.mainCardButtonStates[skillName].button = button
                 self.mainCardButtonStates[skillName].position = newIndex
                 
-                gg.log(string.format("重新创建按钮: %s -> 位置 %d (解锁: %s)", 
-                    skillName, newIndex, tostring(data.serverUnlocked)))
+                -- gg.log(string.format("重新创建按钮: %s -> 位置 %d (解锁: %s)", 
+                --     skillName, newIndex, tostring(data.serverUnlocked)))
             else
-                gg.log("警告：无法获取位置", newIndex, "的列表项")
+                -- gg.log("警告：无法获取位置", newIndex, "的列表项")
             end
         end
     end
     
-    gg.log("主卡按钮重新创建完成")
+    -- gg.log("主卡按钮重新创建完成")
 end
 
 -- 注册主卡功能按钮事件
 function CardsGui:RegisterMainCardFunctionButtons()
     self.confirmPointsButton.clickCb = function (ui, button)
         local skillName = self.currentMCardButtonName.extraParams["skillId"]
-        gg.log("主卡_研究发送升级了请求",skillName)
+        -- gg.log("主卡_研究发送升级了请求",skillName)
         gg.network_channel:FireServer({
             cmd = SkillEventConfig.REQUEST.UPGRADE,
             skillName = skillName
         })
     end
     self.EquipmentSkillsButton.clickCb = function (ui, button)
-        gg.log("主卡_装备发送了装备的请求")
+        -- gg.log("主卡_装备发送了装备的请求")
         gg.network_channel:FireServer({
             cmd = SkillEventConfig.REQUEST.EQUIP,
             skillName = self.currentMCardButtonName.extraParams["skillId"],
 
         })
     end
+    
+    if self.mainCardUnEquipButton then
+        self.mainCardUnEquipButton.clickCb = function(ui, button)
+            -- gg.log("主卡_卸下发送了请求")
+            local skillName = self.currentMCardButtonName.extraParams["skillId"]
+            gg.network_channel:FireServer({
+                cmd = SkillEventConfig.REQUEST.UNEQUIP,
+                skillName = skillName
+            })
+        end
+    end
     if self.SubcardEnhancementButton then
         self.SubcardEnhancementButton.clickCb = function(ui, button)
-            gg.log("副卡_强化发送了请求")
+            -- gg.log("副卡_强化发送了请求")
             local skillName = self.currentSubCardButtonName.extraParams["skillId"]
 
             gg.network_channel:FireServer({
@@ -488,7 +614,7 @@ function CardsGui:RegisterMainCardFunctionButtons()
     end
     if self.SubcardAllEnhancementButton then
         self.SubcardAllEnhancementButton.clickCb = function(ui, button)
-            gg.log("副卡一键强化发送了请求")
+            -- gg.log("副卡一键强化发送了请求")
             local skillName = self.currentSubCardButtonName.extraParams["skillId"]
 
             gg.network_channel:FireServer({
@@ -500,7 +626,7 @@ function CardsGui:RegisterMainCardFunctionButtons()
     end
     if self.SubcardEquipButton then
         self.SubcardEquipButton.clickCb = function(ui, button)
-            gg.log("副卡_装备发送了请求")
+            -- gg.log("副卡_装备发送了请求")
             local skillName = self.currentSubCardButtonName.extraParams["skillId"]
             gg.network_channel:FireServer({
                 cmd = SkillEventConfig.REQUEST.EQUIP,
@@ -508,10 +634,21 @@ function CardsGui:RegisterMainCardFunctionButtons()
             })
         end
     end
+    
+    if self.SubcardUnEquipButton then
+        self.SubcardUnEquipButton.clickCb = function(ui, button)
+            -- gg.log("副卡_卸下发送了请求")
+            local skillName = self.currentSubCardButtonName.extraParams["skillId"]
+            gg.network_channel:FireServer({
+                cmd = SkillEventConfig.REQUEST.UNEQUIP,
+                skillName = skillName
+            })
+        end
+    end
 end
 -- 处理技能同步数据
 function CardsGui:HandleSkillSync(data)
-    gg.log("CardsGui获取来自服务端的技能数据", data)
+    -- gg.log("CardsGui获取来自服务端的技能数据", data)
     if not data or not data.skillData then return end
     local skillDataDic = data.skillData.skills
 
@@ -540,14 +677,14 @@ function CardsGui:HandleSkillSync(data)
     -- 更新UI显示
     --- self:UpdateSkillDisplay()
     --- 创建主卡的按钮
-    gg.log("🔍 服务端主卡技能数据:")
+    -- gg.log("🔍 服务端主卡技能数据:")
     for skillName, data in pairs(serverSkillMainTrees) do
-        gg.log("  - 主卡:", skillName, "isEntrySkill:", data.data.isEntrySkill, "skillType:", data.data.skillType)
+        -- gg.log("  - 主卡:", skillName, "isEntrySkill:", data.data.isEntrySkill, "skillType:", data.data.skillType)
     end
     
-    gg.log("🔍 服务端副卡技能数据:")
+    -- gg.log("🔍 服务端副卡技能数据:")
     for skillName, data in pairs(serverSubskillDic) do
-        gg.log("  - 副卡:", skillName, "isEntrySkill:", data.data.isEntrySkill, "skillType:", data.data.skillType)
+        -- gg.log("  - 副卡:", skillName, "isEntrySkill:", data.data.isEntrySkill, "skillType:", data.data.skillType)
     end
     
     self:ProcessServerMainCardData(serverSkillMainTrees)
@@ -572,11 +709,11 @@ function CardsGui:UpdateSkillTreeNodeDisplay(skillName)
         if serverSkill then
             -- 技能已解锁：恢复正常颜色
             skillTreeButton.img.Grayed = false
-            gg.log("技能解锁，恢复正常颜色:", skillName)
+            -- gg.log("技能解锁，恢复正常颜色:", skillName)
         else
             -- 技能未解锁：设置为灰色
             skillTreeButton.img.Grayed = true
-            gg.log("技能未解锁，设置为灰色:", skillName)
+            -- gg.log("技能未解锁，设置为灰色:", skillName)
         end
     end
 
@@ -592,7 +729,7 @@ end
 
 -- === 新增方法：更新所有技能按钮的灰色状态 ===
 function CardsGui:UpdateAllSkillButtonsGrayState()
-    gg.log("开始更新所有技能按钮的灰色状态")
+    -- gg.log("开始更新所有技能按钮的灰色状态")
     
     -- 更新所有已创建的技能树按钮
     for skillName, skillButton in pairs(self.mainCardButtondict) do
@@ -600,21 +737,21 @@ function CardsGui:UpdateAllSkillButtonsGrayState()
         if serverSkill then
             -- 技能已解锁：恢复正常颜色
             skillButton.img.Grayed = false
-            gg.log("✅ 技能已解锁，设为正常:", skillName)
+            -- gg.log("✅ 技能已解锁，设为正常:", skillName)
         else
             -- 技能未解锁：设置为灰色
             skillButton.img.Grayed = true
-            gg.log("⚫ 技能未解锁，设为灰色:", skillName)
+            -- gg.log("⚫ 技能未解锁，设为灰色:", skillName)
         end
     end
     
-    gg.log("技能按钮灰色状态更新完成")
+    -- gg.log("技能按钮灰色状态更新完成")
 end
 
 
 --- 处理技能学习/升级响应
 function CardsGui:OnSkillLearnUpgradeResponse(response)
-    gg.log("收到技能学习/升级响应", response)
+    -- gg.log("收到技能学习/升级响应", response)
     local data = response.data
     local skillName = data.skillName
     local serverlevel = data.level
@@ -646,13 +783,187 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
             self:UpdateSubCardAttributePanel(skillType, skillLevel, serverData)
         end
         
-        gg.log("副卡升级完成，更新显示:", skillName, "新等级:", serverlevel)
+        -- gg.log("副卡升级完成，更新显示:", skillName, "新等级:", serverlevel)
     elseif skillType.skillType==0  then
-        -- 主卡升级：更新主卡技能树显示
+        -- 主卡升级：更新主卡技能树显示和装备状态
         self:UpdateSkillTreeNodeDisplay(skillName)
+        
+        -- 检查并更新主卡装备状态
+        local buttonState = self.mainCardButtonStates[skillName]
+        if buttonState then
+            local oldEquipped = buttonState.isEquipped
+            self:UpdateMainCardEquipStatus(skillName, self.ServerSkills[skillName])
+            
+            -- 如果装备状态发生变化，重新排序
+            if oldEquipped ~= buttonState.isEquipped then
+                -- gg.log("主卡装备状态变化，触发重新排序:", skillName, "原状态:", oldEquipped, "新状态:", buttonState.isEquipped)
+                self:SortAndUpdateMainCardLayout()
+            end
+        end
     end
 
     -- self:UpdateSkillDisplay()
+end
+
+-- === 新增方法：处理技能装备响应 ===
+function CardsGui:OnSkillEquipResponse(response)
+    -- gg.log("收到技能装备响应", response)
+    local data = response.data
+    local skillName = data.skillName
+    local slot = data.slot
+    
+    -- 更新服务端技能数据
+    local skillData = self.ServerSkills[skillName]
+    if skillData then
+        skillData.slot = slot
+    else
+        self.ServerSkills[skillName] = {
+            level = data.level or 1,
+            slot = slot,
+            skill = skillName
+        }
+    end
+    
+    -- === 新增：处理原有装备技能的自动卸下 ===
+    local originalSkillName = self.equippedSkills[slot]
+    if originalSkillName and originalSkillName ~= skillName then
+        -- 原有技能存在且不是当前技能，需要卸下
+        gg.log("检测到槽位", slot, "原有技能:", originalSkillName, "将被新技能", skillName, "替换")
+        
+        -- 更新原有技能的服务端数据
+        local originalSkillData = self.ServerSkills[originalSkillName]
+        if originalSkillData then
+            originalSkillData.slot = 0  -- 设置为未装备状态
+        end
+        
+        -- 获取原有技能类型并更新其状态
+        local originalSkillType = SkillTypeConfig.Get(originalSkillName)
+        if originalSkillType and originalSkillType.skillType == 0 then
+            -- 原有主卡：更新装备状态
+            local originalButtonState = self.mainCardButtonStates[originalSkillName]
+            if originalButtonState then
+                self:UpdateMainCardEquipStatus(originalSkillName, originalSkillData)
+                self:SetMainCardEquippedVisual(originalSkillName, false)
+                gg.log("原有主卡技能状态已更新为未装备:", originalSkillName)
+            end
+        end
+    end
+    
+    -- 更新装备槽数据（覆盖原有技能）
+    self.equippedSkills[slot] = skillName
+    
+    -- 获取技能类型
+    local skillType = SkillTypeConfig.Get(skillName)
+    if skillType then
+        if skillType.skillType == 0 then
+            -- 主卡装备：更新主卡装备状态和重新排序
+            local buttonState = self.mainCardButtonStates[skillName]
+            if buttonState then
+                self:UpdateMainCardEquipStatus(skillName, skillData)
+                self:SetMainCardEquippedVisual(skillName, true)
+                -- 无论是否有原有技能，都重新排序以确保所有按钮状态正确
+                self:SortAndUpdateMainCardLayout()
+                gg.log("主卡装备完成，界面重新排序:", skillName, "槽位:", slot)
+            end
+            
+            -- 如果当前选中的是这个主卡，更新装备/卸下按钮显示
+            if self.currentMCardButtonName and 
+               self.currentMCardButtonName.extraParams.skillId == skillName then
+                -- 装备后：显示卸下按钮，隐藏装备按钮
+                self.mainCardUnEquipButton:SetVisible(true)
+                self.EquipmentSkillsButton:SetVisible(false)
+                self.mainCardUnEquipButton:SetTouchEnable(true)
+                
+                -- gg.log("更新当前选中主卡的按钮状态: 显示卸下按钮")
+            end
+            
+            -- gg.log("主卡装备完成，重新排序:", skillName, "槽位:", slot)
+        elseif skillType.skillType == 1 then
+            -- 副卡装备：更新副卡显示
+            self:UpdateSubCardTreeNodeDisplay(skillName)
+            
+            -- 如果当前选中的是这个副卡，更新属性面板
+            if self.currentSubCardButtonName and 
+               self.currentSubCardButtonName.extraParams.skillId == skillName then
+                local buttonState = self.subCardButtonStates[skillName]
+                if buttonState then
+                    buttonState.serverData = skillData
+                    buttonState.button.extraParams.serverData = skillData
+                end
+                
+                local skillLevel = skillData and skillData.level or 0
+                self:UpdateSubCardAttributePanel(skillType, skillLevel, skillData)
+            end
+            -- gg.log("副卡装备完成，更新显示:", skillName, "槽位:", slot)
+        end
+    end
+end
+
+-- === 新增方法：处理技能卸下响应 ===
+function CardsGui:OnSkillUnequipResponse(response)
+    -- gg.log("收到技能卸下响应", response)
+    local data = response.data
+    local skillName = data.skillName
+    local oldSlot = nil
+    
+    -- 从装备槽中移除
+    for slot, equippedSkillName in pairs(self.equippedSkills) do
+        if equippedSkillName == skillName then
+            oldSlot = slot
+            self.equippedSkills[slot] = nil
+            break
+        end
+    end
+    
+    -- 更新服务端技能数据
+    local skillData = self.ServerSkills[skillName]
+    if skillData then
+        skillData.slot = 0  -- 卸下后槽位为0
+    end
+    
+    -- 获取技能类型
+    local skillType = SkillTypeConfig.Get(skillName)
+    if skillType then
+        if skillType.skillType == 0 then
+            -- 主卡卸下：更新主卡装备状态和重新排序
+            local buttonState = self.mainCardButtonStates[skillName]
+            if buttonState then
+                self:UpdateMainCardEquipStatus(skillName, skillData)
+                self:SetMainCardEquippedVisual(skillName, false)
+                self:SortAndUpdateMainCardLayout()
+            end
+            
+            -- 如果当前选中的是这个主卡，更新装备/卸下按钮显示
+            if self.currentMCardButtonName and 
+               self.currentMCardButtonName.extraParams.skillId == skillName then
+                -- 卸下后：显示装备按钮，隐藏卸下按钮
+                self.EquipmentSkillsButton:SetVisible(true)
+                self.mainCardUnEquipButton:SetVisible(false)
+                self.EquipmentSkillsButton:SetTouchEnable(true)
+                
+                -- gg.log("更新当前选中主卡的按钮状态: 显示装备按钮")
+            end
+            
+            -- gg.log("主卡卸下完成，重新排序:", skillName, "原槽位:", oldSlot)
+        elseif skillType.skillType == 1 then
+            -- 副卡卸下：更新副卡显示
+            self:UpdateSubCardTreeNodeDisplay(skillName)
+            
+            -- 如果当前选中的是这个副卡，更新属性面板
+            if self.currentSubCardButtonName and 
+               self.currentSubCardButtonName.extraParams.skillId == skillName then
+                local buttonState = self.subCardButtonStates[skillName]
+                if buttonState then
+                    buttonState.serverData = skillData
+                    buttonState.button.extraParams.serverData = skillData
+                end
+                
+                local skillLevel = skillData and skillData.level or 0
+                self:UpdateSubCardAttributePanel(skillType, skillLevel, skillData)
+            end
+            -- gg.log("副卡卸下完成，更新显示:", skillName, "原槽位:", oldSlot)
+        end
+    end
 end
 
 function CardsGui:Display(title, content, confirmCallback, cancelCallback)
@@ -713,7 +1024,7 @@ function CardsGui:LoadMainCardsAndClone()
     -- 克隆技能树纵列表（为所有配置的主卡预生成技能树）
     self:CloneVerticalListsForSkillTrees(skillMainTrees)
     
-    gg.log("主卡技能树预生成完成")
+    -- gg.log("主卡技能树预生成完成")
 end
 
 -- === 新增工具方法：检查主卡是否在服务端解锁 ===
@@ -822,11 +1133,29 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
         
         -- 设置研究装备按钮状态
         if canResearchOrEquip then
-            -- 显示研究装备按钮
-            self.EquipmentSkillsButton:SetVisible(true)
+            -- 检查技能是否已装备
+            local isEquipped = curCardSkillData.slot and curCardSkillData.slot > 0 or false
+            
+            -- 显示研究按钮
             self.confirmPointsButton:SetVisible(true)
             
-            self.EquipmentSkillsButton:SetTouchEnable(true)
+            -- 根据装备状态显示对应按钮
+            if isEquipped then
+                -- 已装备：显示卸下按钮，隐藏装备按钮
+                self.mainCardUnEquipButton:SetVisible(true)
+                self.EquipmentSkillsButton:SetVisible(false)
+                self.mainCardUnEquipButton:SetTouchEnable(true)
+                
+                gg.log("主卡已装备，显示卸下按钮:", skillId, "槽位:", curCardSkillData.slot)
+            else
+                -- 未装备：显示装备按钮，隐藏卸下按钮
+                self.EquipmentSkillsButton:SetVisible(true)
+                self.mainCardUnEquipButton:SetVisible(false)
+                self.EquipmentSkillsButton:SetTouchEnable(true)
+                
+                gg.log("主卡未装备，显示装备按钮:", skillId)
+            end
+            
             local maxLevel = skill.maxLevel
             local levelNode = cardFrame["等级"]
             
@@ -842,9 +1171,10 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
                 levelNode.Title = string.format("%d/%d", skillLevel, maxLevel)
             end
         else
-            -- 服务端无数据：隐藏研究装备功能
+            -- 服务端无数据：隐藏所有功能按钮
             self.confirmPointsButton:SetVisible(false)
             self.EquipmentSkillsButton:SetVisible(false)
+            self.mainCardUnEquipButton:SetVisible(false)
             
             -- 显示等级0
             local levelNode = cardFrame["等级"]
@@ -1435,9 +1765,15 @@ function CardsGui:AddNewMainCardSkill(skillName, skillType, skillData)
     buttonState.serverUnlocked = true
     buttonState.serverData = skillData
     
+    -- 更新装备状态
+    self:UpdateMainCardEquipStatus(skillName, skillData)
+    
     -- 恢复按钮正常颜色
     if buttonState.button then
         buttonState.button.img.Grayed = false
+        
+        -- 设置装备状态的视觉反馈
+        self:SetMainCardEquippedVisual(skillName, buttonState.isEquipped)
     end
     
     -- 创建对应的技能树（如果还没有）
@@ -1533,6 +1869,8 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
             button = button,
             position = newPosition,
             serverUnlocked = true,
+            isEquipped = skillData.slot and skillData.slot > 0 or false,
+            equipSlot = skillData.slot or 0,
             serverData = skillData,
             configData = skillType
         }
@@ -1672,13 +2010,19 @@ function CardsGui:AddDynamicSubCardSkill(skillName, skillType, skillData)
         configData = skillType
     }
     
-    -- 获取品质列表
+    -- === 先检查原品质列表是否存在 ===
     local qualityList = self.subQualityLists[quality]
     if not qualityList then
         gg.log("找不到对应品质的副卡列表", quality)
         return
     end
-
+    
+    -- === 准备要更新的品质列表 ===
+    local qualitiesToUpdate = {quality}  -- 添加到原品质列表
+    if quality ~= "ALL" and self.subQualityLists["ALL"] then
+        table.insert(qualitiesToUpdate, "ALL")  -- 也添加到ALL列表（如果存在）
+    end
+    
     -- 获取副卡模板
     local subCardTemplate = self:Get('框体/副卡/副卡列/副卡列表/副卡槽_1', ViewButton)
     if not subCardTemplate or not subCardTemplate.node then
@@ -1686,47 +2030,57 @@ function CardsGui:AddDynamicSubCardSkill(skillName, skillType, skillData)
         return
     end
     local existingSubCard = subCardTemplate.node
+    
+    -- === 为每个相关品质列表创建副卡按钮 ===
+    for _, qualityToUpdate in ipairs(qualitiesToUpdate) do
+        local currentQualityList = self.subQualityLists[qualityToUpdate]
+        if currentQualityList then
+            -- 克隆新的副卡节点
+            local clonedNode = existingSubCard:Clone()
+            clonedNode.Name = skillType.name .. "_" .. qualityToUpdate  -- 添加品质后缀避免重名
+            clonedNode.Parent = currentQualityList.node
+            clonedNode.Visible = true
 
-    -- 克隆新的副卡节点
-    local clonedNode = existingSubCard:Clone()
-    clonedNode.Name = skillType.name
-    clonedNode.Parent = qualityList.node
-    clonedNode.Visible = true
+            -- 设置副卡UI
+            self:SetSkillLevelSubCardFrame(clonedNode, skillType)
 
-    -- 设置副卡UI
-    self:SetSkillLevelSubCardFrame(clonedNode, skillType)
+            -- 创建按钮（动态添加的技能默认为正常颜色）
+            local subCardButton = ViewButton.New(clonedNode, self, nil, "图标底图")
+            subCardButton.extraParams = {
+                skillId = skillName,
+                serverData = skillData
+            }
+            subCardButton:SetTouchEnable(true)
+            subCardButton.img.Grayed = false  -- 动态添加的技能默认已解锁
 
-    -- 创建按钮（动态添加的技能默认为正常颜色）
-    local subCardButton = ViewButton.New(clonedNode, self, nil, "图标底图")
-    subCardButton.extraParams = {
-        skillId = skillName,
-        serverData = skillData
-    }
-    subCardButton:SetTouchEnable(true)
-    subCardButton.img.Grayed = false  -- 动态添加的技能默认已解锁
+            -- 绑定点击事件
+            subCardButton.clickCb = function(ui, button)
+                local skillId = button.extraParams.skillId
+                local skill = SkillTypeConfig.Get(skillId)
+                local buttonState = self.subCardButtonStates[skillId]
+                local serverData = buttonState and buttonState.serverData
+                local skillLevel = serverData and serverData.level or 0
+                
+                -- 更新副卡属性面板
+                self:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
+                self.currentSubCardButtonName = button
+            end
 
-    -- 绑定点击事件
-    subCardButton.clickCb = function(ui, button)
-        local skillId = button.extraParams.skillId
-        local skill = SkillTypeConfig.Get(skillId)
-        local buttonState = self.subCardButtonStates[skillId]
-        local serverData = buttonState and buttonState.serverData
-        local skillLevel = serverData and serverData.level or 0
-        
-        -- 更新副卡属性面板
-        self:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
-        self.currentSubCardButtonName = button
+            -- 如果是原品质，存储按钮引用
+            if qualityToUpdate == quality then
+                self.subCardButtondict[skillName] = subCardButton
+                self.subCardButtonStates[skillName].button = subCardButton
+            end
+
+            -- 更新列表的LineCount
+            local currentCount = currentQualityList.node.LineCount or 0
+            currentQualityList.node.LineCount = currentCount + 1
+            
+            gg.log("动态副卡技能创建完成", skillName, "品质:", qualityToUpdate)
+        end
     end
-
-    -- 存储按钮引用
-    self.subCardButtondict[skillName] = subCardButton
-    self.subCardButtonStates[skillName].button = subCardButton
-
-    -- 更新列表的LineCount
-    local currentCount = qualityList.node.LineCount or 0
-    qualityList.node.LineCount = currentCount + 1
-
-    gg.log("动态副卡技能创建完成", skillName)
+    
+    gg.log("动态副卡技能全部创建完成", skillName)
 end
 
 -- === 新增调试方法：获取技能列表数量 ===
@@ -1836,7 +2190,7 @@ end
 function CardsGui:InitializeSubCardButtons()
     gg.log("开始初始化副卡按钮")
     
-    local qualityList = uiConfig.qualityList or {"UR", "SSR", "SR", "R", "N"}
+    local qualityList = uiConfig.qualityList or {"UR", "SSR", "SR", "R", "N", "ALL"}
     
     -- 按品级分组副卡
     local subCardsByQuality = {}
@@ -1850,8 +2204,14 @@ function CardsGui:InitializeSubCardButtons()
         local skillType = skillConfig.skillType
         local quality = skillType.quality or "N"
         
+        -- 将副卡添加到对应品质列表
         if subCardsByQuality[quality] then
             table.insert(subCardsByQuality[quality], skillName)
+        end
+        
+        -- === 新增：将所有副卡都添加到ALL列表 ===
+        if subCardsByQuality["ALL"] then
+            table.insert(subCardsByQuality["ALL"], skillName)
         end
     end
     
@@ -2000,9 +2360,10 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
     
     -- 设置功能按钮状态
     if serverData then
-        -- 有服务端数据：根据等级决定按钮显示
+        -- 有服务端数据：根据等级和装备状态决定按钮显示
         local maxLevel = skill.maxLevel or 1
         local isMaxLevel = skillLevel >= maxLevel
+        local isEquipped = serverData.slot and serverData.slot > 0 or false
         
         if not isMaxLevel then
             -- 未满级：显示强化和一键强化按钮
@@ -2014,28 +2375,43 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
                 self.SubcardAllEnhancementButton:SetTouchEnable(true)
             end
             
-            -- 装备按钮始终显示
-            if self.SubcardEquipButton then
-                self.SubcardEquipButton:SetVisible(true)
-                self.SubcardEquipButton:SetTouchEnable(true)
-            end
-            
-            gg.log("副卡未满级，显示强化相关按钮:", skill.name, "等级:", skillLevel, "/", maxLevel)
+            -- gg.log("副卡未满级，显示强化相关按钮:", skill.name, "等级:", skillLevel, "/", maxLevel)
         else
-            -- 已满级：隐藏强化和一键强化按钮，保留装备按钮
+            -- 已满级：隐藏强化和一键强化按钮
             self.SubcardEnhancementButton:SetVisible(false)
             
             if self.SubcardAllEnhancementButton then
                 self.SubcardAllEnhancementButton:SetVisible(false)
             end
             
-            -- 满级时只显示装备按钮
+            -- gg.log("副卡已满级，隐藏强化按钮:", skill.name, "等级:", skillLevel, "/", maxLevel)
+        end
+        
+        -- 根据装备状态显示装备/卸下按钮
+        if isEquipped then
+            -- 已装备：显示卸下按钮，隐藏装备按钮
+            if self.SubcardEquipButton then
+                self.SubcardEquipButton:SetVisible(false)
+            end
+            
+            if self.SubcardUnEquipButton then
+                self.SubcardUnEquipButton:SetVisible(true)
+                self.SubcardUnEquipButton:SetTouchEnable(true)
+            end
+            
+            gg.log("副卡已装备，显示卸下按钮:", skill.name, "槽位:", serverData.slot)
+        else
+            -- 未装备：显示装备按钮，隐藏卸下按钮
             if self.SubcardEquipButton then
                 self.SubcardEquipButton:SetVisible(true)
                 self.SubcardEquipButton:SetTouchEnable(true)
             end
             
-            gg.log("副卡已满级，隐藏强化按钮，保留装备按钮:", skill.name, "等级:", skillLevel, "/", maxLevel)
+            if self.SubcardUnEquipButton then
+                self.SubcardUnEquipButton:SetVisible(false)
+            end
+            
+            gg.log("副卡未装备，显示装备按钮:", skill.name)
         end
     else
         -- 无服务端数据：隐藏所有功能按钮
@@ -2047,6 +2423,10 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
         
         if self.SubcardEquipButton then
             self.SubcardEquipButton:SetVisible(false)
+        end
+        
+        if self.SubcardUnEquipButton then
+            self.SubcardUnEquipButton:SetVisible(false)
         end
         
         gg.log("副卡无服务端数据，隐藏所有功能按钮:", skill.name)
@@ -2098,16 +2478,25 @@ end
 function CardsGui:SortAndUpdateSubCardLayout()
     gg.log("开始重新排序副卡按钮")
     
-    local qualityList = uiConfig.qualityList or {"UR", "SSR", "SR", "R", "N"}
+    local qualityList = uiConfig.qualityList or {"UR", "SSR", "SR", "R", "N", "ALL"}
     
     -- 按品级分别排序
     for _, quality in ipairs(qualityList) do
         -- 获取该品级的副卡
         local qualityCards = {}
-        for _, skillName in ipairs(self.configSubCards) do
-            local buttonState = self.subCardButtonStates[skillName]
-            if buttonState and buttonState.configData and buttonState.configData.quality == quality then
+        
+        if quality == "ALL" then
+            -- ALL品质：包含所有副卡
+            for _, skillName in ipairs(self.configSubCards) do
                 table.insert(qualityCards, skillName)
+            end
+        else
+            -- 其他品质：只包含对应品质的副卡
+            for _, skillName in ipairs(self.configSubCards) do
+                local buttonState = self.subCardButtonStates[skillName]
+                if buttonState and buttonState.configData and buttonState.configData.quality == quality then
+                    table.insert(qualityCards, skillName)
+                end
             end
         end
         
@@ -2248,6 +2637,14 @@ function CardsGui:DebugSubCardButtonsState()
         gg.log("装备按钮可见:", equipVisible)
     else
         gg.log("装备按钮: 不存在")
+    end
+    
+    -- 检查卸下按钮
+    if self.SubcardUnEquipButton then
+        local unequipVisible = self.SubcardUnEquipButton.node.Visible or false
+        gg.log("卸下按钮可见:", unequipVisible)
+    else
+        gg.log("卸下按钮: 不存在")
     end
     
     -- 检查当前选中的副卡信息

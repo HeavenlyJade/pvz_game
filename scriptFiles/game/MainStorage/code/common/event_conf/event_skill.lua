@@ -63,7 +63,9 @@ SkillEventConfig.ERROR_CODES = {
     PERMISSION_DENIED = 10,
     INVALID_PARAMETERS = 11,
     SKILL_NOT_OWNED = 12,
-    UPGRADE_FAILED = 13
+    UPGRADE_FAILED = 13,
+    SKILL_NOT_EQUIPPED = 14,
+    UNEQUIP_FAILED = 15
 }
 
 -- 错误消息映射
@@ -81,7 +83,9 @@ SkillEventConfig.ERROR_MESSAGES = {
     [SkillEventConfig.ERROR_CODES.PERMISSION_DENIED] = "权限不足",
     [SkillEventConfig.ERROR_CODES.INVALID_PARAMETERS] = "参数无效",
     [SkillEventConfig.ERROR_CODES.SKILL_NOT_OWNED] = "技能不属于玩家",
-    [SkillEventConfig.ERROR_CODES.UPGRADE_FAILED] = "升级失败"
+    [SkillEventConfig.ERROR_CODES.UPGRADE_FAILED] = "升级失败",
+    [SkillEventConfig.ERROR_CODES.SKILL_NOT_EQUIPPED] = "技能未装备",
+    [SkillEventConfig.ERROR_CODES.UNEQUIP_FAILED] = "卸下失败"
 }
 
 --[[
