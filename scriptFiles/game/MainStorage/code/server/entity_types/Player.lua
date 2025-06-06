@@ -410,6 +410,23 @@ function _M:UnequipSkill(slot)
     return false
 end
 
+function _M:LearnSkill(skillType)
+    local skillId = skillType.name
+    local foundSkill = self.skills[skillType.name]
+    -- 如果技能不存在
+    if not foundSkill then
+        -- 创建新技能
+        self.skills[skillId] = Skill.New(self, {
+            skill = skillType.name,
+            level = 1,
+            slot = 0
+        })
+        self:saveSkillConfig()
+        return true
+    end
+    return false
+end
+
 -- 修改升级技能函数，添加词条更新
 function _M:UpgradeSkill(skillType)
     -- 查找玩家是否已拥有该技能
