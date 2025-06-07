@@ -80,7 +80,6 @@ end
 
 ---@override
 function CardsGui:OnInit(node, config)
-    ViewBase.OnInit(self, node, config)
     self.qualityList = self:Get("品质列表", ViewList) ---@type ViewList
     self.mainCardButton = self:Get("框体/标题/卡片/主卡", ViewButton) ---@type ViewButton
     self.subCardButton = self:Get("框体/标题/卡片/副卡", ViewButton) ---@type ViewButton

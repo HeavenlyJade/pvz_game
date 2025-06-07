@@ -74,12 +74,11 @@ end
 
 function HudMenu:OnInit(node, config)
     gg.log("菜单按钮HudMenu初始化")
-    ViewBase.OnInit(self, node, config)
     self.selectingCard = 0
     -- 初始化对象池
     MoneyAddPool.template = self:Get("货币增加").node ---@type UITextLabel
     MoneyAddPool.template.Visible = false
-
+    
     self:RegisterMenuButton(self:Get("活动", ViewButton))
     self:RegisterMenuButton(self:Get("图鉴", ViewButton))
     self:RegisterMenuButton(self:Get("卡包", ViewButton))

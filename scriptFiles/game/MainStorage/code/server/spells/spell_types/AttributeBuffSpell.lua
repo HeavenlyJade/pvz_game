@@ -15,8 +15,7 @@ local AttributeBuffSpell = ClassMgr.Class("AttributeBuffSpell", BuffSpell)
 local AttrBuff = ClassMgr.Class("AttrBuff", BuffSpell.ActiveBuff)
 
 function AttributeBuffSpell:OnInit(data)
-    BuffSpell.OnInit(self, data)
-
+    
     -- 从配置中读取属性BUFF相关属性
     self.statType = data["属性类型"]
     self.statValue = data["属性值"] or 0
@@ -33,15 +32,15 @@ end
 
 function AttrBuff:OnRefresh()
     BuffSpell.ActiveBuff.OnRefresh(self)
-
+    
     local amount = self.spell.statValue * self.stack * self.power
-
+    
     if self.spell.isPercentage then
         -- 获取基础属性值（BASE、EQUIP、CHIP）
         local baseValue = self.activeOn:GetStat(self.spell.statType, {"BASE", "EQUIP", "CHIP"}, true, self.param)
         amount = amount * baseValue / 100
     end
-
+    
     -- 重置之前的属性加成
     self.activeOn:ResetStats(self.spell.spellName)
     -- 添加新的属性加成

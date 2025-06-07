@@ -14,8 +14,7 @@ local TagBuffSpell = ClassMgr.Class("TagBuffSpell", BuffSpell)
 local TagBuff = ClassMgr.Class("TagBuff", BuffSpell.ActiveBuff)
 
 function TagBuffSpell:OnInit(data)
-    BuffSpell.OnInit(self, data)
-
+    
     -- 从配置中读取词条BUFF相关属性并加载词条类型
     self.tagTypes = {}
     for _, tagTypeId in ipairs(data["词条"] or {}) do
@@ -36,7 +35,7 @@ end
 
 function TagBuff:OnRefresh()
     BuffSpell.ActiveBuff.OnRefresh(self)
-
+    
     -- 为每个词条类型创建装备词条实例并添加到目标
     for _, tagType in ipairs(self.spell.tagTypes) do
         local equippingTag = tagType:FactoryEquipingTag(self.spell.spellName .. "-", self.stack * self.power)

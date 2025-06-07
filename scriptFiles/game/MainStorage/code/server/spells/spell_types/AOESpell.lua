@@ -33,7 +33,7 @@ function PulsingAOE:OnInit(spell, caster, target, location, param)
     self.hitCreatures = {}
     self.actions = self.spell:PlayEffect(self.spell.persistentEffects, caster, target, param)
     if self.spell.printInfo then
-        gg.log(string.format("%s: 创建持续效果 位置[%.1f, %.1f, %.1f] 取消回调",
+        gg.log(string.format("%s: 创建持续效果 位置[%.1f, %.1f, %.1f] 取消回调", 
             self.spell.spellName, location.x, location.y, location.z), self.actions)
     end
 end
@@ -41,7 +41,7 @@ end
 function PulsingAOE:Start()
     -- 立即执行一次
     self:ExecutePulse()
-
+    
     -- 设置定时器进行周期性检测
     self.timer = ServerScheduler.add(
         function()
@@ -87,7 +87,7 @@ function PulsingAOE:OnComplete()
             end
         end
     end
-
+    
     -- Cancel the scheduler task
     if self.timer then
         if self.spell.printInfo then
@@ -113,15 +113,15 @@ function PulsingAOE:ExecutePulse()
         self.hitCreatures[hitTarget] = true
         if #self.spell.subSpells > 0 then
             if self.spell.printInfo then
-                print(string.format("%s: 持续效果击中目标[%s]，执行[%d]个子魔法",
+                print(string.format("%s: 持续效果击中目标[%s]，执行[%d]个子魔法", 
                     self.spell.spellName, hitTarget.name, #self.spell.subSpells))
             end
             for _, subSpell in ipairs(self.spell.subSpells) do
                 local castSuccessed = subSpell:Cast(self.caster, hitTarget, self.param)
                 if self.spell.printInfo then
-                    print(string.format("%s: 子魔法[%s]执行[%s]",
-                        self.spell.spellName,
-                        subSpell.spellName,
+                    print(string.format("%s: 子魔法[%s]执行[%s]", 
+                        self.spell.spellName, 
+                        subSpell.spellName, 
                         castSuccessed and "成功" or "失败"))
                 end
             end
@@ -152,7 +152,6 @@ end
 local AOESpell = ClassMgr.Class("AOESpell", Spell)
 
 function AOESpell:OnInit(data)
-    Spell.OnInit(self, data)
     self.duration = data["持续时间"] or 0
     self.canHitSameTarget = data["可重复击中同一目标"] or false
     self.hitInterval = data["击中间隔"] or 1
@@ -164,7 +163,7 @@ function AOESpell:OnInit(data)
     self.ellipseMinorAxis = data["椭圆短轴"] or 0
     self.ellipseRotation = data["椭圆旋转"] or 0
     self.offset = gg.Vec3.new(data["偏移"])
-
+    
     self.aoeItems = {}
     self.aoeItemCount = 0
     self.effectID = 0
@@ -180,11 +179,11 @@ function AOESpell:GetHitTargets(loc, caster, param, log)
     local sizeScale = param:GetValue(self, "尺寸倍率", 1)
     local widthScale = param:GetValue(self, "宽度倍率", 1)
     local heightScale = param:GetValue(self, "高度倍率", 1)
-
+    
     if self.printInfo then
         table.insert(log, string.format("%s: 检测范围形状[%s]", self.spellName, self.collisionType))
     end
-
+    
     if self.collisionType == CollisionType.CIRCLE then
         local radius = self.circleRadius * widthScale * sizeScale
         if self.printInfo then
@@ -220,8 +219,8 @@ function AOESpell:GetHitTargets(loc, caster, param, log)
     elseif self.collisionType == CollisionType.ELLIPSE then
         local maxRadius = math.max(self.ellipseMajorAxis, self.ellipseMinorAxis) * widthScale * sizeScale
         if self.printInfo then
-            table.insert(log, string.format("%s: 椭圆长轴[%.1f] 短轴[%.1f] 旋转[%.1f]",
-                self.spellName,
+            table.insert(log, string.format("%s: 椭圆长轴[%.1f] 短轴[%.1f] 旋转[%.1f]", 
+                self.spellName, 
                 self.ellipseMajorAxis * widthScale * sizeScale,
                 self.ellipseMinorAxis * heightScale * sizeScale,
                 self.ellipseRotation))
@@ -246,7 +245,7 @@ function AOESpell:GetHitTargets(loc, caster, param, log)
             table.insert(log, string.format("%s: 椭圆检测未命中目标", self.spellName))
         end
     end
-
+    
     return nil
 end
 
@@ -261,7 +260,7 @@ function AOESpell:CastReal(caster, target, param)
     if self.printInfo then
         table.insert(log, string.format("%s: 目标位置[%.1f, %.1f, %.1f]", self.spellName, loc.x, loc.y, loc.z))
     end
-
+    
     if not self.offset:IsZero() then
         local target = param.realTarget or target
         local direction = (target:GetPosition() - caster:GetPosition()):Normalize()
@@ -273,7 +272,7 @@ function AOESpell:CastReal(caster, target, param)
         end
     end
     self:PlayEffect(self.castEffects, caster, loc, param)
-
+    
     if self.duration > 0 then
         if self.printInfo then
             table.insert(log, string.format("%s: 创建持续效果[%.1f]秒", self.spellName, self.duration))
@@ -285,7 +284,7 @@ function AOESpell:CastReal(caster, target, param)
         end
         return true
     end
-
+    
     self:PlayEffect(self.castEffects, caster, loc, param, "触发点")
     -- 单次执行的情况
     local hitTargets = self:GetHitTargets(loc, caster, param, log)
@@ -293,7 +292,7 @@ function AOESpell:CastReal(caster, target, param)
         local anySucceed = false
         if #self.subSpells > 0 then
             if self.printInfo then
-                table.insert(log, string.format("%s: 命中[%d]个目标，执行[%d]个子魔法",
+                table.insert(log, string.format("%s: 命中[%d]个目标，执行[%d]个子魔法", 
                     self.spellName, #hitTargets, #self.subSpells))
             end
             for _, hitTarget in ipairs(hitTargets) do
@@ -305,9 +304,9 @@ function AOESpell:CastReal(caster, target, param)
                     local castSuccessed = subSpell:Cast(caster, hitTarget, param)
                     anySucceed = anySucceed or castSuccessed
                     if self.printInfo then
-                        table.insert(log, string.format("%s: 子魔法[%s]执行[%s]",
-                            self.spellName,
-                            subSpell.spellName,
+                        table.insert(log, string.format("%s: 子魔法[%s]执行[%s]", 
+                            self.spellName, 
+                            subSpell.spellName, 
                             castSuccessed and "成功" or "失败"))
                     end
                 end
@@ -319,7 +318,7 @@ function AOESpell:CastReal(caster, target, param)
         end
         return anySucceed
     end
-
+    
     if self.printInfo then
         table.insert(log, string.format("%s: 未命中目标", self.spellName))
         if #log > 0 then
@@ -341,14 +340,14 @@ function AOESpell:IsPointInEllipse(point, center, a, b, angle)
     local angleRad = angle * math.pi / 180
     local cosAngle = math.cos(angleRad)
     local sinAngle = math.sin(angleRad)
-
+    
     -- 将点转换到椭圆中心坐标系
     local translated = point - center
-
+    
     -- 旋转到椭圆的主轴方向
     local x = translated.x * cosAngle + translated.y * sinAngle
     local y = -translated.x * sinAngle + translated.y * cosAngle
-
+    
     -- 检查点是否在椭圆内
     return (x * x) / (a * a) + (y * y) / (b * b) <= 1
 end

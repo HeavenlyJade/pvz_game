@@ -337,12 +337,10 @@ function LevelType:StartLevel()
     end
 
     if not availableLevel then
-        -- 如果没有可用的关卡实例，通知所有玩家
-        for _, player in pairs(self.matchQueue) do
-            player:SendChatText("当前没有可用的关卡实例，请稍后再试")
-            player:SendEvent("MatchCancel")
-        end
-        return
+        local newScene = self.levels[1].scene:Clone()
+        local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
+        availableLevel = Level.New(self, newScene, #self.levels + 1)
+        table.insert(self.levels, availableLevel)
     end
 
     -- 将队列中的玩家添加到关卡

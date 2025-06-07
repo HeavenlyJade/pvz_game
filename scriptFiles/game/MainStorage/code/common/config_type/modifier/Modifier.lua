@@ -4,6 +4,8 @@ local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type Clas
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 local Condition = require(MainStorage.code.common.config_type.modifier.Condition) ---@type Condition
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
+local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
+local DummyEntity = require(MainStorage.code.server.entity_types.DummyEntity) ---@type DummyEntity
 
 ---@class Modifier
 local _M = ClassMgr.Class("Modifier")
@@ -17,7 +19,7 @@ function _M:OnInit(data)
             self.condition = conditionClass.New(data["条件"])
         end
     end
-
+    
     -- 设置其他属性
     self.targeter = data["目标"]
     self.targeterPath = data["目标场景名"]
@@ -40,12 +42,19 @@ function _M:GetTarget(caster, target, targeter, targeterPath)
     elseif targeter == "自己" then
         return caster
     else
-        print("targeter", targeter)
         if not targeterPath then
             return target
         end
         local scene = target.scene ---@type Scene
-        return scene.node2Entity[scene:Get(targeterPath)]
+        local node = scene:Get(targeterPath)
+        if not node then
+            return target
+        end
+        local entity = Entity.node2Entity[node]
+        if not entity then
+            entity = DummyEntity.New(node)
+        end
+        return entity
     end
 end
 
@@ -58,7 +67,7 @@ function _M:Check(caster, target, param)
     end
     local stop = false
     if self.invert then success = not success end
-
+    
     if self.action == "必须" then
         if not success then param.cancelled = true end
     elseif self.action == "拒绝" then

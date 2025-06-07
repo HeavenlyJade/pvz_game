@@ -17,9 +17,8 @@ local uiConfig = {
 }
 
 function AfkHud:OnInit(node, config)
-    ViewBase.OnInit(self, node, config)
     self.gainSpeed = self:Get("挂机底图/获取速度") ---@type ViewComponent
-
+    
     -- 用于跟踪阳光变化
     self.lastSunlight = 0
     self.lastUpdateTime = 0
@@ -39,7 +38,7 @@ function AfkHud:OnInit(node, config)
     -- 监听阳光变化事件
     ClientEventManager.Subscribe("SyncInventoryItems", function(evt)
         if not evt.moneys or not self.displaying then return end
-
+        
         -- 找到阳光货币（第二个货币）
         local sunlight = 0
         for _, money in ipairs(evt.moneys) do
@@ -48,9 +47,9 @@ function AfkHud:OnInit(node, config)
                 break
             end
         end
-
+        
         local currentTime = os.time()
-
+        
         -- 计算每秒增速
         if self.lastUpdateTime > 0 then
             local timeDiff = currentTime - self.lastUpdateTime
@@ -61,7 +60,7 @@ function AfkHud:OnInit(node, config)
                 self.gainSpeed.node.Title = string.format("+%.1f/秒", self.sunlightPerSecond)
             end
         end
-
+        
         -- 更新上次的值
         self.lastSunlight = sunlight
         self.lastUpdateTime = currentTime

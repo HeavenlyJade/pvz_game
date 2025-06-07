@@ -33,6 +33,9 @@ local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
 local _M = ClassMgr.Class("Scene")
 _M.worldTime = 0
 _M.sceneId = 1
+local maxSlotRad = 2
+local unusedSlots = {} ---@type table[int, int]
+local occupiedSlot = {} ---@type Scene[][]
 
 ServerScheduler.add(function ()
     _M.worldTime = _M.worldTime + 0.01
@@ -41,6 +44,29 @@ ServerScheduler.add(function ()
     end
     Environment.TimeHour = _M.worldTime
 end, 0, 1)
+
+---@return Scene
+function _M:Clone()
+    if #unusedSlots < 0 then
+        maxSlotRad = maxSlotRad + 1
+        -- 生成新的方形环坐标
+        for x = -maxSlotRad, maxSlotRad do
+            for y = -maxSlotRad, maxSlotRad do
+                -- 只添加方形环上的点（不包括内部点）
+                if math.abs(x) == maxSlotRad or math.abs(y) == maxSlotRad then
+                    -- 将坐标转换为单个数字（使用位运算）
+                    local slot = {x, y}
+                    table.insert(unusedSlots, slot)
+                end
+            end
+        end
+    end
+    local slot = unusedSlots[#unusedSlots]
+    unusedSlots[#unusedSlots] = nil
+    local node = self.node:Clone()
+    node.Position = Vector3.New(50000 * slot[1], 0, 50000 * slot[2])
+    return _M.New(node)
+end
 
 ---初始化场景中的NPC
 function _M:initNpcs()

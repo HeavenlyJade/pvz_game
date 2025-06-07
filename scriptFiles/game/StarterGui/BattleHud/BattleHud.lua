@@ -18,7 +18,6 @@ local uiConfig = {
     uiName = "BattleHud",
     layer = 0,
     hideOnInit = not MainStorage:GetAttribute("初始是战斗状态"), -- 初始隐藏，当玩家靠近NPC时显示
-    initHudInteract = false
 }
 
 -- 缓存技能数据
@@ -77,7 +76,7 @@ function BattleHud:Open()
     updateTaskId = ClientScheduler.add(function()
         self:UpdateCooldownAndCasting()
     end, 0, 0.034)
-
+    
     self.recoilRecoveryFunc = function(deltaTime)
         if not recoil then return end
         if not isCasting then
@@ -123,21 +122,21 @@ function BattleHud:UpdateCooldownAndCasting()
         self.fireIcon.node.FillAmount = 0
         return
     end
-
+    
     local skillId = equippedSkills[1]
     local skill = skills[skillId]
     if not skill then
         self.fireIcon.node.FillAmount = 0
         return
     end
-
+    
     local currentTime = os.clock()
     local elapsedTime = currentTime - lastCastTime
     local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
     local fillAmount = 1-remainingTime / skill.cooldownCache
-
+    
     self.fireIcon.node.FillAmount = fillAmount
-
+    
     -- 如果正在持续施法且冷却结束
     if isCasting and remainingTime <= 0 then
         self:SendCastSpellEvent(skillId)
@@ -149,17 +148,17 @@ end
 ---@param data {cmd: string, uin: number, skillData: {skills: table<string, {skill: string, level: number, slot: number}>}}
 function BattleHud:OnSyncPlayerSkills(data)
     if not data or not data.skillData then return end
-
+    
     -- 清空现有技能数据
     skills = {}
     equippedSkills = {}
-
+    
     -- 反序列化技能数据
     for skillId, skillData in pairs(data.skillData.skills) do
         local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
         local skill = Skill.New(nil, skillData) ---@type Skill
         skills[skillId] = skill
-
+        
         -- 记录已装备的技能
         if skill.skillType.activeSpell then
             equippedSkills[skill.equipSlot] = skillId
@@ -168,7 +167,7 @@ function BattleHud:OnSyncPlayerSkills(data)
             end
         end
     end
-
+    
     gg.log("已同步技能数据:", skills, equippedSkills)
 end
 
@@ -204,11 +203,11 @@ function BattleHud:OnEquipSkillCooldownUpdate(data)
     end
 
     local skill = skills[data.skillId]
-    if not skill then
+    if not skill then 
         gg.log("Skill not found for cooldown update:", data.skillId)
-        return
+        return 
     end
-
+    
     skill.cooldownCache = data.cooldown
 end
 
@@ -243,38 +242,38 @@ function BattleHud:OnInit(node, config)
     self.hitIndicator = self:Get("击中提示").node
     self.hitIndicator.Visible = false
     self.hitIndicator.FillColor = ColorQuad.New(255, 255, 255, 0)
-
+    
     -- 伤害累计相关变量
     self.accumulatedDamage = 0
     self.lastDamageTime = 0
     self.damageUpdateTask = nil
-
+    
     ClientEventManager.Subscribe("SyncPlayerSkills", function(data)
         self:OnSyncPlayerSkills(data)
     end)
-
+    
     -- 注册技能冷却更新事件监听
     ClientEventManager.Subscribe("EquipSkillCooldownUpdate", function(data)
         self:OnEquipSkillCooldownUpdate(data)
     end)
-
+    
     ClientEventManager.Subscribe("ShowDamage", function(data)
         local currentTime = os.clock()
-
+        
         -- 如果距离上次伤害超过0.1秒，重置累计伤害
         if currentTime - self.lastDamageTime > 0.1 then
             self.accumulatedDamage = 0
         end
-
+        
         -- 累加伤害
         self.accumulatedDamage = math.min(10, self.accumulatedDamage + data.percent)
         self.lastDamageTime = currentTime
-
+        
         -- 更新指示器
         self.hitIndicator.Visible = true
         self.hitIndicator.Scale = Vector2.New(0.7 + self.accumulatedDamage, 0.7 + self.accumulatedDamage)
         self.hitIndicator.FillColor = ColorQuad.New(255, 255, 255, 255)
-
+        
         -- 重置透明度更新任务
         if not self.damageUpdateTask then
             self.damageUpdateTask = ClientScheduler.add(function()
@@ -309,7 +308,7 @@ function BattleHud:OnInit(node, config)
                 local waveHealth = data.waveHealths[i]
                 local healthPercent = waveHealth / data.totalHealth
                 accumulatedPercent = accumulatedPercent + healthPercent
-
+                
                 -- 设置波次标记的位置
                 local child = self.progress:GetChild(i)
                 if child then
@@ -326,13 +325,13 @@ function BattleHud:OnInit(node, config)
     -- 注册波次生命更新事件监听
     ClientEventManager.Subscribe("WaveHealthUpdate", function(data)
         if not self.waveHealths or not self.totalHealth then return end
-
+        
         -- 检查波次是否发生变化
         if data.waveIndex ~= self.currentWaveIndex then
             self.currentWaveIndex = data.waveIndex
             self:PlayWaveApproaching()
         end
-
+        
         local previousWavesHealth = 0
         for i = data.waveIndex + 1, #self.waveHealths do
             previousWavesHealth = previousWavesHealth + self.waveHealths[i]
@@ -352,7 +351,7 @@ function BattleHud:OnInit(node, config)
     end)
 
     self.progress = self:Get("击杀进度条", ViewList)
-
+    
     self.fireIcon = self:Get("开火", ViewButton)
     self.fireIcon.node.TouchBegin:Connect(
         function(node, isTouchMove, vector2, int)
@@ -361,7 +360,7 @@ function BattleHud:OnInit(node, config)
             postProcessing.ChromaticAberrationStartOffset = 0.9
             postProcessing.ChromaticAberrationIterationStep = 5
             postProcessing.ChromaticAberrationIterationSamples = 4
-
+        
             self:SetFov(30)
             isCasting = true
             self.fireInputBeginPos = vector2
@@ -375,7 +374,7 @@ function BattleHud:OnInit(node, config)
             postProcessing.ChromaticAberrationStartOffset = 0.4
             postProcessing.ChromaticAberrationIterationStep = 0.01
             postProcessing.ChromaticAberrationIterationSamples = 1
-
+        
             self:SetFov(75)
             isCasting = false
         end
@@ -401,11 +400,11 @@ function BattleHud:PlayWaveApproaching()
     approaching.Visible = true
     approaching.Scale = Vector2.New(3,3)
     approaching.FillColor = ColorQuad.New(255, 255, 255, 0)
-    local scaleTween = TweenService:Create(approaching, TweenInfo.New(1, Enum.EasingStyle.Quad),
+    local scaleTween = TweenService:Create(approaching, TweenInfo.New(1, Enum.EasingStyle.Quad), 
         {Scale = Vector2.New(1,1), FillColor = ColorQuad.New(255, 255, 255, 255)})
     scaleTween:Play()
     scaleTween.Completed:Connect(function ()
-        local fadeOut = TweenService:Create(approaching, TweenInfo.New(3, Enum.EasingStyle.Quad),
+        local fadeOut = TweenService:Create(approaching, TweenInfo.New(3, Enum.EasingStyle.Quad), 
             {FillColor = ColorQuad.New(255, 255, 255, 0)})
         fadeOut:Play()
         fadeOut.Completed:Connect(function ()

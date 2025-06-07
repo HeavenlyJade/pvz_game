@@ -11,7 +11,6 @@ local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSp
 local MultiSpell = ClassMgr.Class("MultiSpell", Spell)
 
 function MultiSpell:OnInit(data)
-    Spell.OnInit(self, data)
     self.randomOrder = data["随机顺序"] or false
     self.castCount = data["释放个数"] or 999
     self.isCombo = data["组合技"] or false
@@ -50,17 +49,17 @@ function MultiSpell:CastReal(caster, target, param)
         -- 尝试执行当前索引的子魔法
         local subParam = param:Clone()
         local currentSpell = spells[currentIndex + 1] -- Lua数组从1开始
-
+            
         -- 如果当前魔法无法释放，尝试下一个
         for i = 1, #spells do
             local checkParam = CastParam.New()
             if self.printInfo then
-                table.insert(log, string.format("尝试释放魔法：%s，当前索引：%d",
+                table.insert(log, string.format("尝试释放魔法：%s，当前索引：%d", 
                     currentSpell.spell.spellName, currentIndex))
             end
             if currentSpell.spell:CanCast(caster, target, checkParam, log) then
                 if self.printInfo and #log > 0 then
-                    table.insert(log, string.format("释放组合技成功，释放魔法：%s",
+                    table.insert(log, string.format("释放组合技成功，释放魔法：%s", 
                         currentSpell.spell.spellName))
                     print(table.concat(log, "\n"))
                 end

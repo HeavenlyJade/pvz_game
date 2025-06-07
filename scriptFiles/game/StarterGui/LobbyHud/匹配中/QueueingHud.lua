@@ -17,10 +17,9 @@ local uiConfig = {
 }
 
 function QueueingHud:OnInit(node, config)
-    ViewBase.OnInit(self, node, config)
     local exitButton = self:Get("匹配底图/退出按钮", ViewButton)
     self.matchProgress = self:Get("匹配底图/匹配进度") ---@type ViewComponent
-
+    
     ClientEventManager.Subscribe("MatchProgressUpdate", function(data)
         if data.currentCount and data.totalCount then
             self.matchProgress.node.Title = string.format("匹配中: %d/%d", data.currentCount, data.totalCount)
@@ -39,7 +38,7 @@ function QueueingHud:OnInit(node, config)
         -- 匹配取消时关闭UI
         self:Close()
     end)
-
+    
     exitButton.clickCb = function (ui, button)
         -- 发送退出匹配请求到服务器
         gg.network_channel:FireServer({

@@ -14,7 +14,7 @@ local function CreateParticle(particleName)
     local node = MainStorage
     local fullPath = ""
     local lastPart = ""
-
+    
     -- 遍历路径的每一部分
     for part in particleName:gmatch("[^/]+") do
         if part ~= "" then
@@ -30,11 +30,11 @@ local function CreateParticle(particleName)
             end
         end
     end
-
+    
     if not node then
         return nil, nil
     end
-
+    
     return node:Clone(), node
 end
 
@@ -101,7 +101,7 @@ end
 function Graphic:PlayAtReal(caster, target, param, actions)
     local isCancelled = false
     local currentRepeat = 0
-
+    
     local function addCancelFunction(effect, repeatIndex)
         local effectCancel = function()
             if effect.Enabled then
@@ -112,23 +112,23 @@ function Graphic:PlayAtReal(caster, target, param, actions)
         table.insert(actions, effectCancel)
         return effectCancel
     end
-
+    
     local function playEffect()
-        if isCancelled then
-            return
+        if isCancelled then 
+            return 
         end
-
+        
         -- 创建并设置效果对象
         local effect = self:CreateEffect(target, caster.scene)
-        if not effect then
-            return
+        if not effect then 
+            return 
         end
-
+        
         -- 添加取消函数
         local effectCancel = addCancelFunction(effect, currentRepeat + 1)
-
+        
         currentRepeat = currentRepeat + 1
-
+        
         -- 设置持续时间
         if self.duration > 0 then
             ServerScheduler.add(function()
@@ -137,13 +137,13 @@ function Graphic:PlayAtReal(caster, target, param, actions)
                 end
             end, self.duration)
         end
-
+        
         -- 设置下一次重复
         if currentRepeat < self.repeatCount and self.repeatDelay > 0 then
             ServerScheduler.add(playEffect, self.repeatDelay)
         end
     end
-
+    
     -- 启动第一次播放
     playEffect()
 end
@@ -164,7 +164,6 @@ end
 ---@class ParticleGraphic:Graphic
 local ParticleGraphic = ClassMgr.Class("ParticleGraphic", Graphic)
 function ParticleGraphic:OnInit( data )
-    Graphic.OnInit(self, data)
     self.particleName = data["特效对象"]
     self.particleAssetId = data["特效资产"] or nil
     self.boundToEntity = data["绑定实体"] or false
@@ -186,14 +185,14 @@ function ParticleGraphic:CreateEffect(target, scene)
     else
         container = game.WorkSpace["Ground"][scene.name]["世界特效"]
     end
-
+    
     if not container then
         return nil
     end
-
+    
     local fx, previous = CreateParticle(self.particleName)
     if not fx or not previous then return nil end
-
+    
     fx:SetParent(container)
     if not self.boundToEntity then
         fx.Position = (self.offset + target:GetCenterPosition()):ToVector3()
@@ -202,14 +201,13 @@ function ParticleGraphic:CreateEffect(target, scene)
         fx.LocalEuler = previous.LocalEuler
     end
     fx.Enabled = true
-
+    
     return fx
 end
 
 ---@class AnimationGraphic:Graphic
 local AnimationGraphic = ClassMgr.Class("AnimationGraphic", Graphic)
 function AnimationGraphic:OnInit( data )
-    Graphic.OnInit(self, data)
     self.animationName = data["播放动画"]
     self.playbackSpeed = data["播放速度"]
 end
@@ -225,7 +223,6 @@ end
 local CameraShakeGraphic = ClassMgr.Class("CameraShakeGraphic", Graphic)
 
 function CameraShakeGraphic:OnInit( data )
-    Graphic.OnInit(self, data)
     self.rotation = data["旋转"] ---@type Vector2
     self.position = data["位移"] ---@type Vector3
     self.tweenStyle = data["动画风格"]
@@ -250,7 +247,6 @@ end
 ---@class ModelGraphic:Graphic
 local ModelGraphic = ClassMgr.Class("ModelGraphic", Graphic)
 function ModelGraphic:OnInit( data )
-    Graphic.OnInit(self, data)
     self.modelName = data["模型对象"]
     self.stateMachine = data["模型状态机"]
     self.animationName = data["播放动画"]
@@ -273,14 +269,14 @@ function ModelGraphic:CreateEffect(target, scene)
     else
         container = game.WorkSpace["Ground"][scene.name]["世界特效"]
     end
-
+    
     if not container then
         return nil
     end
-
+    
     local model, previous = CreateParticle(self.modelName)
     if not model or not previous then return nil end
-
+    
     model:SetParent(container)
     if not self.boundToEntity then
         model.LocalPosition = target:GetPosition()
@@ -289,7 +285,7 @@ function ModelGraphic:CreateEffect(target, scene)
         model.LocalEuler = previous.LocalEuler
     end
     model.Enabled = true
-
+    
     -- 播放动画
     if self.animationName and self.animationName ~= "" then
         local modelPlayer = model.Animator
@@ -297,7 +293,7 @@ function ModelGraphic:CreateEffect(target, scene)
             modelPlayer:Play(self.animationName, 0, 0)
         end
     end
-
+    
     return model
 end
 
@@ -318,7 +314,7 @@ local loaders = {
 ---@return Graphic[] 特效实例数组
 local function Load(effectsData)
     if not effectsData then return {} end
-
+    
     local effects = {}
     for _, effectData in ipairs(effectsData) do
         if effectData["_type"] then

@@ -26,7 +26,6 @@ local uiConfig = {
 }
 
 function ForceClickHud:OnInit(node, config)
-    ViewBase.OnInit(self, node, config)
     self.text = self:Get("文本").node
     self.up = self:Get("上").node
     self.down = self:Get("下").node
