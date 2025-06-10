@@ -207,6 +207,7 @@ function SummonSpell:CastReal(caster, target, param)
     if summoned then
         summoned:SetOwner(caster)
         self:AddSummon(caster, summoned)
+        caster:TriggerTags("召唤时", target, param, summoned)
     end
     self:PlayEffect(self.projectileEffects, caster, target, param)
 

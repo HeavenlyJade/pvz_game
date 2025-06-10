@@ -20,9 +20,9 @@ local UiBag = ClassMgr.Class("UiBag", ViewBase)
 
 ---@override
 function UiBag:OnInit(node, config)
-    
+
     self.items = {} ---@type table<number, table<number, Item>>
-    
+
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(evt)
         local evt = evt ---@type SyncInventoryItems
         for slot, itemData in pairs(evt.items) do

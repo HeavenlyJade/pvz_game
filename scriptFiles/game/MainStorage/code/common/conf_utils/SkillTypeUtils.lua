@@ -31,7 +31,7 @@ local function LinkNodes(parent, child)
     end
     if not table_contains(child.parents, parent) then
         table.insert(child.parents, parent)
-       
+
     end
 end
 

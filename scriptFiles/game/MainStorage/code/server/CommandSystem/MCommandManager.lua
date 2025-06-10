@@ -40,6 +40,7 @@ CommandManager.handlers = {
     ["var"] = SpellCommand.var,
     ["afk"] = SkillCommands.afk,
     ["graphic"] = SpellCommand.graphic,
+    ["lottery"] = ItemCommands.lottery,
        -- 邮件相关命令
     ["mail"] = MailCommand.main,
         -- 玩家技能相关命令

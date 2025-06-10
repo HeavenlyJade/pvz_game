@@ -3,6 +3,7 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig)  ---@type ItemTypeConfig
 local ItemQualityConfig = require(MainStorage.code.common.config.ItemQualityConfig)  ---@type ItemQualityConfig
+local LotteryConfig = require(MainStorage.code.common.config.LotteryConfig)  ---@type LotteryConfig
 ---@class ItemCommands
 local ItemCommands = {}
 
@@ -78,6 +79,56 @@ function ItemCommands.invsee(params, player)
     return true
 end
 
+---@param params table
+---@param player Player
+---@return boolean
+function ItemCommands.lottery(params, player)
+    -- 检查奖池是否存在
+    local lottery = LotteryConfig.Get(params["奖池"])
+    if not lottery then
+        player:SendHoverText("奖池不存在: " .. tostring(params["奖池"]))
+        return false
+    end
+
+    -- 检查抽奖次数
+    local count = tonumber(params["数量"]) or 1
+    if count <= 0 then
+        player:SendHoverText("抽奖次数必须大于0")
+        return false
+    end
+
+    -- 执行抽奖
+    local totalRewards = {}
+    for i = 1, count do
+        local reward = lottery:Draw(player)
+        if reward then
+            -- 将奖励添加到背包
+            local itemType = ItemTypeConfig.Get(reward.itemType)
+            if itemType then
+                local item = itemType:ToItem(reward.amount)
+                player.bag:AddItem(item)
+
+                -- 记录奖励
+                if not totalRewards[reward.itemType] then
+                    totalRewards[reward.itemType] = 0
+                end
+                totalRewards[reward.itemType] = totalRewards[reward.itemType] + reward.amount
+            end
+        end
+    end
+
+    -- 保存背包
+    player.bag:Save()
+
+    -- 显示抽奖结果
+    local resultText = "抽奖结果:\n"
+    for itemType, amount in pairs(totalRewards) do
+        resultText = resultText .. string.format("%s x%d\n", itemType, amount)
+    end
+    player:SendHoverText(resultText)
+
+    return true
+end
 
 -- -- 命令执行函数
 -- local function addItem(params, player)
@@ -87,47 +138,47 @@ end
 --             local quality = params.id
 --             local level = tonumber(params.action)
 --             local count = tonumber(params.value)
-            
+
 --             for i = 1, count do
 --                 local itemId = bagMgr.GenerateRandomEquipment(quality, level)
 --                 player:AddItem("装备", itemId, 1)
 --             end
-            
+
 --             -- 通知客户端
 --             gg.network_channel:fireClient(player.uin, {
 --                 cmd = "cmd_client_show_msg",
 --                 txt = "获得 " .. quality .. " 级别装备 x" .. count,
 --                 color = ColorQuad.New(0, 255, 0, 255)
 --             })
-            
+
 --             return true
 --         else
 --             -- 添加指定物品
 --             local itemType = params.subcategory  -- 装备, 消耗品, 材料, 任务物品
 --             local itemId = tonumber(params.id)
 --             local count = tonumber(params.value)
-            
+
 --             local success = player:AddItem(itemType, itemId, count)
-            
+
 --             if success then
 --                 -- 获取物品名称
 --                 local itemName = bagMgr.GetItemName(itemType, itemId)
-                
+
 --                 -- 通知客户端
 --                 gg.network_channel:fireClient(player.uin, {
 --                     cmd = "cmd_client_show_msg",
 --                     txt = "获得 " .. itemName .. " x" .. count,
 --                     color = ColorQuad.New(0, 255, 0, 255)
 --                 })
-                
+
 --                 -- 刷新客户端背包
 --                 bagMgr.s2c_PlayerBagItems(player.uin, {})
 --             end
-            
+
 --             return success
 --         end
 --     end
-    
+
 --     return false
 -- end
 
@@ -135,7 +186,7 @@ end
 --     if params.category == "物品" then
 --         local itemType = params.subcategory  -- 装备, 消耗品, 材料, 任务物品
 --         local itemId = tonumber(params.id)
-        
+
 --         if params.value == "全部" then
 --             -- 移除所有指定ID的物品
 --             local count = player:GetItemCount(itemType, itemId)
@@ -144,7 +195,7 @@ end
 --             -- 移除指定数量的物品
 --             local count = tonumber(params.value)
 --             player.bag:RemoveItems({[itemType] = count})
-            
+
 --             if not success then
 --                 -- 物品数量不足
 --                 gg.network_channel:fireClient(player.uin, {
@@ -155,12 +206,12 @@ end
 --                 return false
 --             end
 --         end
-        
+
 --         -- 刷新客户端背包
 --         bagMgr.s2c_PlayerBagItems(player.uin, {})
 --         return true
 --     end
-    
+
 --     return false
 -- end
 
@@ -168,13 +219,13 @@ end
 --     if params.category == "物品" then
 --         local itemType = params.subcategory  -- 装备, 消耗品, 材料, 任务物品
 --         local itemId = tonumber(params.id)
-        
+
 --         if params.action == "数量" then
 --             local targetCount = tonumber(params.value)
 --             return player:SetItemCount(itemType, itemId, targetCount)
 --         end
 --     end
-    
+
 --     return false
 -- end
 
@@ -182,17 +233,17 @@ end
 --     if params.category == "物品" then
 --         local itemId = tonumber(params.subcategory)
 --         local slot = params.param  -- 武器, 头盔, 胸甲等
-        
+
 --         -- 转换部位名称为系统内部的位置ID
 --         local posId = bagMgr.GetEquipSlotId(slot)
 --         if not posId then
 --             gg.log("未知装备位置: " .. slot)
 --             return false
 --         end
-        
+
 --         -- 尝试装备物品
 --         local success = player:EquipItem(itemId, posId)
-        
+
 --         if success then
 --             -- 刷新客户端背包
 --             bagMgr.s2c_PlayerBagItems(player.uin, {})
@@ -200,44 +251,44 @@ end
 --             player:rsyncData(1)
 --         else
 --             gg.network_channel:fireClient(player.uin, {
---                 cmd = "cmd_client_show_msg", 
+--                 cmd = "cmd_client_show_msg",
 --                 txt = "无法装备该物品",
 --                 color = ColorQuad.New(255, 0, 0, 255)
 --             })
 --         end
-        
+
 --         return success
 --     end
-    
+
 --     return false
 -- end
 
 -- local function unequipItem(params, player)
 --     if params.category == "装备" and params.subcategory == "位置" then
 --         local slot = params.id  -- 武器, 头盔, 胸甲等
-        
+
 --         -- 转换部位名称为系统内部的位置ID
 --         local posId = bagMgr.GetEquipSlotId(slot)
 --         if not posId then
 --             gg.log("未知装备位置: " .. slot)
 --             return false
 --         end
-        
+
 --         -- 尝试卸下装备
 --         local success = player:UnequipItem(posId)
-        
+
 --         if success then
 --             -- 刷新客户端背包
 --             bagMgr.s2c_PlayerBagItems(player.uin, {})
-            
+
 --             -- 重新计算玩家属性
 --             battleMgr.refreshPlayerAttr(player.uin)
 --             player:rsyncData(1)
 --         end
-        
+
 --         return success
 --     end
-    
+
 --     return false
 -- end
 
@@ -245,26 +296,26 @@ end
 --     if params.category == "装备" then
 --         local itemId = tonumber(params.subcategory)
 --         local levelChange = params.value
-        
+
 --         if string.sub(levelChange, 1, 1) == "+" then
 --             -- 提升等级
 --             local levels = tonumber(string.sub(levelChange, 2))
 --             local success = player:EnhanceEquipment(itemId, levels)
-            
+
 --             if success then
 --                 -- 获取装备名称
 --                 local itemName = bagMgr.GetItemNameById(itemId)
-                
+
 --                 -- 通知客户端
 --                 gg.network_channel:fireClient(player.uin, {
 --                     cmd = "cmd_client_show_msg",
 --                     txt = itemName .. " 强化成功，提升" .. levels .. "级",
 --                     color = ColorQuad.New(0, 255, 0, 255)
 --                 })
-                
+
 --                 -- 刷新客户端背包
 --                 bagMgr.s2c_PlayerBagItems(player.uin, {})
-                
+
 --                 -- 如果是已装备的装备，重新计算玩家属性
 --                 if player:IsEquipped(itemId) then
 --                     battleMgr.refreshPlayerAttr(player.uin)
@@ -277,11 +328,11 @@ end
 --                     color = ColorQuad.New(255, 0, 0, 255)
 --                 })
 --             end
-            
+
 --             return success
 --         end
 --     end
-    
+
 --     return false
 -- end
 

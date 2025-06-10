@@ -188,15 +188,17 @@ function _M:ExecuteCommands(commands, castParam)
     end
 end
 
+
 function _M:EnterBattle()
     self:showReviveEffect(self:GetPosition())
-    for _, skill in pairs(self.skills) do
+    local skillId = self.equippedSkills[1]
+    if skillId then
+        local skill = self.skills[skillId]
         if skill.skillType.battleModel then
             if skill.skillType.freezesMove then
                 self:SetMoveable(false)
             end
             self:SetModel(skill.skillType.battleModel, skill.skillType.battleAnimator, skill.skillType.battleStateMachine)
-            break
         end
     end
 end
@@ -583,7 +585,7 @@ function _M:SendHoverText( text, ... )
     if ... then
         text = string.format(text, ...)
     end
-    gg.network_channel:fireClient(self.uin, { cmd="cmd_client_show_msg", txt=text })
+    self:SendEvent("SendHoverText", { txt=text })
 end
 
 -- 添加附近的NPC

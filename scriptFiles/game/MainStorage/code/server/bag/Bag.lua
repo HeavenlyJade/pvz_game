@@ -453,7 +453,7 @@ function Bag:GetItemDataByName(itemName)
             end
         end
     end
-    
+
     -- 没找到物品
     return nil
 end

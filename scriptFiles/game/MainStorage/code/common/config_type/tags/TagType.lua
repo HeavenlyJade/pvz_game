@@ -87,6 +87,21 @@ function TagType:GetDescription(level)
                 local finalValue = handler:GetUpgradeValue(fieldName, level)
                 return string.format("%.1f", finalValue)
             end
+            if type(value) == "table" then
+                if fieldName == "属性乘以百分比" or fieldName == "额外增加属性" then
+                    local mult = handler:GetUpgradeValue("额外属性倍率", level, 1)
+                    local result = {}
+                    for attr, val in pairs(value) do
+                        local evaluated = gg.eval(val) * mult
+                        if fieldName == "属性乘以百分比" then
+                            table.insert(result, string.format("%s: +%.1f%", attr, evaluated))
+                        else
+                            table.insert(result, string.format("%s: %.1f", attr, evaluated))
+                        end
+                    end
+                    return table.concat(result, "\n")
+                end
+            end
             return tostring(value or "")
         end
         return ""

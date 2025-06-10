@@ -33,6 +33,7 @@ function ForceClickHud:OnInit(node, config)
     self.right = self:Get("右").node
     self.focusingChain = nil ---@type FocusChain
     self.index = 0
+    self.lastFocusTime = 0 ---@type number
     ClientEventManager.Subscribe("FocusOnUI", function (evt)
         ---@cast evt FocusChain
         self.focusingChain = evt
@@ -53,7 +54,14 @@ function ForceClickHud:OnInit(node, config)
 end
 
 function ForceClickHud:FocusOnNextNode()
+    local currentTime = os.clock()
+    if currentTime - self.lastFocusTime < 0.1 then
+        return
+    end
+    self.lastFocusTime = currentTime
+
     self.index = self.index + 1
+    gg.log("FocusOnNextNode", self.focusingChain, #self.focusingChain["聚焦UI"], self.index)
     if not self.focusingChain or #self.focusingChain["聚焦UI"] < self.index then
         self:Close()
         gg.network_channel:FireServer({
@@ -83,6 +91,7 @@ function ForceClickHud:FocusOnNode(node, text)
     local size = node.Size
     local pos = node:GetGlobalPos() - Vector2.New(node.Pivot.x * size.x, node.Pivot.y * size.y)
     if self.nodePressCb then
+        gg.log("FocusOnNode", self.nodePressCb)
         self.nodePressCb:Disconnect()
         self.nodePressCb = nil
     end

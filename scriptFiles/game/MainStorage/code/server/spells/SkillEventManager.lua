@@ -228,12 +228,12 @@ function SkillEventManager.HandleUpgradeSkill(evt)
     -- 检查玩家资源是否足够
     if cost then
         local insufficientResources = {}  -- 记录不足的资源
-        
+
         for resourceName, requiredAmount in pairs(cost) do
             if requiredAmount < 0 then  -- 负数表示消耗
                 local needAmount = math.abs(requiredAmount)  -- 转为正数
                 local itemData = player.bag:GetItemDataByName(resourceName)
-                
+
                 if not itemData then
                     table.insert(insufficientResources, {
                         name = resourceName,
@@ -253,28 +253,28 @@ function SkillEventManager.HandleUpgradeSkill(evt)
                 end
             end
         end
-        
+
         -- 如果有资源不足，输出完整列表后返回
         if #insufficientResources > 0 then
             gg.log("=== 资源不足列表 ===")
             local messages = {}
             for i, resource in ipairs(insufficientResources) do
-                gg.log(string.format("%d. %s: 需要 %d, 拥有 %d, 缺少 %d", 
+                gg.log(string.format("%d. %s: 需要 %d, 拥有 %d, 缺少 %d",
                     i, resource.name, resource.need, resource.have, resource.missing))
                 table.insert(messages, string.format("%s缺少%d个", resource.name, resource.missing))
             end
-            
+
             -- 向客户端发送友好提示
             local message = "技能升级失败，资源不足：" .. table.concat(messages, "，")
             player:SendHoverText(message)
             gg.log("技能升级失败，资源不足")
             return
         end
-        
+
                 -- 资源充足，扣除资源
         for resourceName, requiredAmount in pairs(cost) do
             local absAmount = math.abs(requiredAmount)
-       
+
             local itemData = player.bag:GetItemDataByName(resourceName)
             if not itemData then
                 gg.log("资源不存在: " .. resourceName)
@@ -284,7 +284,7 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             player.bag:SetItemAmount(itemData.position, itemData.amount - absAmount)
             gg.log("扣除资源: " .. resourceName .. " 数量:" .. absAmount)
         end
-        
+
         -- 扣除完成后，打印玩家背包中对应物品的剩余数量
         gg.log("=== 资源扣除后剩余数量 ===")
         for resourceName, requiredAmount in pairs(cost) do
@@ -332,12 +332,12 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
     -- 从evt中获取参数
     local skillName = evt.skillName
     local targetLevel = evt.targetLevel
-    
+
     if not skillName then
         gg.log("技能名称不能为空")
         return
     end
-    
+
     if not targetLevel or targetLevel <= 0 then
         gg.log("目标等级无效:", targetLevel)
         return
@@ -359,13 +359,13 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
 
     local currentLevel = existingSkill.level
     local maxLevel = skillType.maxLevel or 1
-    
+
     -- 验证目标等级
     if currentLevel >= targetLevel then
         gg.log("目标等级无效: 当前等级", currentLevel, "目标等级", targetLevel)
         return
     end
-    
+
     if targetLevel > maxLevel then
         gg.log("目标等级超过最大等级: 目标", targetLevel, "最大", maxLevel)
         targetLevel = maxLevel  -- 限制到最大等级
@@ -392,11 +392,11 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
         -- 第一步：检查所有资源是否充足
         local insufficientResources = {}
         local resourcesData = {}  -- 缓存资源数据，避免重复查询
-        
+
         for resourceName, requiredAmount in pairs(totalCost) do
             local itemData = player.bag:GetItemDataByName(resourceName)
             resourcesData[resourceName] = itemData  -- 缓存数据
-            
+
             if not itemData then
                 table.insert(insufficientResources, {
                     name = resourceName,
@@ -413,24 +413,24 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
                 })
             end
         end
-        
+
         -- 如果有任何资源不足，直接返回，不扣除任何资源
         if #insufficientResources > 0 then
             gg.log("=== 一键强化资源检查失败 ===")
             local messages = {}
             for i, resource in ipairs(insufficientResources) do
-                gg.log(string.format("%d. %s: 需要 %d, 拥有 %d, 缺少 %d", 
+                gg.log(string.format("%d. %s: 需要 %d, 拥有 %d, 缺少 %d",
                     i, resource.name, resource.need, resource.have, resource.missing))
                 table.insert(messages, string.format("%s缺少%d个", resource.name, resource.missing))
             end
-            
+
             -- 向客户端发送友好提示
             local message = "一键强化失败，资源不足：" .. table.concat(messages, "，")
             player:SendHoverText(message)
             gg.log("一键强化失败，资源不足，未扣除任何资源")
             return
         end
-        
+
         -- 第二步：所有资源充足，一次性扣除所有资源
         gg.log("=== 资源充足，开始一次性扣除所有资源 ===")
         for resourceName, requiredAmount in pairs(totalCost) do
@@ -441,7 +441,7 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
                 gg.log("扣除资源: " .. resourceName .. " 数量:" .. requiredAmount)
             end
         end
-        
+
         -- 第三步：打印扣除后的剩余数量
         gg.log("=== 一键强化资源扣除后剩余数量 ===")
         for resourceName, requiredAmount in pairs(totalCost) do
@@ -452,7 +452,7 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
                 gg.log(string.format("%s 剩余数量: 0 (已完全消耗)", resourceName))
             end
         end
-        
+
         gg.log("=== 资源扣除完成 ===")
     else
         gg.log("一键强化无需消耗资源")

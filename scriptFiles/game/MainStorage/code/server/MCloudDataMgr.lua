@@ -155,13 +155,13 @@ function MCloudDataMgr.ReadGameTaskData(player)
                     player.quests[questId] = acceptedQuest
                 end
             end
-            
+
             -- 设置已完成任务
             player.acceptedQuestIds = ret2_.acceptedQuestIds
             return 0
         end
     end
-    
+
     -- 初始化空的任务数据
     player.quests = {}
     player.acceptedQuestIds = {}

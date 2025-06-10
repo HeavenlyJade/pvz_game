@@ -6,7 +6,7 @@ local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local MiscCommand = {}
 
 function MiscCommand.title(params, player)
-    player:SendChatText(params["信息"])
+    player:SendHoverText(params["信息"])
     return true
 end
 

@@ -19,6 +19,7 @@ function SkillType:OnInit(data)
     -- 从配置中读取基础属性
     self.name = data["技能名"] or ""
     self.displayName = data["显示名"] or self.name
+    self.shortName = data["简短名"] or self.displayName:gsub("增加", ""):gsub("延长", ""):gsub("提升", ""):gsub("额外", "")
     self.maxLevel = data["最大等级"] or 1
     self.description = data["技能描述"] or ""
     self.icon = data["技能图标"] or ""

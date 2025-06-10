@@ -69,6 +69,7 @@ end
 ---@field New fun( data:table ):MobType
 local MobType      = ClassMgr.Class("MobType")
 function MobType:OnInit(data)
+    self.id = data["怪物ID"]
     self.data = data
     self.triggerSkills = {} ---@type table<string, MobSkill[]> --以skill.timing整理
     if data["技能"] then
