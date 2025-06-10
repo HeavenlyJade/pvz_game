@@ -343,7 +343,7 @@ function _M:UpdateBehavior()
             -- 进入新行为
             self.currentBehavior = newBehavior
             BehaviorTree[newBehavior["类型"]]:OnEnter(self)
-            gg.log("EnterBehavior", self, newBehavior["类型"])
+            -- gg.log("EnterBehavior", self, newBehavior["类型"])
         end
     end
 end

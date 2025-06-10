@@ -99,6 +99,90 @@ function SkillCommands.destroy(params, player)
     end
 end
 
+---@param params table
+---@param player Player
+function SkillCommands.destroyAll(params, player)
+    gg.log("开始销毁所有技能，玩家:" .. player.name)
+
+    if not player.skills or next(player.skills) == nil then
+        local warningMsg = SkillCommon.FormatErrorMessage("玩家没有任何技能需要销毁", player, "所有技能")
+        SkillCommon.SendMessageAndLog(player, warningMsg, false)
+        return
+    end
+
+    local destroyedSkills = {}
+    local failedSkills = {}
+    local skillCount = 0
+
+    -- 获取所有技能名称的副本，避免在遍历过程中修改原表
+    local skillNames = {}
+    for skillName, _ in pairs(player.skills) do
+        table.insert(skillNames, skillName)
+        skillCount = skillCount + 1
+    end
+
+    gg.log("找到 " .. skillCount .. " 个技能需要销毁")
+
+    -- 遍历销毁所有技能
+    for _, skillName in ipairs(skillNames) do
+        local destroyResult = SkillCommon.PerformSkillDestroy(player, skillName)
+
+        if destroyResult.success then
+            table.insert(destroyedSkills, skillName)
+            -- 将destroyResult中的其他被销毁的技能也加入列表
+            if destroyResult.destroyedSkills then
+                for _, additionalSkill in ipairs(destroyResult.destroyedSkills) do
+                    if additionalSkill ~= skillName then
+                        table.insert(destroyedSkills, additionalSkill)
+                    end
+                end
+            end
+        else
+            table.insert(failedSkills, skillName)
+            gg.log("销毁技能失败: " .. skillName .. ", 错误: " .. (destroyResult.errorCode or "未知错误"))
+        end
+    end
+
+    -- 强制清空玩家技能表（确保完全清空）
+    player.skills = {}
+
+    -- 保存玩家数据
+    player:saveSkillConfig()
+    -- 同步最新的技能数据到客户端
+    player:syncSkillData()
+
+    -- 生成结果消息
+    local resultMsg
+    if #failedSkills == 0 then
+        resultMsg = SkillCommon.FormatSuccessMessage(
+            "成功销毁所有技能 (" .. #destroyedSkills .. " 个): " .. table.concat(destroyedSkills, ", "),
+            player,
+            "所有技能"
+        )
+        SkillCommon.SendMessageAndLog(player, resultMsg, false)
+    else
+        resultMsg = SkillCommon.FormatErrorMessage(
+            "部分技能销毁失败。成功销毁 (" .. #destroyedSkills .. " 个): " .. table.concat(destroyedSkills, ", ") ..
+            "；失败 (" .. #failedSkills .. " 个): " .. table.concat(failedSkills, ", "),
+            player,
+            "所有技能"
+        )
+        SkillCommon.SendMessageAndLog(player, resultMsg, true)
+    end
+
+    -- 发送响应到客户端
+    local responseData = {
+        destroyedSkills = destroyedSkills,
+        failedSkills = failedSkills,
+        totalDestroyed = #destroyedSkills,
+        totalFailed = #failedSkills
+    }
+    gg.network_channel:fireClient(player.uin, {
+        cmd = SkillEventConfig.RESPONSE.DESTROY_ALL,
+        data = responseData
+    })
+end
+
 
 function SkillCommands.afk(params, player)
     local action = params["操作"] or "进入挂机"
@@ -131,6 +215,9 @@ function SkillCommands.main(params, player)
     elseif optype == "销毁" then
         local args = {skillName = skillName}
         SkillCommands.destroy(args, player)
+    elseif optype == "销毁所有" then
+        local args = {}
+        SkillCommands.destroyAll(args, player)
     -- elseif optype == "装载" then
     --     player:LoadingConfSkills(args)
     end

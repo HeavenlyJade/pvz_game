@@ -260,13 +260,7 @@ function HudCards:UpdateMainCardDisplay()
         local cardName = mainCardSkill.skillName
         self.mainCardButton.node["框体"]["Text"].Title = cardName
 
-        -- 绑定主卡长按卸下事件
-        self.mainCardButton.longPressCb = function(ui, button)
-            gg.log("长按主卡，发送卸下装备请求:", mainCardSkill.skillName)
-            self:SendUnequipRequest(mainCardSkill.skillName)
-        end
 
-        -- 绑定主卡点击事件
         self.mainCardButton.clickCb = function(ui, button)
             -- 检查技能是否在冷却中
             local currentTime = os.clock()

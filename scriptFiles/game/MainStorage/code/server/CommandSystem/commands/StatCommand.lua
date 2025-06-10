@@ -1,8 +1,8 @@
 --- 物品相关命令处理器
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
-local MobTypeConfig = require(MainStorage.code.common.config.MobTypeConfig)  ---@type MobTypeConfig
-local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig)  ---@type StatTypeConfig
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local MobTypeConfig = require(MainStorage.code.common.config.MobTypeConfig) ---@type MobTypeConfig
+local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
 
 
 ---@class StatCommand
@@ -15,13 +15,13 @@ function StatCommand.showStat(params, player)
 等级: %d
 经验: %d
 生命: %d/%d
-]], 
-    player.level, 
-    player.exp,
-    player.health,
-    player.maxHealth
+]],
+        player.level,
+        player.exp,
+        player.health,
+        player.maxHealth
     )
-    
+
     -- 使用排序后的属性列表显示属性
     local sortedStats = StatTypeConfig.GetSortedStatList()
     for _, statName in ipairs(sortedStats) do
@@ -38,7 +38,7 @@ function StatCommand.showStat(params, player)
             end
         end
     end
-    
+
     print(statText)
     return true
 end

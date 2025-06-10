@@ -1,5 +1,7 @@
 local MainStorage     = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+
 ---@class SEvent
 ---@field __class Class 事件类型
 
@@ -8,7 +10,10 @@ local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 
 ---@class ServerEventManager
 local ServerEventManager = {
-    _eventDictionary = {} -- @type table<string, ServerEventListener[]>
+    _eventDictionary = {}, -- @type table<string, ServerEventListener[]>
+    _callbackMap = {}, -- @type table<string, fun(data: table)> 存储回调函数
+    _callbackCounter = 0, -- 用于生成唯一ID
+    _callbackTimeout = 2 -- 回调超时时间（秒）
 }
 
 ---@class ServerEventListener
@@ -16,6 +21,22 @@ local ServerEventListener = {
     cb = nil,      -- @type fun(evt: table)
     priority = 10   -- @type integer
 }
+
+--- 生成唯一的回调ID
+---@return string
+local function GenerateCallbackId()
+    ServerEventManager._callbackCounter = ServerEventManager._callbackCounter + 1
+    return tostring(ServerEventManager._callbackCounter)
+end
+
+--- 清理回调
+---@param callbackId string
+local function CleanupCallback(callbackId)
+    -- 取消超时定时任务
+    ServerScheduler.cancel("callback_timeout_" .. callbackId)
+    ServerEventManager._callbackMap[callbackId] = nil
+    ServerEventManager.Unsubscribe(callbackId .. "_Return", nil, nil, callbackId)
+end
 
 --- 订阅事件
 ---@param eventType string 事件类型
@@ -57,11 +78,15 @@ end
 --- 取消订阅事件
 ---@param eventType string 事件类型
 ---@param listener fun(evt: table) 要取消的事件回调函数
-function ServerEventManager.Unsubscribe(eventType, listener)
+---@param priority? number 优先级
+---@param key? string 记录ID
+function ServerEventManager.Unsubscribe(eventType, listener, priority, key)
     if ServerEventManager._eventDictionary[eventType] then
         local list = ServerEventManager._eventDictionary[eventType]
         for i = #list, 1, -1 do
-            if list[i].cb == listener then
+            if (not listener or list[i].cb == listener) and 
+               (not priority or list[i].priority == priority) and
+               (not key or list[i].key == key) then
                 table.remove(list, i)
             end
         end
@@ -83,7 +108,8 @@ end
 --- 发布事件
 ---@param eventType string 事件类型
 ---@param eventData table 事件数据
-function ServerEventManager.Publish(eventType, eventData)
+---@param callback? fun(data: table) 回调函数
+function ServerEventManager.Publish(eventType, eventData, callback)
     eventData.__class = eventType
     if ServerEventManager._eventDictionary[eventType] then
         for _, item in ipairs(ServerEventManager._eventDictionary[eventType]) do
@@ -93,6 +119,33 @@ function ServerEventManager.Publish(eventType, eventData)
             end
         end
     end
+end
+
+---@param eventType string 事件类型
+---@param eventData table 事件数据
+---@param callback? fun(data: table) 回调函数
+function ServerEventManager.SendToClient(uin, eventType, eventData, callback)
+    eventData.__class = eventType
+    if callback then
+        local callbackId = GenerateCallbackId()
+        eventData.__cb = callbackId
+        -- 存储回调函数
+        ServerEventManager._callbackMap[callbackId] = callback
+        -- 监听客户端返回的事件
+        ServerEventManager.Subscribe(callbackId .. "_Return", function(returnData)
+            local cb = ServerEventManager._callbackMap[callbackId]
+            if cb then
+                cb(returnData.data)
+                CleanupCallback(callbackId)
+            end
+        end, 0, callbackId)
+
+        -- 添加超时处理
+        ServerScheduler.add(function()
+            CleanupCallback(callbackId)
+        end, ServerEventManager._callbackTimeout, 0)
+    end
+    gg.network_channel:fireClient(uin, eventData)
 end
 
 return ServerEventManager

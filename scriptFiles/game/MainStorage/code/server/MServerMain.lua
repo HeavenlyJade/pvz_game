@@ -210,6 +210,14 @@ function MainServer.OnServerNotify(uin_, args)
 
     local player_ = gg.getPlayerByUin(uin_)
     args.player = player_
+    if args.__cb then
+        args.Return = function(returnData)
+            game:GetService("NetworkChannel"):fireClient({
+                cmd = args.__cb .. "_Return",
+                data = returnData
+            })
+        end
+    end
     ServerEventManager.Publish(args.cmd, args)
     return
 

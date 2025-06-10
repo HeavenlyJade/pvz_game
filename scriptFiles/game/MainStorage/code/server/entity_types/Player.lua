@@ -84,7 +84,11 @@ function _M:OnInit(info_)
     self:SubscribeEvent("CastSpell", function (evt)
         if evt.player == self then
             local skill = self.skills[evt.skill]
-            if skill.equipSlot > 0 and skill.skillType.activeSpell then
+            if not skill then
+                gg.log("不存在的技能", evt.skill)
+                return
+            end
+            if skill and skill.equipSlot > 0 and skill.skillType.activeSpell then
                 local param = CastParam.New()
                 if evt.targetPos then
                     param.lookDirection = (evt.targetPos - self:GetCenterPosition()):Normalize()
@@ -313,7 +317,7 @@ function _M:RefreshStats()
     end
 end
 
-function _M:SendEvent(eventName, data)
+function _M:SendEvent(eventName, data, callback)
     if not data then
         data = {}
     end
@@ -321,7 +325,7 @@ function _M:SendEvent(eventName, data)
         print("发送事件时未传入事件: ".. debug.traceback())
     end
     data.cmd = eventName
-    gg.network_channel:fireClient(self.uin, data)
+    ServerEventManager.SendToClient(self.uin, eventName, data, callback)
 end
 
 --------------------------------------------------
@@ -362,7 +366,8 @@ function _M:syncSkillData()
             skill = skill.skillType.name,
             level = skill.level,
             slot = skill.equipSlot,
-            growth = skill.growth
+            growth = skill.growth,
+            star_level = skill.star_level,
         }
 
         -- 记录已装备的技能
@@ -433,7 +438,8 @@ function _M:LearnSkill(skillType)
         self.skills[skillId] = Skill.New(self, {
             skill = skillType.name,
             level = 1,
-            slot = 0
+            slot = 0,
+            star_level = 0
         })
         self:saveSkillConfig()
         return true
@@ -464,7 +470,9 @@ function _M:UpgradeSkill(skillType)
         self.skills[skillId] = Skill.New(self, {
             skill = skillType.name,
             level = 1,
-            slot = skillSlot
+            slot = skillSlot,
+            star_level = 0
+
         })
         self:saveSkillConfig()
         return true

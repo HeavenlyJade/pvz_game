@@ -11,7 +11,6 @@ local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 ---@field rounds number For time wheel implementation (number of wheel rotations needed)
 ---@field key string|nil Optional key for task identification
 
-print("ServerScheduler INIT")
 ---@class ServerScheduler
 local ServerScheduler = {
     tasks = {},  -- All tasks by ID

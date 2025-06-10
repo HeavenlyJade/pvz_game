@@ -38,6 +38,23 @@ function Vec3.new(x, y, z)
     return obj
 end
 
+function Vec3:FindClosestPlayer(range)
+    local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+    local closestPlayer = nil
+    local minDistSq = range * range
+    
+    for _, player in pairs(gg.server_players_list) do
+        local pos = player:GetPosition()
+        local distSq = (self - pos):SqrMagnitude()
+        if distSq < minDistSq then
+            minDistSq = distSq
+            closestPlayer = player
+        end
+    end
+    
+    return closestPlayer
+end
+
 function Vec3.zero()
     return Vec3.new(0, 0, 0)
 end

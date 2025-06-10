@@ -68,7 +68,7 @@ function CardsGui:RegisterCardButtons()
         end
     else
     end
-    -- 副卡按钮点击事件
+
     if self.subCardButton then
         self.subCardButton:SetTouchEnable(true)
         self.subCardButton.clickCb = function(ui, button)
@@ -342,9 +342,6 @@ function CardsGui:SetMainCardEquippedVisual(skillName, isEquipped)
     local button = buttonState.button
 
     if isEquipped then
-        -- 已装备：添加特殊视觉效果（例如边框发光、角标等）
-        -- 这里可以根据UI设计添加具体的视觉效果
-        -- 例如：设置特殊的边框颜色、添加装备角标等
 
         -- 示例：可以通过修改按钮的某个子节点来显示装备状态
         local equipMark = button.node:FindFirstChild("装备标记")
@@ -558,7 +555,7 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
                     -- gg.log("重新创建未解锁按钮:", skillName, "位置:", newIndex)
                 end
 
-                -- 绑定点击事件
+
                 button.clickCb = function(ui, button)
                     local skillId = button.extraParams["skillId"]
                     self:ShowSkillTree(skillId)
@@ -1138,9 +1135,6 @@ function CardsGui:GetServerUnlockedMainCards()
     return unlockedCards
 end
 
-
-
-
 -- 注册技能卡片的ViewButton
 function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
     local viewButton = ViewButton.New(cardFrame, self, nil, "卡框背景")
@@ -1365,7 +1359,7 @@ function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
     -- 设置技能名称
     local nameNode = cardFrame["副卡名字"]
     if nameNode then
-        nameNode.Title = skill.name
+        nameNode.Title = skill.displayName
     end
 
     -- 设置new标识的可见性
@@ -1900,10 +1894,6 @@ function CardsGui:AddNewMainCardSkill(skillName, skillType, skillData)
         self:SetMainCardEquippedVisual(skillName, buttonState.isEquipped)
     end
 
-    -- 创建对应的技能树（如果还没有）
-    if not self.skillLists[skillName] then
-        self:CreateSkillTreeForNewMainCard(skillName, skillType)
-    end
 
     -- 重新排序主卡按钮
     self:SortAndUpdateMainCardLayout()
@@ -1949,7 +1939,7 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
         -- 动态添加的技能默认为正常颜色（已解锁）
         button.img.Grayed = false
 
-        -- 绑定点击事件
+
         button.clickCb = function(ui, button)
             local skillId = button.extraParams["skillId"]
             gg.log("🔍 主卡按钮点击调试信息:")
@@ -1982,7 +1972,6 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
                 -- 尝试重新创建技能树
                 local skillType = SkillTypeConfig.Get(skillId)
                 if skillType then
-                    self:CreateSkillTreeForNewMainCard(skillId, skillType)
                     -- 创建成功后显示属性面板
                     if self.skillLists[skillId] then
                         self.attributeButton:SetVisible(true)
@@ -2009,8 +1998,6 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
         -- 添加到配置列表
         table.insert(self.configMainCards, skillName)
 
-        -- 创建技能树
-        self:CreateSkillTreeForNewMainCard(skillName, skillType)
 
         gg.log("动态主卡技能创建完成", skillName)
     else
@@ -2018,51 +2005,6 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
     end
 end
 
--- 为新主卡创建技能树
-function CardsGui:CreateSkillTreeForNewMainCard(skillName, skillType)
-    -- 构建单个技能的技能树
-    local skillTree = SkillTypeUtils.BuildSingleSkillTree(skillName)
-    if not skillTree then
-        gg.log("无法构建技能树", skillName)
-        return
-    end
-
-    -- 获取纵列表模板
-    local verticalListParent = self:Get("框体/主卡/加点框", ViewComponent)
-    if not verticalListParent then
-        gg.log("找不到纵列表父节点")
-        return
-    end
-
-    -- 创建新的纵列表
-    local firstVerticalList = nil
-    for name, vlist in pairs(self.skillLists) do
-        firstVerticalList = vlist.node
-        break
-    end
-
-    if firstVerticalList then
-        local clonedVerticalList = firstVerticalList:Clone()
-        clonedVerticalList.Name = skillName
-        clonedVerticalList.Parent = verticalListParent.node
-        clonedVerticalList.Visible = false
-
-        -- 设置主卡框
-        local mainCardFrame = clonedVerticalList["主卡框"]
-        if mainCardFrame then
-            self:RegisterSkillCardButton(mainCardFrame, skillType, 0, 2)
-        end
-
-        -- 清理并重新创建技能树层级
-        self:CloneSkillTreeLevelsForSingleTree(clonedVerticalList, skillTree)
-
-        -- 注册到技能列表
-        local verticalList = ViewList.New(clonedVerticalList, self, "框体/主卡/加点框/" .. skillName)
-        self.skillLists[skillName] = verticalList
-
-        gg.log("新主卡技能树创建完成", skillName)
-    end
-end
 
 -- 为单个技能树克隆层级（简化版本）
 function CardsGui:CloneSkillTreeLevelsForSingleTree(verticalListNode, skillTree)
@@ -2176,7 +2118,7 @@ function CardsGui:AddDynamicSubCardSkill(skillName, skillType, skillData)
             self:SetSkillLevelSubCardFrame(clonedNode, skillType)
 
             -- 创建按钮（动态添加的技能默认为正常颜色）
-            local subCardButton = ViewButton.New(clonedNode, self, nil, "图标底图")
+            local subCardButton = ViewButton.New(clonedNode, self)
             subCardButton.extraParams = {
                 skillId = skillName,
                 serverData = skillData
@@ -2184,7 +2126,7 @@ function CardsGui:AddDynamicSubCardSkill(skillName, skillType, skillData)
             subCardButton:SetTouchEnable(true)
             subCardButton.img.Grayed = false  -- 动态添加的技能默认已解锁
 
-            -- 绑定点击事件
+
             subCardButton.clickCb = function(ui, button)
                 local skillId = button.extraParams.skillId
                 local skill = SkillTypeConfig.Get(skillId)
@@ -2245,34 +2187,10 @@ function CardsGui:DebugPrintSkillListsStatus()
     gg.log("=== 调试结束 ===")
 end
 
--- === 修复方法：确保技能树正确创建 ===
-function CardsGui:EnsureSkillTreeExists(skillName)
-    if not self.skillLists[skillName] then
-        gg.log("技能树不存在，尝试创建:", skillName)
-        local skillType = SkillTypeConfig.Get(skillName)
-        if skillType then
-            self:CreateSkillTreeForNewMainCard(skillName, skillType)
-            return self.skillLists[skillName] ~= nil
-        else
-            gg.log("无法获取技能配置:", skillName)
-            return false
-        end
-    end
-    return true
-end
+
 
 -- === 新增方法：显示技能树 ===
 function CardsGui:ShowSkillTree(skillName)
-
-    -- 确保技能树存在
-    if not self.skillLists[skillName] then
-        local skillType = SkillTypeConfig.Get(skillName)
-        if skillType then
-            self:CreateSkillTreeForNewMainCard(skillName, skillType)
-        else
-            return
-        end
-    end
 
     local currentList = self.skillLists[skillName]
     if currentList then
@@ -2401,7 +2319,7 @@ function CardsGui:InitializeSubCardButtons()
                 self:SetSkillLevelSubCardFrame(clonedNode, skillType)
 
                 -- 创建按钮（灰色状态）
-                local subCardButton = ViewButton.New(clonedNode, self, nil, "图标底图")
+                local subCardButton = ViewButton.New(clonedNode, self)
                 subCardButton.extraParams = {
                     skillId = skillName,
                     serverData = nil  -- 初始无服务端数据
@@ -2409,9 +2327,7 @@ function CardsGui:InitializeSubCardButtons()
                 subCardButton:SetTouchEnable(true) -- 可点击
 
                 -- 设置为灰色（未解锁状态）
-                subCardButton.img.Grayed = true
 
-                -- 绑定点击事件
                 subCardButton.clickCb = function(ui, button)
                     local skillId = button.extraParams.skillId
                     local skill = SkillTypeConfig.Get(skillId)
@@ -2569,8 +2485,10 @@ function CardsGui:ProcessServerSubCardData(serverSubskillDic)
     gg.log("开始处理服务端副卡数据")
 
     -- 处理所有配置的副卡，更新解锁状态
+    gg.log("处理服务端副卡数据",serverSubskillDic)
     for _, skillName in ipairs(self.configSubCards) do
         local buttonState = self.subCardButtonStates[skillName]
+        gg.log("处理服务端副卡数据",skillName,buttonState)
         if buttonState and buttonState.button then
             -- 检查是否在服务端数据中
             if serverSubskillDic[skillName] then
@@ -2707,7 +2625,7 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
             self:SetSkillLevelSubCardFrame(clonedNode, skillType)
 
             -- 创建新的按钮
-            local subCardButton = ViewButton.New(clonedNode, self, nil, "图标底图")
+            local subCardButton = ViewButton.New(clonedNode, self)
             subCardButton.extraParams = {
                 skillId = skillName,
                 serverData = data.serverData
@@ -2723,7 +2641,7 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
                 gg.log("重新创建未解锁副卡:", skillName, "品级:", quality, "位置:", newIndex)
             end
 
-            -- 绑定点击事件
+
             subCardButton.clickCb = function(ui, button)
                 local skillId = button.extraParams.skillId
                 local skill = SkillTypeConfig.Get(skillId)
@@ -3033,7 +2951,6 @@ function CardsGui:ShowUpgradeConfirmDialog(skillName)
         self.ConfirmStrengthenUI.node.Visible = true
     end
 
-    gg.log("显示一键强化确认对话框:", skillName)
 end
 
 -- 生成升级内容文本

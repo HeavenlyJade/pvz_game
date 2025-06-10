@@ -20,10 +20,11 @@ function Skill:OnInit(player, data)
     self.growth = data["growth"] or 0
     self.cooldownCache = 0
     self.afking = false
-    
+    self.star_level = data["star_level"] or 0
+
     -- 添加技能名称属性方便访问
     self.skillName = data["skill"]
-    
+
     if not self.skillType then
         gg.log("警告: 技能类型不存在", data["skill"])
     end
@@ -87,7 +88,7 @@ end
 function Skill:LevelUp(levels)
     levels = levels or 1
     local maxLevel = self:GetMaxLevel()
-    
+
     if self.level + levels <= maxLevel then
         self.level = self.level + levels
         gg.log("技能升级", "技能:", self.skillName, "新等级:", self.level)
@@ -126,10 +127,10 @@ end
 -- 调试信息
 ---@return string
 function Skill:ToString()
-    return string.format("Skill{name=%s, level=%d, slot=%d, learned=%s}", 
-        self.skillName or "unknown", 
-        self.level, 
-        self.equipSlot, 
+    return string.format("Skill{name=%s, level=%d, slot=%d, learned=%s}",
+        self.skillName or "unknown",
+        self.level,
+        self.equipSlot,
         tostring(self:IsLearned()))
 end
 

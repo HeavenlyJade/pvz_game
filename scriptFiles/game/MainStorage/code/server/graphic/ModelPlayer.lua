@@ -7,7 +7,7 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 ---@class ModelPlayer
 ---@field New fun(animator:Animator, stateConfig: table)
 local ModelPlayer = ClassMgr.Class("ModelPlayer")
-
+local modelAnimCache = {}
 
 ---@param animator Animator
 function ModelPlayer:OnInit(name, animator, stateConfig)
@@ -19,14 +19,26 @@ function ModelPlayer:OnInit(name, animator, stateConfig)
     self.animationFinished = true
     self.isMoving = false
     self:SwitchState(stateConfig["初始状态"])
-    -- animator.Controller:GetStateMachine().EventNotify:Connect(function (...)
-    --     gg.log("EventNotify", ...)
-    -- end)
-    -- animator.GetAnimationPostNotify:Connect(function (...)
-    --     gg.log("动画播放完毕", ...)
-    --     self.animationFinished = true
-    --     self:PlayTransition("无")
-    -- end)
+    -- local animName = animator.ControllerAsset
+    -- if not modelAnimCache[animName] then
+    --     ServerScheduler.add(function ()
+    --         local states = {}
+    --         for stateId, _ in pairs(stateConfig["状态"]) do
+    --             states[stateId] = 0
+    --         end
+    --         local pos = gg.Vec3.new(animator.Parent.Position)
+    --         local closestPlayer = pos:FindClosestPlayer(1000)
+    --         if closestPlayer then
+    --             local path = gg.GetFullPath(animator)
+    --             closestPlayer:SendEvent("FetchAnimDuration", {
+    --                 path = path,
+    --                 states = states
+    --             }, function (data)
+    --                 gg.log("Fetched", data)
+    --             end)
+    --         end
+    --     end, 5)
+    -- end
 end
 
 
@@ -138,10 +150,6 @@ function ModelPlayer:SwitchState(stateId, speed)
             self:PlayTransition("无")
         end, playTime - 0.1)
     end
-    local playTime = self.animator:GetCurrentStatePlayedTime(0)
-    gg.log("playTime", stateId, playTime)
-    local playTimeByStr = self.animator:GetStatePlayedTime(stateId)
-    gg.log("playTimeByStr", stateId, playTimeByStr)
     self.currentState = state
     return playTime
 end

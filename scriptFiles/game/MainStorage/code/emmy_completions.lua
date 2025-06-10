@@ -33,7 +33,7 @@
 
 
 
----@class Animator
+---@class Animator:SandboxNode
 ---@field Pause boolean 是否暂停
 ---@field SkeletonAsset string 骨骼资源
 ---@field ControllerAsset string 动画控制器资源

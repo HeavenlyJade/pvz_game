@@ -258,7 +258,6 @@ function ProjectileSpell:UpdateProjectile(id)
         item.destroyCount = item.destroyCount - 1
         if item.destroyCount <= 0 then
             self:DestroyProjectile(id)
-            self:PlayEffect(self.castEffects, item.caster, newPosition, item.param, "触发点")
         end
         return
     end
@@ -310,16 +309,21 @@ function ProjectileSpell:UpdateProjectile(id)
             {1}
         )
         if hitGround and #hitGround > 0 then
-            item.destroyCount = 3  -- 地形碰撞也延迟三次更新后销毁
+            self:MarkDestroy(item)
         end
     end
     
     -- 检查持续时间
     if self.duration > 0 then
         if item.startTime and os.time() - item.startTime >= self.duration then
-            item.destroyCount = 3  -- 超时也延迟三次更新后销毁
+            self:MarkDestroy(item)
         end
     end
+end
+
+function ProjectileSpell:MarkDestroy(item)
+    item.destroyCount = 3  -- 超时也延迟三次更新后销毁
+    self:PlayEffect(self.castEffects, item.caster, gg.Vec3.new(item.actor.Position), item.param, "触发点")
 end
 
 --- 处理飞弹碰撞
@@ -357,7 +361,7 @@ function ProjectileSpell:HandleProjectileHit(id, target)
     if item.remainingHits > 0 then
         item.remainingHits = item.remainingHits - 1
         if item.remainingHits == 0 then
-            item.destroyCount = 5  -- 设置需要三次更新后再销毁
+            self:MarkDestroy(item)
         end
     end
 end

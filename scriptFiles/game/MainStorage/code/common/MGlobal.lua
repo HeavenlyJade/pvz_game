@@ -401,13 +401,21 @@ local gg = {
 
 }
 
--- function Vector3:offset(x, y, z)
---     return Vector3.New(self.x + x, self.y+y, self.z + z)
--- end
-
--- function Vector2:offset(x, y)
---     return Vector2.New(self.x + x, self.y+y)
--- end
+---@param node SandboxNode
+function gg.GetFullPath(node)
+    local path = node.Name
+    local parent = node.Parent
+    
+    while parent do
+        path = parent.Name .. "/" .. path
+        parent = parent.Parent
+        if parent.Name == "WorkSpace" then
+           break 
+        end
+    end
+    
+    return path
+end
 
 function gg.ProcessFormula(formula, caster, target)
     -- 替换所有[变量名]为对应的变量值

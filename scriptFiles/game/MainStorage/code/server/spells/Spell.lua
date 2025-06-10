@@ -223,8 +223,8 @@ end
 
 --- 播放特效
 ---@param effects Graphic[] 特效数组
----@param playFrom Entity|Vector3 播放起点
----@param playAt Entity|Vector3 播放终点
+---@param playFrom Entity|Vec3 播放起点
+---@param playAt Entity|Vec3 播放终点
 ---@param param CastParam 参数
 ---@param targetMode? string
 ---@return Action[] 特效动作数组

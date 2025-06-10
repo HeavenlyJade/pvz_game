@@ -805,6 +805,7 @@ function _M:createTitle(nameOverride)
         local number_level = gg.createTextLabel(name_level_billboard, nameOverride)
         number_level.ShadowEnable = true
         number_level.ShadowOffset = Vector2.New(3, 3)
+        number_level.FontSize = number_level.FontSize / self.actor.LocalScale.y
 
         if (self.level or 1) > 50 then
             number_level.TitleColor = ColorQuad.New(255, 0, 0, 255)

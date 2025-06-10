@@ -23,13 +23,13 @@ function SkillCommon.ValidateSkillConfig(skillName)
     if not skillName or skillName == "" then
         return nil, SkillEventConfig.ERROR_CODES.INVALID_PARAMETERS
     end
-    
+
     local skillType = SkillTypeConfig.Get(skillName)
     if not skillType then
         gg.log("技能配置不存在: " .. skillName)
         return nil, SkillEventConfig.ERROR_CODES.SKILL_NOT_FOUND
     end
-    
+
     return skillType, SkillEventConfig.ERROR_CODES.SUCCESS
 end
 
@@ -41,13 +41,13 @@ function SkillCommon.ValidatePlayerSkill(player, skillName)
     if not player or not player.skills then
         return nil, SkillEventConfig.ERROR_CODES.PLAYER_NOT_FOUND
     end
-    
+
     local skillInstance = player.skills[skillName]
     if not skillInstance then
         gg.log("玩家不拥有该技能: " .. skillName .. " 玩家: " .. (player.name or "unknown"))
         return nil, SkillEventConfig.ERROR_CODES.SKILL_NOT_OWNED
     end
-    
+
     return skillInstance, SkillEventConfig.ERROR_CODES.SUCCESS
 end
 
@@ -61,13 +61,13 @@ function SkillCommon.ValidateSkillAndPlayer(player, skillName)
     if not skillType then
         return nil, nil, configError
     end
-    
+
     -- 验证玩家拥有权
     local skillInstance, playerError = SkillCommon.ValidatePlayerSkill(player, skillName)
     if not skillInstance then
         return skillType, nil, playerError
     end
-    
+
     return skillType, skillInstance, SkillEventConfig.ERROR_CODES.SUCCESS
 end
 
@@ -117,7 +117,7 @@ function SkillCommon.DestroyPlayerSkill(player, skillName)
     end
 
     local skill = player.skills[skillName]
-    
+
     -- 如果技能已装备，先卸下
     if skill.equipSlot and skill.equipSlot > 0 then
         gg.log("技能已装备，先自动卸下:", skillName, "槽位:", skill.equipSlot)
@@ -126,7 +126,7 @@ function SkillCommon.DestroyPlayerSkill(player, skillName)
 
     -- 从玩家技能列表中移除
     player.skills[skillName] = nil
-    
+
     gg.log("技能已从玩家技能列表中移除:", skillName)
     return true
 end
@@ -185,14 +185,14 @@ function SkillCommon.ValidateSkillLearn(player, skillName)
     if not skillType then
         return nil, configError
     end
-    
+
     -- 检查玩家是否已拥有该技能
     local existingSkill = player.skills and player.skills[skillName]
     if existingSkill then
         gg.log("玩家已拥有该技能: " .. skillName .. " 玩家: " .. (player.name or "unknown"))
         return nil, SkillEventConfig.ERROR_CODES.SKILL_ALREADY_LEARNED
     end
-    
+
     return skillType, SkillEventConfig.ERROR_CODES.SUCCESS
 end
 
@@ -202,20 +202,27 @@ end
 ---@param level number|nil 技能等级（可选，默认为1）
 ---@return table|nil 技能实例
 function SkillCommon.CreateSkillInstance(player, skillName, level)
-    local Skill = require(game:GetService("MainStorage").code.server.spells.Skill) ---@type Skill
-    
-    local skillData = { 
-        skill = skillName, 
-        level = level or 0
-    }
-    
-    local skill = Skill.New(player, skillData)
-    if skill then
-        player.skills[skillName] = skill
-        player:saveSkillConfig()
-        gg.log("技能创建成功:", skillName, "等级:", skill.level, "玩家:", player.name)
+    -- 获取技能类型配置
+    local skillType = SkillTypeConfig.Get(skillName)
+    if not skillType then
+        gg.log("技能配置不存在: " .. skillName)
+        return nil
     end
-    
+
+    -- 使用 Player 的 LearnSkill 方法创建技能
+    local success = player:LearnSkill(skillType)
+    if not success then
+        gg.log("技能创建失败（可能已存在）: " .. skillName .. " 玩家: " .. player.name)
+        return nil
+    end
+
+    -- 获取刚创建的技能实例
+    local skill = player.skills[skillName]
+
+    player:saveSkillConfig()
+
+
+    gg.log("技能创建成功:", skillName, "等级:", skill and skill.level or 1, "玩家:", player.name)
     return skill
 end
 
@@ -257,7 +264,7 @@ function SkillCommon.SendMessageAndLog(player, message, isError)
     else
         gg.log("信息: " .. message)
     end
-    
+
     if player and player.SendChatText then
         player:SendChatText(message)
     end

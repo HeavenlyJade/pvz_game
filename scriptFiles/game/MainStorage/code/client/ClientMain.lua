@@ -37,6 +37,19 @@ function ClientMain.start_client()
     
     require(MainStorage.code.client.graphic.DamagePool)
     require(MainStorage.code.client.graphic.WorldTextAnim)
+    -- ClientEventManager.Subscribe("FetchAnimDuration", function (evt)
+    --     local animator = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast animator Animator
+    --     gg.log("animator", evt.path, animator, evt)
+    --     if animator then
+    --         for stateId, _ in pairs(evt.states) do
+    --             local playTimeByStr = animator:GetClipLength(stateId)
+    --             gg.log("playTimeByStr", animator:IsValid(), stateId, playTimeByStr)
+    --             evt.states[stateId] = playTimeByStr
+    --         end
+
+    --         evt.Return(evt.states)
+    --     end
+    -- end)
 end
 
 
@@ -75,6 +88,14 @@ function ClientMain.OnClientNotify(args)
     if type(args) ~= 'table' then return end
     if not args.cmd then return end
 
+    if args.__cb then
+        args.Return = function(returnData)
+            gg.network_channel:FireServer({
+                cmd = args.__cb .. "_Return",
+                data = returnData
+            })
+        end
+    end
     ClientEventManager.Publish(args.cmd, args)
 end
 
