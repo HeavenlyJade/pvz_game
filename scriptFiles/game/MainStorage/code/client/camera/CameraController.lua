@@ -329,7 +329,6 @@ function CameraController.RaytraceScene(filterGroup)
     local winSize = _camera.WindowSize
     local ray_   =  _camera:ViewportPointToRay( winSize.x/2, winSize.y/2, 12800 )
     local result = game.WorldService:RaycastClosest(ray_.Origin, ray_.Direction, 12800, true, filterGroup)
-    print("result", result.obj, result.position, result.normal)
     if result.isHit then
         return ray_.Origin + ray_.Direction * result.distance
     end

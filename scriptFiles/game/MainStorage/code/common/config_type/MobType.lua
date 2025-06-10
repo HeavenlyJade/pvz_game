@@ -18,6 +18,7 @@ function MobSkill:OnInit(data)
     self.spell = SubSpell.New(data["魔法"])
     -- self.power = data["power"] or 0
     self.range = data["距离"] or 0
+    
 end
 
 function MobSkill:CanCast(caster, target)
@@ -72,6 +73,13 @@ function MobType:OnInit(data)
     self.id = data["怪物ID"]
     self.data = data
     self.triggerSkills = {} ---@type table<string, MobSkill[]> --以skill.timing整理
+
+    -- 设置音效
+    self.idleSound = data["闲置音效"]
+    self.attackSound = data["攻击音效"]
+    self.hitSound = data["受击音效"]
+    self.deadSound = data["死亡音效"]
+
     if data["技能"] then
         for _, skillData in ipairs(data["技能"]) do
             if skillData["魔法"] then

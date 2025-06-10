@@ -124,7 +124,6 @@ end
 
 -- 处理伤害事件
 local function OnDamageEvent(evt)
-    gg.log("OnDamageEvent", evt)
     local damageNode = GetNode()
     -- 显示伤害数字
     local position = Vector3.New(evt.position.x, evt.position.y, evt.position.z)

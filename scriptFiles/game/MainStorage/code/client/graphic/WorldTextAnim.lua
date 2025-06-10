@@ -23,17 +23,31 @@ local function GetNode()
         node.Mode = Enum.Mode.Billboard
         
         -- 创建文本标签
-        local textLabel = gg.createTextLabel(node, "")
+        local textLabel = SandboxNode.new('UITextLabel', node)
+        textLabel.Size = Vector2.New(600, 200)
+        textLabel.Pivot = Vector2.New(0, 0.5)
+        textLabel.FontSize = 128
+        textLabel.TitleColor = ColorQuad.New(255, 255, 255, 255)
+        textLabel.FillColor = ColorQuad.New(0, 0, 0, 0)
+        textLabel.TextVAlignment = Enum.TextVAlignment.Center -- Top  Bottom
+        textLabel.TextHAlignment = Enum.TextHAlignment.Left -- Left Right
+
+        -- textLabel.Position   = Vector2.New( 0,  0 )
+        textLabel.Title = ""
         textLabel.Name = "textLabel"
         textLabel.ShadowEnable = true
         textLabel.ShadowOffset = Vector2.New(3, 3)
         textLabel.TitleColor = ColorQuad.New(255, 255, 0, 255)
         textLabel.ShadowColor = ColorQuad.New(0, 0, 0, 255)
         textLabel.FontSize = 64
+        
+        local image = SandboxNode.new('UIImage', node)
+        image.Size = Vector2.New(100, 100)
+        image.Pivot = Vector2.New(1, 0.5)
+        image.Name = "ItemIcon"
     end
     node.Visible = true
     table.insert(activeNodes, node)
-    print("GetNode", node)
     return node
 end
 
@@ -56,15 +70,20 @@ end
 ---@param text string 显示的文本
 ---@param startPos Vector3 起始位置
 ---@param endPos Vector3 目标位置
-local function ShowWorldText(text, startPos, endPos)
+local function ShowWorldText(text, icon, startPos, endPos)
     local node = GetNode()
     
     -- 设置文本
     node.textLabel.Title = text
     node.LocalScale = Vector3.New(0.6, 0.6, 0.6)
-    
-    -- 设置初始位置
     node.Position = startPos
+
+    if icon then
+        node.ItemIcon.Visible = true
+        node.ItemIcon.Icon = icon
+    else
+        node.ItemIcon.Visible = false
+    end
     
     -- 创建动画
     local tween = TweenService:Create(node, tweenInfo, {
@@ -81,16 +100,19 @@ end
 local function OnDropItemAnim(evt)
     local player = game:GetService("Players").LocalPlayer.Character ---@type Actor
     local endPos = Vector3.New(evt.loc[1], evt.loc[2], evt.loc[3])  -- 目标位置
-    local dir = gg.Vec3.new(player.Position + player.Center - endPos) ---@type Vec3
-    local length = dir:Length()
-    dir = dir:rotateAroundY(math.random(-45, 45))
-    dir.y = dir.y + math.random(-20, 50)
+    local startPos = evt.from
+    if not startPos then
+        local dir = gg.Vec3.new(player.Position + player.Center - endPos) ---@type Vec3
+        local length = dir:Length()
+        dir = dir:rotateAroundY(math.random(-45, 45))
+        dir.y = dir.y + math.random(-20, 50)
+        
+        -- 计算最终方向和距离
+        dir = dir / length * math.max(300, length / 5)
+        startPos = endPos + dir:ToVector3()
+    end
     
-    -- 计算最终方向和距离
-    dir = dir / length * math.max(300, length / 5)
-    local startPos = endPos + dir:ToVector3()
-    
-    ShowWorldText(evt.text, startPos, endPos)
+    ShowWorldText(evt.text, evt.icon, startPos, endPos)
 end
 
 -- 注册事件监听

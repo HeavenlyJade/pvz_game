@@ -2,6 +2,8 @@ local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
+local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
+local DummyEntity = require(MainStorage.code.server.entity_types.DummyEntity) ---@type DummyEntity
 
 ---@class Graphic:Class
 local Graphic = ClassMgr.Class("Graphic")
@@ -150,8 +152,20 @@ function Graphic:GetTarget(caster, target)
     elseif self.targeter == "自己" then
         return caster
     elseif self.targeter == "场景" then
+        local targeterPath = self.targeterPath
+        if not targeterPath then
+            return target
+        end
         local scene = target.scene ---@type Scene
-        return scene.node2Entity[scene:Get(self.targeterPath)]
+        local node = scene:Get(targeterPath)
+        if not node then
+            return target
+        end
+        local entity = Entity.node2Entity[node]
+        if not entity then
+            entity = DummyEntity.New(node)
+        end
+        return entity
     end
     return target
 end
@@ -385,16 +399,49 @@ function ModelGraphic:CreateEffect(target, scene)
     return model
 end
 
+---@class SoundGraphic:Graphic
+local SoundGraphic = ClassMgr.Class("SoundGraphic", Graphic)
+function SoundGraphic:OnInit( data )
+    self.soundAssetId = data["声音资源"]
+    self.boundToEntity = data["绑定实体"] or false
+    self.volume = data["响度"] or 1.0
+    self.pitch = data["音调"] or 1.0
+end
+
+function SoundGraphic:GetType()
+    return "音效"
+end
+
+function SoundGraphic:GetName()
+    return self.soundAssetId
+end
+
+function SoundGraphic:PlayAtReal(caster, target, param)
+    if not self.soundAssetId or self.soundAssetId == "" then
+        return
+    end
+
+    local boundTo = nil
+    if self.boundToEntity and target.isEntity then
+        boundTo = target.actor
+    else
+        boundTo = target:GetPosition()
+    end
+    caster.scene:PlaySound(self.soundAssetId, boundTo, self.volume, self.pitch)
+end
+
 ---@class Graphics
 ---@field ParticleGraphic ParticleGraphic
 ---@field AnimationGraphic AnimationGraphic
 ---@field CameraShakeGraphic CameraShakeGraphic
 ---@field ModelGraphic ModelGraphic
+---@field SoundGraphic SoundGraphic
 local loaders = {
     ParticleGraphic = ParticleGraphic,
     AnimationGraphic = AnimationGraphic,
     CameraShakeGraphic = CameraShakeGraphic,
     ModelGraphic = ModelGraphic,
+    SoundGraphic = SoundGraphic,
 }
 
 --- 加载特效配置

@@ -247,6 +247,7 @@ function HudCards:UpdateMainCardDisplay()
     if not self.mainCardButton then return end
 
     -- 查找主卡数据（主卡槽位通常是1000）
+    ---@type Skill
     local mainCardSkill = nil
     local mainCardSlot = nil
     for slotId, skill in pairs(self.mainCardData) do
@@ -259,7 +260,12 @@ function HudCards:UpdateMainCardDisplay()
         -- 更新主卡按钮显示
         local cardName = mainCardSkill.skillName
         self.mainCardButton.node["框体"]["Text"].Title = cardName
+        local icon = mainCardSkill.skillType.icon
+        gg.log("更新主卡显示:")
+        if icon  and icon ~= "" then
+            self.mainCardButton.node["框体"]["主卡图标"].Icon =icon
 
+        end
 
         self.mainCardButton.clickCb = function(ui, button)
             -- 检查技能是否在冷却中
@@ -291,8 +297,8 @@ function HudCards:UpdateMainCardDisplay()
         self.mainCardButton.node["框体"]["Text"].Title = "未装备"
         -- 清除事件绑定
         self.mainCardButton.clickCb = nil
-        self.mainCardButton.longPressCb = nil
-        gg.log("更新主卡显示:")
+
+
         if self.mainCardButton.node["Title"] then
             self.mainCardButton.node["Title"].Title = "未装备"
         end

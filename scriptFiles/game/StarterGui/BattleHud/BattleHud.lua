@@ -299,16 +299,16 @@ function BattleHud:OnInit(node, config)
         accumulatedHorizontalRecoil = 0
         lastShotTime = 0
         -- 设置进度条
-        if data.waveHealths and data.totalHealth then
-            local waveCount = #data.waveHealths
+        if data.waveMobCounts and data.totalMobCount then
+            local waveCount = #data.waveMobCounts
             self.progress:SetElementSize(waveCount - 1)
             local progressWidth = self.progress.node["进度条"].Size.x
-            -- 计算每个波次的生命百分比
+            -- 计算每个波次的怪物百分比
             local accumulatedPercent = 0
             for i = 1, waveCount - 1 do
-                local waveHealth = data.waveHealths[i]
-                local healthPercent = waveHealth / data.totalHealth
-                accumulatedPercent = accumulatedPercent + healthPercent
+                local waveMobCount = data.waveMobCounts[i]
+                local mobPercent = waveMobCount / data.totalMobCount
+                accumulatedPercent = accumulatedPercent + mobPercent
                 
                 -- 设置波次标记的位置
                 local child = self.progress:GetChild(i)
@@ -316,16 +316,16 @@ function BattleHud:OnInit(node, config)
                     child.node.Position = Vector2.New(progressWidth * (1-accumulatedPercent), 0)
                 end
             end
-            -- 保存波次生命数据用于后续计算
-            self.waveHealths = data.waveHealths
-            self.totalHealth = data.totalHealth
+            -- 保存波次怪物数量数据用于后续计算
+            self.waveMobCounts = data.waveMobCounts
+            self.totalMobCount = data.totalMobCount
             self.currentWaveIndex = 1
         end
     end)
 
     -- 注册波次生命更新事件监听
     ClientEventManager.Subscribe("WaveHealthUpdate", function(data)
-        if not self.waveHealths or not self.totalHealth then return end
+        if not self.waveMobCounts or not self.totalMobCount then return end
         
         -- 检查波次是否发生变化
         if data.waveIndex ~= self.currentWaveIndex then
@@ -333,12 +333,12 @@ function BattleHud:OnInit(node, config)
             self:PlayWaveApproaching()
         end
         
-        local previousWavesHealth = 0
-        for i = data.waveIndex + 1, #self.waveHealths do
-            previousWavesHealth = previousWavesHealth + self.waveHealths[i]
+        local previousWavesMobCount = 0
+        for i = data.waveIndex + 1, #self.waveMobCounts do
+            previousWavesMobCount = previousWavesMobCount + self.waveMobCounts[i]
         end
-        previousWavesHealth = previousWavesHealth / self.totalHealth
-        self.progress.node["进度条"].FillAmount = previousWavesHealth + data.healthPercent * (self.waveHealths[data.waveIndex] / self.totalHealth)
+        previousWavesMobCount = previousWavesMobCount / self.totalMobCount
+        self.progress.node["进度条"].FillAmount = previousWavesMobCount + data.healthPercent * (self.waveMobCounts[data.waveIndex] / self.totalMobCount)
     end)
 
     -- 注册战斗结束事件监听

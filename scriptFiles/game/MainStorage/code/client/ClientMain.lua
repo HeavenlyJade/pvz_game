@@ -21,9 +21,10 @@ function ClientMain.start_client()
     gg.uuid_start = gg.rand_int_between(100000, 999999);
     ClientMain.createNetworkChannel()
     ClientMain.handleCoreUISettings()
-    -- ClientInit.init()
+    ClientInit.init()
     -- Controller.init()
     ClientMain.initButton()
+
     Controller.init()
     local timer = SandboxNode.New("Timer", game.StarterGui)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
@@ -34,20 +35,30 @@ function ClientMain.start_client()
     timer.Interval = 0.03  -- 循环间隔多少秒 (1秒=20帧)
     timer.Callback = ClientMain.update
     timer:Start()     -- 启动定时器
-    
+
     require(MainStorage.code.client.graphic.DamagePool)
     require(MainStorage.code.client.graphic.WorldTextAnim)
-    -- ClientEventManager.Subscribe("FetchAnimDuration", function (evt)
-    --     local animator = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast animator Animator
-    --     gg.log("animator", evt.path, animator, evt)
-    --     if animator then
-    --         for stateId, _ in pairs(evt.states) do
-    --             local playTimeByStr = animator:GetClipLength(stateId)
-    --             gg.log("playTimeByStr", animator:IsValid(), stateId, playTimeByStr)
-    --             evt.states[stateId] = playTimeByStr
-    --         end
+    ClientEventManager.Subscribe("FetchAnimDuration", function (evt)
+        local animator = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast animator Animator
+        if animator then
+            for stateId, _ in pairs(evt.states) do
+                local fullState = string.format("Base Layer.%s", stateId)
+                local playTimeByStr = animator:GetClipLength(fullState)
+                evt.states[stateId] = playTimeByStr
+            end
 
-    --         evt.Return(evt.states)
+            evt.Return(evt.states)
+        end
+    end)
+    -- ClientEventManager.Subscribe("FetchModelSize", function (evt)
+    --     local actor = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast actor Actor
+    --     if actor then
+    --         -- local modelId = actor.ModelId
+    --         -- actor.ModelId = ""
+    --         -- actor.ModelId = modelId
+    --         local size = actor.Size
+    --         print("ModelId", size)
+    --         evt.Return({size.x, size.y, size.z})
     --     end
     -- end)
 end

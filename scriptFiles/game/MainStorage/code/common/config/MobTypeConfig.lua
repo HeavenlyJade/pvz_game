@@ -21,8 +21,8 @@ local function LoadConfig()
         ["是首领"] = false,
         ["基础等级"] = 1,
         ["属性公式"] = {
-            ["攻击"] = "(2^(LVL/10))*(10*LVL*1*1.13*20)^1.1",
-            ["生命"] = "(2^(LVL/10))*(10*LVL*1*1.13*20)^1.1",
+            ["攻击"] = "50",
+            ["生命"] = "100",
             ["速度"] = "0"
         },
         ["技能"] = {
@@ -67,7 +67,7 @@ local function LoadConfig()
         ["基础等级"] = 1,
         ["属性公式"] = {
             ["攻击"] = "0",
-            ["生命"] = "300",
+            ["生命"] = "200",
             ["速度"] = "0"
         },
         ["图鉴击杀数"] = 0,
@@ -90,14 +90,17 @@ local function LoadConfig()
         ["是首领"] = false,
         ["基础等级"] = 1,
         ["属性公式"] = {
-            ["攻击"] = "(2^(LVL/10))*(10*LVL*1*1.13*20)^1.1",
-            ["生命"] = "(2^(LVL/10))*(10*LVL*1*1.13*20)^1.1",
+            ["攻击"] = "200",
+            ["生命"] = "350",
             ["速度"] = "0"
         },
         ["技能"] = {
             {
                 ["时机"] = "周期",
                 ["默认目标"] = "目标",
+                ["魔法"] = {
+                    ["魔法"] = "副_星星果_入口"
+                },
                 ["距离"] = 0
             }
         },
@@ -132,8 +135,8 @@ local function LoadConfig()
         ["是首领"] = false,
         ["基础等级"] = 1,
         ["属性公式"] = {
-            ["攻击"] = "(2^(LVL/10))*(10*LVL*1*1.13*20)^1.1",
-            ["生命"] = "(2^(LVL/10))*(10*LVL*1*1.13*20)^1.1",
+            ["攻击"] = "35",
+            ["生命"] = "120",
             ["速度"] = "0"
         },
         ["技能"] = {
@@ -364,7 +367,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = "sandboxId://soundeffect/groan5_僵尸呻吟.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan_僵尸呻吟.ogg",
+        ["死亡音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg"
     }),
     ["士兵僵尸"] = MobType.New({
         ["怪物ID"] = "士兵僵尸",
@@ -406,7 +413,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = "sandboxId://soundeffect/groan5_僵尸呻吟.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan_僵尸呻吟.ogg",
+        ["死亡音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg"
     }),
     ["寒冰僵尸"] = MobType.New({
         ["怪物ID"] = "寒冰僵尸",
@@ -448,7 +459,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = "sandboxId://soundeffect/groan5_僵尸呻吟.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg",
+        ["死亡音效"] = "sandboxId://soundeffect/僵尸死亡_08(Zombie Death_08)_爱给网_aigei_com.mp3"
     }),
     ["摇滚僵尸"] = MobType.New({
         ["怪物ID"] = "摇滚僵尸",
@@ -490,7 +505,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = "sandboxId://soundeffect/groan5_僵尸呻吟.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chompsoft_僵尸吃4.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg",
+        ["死亡音效"] = "sandboxId://soundeffect/僵尸死亡_08(Zombie Death_08)_爱给网_aigei_com.mp3"
     }),
     ["普通僵尸"] = MobType.New({
         ["怪物ID"] = "普通僵尸",
@@ -532,7 +551,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = "sandboxId://soundeffect/lowgroan僵尸咆哮.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan4_僵尸呻吟.ogg",
+        ["死亡音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg"
     }),
     ["绅士僵尸"] = MobType.New({
         ["怪物ID"] = "绅士僵尸",
@@ -574,7 +597,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = "sandboxId://soundeffect/groan6_僵尸呻吟.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan_僵尸呻吟.ogg",
+        ["死亡音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg"
     }),
     ["野人"] = MobType.New({
         ["怪物ID"] = "野人",
@@ -616,7 +643,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = "sandboxId://soundeffect/lowgroan2僵尸咆哮.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chompsoft_僵尸吃4.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan4_僵尸呻吟.ogg",
+        ["死亡音效"] = "sandboxId://soundeffect/僵尸死亡_08(Zombie Death_08)_爱给网_aigei_com.mp3"
     })
 }loaded = true
 end

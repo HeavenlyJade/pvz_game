@@ -129,6 +129,9 @@ function _M:SetModel(model, animator, stateMachine)
 end
 
 function _M:GetSize()
+    if not self.actor then
+        print(debug.traceback())
+    end
     local size = self.actor.Size
     local scale = self.actor.LocalScale
     return Vector3.New(size.x * scale.x, size.y * scale.y, size.z * scale.z)
@@ -647,6 +650,7 @@ end
 
 --- 开始处理死亡逻辑, 如果要移除对象, 请调用 DestroyObject
 function _M:Die()
+    print("Mob Die", self.name, self.isDead)
     if self.isDead then return end
     self.isDead = true
 
@@ -788,9 +792,8 @@ function _M:IsNear(loc, dist)
     return gg.vec.DistanceSq3(loc, self:GetPosition()) < dist ^ 2
 end
 
--- 怪物头部出现的名字和等级
--- { name=desc_.name, level=self.level, high=0 }
-function _M:createTitle(nameOverride)
+function _M:createTitle(nameOverride, scale)
+    scale = scale or 1
     nameOverride = nameOverride or self.name
     if not self.bb_title then
         local name_level_billboard = SandboxNode.new('UIBillboard', self.actor)
@@ -800,7 +803,7 @@ function _M:createTitle(nameOverride)
 
         name_level_billboard.LocalPosition = Vector3.New(0, self.actor.Size.y + 100 / self.actor.LocalScale.y, 0)
         name_level_billboard.ResolutionLevel = Enum.ResolutionLevel.R4X
-        name_level_billboard.LocalScale = Vector3.New(1, 0.6, 1)
+        name_level_billboard.LocalScale = Vector3.New(scale, 0.6 * scale, scale)
 
         local number_level = gg.createTextLabel(name_level_billboard, nameOverride)
         number_level.ShadowEnable = true
@@ -816,7 +819,6 @@ function _M:createTitle(nameOverride)
         end
 
         self.bb_title = number_level
-
         self:createHpBar(name_level_billboard)
     else
         self.bb_title.Title = nameOverride
@@ -902,26 +904,32 @@ function _M:ChangeScene(new_scene)
 
     -- 离开旧场景
     if self.scene then
-        if self.scene then
-            self.scene.node2Entity[self.actor] = nil
-            self.scene.uuid2Entity[self.uuid] = nil
-            if self.isPlayer then
-                self.scene:player_leave(self.uin)
-            end
-        else
-            gg.log('error player_leave, not find scene:', self.scene.name)
+        -- 从旧场景的注册表中移除
+        self.scene.uuid2Entity[self.uuid] = nil
+        
+        -- 如果是玩家，还需要从玩家列表中移除
+        if self.isPlayer then
+            self.scene.players[self.uin] = nil
         end
-
-        gg.log(self.scene.name, ' player_leave====', self.uin)
+        
+        -- 如果是怪物，还需要从怪物列表中移除
+        if not self.isPlayer then
+            self.scene.monsters[self.uuid] = nil
+        end
     end
 
     -- 进入新场景
     self.scene = new_scene
-    -- gg.network_channel:fireClient( self.uin, { cmd='change_scene_ok', v=new_scene.name } )  --同步给客户端
-    self.scene.node2Entity[self.actor] = self
     self.scene.uuid2Entity[self.uuid] = self
+    
+    -- 如果是玩家，还需要添加到玩家列表中
     if self.isPlayer then
-        new_scene:player_enter(self.uin)
+        ---@cast self Player
+        new_scene.players[self.uin] = self
+    end
+    if self:Is("Monster") then
+        ---@cast self Monster
+        new_scene.monsters[self.uuid] = self
     end
 end
 

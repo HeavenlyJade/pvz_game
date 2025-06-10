@@ -193,6 +193,22 @@ function _M:ExecuteCommands(commands, castParam)
 end
 
 
+function _M:DisplayCollectItem(imgIcon, text, position, from)
+    local data = {
+        loc = { position.x, position.y, position.z }
+    }
+    if text then
+        data.text = text
+    end
+    if imgIcon then
+        data.icon = imgIcon
+    end
+    if from then
+        data.from = { from.x, from.y, from.z }
+    end
+    self:SendEvent("DropItemAnim", data)
+end
+
 function _M:EnterBattle()
     self:showReviveEffect(self:GetPosition())
     local skillId = self.equippedSkills[1]
@@ -229,6 +245,11 @@ end
 
 ---@protected
 function _M:DestroyObject()
+    -- 从场景中移除
+    if self.scene then
+        self.scene.players[self.uin] = nil
+    end
+    Entity.DestroyObject(self)
 end
 
 function _M:OnLeaveGame()
@@ -439,7 +460,7 @@ function _M:LearnSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = 0,
-            star_level = 0
+            star_level = 1
         })
         self:saveSkillConfig()
         return true
@@ -471,7 +492,7 @@ function _M:UpgradeSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = skillSlot,
-            star_level = 0
+            star_level = 1
 
         })
         self:saveSkillConfig()
@@ -740,6 +761,30 @@ function _M:StopSkillCastabilityCheck()
     end
 end
 
+---播放音效
+---@param soundAssetId string 音效资源ID
+---@param boundTo SandboxNode|Vec3 音效绑定目标(实体或位置)
+---@param volume number 音量大小(0-1)
+---@param pitch number 音调大小(0-2)
+---@param range number 音效范围
+function _M:PlaySound(soundAssetId, boundTo, volume, pitch, range)
+    local data = {
+        soundAssetId = soundAssetId,
+        volume = volume or 1.0,
+        pitch = pitch or 1.0,
+        range = range or 6000
+    }
+
+    -- 根据绑定目标类型设置位置
+    if type(boundTo) == "userdata" then ---@cast boundTo SandboxNode
+        data.boundTo = gg.GetFullPath(boundTo)
+    elseif type(boundTo) == "table" and boundTo.x then
+        -- 如果是Vec3，直接使用位置
+        data.position = {boundTo.x, boundTo.y, boundTo.z}
+    end
+
+    self:SendEvent("PlaySound", data)
+end
 
 ---设置玩家视角
 ---@param euler Vector3 旋转角度

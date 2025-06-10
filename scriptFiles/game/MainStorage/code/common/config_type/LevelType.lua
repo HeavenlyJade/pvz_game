@@ -126,6 +126,16 @@ function Wave:OnInit(data)
     self.waveHealths = {} ---@type table<number, number>
 end
 
+---计算波次中的怪物总数
+---@return number 怪物总数
+function Wave:CalculateMobCount()
+    local totalCount = 0
+    for _, wave in ipairs(self.spawningWaves) do
+        totalCount = totalCount + wave.actualCount
+    end
+    return totalCount
+end
+
 function Wave:CalculateHealthSum(level)
     if self.healthSum > 0 then
         return -- 已经计算过，直接返回
@@ -188,10 +198,7 @@ function LevelType:OnInit(data)
     self.twoStarConditions = data["条件_2星"] or Modifiers.New({}) ---@type Modifiers
     self.threeStarConditions = data["条件_3星"] or Modifiers.New({}) ---@type Modifiers
     self.monsterLevel = data["怪物等级"] or 1 ---@type number
-    self.initialSpace = data["初始必加空间"] or false ---@type boolean
     self.level = data["等级"] or 1 ---@type number
-    self.initialBagWidth = data["初始背包宽"] or 0 ---@type number
-    self.initialBagHeight = data["初始背包高"] or 0 ---@type number
 
     -- 初始化匹配相关属性
     self.matchQueue = {} ---@type table<string, Player>

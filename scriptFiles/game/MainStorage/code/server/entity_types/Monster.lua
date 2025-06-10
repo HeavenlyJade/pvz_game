@@ -29,6 +29,8 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 ---@field behaviorUpdateTick number 行为更新计时器
 ---@field New fun(info_:table):Monster
 local _M = ClassMgr.Class('Monster', Entity)
+local MOB_COLLIDE_GROUP = 3
+game:GetService("PhysXService"):SetCollideInfo(3, 3, false)
 
 --------------------------------------------------
 -- 初始化与基础方法
@@ -55,6 +57,9 @@ function _M:OnInit(info_)
     -- 初始化技能系统
     self.pendingSkills = {} -- 待释放的技能列表
     self.skillCheckCounter = 0
+
+    -- 初始化音效计时器
+    self.idleSoundTimer = 0
 end
 
 _M.GenerateUUID = function(self)
@@ -69,6 +74,11 @@ end
 
 ---@override
 function _M:Die()
+    -- 播放死亡音效
+    if self.mobType.deadSound then
+        self.scene:PlaySound(self.mobType.deadSound, self.actor, 1.0, 1.0)
+    end
+
     -- 发布死亡事件
     ServerEventManager.Publish("MobDeadEvent", {
         mob = self
@@ -79,6 +89,10 @@ end
 --- 设置目标
 ---@param target Entity|nil
 function _M:SetTarget(target)
+    -- 如果目标被清除，播放闲置音效
+    if not target and self.mobType.idleSound then
+        self.scene:PlaySound(self.mobType.idleSound, self.actor, 0.8, 1.0)
+    end
     self.target = target
 end
 
@@ -114,7 +128,7 @@ function _M:CreateModel(scene)
     actor_monster.Enabled = true
     actor_monster.Visible = true
     actor_monster.SyncMode = Enum.NodeSyncMode.NORMAL
-    actor_monster.CollideGroupID = 3
+    actor_monster.CollideGroupID = MOB_COLLIDE_GROUP
     actor_monster.Name = self.uuid
 
     -- 设置初始位置
@@ -185,7 +199,13 @@ function _M:TryFindTarget(detectRange)
     return false
 end
 
+---@override
 function _M:Hurt(amount, damager, isCrit)
+    -- 播放受击音效
+    if self.mobType.hitSound and amount > self.health * 0.05 then
+        self.scene:PlaySound(self.mobType.hitSound, self.actor, 0.8, 1.0)
+    end
+
     Entity.Hurt(self, amount, damager, isCrit)
     if not self.target then
         self:SetTarget(damager)
@@ -373,5 +393,14 @@ end
 --         skill:CastSkill(self, self.target)
 --     end
 -- end
+
+---@protected
+function _M:DestroyObject()
+    -- 从场景中移除
+    if self.scene then
+        self.scene.monsters[self.uuid] = nil
+    end
+    Entity.DestroyObject(self)
+end
 
 return _M

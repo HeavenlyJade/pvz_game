@@ -87,8 +87,14 @@ function AfkSpot:OnInit(data, actor)
             skill.afking = true
             if skill.skillType.battleModel then
                 self.occupiedEntity = SandboxNode.New("Actor", self.actor) ---@type Actor
+                self.occupiedEntity.EnablePhysics = false
                 self.occupiedEntity.ModelId = skill.skillType.battleModel
                 self.occupiedEntity["Animator"].ControllerAsset = skill.skillType.battleAnimator
+                -- local ModelPlayer = require(MainStorage.code.server.graphic.ModelPlayer) ---@type ModelPlayer
+                -- ModelPlayer.FetchModelSize(self.occupiedEntity, function (modelSize)
+                --     local selfSize = self:GetSize()
+                --     self.occupiedEntity.LocalScale = Vector3.New(selfSize.x / modelSize[1], selfSize.y / modelSize[2], selfSize.z / modelSize[3])
+                -- end)
             end
             self:createTitle(string.format("%s的%s", player.name, skill.skillType.displayName))
             self.occupiedByPlayer = player
@@ -173,9 +179,8 @@ function AfkSpot:OnPlayerExit(player)
     if timerId then
         ServerScheduler.cancel(timerId)
         self.activePlayers[player] = nil
-        player:SetMoveable(true)
-        self.occupiedByPlayer = nil
         local skill = self.occupiedByPlayer.skills[self.selectedSkill]
+        self.occupiedByPlayer = nil
         skill.afking = false
         -- 删除占用的实体
         if self.occupiedEntity then
@@ -183,6 +188,7 @@ function AfkSpot:OnPlayerExit(player)
             self.occupiedEntity = nil
         end
         self:createTitle("")
+        player:UpdateNearbyNpcsToClient()
     end
 end
 
@@ -226,7 +232,7 @@ function AfkSpot:CastSpells(player)
         if player:IsNear(self:GetPosition(), 1000) then
             local loc = self:GetPosition()
             player:SendEvent("DropItemAnim", {
-                loc = {                    loc.x, loc.y + 100, loc.z                },
+                loc = { loc.x, loc.y + 100, loc.z },
                 text = "+"..tostring(amount)
             })
         end

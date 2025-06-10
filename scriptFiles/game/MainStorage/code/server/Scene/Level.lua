@@ -16,19 +16,12 @@ function Level:OnInit(levelType, scene, index)
     self.levelType = levelType
     -- 玩家进入点
     self.entries = {} ---@type Transform[]
-    for _, entryPath in ipairs(levelType.entryPoints) do
-        local node = gg.GetChild(sceneNode, entryPath) ---@cast node Transform
-        if node then
-            table.insert(self.entries, node)
-        end
+    for _, node in pairs(sceneNode["出生点"].Children) do
+        table.insert(self.entries, node)
     end
-    -- 怪物刷新点
     self.spawnPoints = {} ---@type Transform[]
-    for _, spawnPath in ipairs(levelType.spawnPoints) do
-        local node = gg.GetChild(sceneNode, spawnPath) ---@cast node Transform
-        if node then
-            table.insert(self.spawnPoints, node)
-        end
+    for _, node in pairs(sceneNode["刷怪点"].Children) do
+        table.insert(self.spawnPoints, node)
     end
     
     -- 运行时状态
@@ -52,22 +45,22 @@ function Level:OnInit(levelType, scene, index)
 
     -- 怪物相关
     self.activeMobs = {} ---@type table<string, Monster>
-    self.currentWaveHealth = 0 ---@type number
-    self.remainingWaveHealth = 0 ---@type number
+    self.currentWaveMobCount = 0 ---@type number
+    self.remainingMobCount = 0 ---@type number
     
     -- 监听怪物死亡事件
     ServerEventManager.Subscribe("MobDeadEvent", function(data)
+        gg.log("MobDeadEvent", data.mob, self.activeMobs[data.mob.uuid], self.activeMobs)
         if data.mob and self.activeMobs[data.mob.uuid] then
-            -- 扣除怪物生命值
-            local mobHealth = data.mob:GetStat("生命")
-            self.remainingWaveHealth = math.max(0, self.remainingWaveHealth - mobHealth)
+            -- 减少剩余怪物数量
+            self.remainingMobCount = math.max(0, self.remainingMobCount - 1)
             
-            -- 计算并同步剩余生命百分比
-            local healthPercent = self.currentWaveHealth > 0 and (self.remainingWaveHealth / self.currentWaveHealth) or 0
+            -- 计算并同步剩余怪物百分比
+            local mobPercent = self.currentWaveMobCount > 0 and (self.remainingMobCount / self.currentWaveMobCount) or 0
             for _, player in pairs(self.players) do
                 player:SendEvent("WaveHealthUpdate", {
                     waveIndex = self.waveCount,
-                    healthPercent = healthPercent
+                    healthPercent = mobPercent
                 })
             end
             
@@ -88,13 +81,13 @@ function Level:Start()
     self.startTime = os.time()
     self.currentStars = 0
 
-    -- 计算所有波次的生命值
-    local waveHealths = {} ---@type table<number, number>
-    local totalHealth = 0
+    -- 计算所有波次的怪物数量
+    local waveMobCounts = {} ---@type table<number, number>
+    local totalMobCount = 0
     for _, wave in ipairs(self.levelType.waves) do
-        wave:CalculateHealthSum(self.levelType.monsterLevel)
-        table.insert(waveHealths, wave.healthSum)
-        totalHealth = totalHealth + wave.healthSum
+        local mobCount = wave:CalculateMobCount()
+        table.insert(waveMobCounts, mobCount)
+        totalMobCount = totalMobCount + mobCount
     end
 
     -- 将玩家传送到进入点
@@ -121,20 +114,20 @@ function Level:Start()
             player.actor.Position = entryPoint.Position
             player.actor.Euler = entryPoint.Euler
             player:SetCameraView(entryPoint.Euler)
-            player:EnterBattle()
             local oldGrav = player.actor.Gravity
             player.actor.Gravity = 0
             ServerScheduler.add(function ()
                 player.actor.Gravity = oldGrav
                 player.actor.Position = entryPoint.Position
+                player:EnterBattle()
             end, 3)
         end
         
         -- 发送战斗开始事件
         player:SendEvent("BattleStartEvent", {
             levelId = self.levelType.levelId,
-            waveHealths = waveHealths,
-            totalHealth = totalHealth
+            waveMobCounts = waveMobCounts,
+            totalMobCount = totalMobCount
         })
         
         playerIndex = playerIndex + 1
@@ -167,10 +160,9 @@ function Level:StartWave()
     self.currentWave = table.remove(self.allWaves, 1)
     self.waveCount = self.waveCount + 1
 
-    -- 计算当前波次的总生命值
-    self.currentWave:CalculateHealthSum(self.levelType.monsterLevel)
-    self.currentWaveHealth = self.currentWave.healthSum
-    self.remainingWaveHealth = self.currentWaveHealth
+    -- 计算当前波次的怪物总数
+    self.currentWaveMobCount = self.currentWave:CalculateMobCount()
+    self.remainingMobCount = self.currentWaveMobCount
 
     -- 初始化未开始的刷怪波次
     self.notSpawningWaves = {}
@@ -178,7 +170,7 @@ function Level:StartWave()
         table.insert(self.notSpawningWaves, wave)
     end
 
-    -- 通知玩家波次开始和初始血量
+    -- 通知玩家波次开始和初始怪物数量
     for _, player in pairs(self.players) do
         player:SendChatText(string.format("Wave %d started!", self.waveCount))
         player:SendEvent("WaveHealthUpdate", {
@@ -239,11 +231,20 @@ function Level:Update()
         end
     end
 
+    -- 检查当前波次是否结束
+    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 and self.remainingMobCount == 0 then
+        self:OnWaveEnd()
+    end
+
     self.timeElapsed = newTimeElapsed
 end
 
 ---波次结束
 function Level:OnWaveEnd()
+    -- 清理当前波次的所有刷怪波次
+    self.spawningWaves = {}
+    self.notSpawningWaves = {}
+    
     -- 发放奖励
     for _, player in pairs(self.players) do
         player:AddStat("Spirit", self.currentWave.spiritReward)

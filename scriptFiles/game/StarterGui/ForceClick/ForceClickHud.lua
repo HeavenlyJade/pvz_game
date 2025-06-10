@@ -61,7 +61,6 @@ function ForceClickHud:FocusOnNextNode()
     self.lastFocusTime = currentTime
 
     self.index = self.index + 1
-    gg.log("FocusOnNextNode", self.focusingChain, #self.focusingChain["聚焦UI"], self.index)
     if not self.focusingChain or #self.focusingChain["聚焦UI"] < self.index then
         self:Close()
         gg.network_channel:FireServer({

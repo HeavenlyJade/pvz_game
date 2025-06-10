@@ -31,8 +31,9 @@ local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
 ---@field tick number 总tick值(递增)
 ---@field node SandboxNode
 local _M = ClassMgr.Class("Scene")
-_M.worldTime = 0
+_M.worldTime = 12
 _M.sceneId = 1
+_M.spawnScene = nil
 local maxSlotRad = 2
 local unusedSlots = {} ---@type table[int, int]
 local occupiedSlot = {} ---@type Scene[][]
@@ -92,11 +93,18 @@ function _M:initNpcs()
             if sceneNode and sceneNode[npc_data["节点名"]] then
                 local actor = sceneNode[npc_data["节点名"]]
                 local npc = Npc.New(npc_data, actor)
-                self.node2Entity[actor] = npc
+                self.uuid2Entity[actor] = npc
                 self.npcs[npc.uuid] = npc
                 npc:ChangeScene(self)
             end
         end
+    end
+end
+
+function _M:PlaySound(soundAssetId, boundTo, volume, pitch, range)
+    -- 遍历场景中的所有玩家
+    for _, player in pairs(self.players) do
+        player:PlaySound(soundAssetId, boundTo, volume, pitch, range)
     end
 end
 
@@ -130,7 +138,7 @@ function _M:initAfkSpots()
                         local actor = sceneNode[node_name]
                         local afk_spot = AfkSpot.New(afk_data, actor)
                         afk_spot.scene = self
-                        self.node2Entity[actor] = afk_spot
+                        self.uuid2Entity[actor] = afk_spot
                         self.npcs[afk_spot.uuid] = afk_spot
                         afk_spot:ChangeScene(self)
                     end
@@ -148,7 +156,7 @@ function _M:initAfkSpots()
                         local actor = sceneNode[node_name]
                         local afk_spot = TriggerZone.New(afk_data, actor)
                         afk_spot.scene = self
-                        self.node2Entity[actor] = afk_spot
+                        self.uuid2Entity[actor] = afk_spot
                         self.npcs[afk_spot.uuid] = afk_spot
                         afk_spot:ChangeScene(self)
                     end
@@ -171,23 +179,23 @@ function _M:OnInit(node)
     self.npc_spawns = {}
     self.drop_boxs = {} -- 掉落物品列表
     self.uuid2Entity = {}
-    self.node2Entity = {}
-    print("Scene OnInit", self.name)
     self.tick = 0 -- 总tick值(递增)
 
     self.scene_config = nil -- 当前地图的节点scene刷怪配置,
     self.npc_spawn_config = {} -- 当前地图的NPC刷新点
     self.node = node
     self.sceneZone = self.node["场景区域"] ---@type TriggerBox
-    self.sceneZone.Touched:Connect(function (node)
-        print("EnterScene", node)
-        if node then
-            local entity = Entity.node2Entity[node] ---@type Entity
-            if entity then
-                entity:ChangeScene(self)
+    if self.sceneZone then
+        self.sceneZone.Touched:Connect(function (node)
+            print("EnterScene", node)
+            if node then
+                local entity = Entity.node2Entity[node] ---@type Entity
+                if entity then
+                    entity:ChangeScene(self)
+                end
             end
-        end
-    end)
+        end)
+    end
     gg.server_scene_list[ self.name ] = self
 
     self:initNpcs() -- Initialize NPCs after scene creation
@@ -197,6 +205,10 @@ function _M:OnInit(node)
     self.npcUpdateTaskId = ServerScheduler.add(function()
         self:update_npcs()
     end, 0, 0.1) -- 立即开始，每秒执行一次
+    self.isSpawnScene = node:GetAttribute("是出生场景") or false
+    if self.isSpawnScene then
+        _M.spawnScene = self
+    end
 end
 
 ---更新所有NPC
@@ -224,7 +236,7 @@ function _M:OverlapSphereEntity(center, radius, filterGroup, filterFunc)
     local nodes = self:OverlapSphere(center, radius, filterGroup, filterFunc)
     local retEntities = {}
     for _, node in ipairs(nodes) do
-        local entity = self.node2Entity[node]
+        local entity = Entity.node2Entity[node]
         if entity then
             table.insert(retEntities, entity)
         end
@@ -250,7 +262,7 @@ function _M:OverlapBoxEntity(center, extent, angle, filterGroup, filterFunc)
     local nodes = self:OverlapBox(center, extent, angle, filterGroup, filterFunc)
     local retEntities = {}
     for _, node in ipairs(nodes) do
-        local entity = self.node2Entity[node]
+        local entity = Entity.node2Entity[node]
         if entity then
             table.insert(retEntities, entity)
         end

@@ -26,8 +26,11 @@ function _M:OnInit(npcData, actor)
     self.interactCondition = Modifiers.New(npcData["互动条件"])
     self.interactCommands  = npcData["互动指令"]
     self.interactIcon      = npcData["互动图标"]
-    self.extraSize      = gg.Vec2.new(npcData["额外互动距离"]) or gg.Vec2.new(0,0)
+    self.extraSize      = gg.Vec3.new(npcData["额外互动距离"]) or gg.Vec3.new(0,0)
+    self.lookAtNearbyPlayer      = npcData["看向附近玩家"] or false
+    self.nameSize      = npcData["名字尺寸"]
     self.target            = nil
+    self.actor = actor
     local npcSize = Vector3.New(0,0,0)
     if actor:IsA("Actor") then
         actor.CollideGroupID   = 1
@@ -39,7 +42,7 @@ function _M:OnInit(npcData, actor)
     end
     local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox
     trigger.LocalPosition = Vector3.New(0,0,0)
-    trigger.Size = Vector3.New(self.extraSize.x + npcSize.x, 200, self.extraSize.y + npcSize.z)                                                               -- 扩展范围
+    trigger.Size = Vector3.New(self.extraSize.x + npcSize.x, self.extraSize.y + npcSize.y, self.extraSize.y + npcSize.z)                                                               -- 扩展范围
     trigger.Touched:Connect(function(node)
         if node and node.UserId then
             local player = gg.getPlayerByUin(node.UserId)
@@ -92,10 +95,14 @@ function _M:SetTarget(target)
     self.target = target
 end
 
+function _M:createTitle(name)
+    Entity.createTitle(self, name, self.nameSize)
+end
+
 ---更新NPC状态
 function _M:update_npc()
     -- 如果有目标，持续看向目标
-    if self.target then
+    if self.lookAtNearbyPlayer and self.target then
         self.actor:LookAt(self.target:GetPosition(), true)
     end
 end

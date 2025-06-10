@@ -48,6 +48,9 @@ function SkillEventManager.RegisterEventHandlers()
     -- 一键强化技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.UPGRADE_ALL, SkillEventManager.HandleUpgradeAllSkill)
 
+    -- 升星技能
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.UPGRADE_STAR, SkillEventManager.HandleUpgradeStarSkill)
+
     -- 装备技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.EQUIP, SkillEventManager.HandleEquipSkill)
 
@@ -57,7 +60,7 @@ function SkillEventManager.RegisterEventHandlers()
     -- 销毁技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.DESTROY, SkillEventManager.HandleDestroySkill)
 
-    gg.log("已注册 " .. 6 .. " 个技能事件处理器")
+    gg.log("已注册 " .. 7 .. " 个技能事件处理器")
 end
 
 --- 验证玩家和基础参数
@@ -198,6 +201,8 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             return
         end
         end
+
+
         -- 检查是否已达到最大等级
         if existingSkill and existingSkill.level >= skillType.maxLevel then
             gg.log("技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
@@ -221,9 +226,14 @@ function SkillEventManager.HandleUpgradeSkill(evt)
     end
 
     -- TODO: 检查升级条件（资源、前置技能等级等）
-
-    local cost = skillType:GetCostAtLevel(existingSkill.level+1)
-    gg.log("升级成本", cost)
+    local cost =nil
+    if existingSkill then
+        local cost = skillType:GetCostAtLevel(existingSkill.level+1)
+        gg.log("升级成本", cost)
+    else
+        local cost = skillType:GetCostAtLevel(1)
+        gg.log("升级成本", cost)
+    end
 
     -- 检查玩家资源是否足够
     if cost then
@@ -736,6 +746,63 @@ function SkillEventManager.HandleUnequipSkill(evt)
     else
         gg.log("技能卸下失败:", skillName, "槽位:", slot)
     end
+end
+
+--- 处理升星技能请求
+---@param evt table 事件数据 {uin, skillName}
+function SkillEventManager.HandleUpgradeStarSkill(evt)
+    gg.log("处理升星技能请求", evt)
+    local player, errorCode = SkillEventManager.ValidatePlayer(evt, "UpgradeStarSkill")
+    if not player then
+        return
+    end
+
+    -- 从evt中获取技能名称
+    local skillName = evt.skillName
+    if not skillName then
+        gg.log("技能名称不能为空")
+        return
+    end
+
+    -- 验证技能是否存在于配置中
+    local skillType = SkillTypeConfig.Get(skillName)
+    if not skillType then
+        gg.log("技能配置文件不存在: " .. skillName .. " 玩家: " .. player.name)
+        return
+    end
+
+    -- 检查玩家是否拥有该技能
+    local existingSkill = player.skills and player.skills[skillName]
+    if not existingSkill then
+        gg.log("玩家不拥有该技能: " .. skillName)
+        return
+    end
+
+    -- 获取当前星级
+    local currentStar = existingSkill.star_level or 0
+    local maxStar = 7
+
+    -- 检查是否已达到最大星级
+    if currentStar >= maxStar then
+        gg.log("技能已达到最大星级: " .. skillName .. " 当前星级: " .. currentStar)
+        return
+    end
+
+    -- 执行升星逻辑
+    existingSkill.star_level = currentStar + 1
+    player:saveSkillConfig()
+
+    gg.log("技能升星成功", skillName, "新星级:", existingSkill.star_level)
+
+    local responseData = {
+        skillName = skillName,
+        star_level = existingSkill.star_level,
+        level = existingSkill.level,
+        slot = existingSkill.equipSlot or 0
+    }
+
+    gg.log("发送技能升星响应", responseData)
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE_STAR, responseData)
 end
 
 --- 处理销毁技能请求

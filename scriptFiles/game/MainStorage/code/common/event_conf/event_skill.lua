@@ -17,11 +17,13 @@ SkillEventConfig.REQUEST = {
     LEARN = "SkillRequest_Learn",
     UPGRADE = "SkillRequest_Upgrade",
     UPGRADE_ALL = "SkillRequest_UpgradeAll", -- 一键强化请求
+    UPGRADE_STAR = "SkillRequest_UpgradeStar", -- 升星请求
     EQUIP = "SkillRequest_Equip",
     UNEQUIP = "SkillRequest_Unequip",
     DESTROY = "SkillRequest_Destroy", -- 销毁技能请求
     GET_DETAIL = "SkillRequest_GetDetail",
-    GET_AVAILABLE = "SkillRequest_GetAvailable"
+    GET_AVAILABLE = "SkillRequest_GetAvailable",
+
 }
 
 -- 服务器响应事件
@@ -36,6 +38,7 @@ SkillEventConfig.RESPONSE = {
     ERROR = "SkillResponse_Error",
     UPGRADE = "SkillResponse_Upgrade",
     UPGRADE_ALL = "SkillResponse_UpgradeAll", -- 一键强化响应
+    UPGRADE_STAR = "SkillResponse_UpgradeStar", -- 升星响应
     SYNC_SKILLS = "SyncPlayerSkills"
 
 }

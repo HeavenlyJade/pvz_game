@@ -120,7 +120,8 @@ function Skill:GetSaveData()
         skill = self.skillName,
         level = self.level,
         equipSlot = self.equipSlot,
-        growth = self.growth
+        growth = self.growth,
+        star_level = self.star_level
     }
 end
 
