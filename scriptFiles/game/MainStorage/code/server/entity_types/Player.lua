@@ -476,24 +476,46 @@ function _M:UpgradeSkill(skillType)
     if not foundSkill then
         -- 创建新技能
         local skillSlot = 0
-        local checkStart = 1
-        local checkEnd = 1
-        if skillType.category == 2 then
-            checkStart = 2
-            checkEnd = 5
-        end
-        for i = checkStart, checkEnd, 1 do
-            if not self.equippedSkills[i] then
-                skillSlot = i
+        
+        -- 根据技能类型从配置获取槽位范围
+        local common_config = require(MainStorage.code.common.MConfig)
+        local slotsToCheck = {}
+        
+        if skillType.category == 0 then
+            -- 主卡技能：从主卡配置获取槽位
+            local mainCardConfig = common_config.EquipmentSlot["主卡"]
+            if mainCardConfig then
+                for slotId, _ in pairs(mainCardConfig) do
+                    table.insert(slotsToCheck, slotId)
+                end
+            end
+        elseif skillType.category == 1 then
+            -- 副卡技能：从副卡配置获取槽位
+            local subCardConfig = common_config.EquipmentSlot["副卡"]
+            if subCardConfig then
+                for slotId, _ in pairs(subCardConfig) do
+                    table.insert(slotsToCheck, slotId)
+                end
             end
         end
+        
+        -- 按槽位ID排序（优先使用较小的槽位）
+        table.sort(slotsToCheck)
+        
+        -- 查找第一个空的槽位
+        for _, slotId in ipairs(slotsToCheck) do
+            if not self.equippedSkills[slotId] then
+                skillSlot = slotId
+                break
+            end
+        end
+        
         local skillId = skillType.name
         self.skills[skillId] = Skill.New(self, {
             skill = skillType.name,
             level = 1,
             slot = skillSlot,
             star_level = 1
-
         })
         self:saveSkillConfig()
         return true

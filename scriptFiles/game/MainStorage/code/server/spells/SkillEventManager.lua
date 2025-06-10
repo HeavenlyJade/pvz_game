@@ -201,8 +201,8 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             return
         end
         end
-
-
+        
+        
         -- 检查是否已达到最大等级
         if existingSkill and existingSkill.level >= skillType.maxLevel then
             gg.log("技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
@@ -780,7 +780,7 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
 
     -- 获取当前星级
     local currentStar = existingSkill.star_level or 0
-    local maxStar = 7
+    local maxStar = 7  
 
     -- 检查是否已达到最大星级
     if currentStar >= maxStar then

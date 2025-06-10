@@ -246,7 +246,7 @@ end
 function HudCards:UpdateMainCardDisplay()
     if not self.mainCardButton then return end
 
-    -- 查找主卡数据（主卡槽位通常是1000）
+    -- 查找主卡数据（主卡槽位为1）
     ---@type Skill
     local mainCardSkill = nil
     local mainCardSlot = nil
@@ -430,7 +430,7 @@ function HudCards:RebindSubCardEvents()
                     lastCastTimes[skillName] = os.clock()
                     gg.network_channel:FireServer({
                         cmd = "CastSpell",
-                        skill = skill,
+                        skill = skill.skillName,
                         targetPos = targetPos,
                         direction = direction
                     })
