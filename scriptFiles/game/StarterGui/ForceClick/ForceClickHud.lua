@@ -39,11 +39,22 @@ function ForceClickHud:OnInit(node, config)
         self.index = 0
         self:FocusOnNextNode()
     end)
+
+    -- 监听按钮点击事件
+    ClientEventManager.Subscribe("ButtonClick", function(data)
+        if self.displaying then
+            self:FocusOnNextNode()
+            if self.nodePressCb then
+                self.nodePressCb:Disconnect()
+                self.nodePressCb = nil
+            end
+        end
+    end)
 end
 
 function ForceClickHud:FocusOnNextNode()
     self.index = self.index + 1
-    if #self.focusingChain["聚焦UI"] < self.index then
+    if not self.focusingChain or #self.focusingChain["聚焦UI"] < self.index then
         self:Close()
         gg.network_channel:FireServer({
             cmd = "FinishFocusUI"

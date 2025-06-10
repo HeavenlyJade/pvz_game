@@ -245,12 +245,12 @@ end
 
 --获取当前Yaw
 function CameraController.GetYaw()
-    return _mouseXSmooth
+    return _rawMouseX
 end
 
 --获取当前Pitch
 function CameraController.GetPitch()
-    return _mouseYSmooth
+    return _rawMouseY
 end
 
 function CameraController.SetMouseSmoothTime(smoothTime)

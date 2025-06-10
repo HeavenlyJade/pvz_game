@@ -37,6 +37,7 @@ function HudInteract:OnInit(node, config)
     -- 初始化交互列表
     self.interactList = self:Get("交互列表", ViewList, function(n)
         local button = ViewButton.New(n, self)
+        button.node.ClickPass = true
         button.clickCb = OnInteractClick
         return button
     end)

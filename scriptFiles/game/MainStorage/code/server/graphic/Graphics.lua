@@ -7,35 +7,117 @@ local gg                = require(MainStorage.code.common.MGlobal)    ---@type g
 local Graphic = ClassMgr.Class("Graphic")
 
 -- 从模板创建新的特效对象
+local particlePools = {} ---@type table<string, table<SandboxNode>>
+local nodeCache = {} ---@type table<string, SandboxNode>
+
 local function CreateParticle(particleName)
     if particleName == "" then
         return nil, nil
     end
-    local node = MainStorage
-    local fullPath = ""
-    local lastPart = ""
     
-    -- 遍历路径的每一部分
-    for part in particleName:gmatch("[^/]+") do
-        if part ~= "" then
-            lastPart = part
-            if not node then
-                return nil
-            end
-            node = node[part]
-            if fullPath == "" then
-                fullPath = part
-            else
-                fullPath = fullPath .. "/" .. part
+    -- 获取或创建对象池
+    if not particlePools[particleName] then
+        particlePools[particleName] = {}
+    end
+    local pool = particlePools[particleName]
+    
+    -- 尝试从对象池中获取对象
+    local fx = table.remove(pool)
+    if fx then
+        fx.Visible = true
+        fx.Enabled = true
+        for _, child in ipairs(fx.Children) do
+            child.Enabled = true
+            child.Visible = true
+        end
+        return fx, nodeCache[particleName]
+    end
+    
+    if not nodeCache[particleName] then
+        local node = MainStorage
+        local fullPath = ""
+        local lastPart = ""
+        
+        -- 遍历路径的每一部分
+        for part in particleName:gmatch("[^/]+") do
+            if part ~= "" then
+                lastPart = part
+                if not node then
+                    return nil
+                end
+                node = node[part]
+                if fullPath == "" then
+                    fullPath = part
+                else
+                    fullPath = fullPath .. "/" .. part
+                end
             end
         end
+        
+        if not node then
+            return nil, nil
+        end
+        nodeCache[particleName] = node
     end
     
-    if not node then
-        return nil, nil
+    return nodeCache[particleName]:Clone(), nodeCache[particleName]
+end
+
+-- 回收特效对象到对象池
+local function RecycleParticle(particleName, fx)
+    if not fx or not particleName or particleName == "" then
+        return
     end
     
-    return node:Clone(), node
+    -- 确保对象池存在
+    if not particlePools[particleName] then
+        particlePools[particleName] = {}
+    end
+    
+    -- 重置特效状态
+    fx.Visible = false
+    fx.Enabled = false
+    -- if fx:IsA("EffectObject") then
+    --     fx:Stop(0)
+    -- end
+    for _, child in ipairs(fx.Children) do
+        child.Visible = false
+        child.Enabled = false
+    end
+    -- 将对象添加到对象池
+    table.insert(particlePools[particleName], fx)
+end
+
+-- 清理对象池
+local function ClearParticlePool(particleName)
+    if not particleName or particleName == "" then
+        return
+    end
+    
+    local pool = particlePools[particleName]
+    if pool then
+        for _, fx in ipairs(pool) do
+            if fx.Enabled then
+                fx.Enabled = false
+            end
+            fx:Destroy()
+        end
+        particlePools[particleName] = {}
+    end
+end
+
+-- 清理所有对象池
+local function ClearAllParticlePools()
+    for particleName, pool in pairs(particlePools) do
+        for _, fx in ipairs(pool) do
+            if fx.Enabled then
+                fx.Enabled = false
+            end
+            fx:Destroy()
+        end
+    end
+    particlePools = {}
+    nodeCache = {} -- 同时清理node缓存
 end
 
 function Graphic:OnInit( data )
@@ -200,7 +282,13 @@ function ParticleGraphic:CreateEffect(target, scene)
         fx.LocalPosition = previous.LocalPosition
         fx.LocalEuler = previous.LocalEuler
     end
-    fx.Enabled = true
+    
+    -- 添加自动回收功能
+    if self.duration > 0 then
+        ServerScheduler.add(function()
+            RecycleParticle(self.particleName, fx)
+        end, self.duration)
+    end
     
     return fx
 end
@@ -329,4 +417,5 @@ local function Load(effectsData)
 end
 
 loaders["Load"] = Load
+
 return loaders

@@ -453,7 +453,7 @@ function _M:GetVariable(key)
             -- 这里应该触发事件系统，但Lua中可能需要其他实现
             ServerEventManager.Publish(evt)
 
-            return evt.value
+            return evt.value or 0
         end
     end
 
@@ -784,21 +784,25 @@ function _M:getMonExp()
     return 10 * self.level; -- 1级10经验  10级100经验
 end
 
+function _M:IsNear(loc, dist)
+    return gg.vec.DistanceSq3(loc, self:GetPosition()) < dist ^ 2
+end
+
 -- 怪物头部出现的名字和等级
 -- { name=desc_.name, level=self.level, high=0 }
-function _M:createTitle()
+function _M:createTitle(nameOverride)
+    nameOverride = nameOverride or self.name
     if not self.bb_title then
         local name_level_billboard = SandboxNode.new('UIBillboard', self.actor)
         name_level_billboard.Name = 'name_level'
         name_level_billboard.Billboard = true
         name_level_billboard.CanCollide = false -- 避免产生物理碰撞
-        name_level_billboard.Size2d = Vector2.New(5, 5)
 
-        name_level_billboard.LocalPosition = Vector3.New(0, self.actor.Size.y + 150 / self.actor.LocalScale.y, 0)
+        name_level_billboard.LocalPosition = Vector3.New(0, self.actor.Size.y + 100 / self.actor.LocalScale.y, 0)
         name_level_billboard.ResolutionLevel = Enum.ResolutionLevel.R4X
         name_level_billboard.LocalScale = Vector3.New(1, 0.6, 1)
 
-        local number_level = gg.createTextLabel(name_level_billboard, self.name .. ' ' .. self.level)
+        local number_level = gg.createTextLabel(name_level_billboard, nameOverride)
         number_level.ShadowEnable = true
         number_level.ShadowOffset = Vector2.New(3, 3)
 
@@ -813,6 +817,8 @@ function _M:createTitle()
         self.bb_title = number_level
 
         self:createHpBar(name_level_billboard)
+    else
+        self.bb_title.Title = nameOverride
     end
 end
 

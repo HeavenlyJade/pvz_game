@@ -1,9 +1,10 @@
 
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
+local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 
 
----@class Condition
+---@class Condition:Class
 local Condition = ClassMgr.Class("Condition")
 function Condition:Check(modifier, caster, target)
     return true
@@ -27,13 +28,12 @@ end
 function HealthCondition:Check(modifier, caster, target)
     if target == nil or not target.isEntity then return false end
     local amount
-    local creature = target ---@cast creature Entity
     if self.isPercentage then
-        amount = 100 * creature.health / target:GetStat("Health")
+        amount = 100 * target.health / target:GetStat("生命")
     else
-        amount = creature.health
+        amount = target.health
     end
-    gg.log("HealthCondition", amount, self.minValue, self.maxValue)
+    gg.log("HealthCondition", target, target:GetStat("生命"), amount, self.minValue, self.maxValue)
     return self:CheckAmount(modifier, amount)
 end
 

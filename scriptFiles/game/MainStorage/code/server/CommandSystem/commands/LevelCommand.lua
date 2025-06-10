@@ -18,29 +18,9 @@ function LevelCommand.enter(params, player)
 
     -- 根据是否需要匹配来决定进入方式
     if params["无需匹配直接开始"] then
-        -- 直接开始关卡
-        local availableLevel = nil
-        for _, level in ipairs(levelType.levels) do
-            if not level.isActive then
-                availableLevel = level
-                break
-            end
-        end
-
-        if not availableLevel then
-            player:SendChatText("当前没有可用的关卡实例")
-            return false
-        end
-
-        -- 添加玩家到关卡
-        if not availableLevel:AddPlayer(player) then
-            player:SendChatText("关卡已满")
-            return false
-        end
-
-        -- 开始关卡
-        availableLevel:Start()
-        player:SendChatText("已进入关卡")
+        levelType.matchQueue[player.uin] = player
+        levelType.playerCount = levelType.playerCount + 1
+        levelType:StartLevel()
     else
         -- 加入匹配队列
         levelType:Queue(player)

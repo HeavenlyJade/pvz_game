@@ -34,7 +34,7 @@ function _M:OnInit(npcData, actor)
         if npcData["状态机"] then
             self:SetAnimationController(npcData["状态机"])
         end
-        npcSize         = actor.Size
+        npcSize = actor.Size
         self:createTitle()
     end
     local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox
@@ -78,8 +78,11 @@ function _M:OnInit(npcData, actor)
     end)
 end
 
+function _M:GetInteractName(player)
+    return self.name
+end
+
 _M.GenerateUUID = function(self)
-    print("GenerateUUID NPC")
     self.uuid = gg.create_uuid('u_Npc')
 end
 

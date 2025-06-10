@@ -106,7 +106,6 @@ function _M:OnInit(TriggerZone, actor)
 end
 
 _M.GenerateUUID = function(self)
-    print("GenerateUUID NPC")
     self.uuid = gg.create_uuid('u_Zone')
 end
 

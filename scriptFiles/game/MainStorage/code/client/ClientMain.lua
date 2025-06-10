@@ -35,7 +35,8 @@ function ClientMain.start_client()
     timer.Callback = ClientMain.update
     timer:Start()     -- 启动定时器
     
-    require(MainStorage.code.client.DamagePool)
+    require(MainStorage.code.client.graphic.DamagePool)
+    require(MainStorage.code.client.graphic.WorldTextAnim)
 end
 
 

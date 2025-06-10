@@ -54,6 +54,7 @@ function _M:OnInit(info_)
     self.skillCastabilityTask = nil ---@type number 技能可释放状态检查任务ID
     self._moveMethod = nil
     self.focusOnCommandsCb = nil
+    self.afkingCount = 0 --副卡挂机数
 
     self:SubscribeEvent("FinishFocusUI", function (evt)
         if self.focusOnCommandsCb then
@@ -116,7 +117,6 @@ function _M:OnInit(info_)
 end
 
 _M.GenerateUUID = function(self)
-    print("GenerateUUID PLAYER")
     self.uuid = gg.create_uuid('u_Pl')
 end
 
@@ -192,6 +192,9 @@ function _M:EnterBattle()
     self:showReviveEffect(self:GetPosition())
     for _, skill in pairs(self.skills) do
         if skill.skillType.battleModel then
+            if skill.skillType.freezesMove then
+                self:SetMoveable(false)
+            end
             self:SetModel(skill.skillType.battleModel, skill.skillType.battleAnimator, skill.skillType.battleStateMachine)
             break
         end
@@ -203,6 +206,7 @@ function _M:ExitBattle()
     self:SetModel("sandboxSysId://ministudio/entity/player/defaultplayer/body.prefab",
     "sandboxSysId&restype=12://ministudio/entity/player/player12/Animation/OfficialController.controller",
     nil)
+    self:RefreshStats()
 end
 
 ---@override
@@ -219,6 +223,12 @@ end
 
 ---@protected
 function _M:DestroyObject()
+end
+
+function _M:OnLeaveGame()
+    -- 发布玩家退出游戏事件
+    ServerEventManager.Publish("PlayerLeaveGameEvent", { player = self })
+    Entity.DestroyObject(self)
 end
 
 function _M:ExecuteCommand(command, castParam)
@@ -276,16 +286,19 @@ function _M:RefreshStats()
     end
 
     -- 直接遍历bag_items，跳过c =0
-    for category, items in pairs(self.bag.bag_items) do
-        if category > 0 then
-            for slot, item in pairs(items) do
-                if item and item.itemType then
-                    -- 遍历装备的所有属性
-                    for statName, amount in pairs(item:GetStat()) do
-                        self:AddStat(statName, amount, "EQUIP", false)
-                    end
-                    for _, tag in ipairs(item.itemType.boundTags) do
-                        self:AddTagHandler(TagTypeConfig.Get(tag):FactoryEquipingTag("EQUIP-", 1.0))
+    gg.log("RefreshStats", self.bag)
+    if  self.bag then
+        for category, items in pairs(self.bag.bag_items) do
+            if category > 0 then
+                for slot, item in pairs(items) do
+                    if item and item.itemType then
+                        -- 遍历装备的所有属性
+                        for statName, amount in pairs(item:GetStat()) do
+                            self:AddStat(statName, amount, "EQUIP", false)
+                        end
+                        for _, tag in ipairs(item.itemType.boundTags) do
+                            self:AddTagHandler(TagTypeConfig.Get(tag):FactoryEquipingTag("EQUIP-", 1.0))
+                        end
                     end
                 end
             end
@@ -346,7 +359,8 @@ function _M:syncSkillData()
         skillData.skills[skillId] = {
             skill = skill.skillType.name,
             level = skill.level,
-            slot = skill.equipSlot
+            slot = skill.equipSlot,
+            growth = skill.growth
         }
 
         -- 记录已装备的技能
@@ -383,9 +397,8 @@ function _M:EquipSkill(skillId, slot)
 
     -- 刷新属性
     self:RefreshStats()
-
-    -- 保存配置
     self:saveSkillConfig()
+    self:syncSkillData()
     return true
 end
 
@@ -433,11 +446,23 @@ function _M:UpgradeSkill(skillType)
     -- 如果技能不存在
     if not foundSkill then
         -- 创建新技能
+        local skillSlot = 0
+        local checkStart = 1
+        local checkEnd = 1
+        if skillType.category == 2 then
+            checkStart = 2
+            checkEnd = 5
+        end
+        for i = checkStart, checkEnd, 1 do
+            if not self.equippedSkills[i] then
+                skillSlot = i
+            end
+        end
         local skillId = skillType.name
         self.skills[skillId] = Skill.New(self, {
             skill = skillType.name,
             level = 1,
-            slot = 0
+            slot = skillSlot
         })
         self:saveSkillConfig()
         return true
@@ -621,7 +646,7 @@ function _M:UpdateNearbyNpcsToClient()
     -- 构建排序后的交互选项列表
     for _, data in ipairs(npcList) do
         table.insert(interactOptions, {
-            npcName = data.npc.name,
+            npcName = data.npc:GetInteractName(self),
             npcId = data.npc.uuid,
             icon = data.npc.interactIcon
         })
@@ -644,6 +669,7 @@ end
 function _M:UpdateHud()
     self:UpdateQuestsData()
     self:syncSkillData()
+    self.bag:SyncToClient()
 end
 
 -- 同步任务数据到客户端

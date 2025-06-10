@@ -329,18 +329,19 @@ end
 function LevelType:StartLevel()
     -- 找到一个可用的关卡实例
     local availableLevel = nil
-    for _, level in ipairs(self.levels) do
-        if not level.isActive then
-            availableLevel = level
-            break
-        end
-    end
-
+    -- for _, level in ipairs(self.levels) do
+    --     if not level.isActive then
+    --         availableLevel = level
+    --         break
+    --     end
+    -- end
+    gg.log("Start availableLevel", availableLevel)
     if not availableLevel then
         local newScene = self.levels[1].scene:Clone()
         local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
         availableLevel = Level.New(self, newScene, #self.levels + 1)
         table.insert(self.levels, availableLevel)
+        gg.log("Clone", newScene.name)
     end
 
     -- 将队列中的玩家添加到关卡

@@ -6,6 +6,7 @@ local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local Item = require(MainStorage.code.server.bag.Item) ---@type Item
 local gg = require(MainStorage.code.common.MGlobal)   ---@type gg
+local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 
 
 local uiConfig = {
@@ -22,7 +23,7 @@ function UiBag:OnInit(node, config)
     
     self.items = {} ---@type table<number, table<number, Item>>
     
-    ClientEventManager.Subscribe("SyncInventoryItems", function(evt)
+    ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(evt)
         local evt = evt ---@type SyncInventoryItems
         for slot, itemData in pairs(evt.items) do
             if not self.items[slot.c] then

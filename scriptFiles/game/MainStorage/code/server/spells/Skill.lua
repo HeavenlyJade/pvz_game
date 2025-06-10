@@ -17,15 +17,23 @@ function Skill:OnInit(player, data)
     self.skillType = SkillTypeConfig.Get(data["skill"]) ---@type SkillType
     self.level = data["level"] or 1
     self.equipSlot = data["equipSlot"] or data["slot"] or 0  -- 兼容两种命名
+    self.growth = data["growth"] or 0
     self.cooldownCache = 0
+    self.afking = false
     
     -- 添加技能名称属性方便访问
     self.skillName = data["skill"]
     
-    -- 验证技能类型是否存在
     if not self.skillType then
         gg.log("警告: 技能类型不存在", data["skill"])
     end
+end
+
+function Skill:CanAfk()
+    if self.level > self.skillType.maxLevel then
+        return false
+    end
+    return true
 end
 
 -- 获取技能描述
@@ -110,7 +118,8 @@ function Skill:GetSaveData()
     return {
         skill = self.skillName,
         level = self.level,
-        equipSlot = self.equipSlot
+        equipSlot = self.equipSlot,
+        growth = self.growth
     }
 end
 

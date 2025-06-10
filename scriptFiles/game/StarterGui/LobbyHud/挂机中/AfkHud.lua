@@ -5,6 +5,7 @@ local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
+local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 
 
 ---@class AfkHud:ViewBase
@@ -36,7 +37,7 @@ function AfkHud:OnInit(node, config)
     end)
 
     -- 监听阳光变化事件
-    ClientEventManager.Subscribe("SyncInventoryItems", function(evt)
+    ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(evt)
         if not evt.moneys or not self.displaying then return end
         
         -- 找到阳光货币（第二个货币）

@@ -47,7 +47,7 @@ end, 0, 1)
 
 ---@return Scene
 function _M:Clone()
-    if #unusedSlots < 0 then
+    if #unusedSlots == 0 then
         maxSlotRad = maxSlotRad + 1
         -- 生成新的方形环坐标
         for x = -maxSlotRad, maxSlotRad do
@@ -61,10 +61,23 @@ function _M:Clone()
             end
         end
     end
+    
+    if #unusedSlots == 0 then
+        error("No available slots for scene cloning")
+    end
+    
     local slot = unusedSlots[#unusedSlots]
     unusedSlots[#unusedSlots] = nil
     local node = self.node:Clone()
-    node.Position = Vector3.New(50000 * slot[1], 0, 50000 * slot[2])
+    node.Position = Vector3.New(10000 * slot[1], 0, 10000 * slot[2])
+    if node["副本隐藏"] then
+        node["副本隐藏"].Visible = true
+        for _, child in ipairs(node["副本隐藏"].Children) do
+            child.EnablePhysics = true
+        end
+    end
+    node.Parent = self.node.Parent
+    node.Name = self.name .. string.format("_%s_%s", slot[1], slot[2])
     return _M.New(node)
 end
 

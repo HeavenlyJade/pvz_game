@@ -48,9 +48,9 @@ function SkillTypeUtils.BuildSkillForest(skillCategory)
     -- 1. 先为所有技能创建节点
     local allSkills = SkillTypeConfig.GetAll()
     for skillName, skillType in pairs(allSkills) do
-        if skillType.skillType == skillCategory then
+        if skillType.category == skillCategory then
             nodeCache[skillName] = {
-                name = skillName,
+                name = skillType.name,
                 data = skillType,
                 children = {},
                 parents = {}

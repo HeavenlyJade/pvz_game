@@ -112,7 +112,6 @@ function ShakeAnim:OnInit(data)
         
         -- 使用选定的震动模式计算震动值
         local shakeValue = shakeFunction(elapsed, self.frequency, currentStrength)
-        print("shakeValue", shakeValue, currentStrength)
         
         -- 更新震动值
         self.posShake = self.initialPosShake * shakeValue

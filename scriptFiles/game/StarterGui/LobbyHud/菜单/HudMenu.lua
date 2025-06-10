@@ -7,7 +7,7 @@ local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@typ
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
 local TweenService = game:GetService("TweenService")
-
+local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 
 ---@class HudMenu:ViewBase
@@ -94,7 +94,7 @@ function HudMenu:OnInit(node, config)
         return button
     end) ---@type ViewList<ViewButton>
 
-    ClientEventManager.Subscribe("SyncInventoryItems", function(evt)
+    ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(evt)
         local evt = evt ---@type SyncInventoryItems
         -- 更新货币显示
         if evt.moneys then

@@ -69,6 +69,7 @@ function ItemCommands.give(params, player)
     end
     player.bag:AddItem(item)
     player.bag:Save()
+    gg.log("玩家物品", player.bag.bag_items,player.bag.bag_index)
     return true
 end
 

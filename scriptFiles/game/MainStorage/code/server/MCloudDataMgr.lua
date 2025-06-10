@@ -119,10 +119,12 @@ end
 
 
 -- 读取玩家的背包数据
+-- 示例: ret2_ { items={ 1={ 1={ el=0, uuid="item123", itype="阳光", amount=690 } } } }
+---@return number, Bag 返回值: 0表示成功, 1表示失败, 背包数据
 function MCloudDataMgr.ReadPlayerBag( player )
     local Bag = require(MainStorage.code.server.bag.Bag) ---@type Bag
     local ret_, ret2_ = cloudService:GetTableOrEmpty( 'inv' .. player.uin )
-    print("读取玩家背包数据", 'inv' .. player.uin, ret2_)
+    print("读取玩家背包数据", 'inv' .. player.uin,ret_, ret2_)
     if ret_ then
         gg.log("读取玩家背包数据", ret2_)
         if ret2_ then

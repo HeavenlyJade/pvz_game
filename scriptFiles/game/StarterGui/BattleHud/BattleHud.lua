@@ -13,7 +13,7 @@ local TweenService = game:GetService('TweenService') ---@type TweenService
 
 ---@class BattleHud:ViewBase
 local BattleHud = ClassMgr.Class("BattleHud", ViewBase)
-local localPlayer = nil ---@type Player
+local localPlayer = nil ---@type MiniPlayer
 local uiConfig = {
     uiName = "BattleHud",
     layer = 0,
@@ -60,7 +60,7 @@ end
 local recoil = nil
 
 function BattleHud:Open()
-    -- localPlayer = game:GetService("Players").LocalPlayer
+    localPlayer = game:GetService("Players").LocalPlayer.Character
     -- localPlayer.CameraMode = Enum.CameraModel.LockFirstPerson
     if self._isInit or not MainStorage:GetAttribute("初始是战斗状态")  then
         ViewBase.Open(self)
@@ -216,13 +216,14 @@ end
 function BattleHud:SendCastSpellEvent(skillId)
     local camera = game.WorkSpace.CurrentCamera
     local direction = CameraController.GetRealForward(-accumulatedVerticalRecoil, accumulatedHorizontalRecoil)
-    local targetPos = CameraController.RaytraceScene({1})
+    local targetPos = CameraController.RaytraceScene({1, 2, 3})
     gg.network_channel:FireServer({
         cmd = "CastSpell",
         skill = skillId,
         direction = direction,
         targetPos = targetPos
     })
+    localPlayer.Euler = Vector3.New(0, camera.Euler.y + 180, 0)
     if recoil then
         self:CalculateRecoil()
     end
@@ -361,7 +362,7 @@ function BattleHud:OnInit(node, config)
             postProcessing.ChromaticAberrationIterationStep = 5
             postProcessing.ChromaticAberrationIterationSamples = 4
         
-            self:SetFov(30)
+            self:SetFov(58)
             isCasting = true
             self.fireInputBeginPos = vector2
         end
@@ -375,7 +376,7 @@ function BattleHud:OnInit(node, config)
             postProcessing.ChromaticAberrationIterationStep = 0.01
             postProcessing.ChromaticAberrationIterationSamples = 1
         
-            self:SetFov(75)
+            self:SetFov(88)
             isCasting = false
         end
     )

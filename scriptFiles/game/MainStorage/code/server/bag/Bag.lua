@@ -5,6 +5,7 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local Item = require(MainStorage.code.server.bag.Item) ---@type Item
 local game = game
 local BagMgr        = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
+local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 
 ---@class Slot
 ---@field c number 背包类型
@@ -34,6 +35,7 @@ end
 
 ---@param data table 背包数据
 function Bag:Load(data)
+    gg.log("Bag:Load", data)
     if not data or not data.items then
         return
     end
@@ -45,6 +47,7 @@ function Bag:Load(data)
     -- 加载物品数据并重建索引
     for category, itemData in pairs(data.items) do
         -- 打印物品数据内容
+        gg.log("Bag:Load", category, itemData)
         self.bag_items[category] = {}
         for slot, itemData in pairs(itemData) do
             local item = Item.New()
@@ -107,6 +110,7 @@ end
 ---@param item Item 物品实例
 ---@return boolean 是否添加成功
 function Bag:AddItem(item)
+    gg.log("Bag:AddItem", item)
     if not item or not item:GetItemType() then
         return false
     end
@@ -126,11 +130,12 @@ function Bag:AddItem(item)
 
     -- 无法合并，添加到指定格子
     -- 查找第一个空格子
+    local category = 1
     local slot = 1
-    while self.bag_items[slot] do
+    while self.bag_items[category] and self.bag_items[category][slot] do
         slot = slot + 1
     end
-    self:SetItem({c = 1, s =slot}, item)
+    self:SetItem({c = category, s = slot}, item)
     return true
 end
 
@@ -165,10 +170,11 @@ function Bag:SyncToClient()
     self.dirtySyncSlots = {}
 
     local ret = {
-        cmd = 'SyncInventoryItems',
+        cmd = BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS,
         items = syncItems,
         moneys = moneys
     }
+    gg.log("Bag:SyncToClient", ret)
     gg.network_channel:fireClient(self.player.uin, ret)
 end
 
@@ -423,6 +429,33 @@ function Bag:GiveItem(item)
     ---玩家从系统处获得物品走此函数
     self:AddItem(item)
     return true
+end
+
+---@param itemName string 物品名称
+---@return table|nil 物品的背包数据，如果不存在返回nil
+function Bag:GetItemDataByName(itemName)
+    -- 遍历背包中所有实际物品
+    for category, items in pairs(self.bag_items) do
+        if items then
+            for slot, item in pairs(items) do
+                if item and item:GetName() == itemName then
+                    -- 找到物品，直接返回详细信息
+                    return {
+                        category = category,
+                        slot = slot,
+                        amount = item:GetAmount(),
+                        enhanceLevel = item:GetEnhanceLevel(),
+                        uuid = item:GetUUID(),
+                        itemType = item:GetItemType().name,
+                        position = {c = category, s = slot}
+                    }
+                end
+            end
+        end
+    end
+    
+    -- 没找到物品
+    return nil
 end
 
 ---@param items table<ItemType, number> 物品类型和数量的映射表

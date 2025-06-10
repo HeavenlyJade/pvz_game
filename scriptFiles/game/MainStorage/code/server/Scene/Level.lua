@@ -121,8 +121,13 @@ function Level:Start()
             player.actor.Position = entryPoint.Position
             player.actor.Euler = entryPoint.Euler
             player:SetCameraView(entryPoint.Euler)
-            player:SendChatText("已传送到进入点")
             player:EnterBattle()
+            local oldGrav = player.actor.Gravity
+            player.actor.Gravity = 0
+            ServerScheduler.add(function ()
+                player.actor.Gravity = oldGrav
+                player.actor.Position = entryPoint.Position
+            end, 3)
         end
         
         -- 发送战斗开始事件

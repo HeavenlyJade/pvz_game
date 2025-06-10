@@ -1,5 +1,3 @@
-print("Register DamagePool")
-
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 
@@ -24,6 +22,7 @@ local inactiveNodes = {}  -- 未使用的节点
 
 -- 初始化对象池
 local function InitPool()
+    -- 只创建模板节点
     for j = 1, 5 do
         local digit = SandboxNode.new('UIImage', template)
         digit.Name = "digit_"..j
@@ -33,13 +32,6 @@ local function InitPool()
     end
     template.Visible = false
     table.insert(inactiveNodes, template)
-
-    for i = 1, POOL_SIZE do
-        local node = template:Clone()
-        node.Parent = pool
-        node.Visible = false
-        table.insert(inactiveNodes, node)
-    end
 end
 
 -- 从对象池获取节点

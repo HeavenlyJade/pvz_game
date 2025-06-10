@@ -29,12 +29,14 @@ function SkillType:OnInit(data)
     self.nextSkills = data["下一技能"]
     self.prerequisite = {} ---@type SkillType[]
     self.targetMode = data["目标模式"]
-    self.skillType = data["技能分类"]
+    self.category = data["技能分类"]
     self.upgradeCosts = data["升级需求素材"]
     self.quality = data["技能品级"] or "R"
     self.battleModel = data["更改模型"]
     self.battleAnimator = data["更改动画"]
     self.battleStateMachine = data["更改状态机"]
+    self.freezesMove = data["禁止移动"]
+    self.maxGrowthFormula = data["最大经验"]
 
     -- 加载被动词条
     self.passiveTags = {}
@@ -68,6 +70,17 @@ function SkillType:OnInit(data)
     end
 end
 
+function SkillType:GetMaxGrowthAtLevel(level)
+    local expr = self.maxGrowthFormula:gsub("LVL", tostring(level))
+    if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
+        print(string.format("技能%s的成长上限包含非法字符: %s", self["名字"], expr))
+        return 0
+    end
+
+    local result = gg.eval(expr)
+    return result
+end
+
 function SkillType:GetCostAtLevel(level)
     local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
     if not self.upgradeCosts then
@@ -81,10 +94,9 @@ function SkillType:GetCostAtLevel(level)
             print(string.format("技能%s的升级消耗%s包含非法字符: %s", self.name, resourceType, expr))
         else
             local result = gg.eval(expr)
-            costs[ItemTypeConfig.Get(resourceType)] = result
+            costs[resourceType] = result
         end
     end
-
     return costs
 end
 

@@ -186,9 +186,10 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         gg.log("技能配置文件不存在: " .. skillName .. " 玩家: " .. player.name)
         return
     end
+    local existingSkill = player.skills and player.skills[skillName]
 
     -- 根据技能类型进行不同的检查
-    if skillType.skillType == 0 then
+    if skillType.category == 0 then
         -- 主卡技能：检查父类技能是否存在
         local prerequisite = skillType.prerequisite or {}
         for i, preSkillType in ipairs(prerequisite) do
@@ -197,16 +198,13 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             return
         end
         end
-        -- 检查玩家是否已拥有该技能
-        local existingSkill = player.skills and player.skills[skillName]
         -- 检查是否已达到最大等级
         if existingSkill and existingSkill.level >= skillType.maxLevel then
             gg.log("技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
             return
         end
-    elseif skillType.skillType == 1 then
+    elseif skillType.category == 1 then
         -- 副卡技能：只检查技能是否存在
-        local existingSkill = player.skills and player.skills[skillName]
         if not existingSkill then
             gg.log("副卡技能不存在，无法升级: " .. skillName)
             return
@@ -218,12 +216,86 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             return
         end
     else
-        gg.log("未知的技能类型: " .. skillName .. " 类型: " .. (skillType.skillType or "nil"))
+        gg.log("未知的技能类型: " .. skillName .. " 类型: " .. (skillType.category or "nil"))
         return
     end
 
     -- TODO: 检查升级条件（资源、前置技能等级等）
 
+    local cost = skillType:GetCostAtLevel(existingSkill.level+1)
+    gg.log("升级成本", cost)
+
+    -- 检查玩家资源是否足够
+    if cost then
+        local insufficientResources = {}  -- 记录不足的资源
+        
+        for resourceName, requiredAmount in pairs(cost) do
+            if requiredAmount < 0 then  -- 负数表示消耗
+                local needAmount = math.abs(requiredAmount)  -- 转为正数
+                local itemData = player.bag:GetItemDataByName(resourceName)
+                
+                if not itemData then
+                    table.insert(insufficientResources, {
+                        name = resourceName,
+                        need = needAmount,
+                        have = 0,
+                        missing = needAmount
+                    })
+                elseif itemData.amount < needAmount then
+                    table.insert(insufficientResources, {
+                        name = resourceName,
+                        need = needAmount,
+                        have = itemData.amount,
+                        missing = needAmount - itemData.amount
+                    })
+                else
+                    gg.log("资源检查通过: " .. resourceName .. " 需要:" .. needAmount .. " 拥有:" .. itemData.amount)
+                end
+            end
+        end
+        
+        -- 如果有资源不足，输出完整列表后返回
+        if #insufficientResources > 0 then
+            gg.log("=== 资源不足列表 ===")
+            local messages = {}
+            for i, resource in ipairs(insufficientResources) do
+                gg.log(string.format("%d. %s: 需要 %d, 拥有 %d, 缺少 %d", 
+                    i, resource.name, resource.need, resource.have, resource.missing))
+                table.insert(messages, string.format("%s缺少%d个", resource.name, resource.missing))
+            end
+            
+            -- 向客户端发送友好提示
+            local message = "技能升级失败，资源不足：" .. table.concat(messages, "，")
+            player:SendHoverText(message)
+            gg.log("技能升级失败，资源不足")
+            return
+        end
+        
+                -- 资源充足，扣除资源
+        for resourceName, requiredAmount in pairs(cost) do
+            local absAmount = math.abs(requiredAmount)
+       
+            local itemData = player.bag:GetItemDataByName(resourceName)
+            if not itemData then
+                gg.log("资源不存在: " .. resourceName)
+                return
+            end
+            -- 扣除对应数量的资源
+            player.bag:SetItemAmount(itemData.position, itemData.amount - absAmount)
+            gg.log("扣除资源: " .. resourceName .. " 数量:" .. absAmount)
+        end
+        
+        -- 扣除完成后，打印玩家背包中对应物品的剩余数量
+        gg.log("=== 资源扣除后剩余数量 ===")
+        for resourceName, requiredAmount in pairs(cost) do
+            local itemData = player.bag:GetItemDataByName(resourceName)
+            if itemData then
+                gg.log(string.format("%s 剩余数量: %d", resourceName, itemData.amount))
+            else
+                gg.log(string.format("%s 剩余数量: 0 (已完全消耗)", resourceName))
+            end
+        end
+    end
     -- 执行技能升级
     local success = player:UpgradeSkill(skillType)
     if not success then
@@ -233,6 +305,7 @@ function SkillEventManager.HandleUpgradeSkill(evt)
 
     local upgradedSkill = player.skills[skillName]
     player:saveSkillConfig()
+    player.bag:SyncToClient()
 
     gg.log("技能升级成功", skillName, "新等级:", upgradedSkill.level, "装备槽:", upgradedSkill.equipSlot)
 
@@ -248,7 +321,7 @@ function SkillEventManager.HandleUpgradeSkill(evt)
 end
 
 --- 处理一键强化技能请求
----@param evt table 事件数据 {uin, skillName}
+---@param evt table 事件数据 {uin, skillName, targetLevel}
 function SkillEventManager.HandleUpgradeAllSkill(evt)
     gg.log("处理一键强化技能请求", evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "UpgradeAllSkill")
@@ -256,10 +329,17 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
         return
     end
 
-    -- 从evt中获取技能名称
+    -- 从evt中获取参数
     local skillName = evt.skillName
+    local targetLevel = evt.targetLevel
+    
     if not skillName then
         gg.log("技能名称不能为空")
+        return
+    end
+    
+    if not targetLevel or targetLevel <= 0 then
+        gg.log("目标等级无效:", targetLevel)
         return
     end
 
@@ -277,35 +357,124 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
         return
     end
 
-    -- 检查技能是否已达到最大等级
     local currentLevel = existingSkill.level
     local maxLevel = skillType.maxLevel or 1
-    if currentLevel >= maxLevel then
-        gg.log("技能已达到最大等级: " .. skillName .. " 当前等级: " .. currentLevel)
+    
+    -- 验证目标等级
+    if currentLevel >= targetLevel then
+        gg.log("目标等级无效: 当前等级", currentLevel, "目标等级", targetLevel)
         return
     end
+    
+    if targetLevel > maxLevel then
+        gg.log("目标等级超过最大等级: 目标", targetLevel, "最大", maxLevel)
+        targetLevel = maxLevel  -- 限制到最大等级
+    end
 
-    gg.log("开始一键强化技能: " .. skillName .. " 从等级 " .. currentLevel .. " 到等级 " .. maxLevel)
+    gg.log("开始一键强化技能: " .. skillName .. " 从等级 " .. currentLevel .. " 到等级 " .. targetLevel)
 
-    -- 执行一键强化逻辑
-    local upgradeResult = SkillEventManager.PerformUpgradeAll(player, skillType, existingSkill)
+    -- 一次性计算总升级成本
+    local totalCost = {}
+    for level = currentLevel + 1, targetLevel do
+        local levelCost = skillType:GetCostAtLevel(level)
+        if levelCost then
+            for resourceName, amount in pairs(levelCost) do
+                local consumeAmount = math.abs(amount)
+                totalCost[resourceName] = (totalCost[resourceName] or 0) + consumeAmount
+            end
+        end
+    end
 
-    -- 保存玩家技能配置
+    gg.log("一键强化总成本计算完成:", totalCost)
+
+    -- 如果有消耗，进行资源检查和扣除
+    if next(totalCost) then
+        -- 第一步：检查所有资源是否充足
+        local insufficientResources = {}
+        local resourcesData = {}  -- 缓存资源数据，避免重复查询
+        
+        for resourceName, requiredAmount in pairs(totalCost) do
+            local itemData = player.bag:GetItemDataByName(resourceName)
+            resourcesData[resourceName] = itemData  -- 缓存数据
+            
+            if not itemData then
+                table.insert(insufficientResources, {
+                    name = resourceName,
+                    need = requiredAmount,
+                    have = 0,
+                    missing = requiredAmount
+                })
+            elseif itemData.amount < requiredAmount then
+                table.insert(insufficientResources, {
+                    name = resourceName,
+                    need = requiredAmount,
+                    have = itemData.amount,
+                    missing = requiredAmount - itemData.amount
+                })
+            end
+        end
+        
+        -- 如果有任何资源不足，直接返回，不扣除任何资源
+        if #insufficientResources > 0 then
+            gg.log("=== 一键强化资源检查失败 ===")
+            local messages = {}
+            for i, resource in ipairs(insufficientResources) do
+                gg.log(string.format("%d. %s: 需要 %d, 拥有 %d, 缺少 %d", 
+                    i, resource.name, resource.need, resource.have, resource.missing))
+                table.insert(messages, string.format("%s缺少%d个", resource.name, resource.missing))
+            end
+            
+            -- 向客户端发送友好提示
+            local message = "一键强化失败，资源不足：" .. table.concat(messages, "，")
+            player:SendHoverText(message)
+            gg.log("一键强化失败，资源不足，未扣除任何资源")
+            return
+        end
+        
+        -- 第二步：所有资源充足，一次性扣除所有资源
+        gg.log("=== 资源充足，开始一次性扣除所有资源 ===")
+        for resourceName, requiredAmount in pairs(totalCost) do
+            local itemData = resourcesData[resourceName]
+            if itemData then
+                -- 扣除对应数量的资源
+                player.bag:SetItemAmount(itemData.position, itemData.amount - requiredAmount)
+                gg.log("扣除资源: " .. resourceName .. " 数量:" .. requiredAmount)
+            end
+        end
+        
+        -- 第三步：打印扣除后的剩余数量
+        gg.log("=== 一键强化资源扣除后剩余数量 ===")
+        for resourceName, requiredAmount in pairs(totalCost) do
+            local itemData = player.bag:GetItemDataByName(resourceName)
+            if itemData then
+                gg.log(string.format("%s 剩余数量: %d", resourceName, itemData.amount))
+            else
+                gg.log(string.format("%s 剩余数量: 0 (已完全消耗)", resourceName))
+            end
+        end
+        
+        gg.log("=== 资源扣除完成 ===")
+    else
+        gg.log("一键强化无需消耗资源")
+    end
+
+    -- 直接升级到目标等级
+    existingSkill.level = targetLevel
     player:saveSkillConfig()
+    player.bag:SyncToClient()
+
+    gg.log("一键强化成功", skillName, "原等级:", currentLevel, "最终等级:", targetLevel)
 
     -- 发送响应
     local responseData = {
         skillName = skillName,
         originalLevel = currentLevel,
-        finalLevel = upgradeResult.finalLevel,
-        level = upgradeResult.finalLevel, -- 保持向后兼容
+        finalLevel = targetLevel,
+        level = targetLevel, -- 保持向后兼容
         slot = existingSkill.equipSlot,
-        errorCode = upgradeResult.errorCode,
-        resourcesUsed = upgradeResult.resourcesUsed or {}
+        maxLevel = maxLevel
     }
-
-    gg.log("一键强化完成", skillName, "原等级:", currentLevel, "最终等级:", upgradeResult.finalLevel, "错误码:", upgradeResult.errorCode)
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE_ALL, responseData)
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, responseData)
 end
 
 --- 执行一键强化逻辑
@@ -415,7 +584,7 @@ function SkillEventManager.HandleEquipSkill(evt)
     end
 
     -- 2. 判断是否是主卡技能，如果是主卡技能，就获取主卡的配置，然后替换卡槽
-    if skillType.skillType == 0 then -- 主卡技能
+    if skillType.category == 0 then -- 主卡技能
         gg.log("检测到主卡技能: " .. skillName .. ", 获取主卡配置进行槽位替换")
 
         -- 获取主卡配置

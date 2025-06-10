@@ -59,6 +59,7 @@ function ProjectileSpell:OnInit(data)
     self.spawnAtCaster = data["生成于自己位置"] or false
     self.duration = data["持续时间"] or 5
     self.canPassThroughTerrain = data["穿过地形"]
+    self.launchOffset = gg.Vec3.new(data["发射位置偏移"])
     self.projectileEffects = Graphics.Load(data["特效_飞弹"])
     self.activeProjectiles = {}
     self.projectileCount = 0
@@ -166,6 +167,23 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
     if self.initialAngleOffset.y ~= 0 then
         direction = direction:rotateAroundY(self.initialAngleOffset.y)
     end
+
+    local launchPos = Vec3.new(position)
+    if self.launchOffset and not self.launchOffset:IsZero() then
+        -- 构建局部坐标系
+        local forward = baseDirection:Normalized()
+        local right = Vec3.up():Cross(forward):Normalized()
+        local up = forward:Cross(right):Normalized()
+        
+        -- 在局部坐标系中应用偏移
+        launchPos = launchPos + 
+            right * self.launchOffset.x + 
+            up * self.launchOffset.y + 
+            forward * -self.launchOffset.z
+    else
+        launchPos = launchPos + Vector3.New(0, caster:GetSize().y / 2, 0)
+    end
+
     local item = {
         actor = actor,
         caster = caster,
@@ -181,7 +199,7 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
         velocity = direction * self.speed,  -- 初始速度
         target = param.realTarget  -- 保存追踪目标
     }
-    local pos = position + Vec3.new(0, -item.size.y/2, 0)
+    local pos = launchPos + Vec3.new(0, -item.size.y/2, 0)
     actor.Position = pos:ToVector3()
 
     -- 注册飞弹
@@ -411,7 +429,7 @@ function ProjectileSpell:CastReal(caster, target, param)
     -- 确定生成位置
     local position
     if self.spawnAtCaster then
-        position = caster:GetCenterPosition()
+        position = caster:GetPosition()
         if self.printInfo then
             print(string.format("%s: 在施法者位置生成飞弹", self.spellName))
         end
@@ -422,7 +440,7 @@ function ProjectileSpell:CastReal(caster, target, param)
             end
             return false
         end
-        position = target:GetCenterPosition()
+        position = target:GetPosition()
         if self.printInfo then
             print(string.format("%s: 在目标位置生成飞弹", self.spellName))
         end

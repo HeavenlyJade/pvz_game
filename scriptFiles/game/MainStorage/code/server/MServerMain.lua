@@ -147,11 +147,12 @@ function MainServer.player_enter_game(player)
     player_.variables = cloud_player_data_.vars or {}
 
     --加载数据 2 玩家历史装备数据
-    local ret2_, cloud_player_bag_ = cloudDataMgr.ReadPlayerBag(player_)
+    ---@type number, Bag
+    local ret2_, bag_ins = cloudDataMgr.ReadPlayerBag(player_)
     if ret2_ == 0 then
         gg.log('cloud_player_bag ok:', uin_)
         player_:SendHoverText('加载玩家背包数据成功')
-        bagMgr.setPlayerBagData(uin_, cloud_player_bag_)
+        bagMgr.setPlayerBagData(uin_, bag_ins)
     else
         gg.log('cloud_player_bag fail:', uin_)
         player_:SendHoverText('加载玩家背包数据失败，请退出游戏后重试')
@@ -160,8 +161,9 @@ function MainServer.player_enter_game(player)
 
     cloudDataMgr.ReadGameTaskData(player_)
     local mail_player_data_ = gg.cloudMailData:OnPlayerLogin(uin_)
-    player_.bag = cloud_player_bag_
+    gg.log("cloud_player_bag_",bag_ins)
     player_.mail = mail_player_data_
+    player_.bag = bag_ins
     gg.server_players_list[uin_] = player_
     gg.server_players_name_list[player.Nickname] = player_
 
@@ -184,6 +186,7 @@ function MainServer.player_leave_game(player)
     local uin_ = player.UserId
 
     if gg.server_players_list[uin_] then
+        gg.server_players_list[uin_]:OnLeaveGame()
         gg.server_players_list[uin_]:Save()
     end
     gg.server_players_name_list[player.Name] = nil

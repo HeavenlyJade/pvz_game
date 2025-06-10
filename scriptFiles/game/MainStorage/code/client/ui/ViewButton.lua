@@ -1,6 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
+local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local soundPlayer = game:GetService("StarterGui")["UISound"] ---@type Sound
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@class ViewButton:ViewComponent
@@ -50,6 +51,13 @@ function ViewButton:OnTouchOut()
         end
     end
 
+    -- 发布按钮点击事件
+    if self.enabled then
+        ClientEventManager.Publish("ButtonClick", {
+            button = self
+        })
+    end
+
     if self.touchEndCb then
         self.touchEndCb(self.ui, self)
     end
@@ -70,6 +78,9 @@ function ViewButton:OnTouchIn(vector2)
 
     -- Handle child images
     for child, props in pairs(self.childClickImgs) do
+        if not self.isHover then
+            props.normalImg = child.Icon
+        end
         if props.clickImg then
             child.Icon = props.clickImg
         end
@@ -116,6 +127,7 @@ function ViewButton:OnHoverIn()
 
     -- Handle child images
     for child, props in pairs(self.childClickImgs) do
+        props.normalImg = child.Icon
         if props.hoverImg then
             child.Icon = props.hoverImg
         end
@@ -197,8 +209,11 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
 
     for _, child in ipairs(img.Children) do ---@type UIComponent
         if child:IsA("UIImage") and child:GetAttribute("继承按钮") then
-            local clickImg = child:GetAttribute("图片-点击")---@type string
-            local hoverImg = child:GetAttribute("图片-悬浮") ---@type string
+            local clickImg = child:GetAttribute("图片-点击")---@type string|nil
+            local hoverImg = child:GetAttribute("图片-悬浮") ---@type string|nil
+            if clickImg == "" then
+                clickImg = nil
+            end
             if hoverImg == "" then
                 hoverImg = clickImg
             end
