@@ -3259,6 +3259,22 @@ function CardsGui:OnSubCardButtonClick(ui, button)
             subCardIconNode.Icon = skill.icon
         end
 
+        -- 更新当前强化等级显示（只有已解锁的副卡才显示）
+        local currentLevelNode = subNode["主背景"]["主背景强化显示"]["当前强化等级"]
+        if currentLevelNode then
+            if serverData then
+                -- 已解锁：显示当前强化等级
+                currentLevelNode.Title = "当前强化等级: LV" .. skillLevel
+                gg.log("更新副卡当前强化等级显示:", skillId, "等级:", skillLevel)
+            else
+                -- 未解锁：不显示等级信息
+                currentLevelNode.Title = ""
+                gg.log("副卡未解锁，清空强化等级显示:", skillId)
+            end
+        else
+            gg.log("找不到副卡当前强化等级显示节点")
+        end
+
         -- 更新星级显示
         local starContainer = subNode["星级"]
         if starContainer then
