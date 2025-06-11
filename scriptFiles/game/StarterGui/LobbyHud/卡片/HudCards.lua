@@ -32,7 +32,9 @@ local equippedSkills = {}
 -- 施法相关变量
 local lastCastTimes = {}  -- 记录每个技能的释放时间
 local updateTaskId = nil
-
+local decal = nil
+local refreshDecal = false
+local localPlayer = game.Players.LocalPlayer.Character
 
 function HudCards:SetFov(fov)
     if self.cameraTween then
@@ -267,30 +269,30 @@ function HudCards:UpdateMainCardDisplay()
 
         end
 
-        self.mainCardButton.clickCb = function(ui, button)
-            -- 检查技能是否在冷却中
-            local currentTime = os.clock()
-            local lastCastTime = lastCastTimes[mainCardSkill.skillId]
-            if lastCastTime and mainCardSkill.cooldownCache > 0 then
-                local elapsedTime = currentTime - lastCastTime
-                local remainingTime = math.max(0, mainCardSkill.cooldownCache - elapsedTime)
-                if remainingTime > 0 then
-                    return -- 在冷却中，不处理点击事件
-                end
-            end
+        -- self.mainCardButton.clickCb = function(ui, button)
+        --     -- 检查技能是否在冷却中
+        --     local currentTime = os.clock()
+        --     local lastCastTime = lastCastTimes[mainCardSkill.skillId]
+        --     if lastCastTime and mainCardSkill.cooldownCache > 0 then
+        --         local elapsedTime = currentTime - lastCastTime
+        --         local remainingTime = math.max(0, mainCardSkill.cooldownCache - elapsedTime)
+        --         if remainingTime > 0 then
+        --             return -- 在冷却中，不处理点击事件
+        --         end
+        --     end
 
-            -- 释放主卡技能
-            local direction = CameraController.GetForward()
-            local targetPos = CameraController.RaytraceScene({1})
-            lastCastTimes[mainCardSkill.skillId] = os.clock()
-            gg.network_channel:FireServer({
-                cmd = "CastSpell",
-                skill = mainCardSkill.skillId,
-                targetPos = targetPos,
-                direction = direction
-            })
-            gg.log("释放主卡技能:", mainCardSkill.skillName)
-        end
+        --     -- 释放主卡技能
+        --     local direction = CameraController.GetForward()
+        --     local targetPos, _ = CameraController.RaytraceScene({1})
+        --     lastCastTimes[mainCardSkill.skillId] = os.clock()
+        --     gg.network_channel:FireServer({
+        --         cmd = "CastSpell",
+        --         skill = mainCardSkill.skillId,
+        --         targetPos = targetPos,
+        --         direction = direction
+        --     })
+        --     gg.log("释放主卡技能:", mainCardSkill.skillName)
+        -- end
 
         gg.log("更新主卡显示:", mainCardSkill.skillName, "等级:", mainCardSkill.level)
     else
@@ -394,9 +396,55 @@ function HudCards:RebindSubCardEvents()
                 self.touchBeginPos = vector2
                 self.selectedCardSlot = slotId -- 改为使用slotId
                 self.selectedSkill = skill -- 直接存储技能对象
+
+                -- 创建追踪任务
+                if self.trackingTaskId then
+                    ClientScheduler.cancel(self.trackingTaskId)
+                end
+                refreshDecal = true
+                self.trackingTaskId = ClientScheduler.add(function()
+                    local targetPos, targetObj = CameraController.RaytraceScene({1, 2, 3})
+                    if not targetObj then
+                        return
+                    end
+                    if refreshDecal then
+                        refreshDecal = false
+                        if not decal then
+                            decal = SandboxNode.New("Decal", targetObj)
+                            decal.TextureId = "AssetId://394777658842574854"
+                            decal.LocalEuler = Vector3.New(-90, 0, 0)
+                            decal.Width = 100
+                            decal.Height = 400
+                            decal.Length = 100
+                            decal.Cullback = false
+                        else
+                            decal.Parent = targetObj
+                        end
+                        decal.LocalScale = skill.skillType.indicatorScale
+                    end
+                local indicatorRange = skill.skillType.indicatorRange
+                if indicatorRange and indicatorRange > 0 then
+                    local distance = gg.vec.Distance3(targetPos, localPlayer.Position)
+                    if distance > indicatorRange then
+                        local direction = (targetPos - localPlayer.Position) / distance
+                        targetPos = localPlayer.Position + direction * indicatorRange
+                    end
+                end
+                decal.Position = targetPos
+
+                end, 0, 0.067) 
             end
 
             card.touchEndCb = function(ui, btn)
+                -- 取消追踪任务
+                if decal then
+                    decal.Visible = false
+                end
+                if self.trackingTaskId then
+                    ClientScheduler.cancel(self.trackingTaskId)
+                    self.trackingTaskId = nil
+                end
+
                 if self.selectSkillCb then
                     self.selectSkillCb(btn.index, skill)
                     self.selectSkillCb = nil
@@ -426,11 +474,19 @@ function HudCards:RebindSubCardEvents()
                     local skillName = skill.skillName
                     gg.log("释放副卡技能:",self.selectedSkill,skillName,self.selectedSkill[skillName])
                     local direction = CameraController.GetForward()
-                    local targetPos = CameraController.RaytraceScene({1})
+                    local targetPos, targetObj = CameraController.RaytraceScene({1, 2, 3})
+                    local indicatorRange = skill.skillType.indicatorRange
+                    if indicatorRange and indicatorRange > 0 then
+                        local distance = gg.vec.Distance3(targetPos, localPlayer.Position)
+                        if distance > indicatorRange then
+                            local direction = (targetPos - localPlayer.Position) / distance
+                            targetPos = localPlayer.Position + direction * indicatorRange
+                        end
+                    end
                     lastCastTimes[skillName] = os.clock()
                     gg.network_channel:FireServer({
                         cmd = "CastSpell",
-                        skill = skill.skillName,
+                        skill = skill.skillType.name,
                         targetPos = targetPos,
                         direction = direction
                     })
@@ -471,6 +527,11 @@ function HudCards:OnDestroy()
     if updateTaskId then
         ClientScheduler.cancel(updateTaskId)
         updateTaskId = nil
+    end
+    -- 确保追踪任务被取消
+    if self.trackingTaskId then
+        ClientScheduler.cancel(self.trackingTaskId)
+        self.trackingTaskId = nil
     end
 end
 

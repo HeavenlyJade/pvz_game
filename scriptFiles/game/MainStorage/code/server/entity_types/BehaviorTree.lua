@@ -241,11 +241,11 @@ function MeleeBehavior:OnInit()
             if attackDelay > 0 then
                 ServerScheduler.add(function()
                     if entity.isAttacking then -- 再次检查是否仍在攻击状态
-                        -- entity:Attack(entity.target, entity:GetStat("攻击"), "melee_attack")
+                        entity:Attack(entity.target, entity:GetStat("攻击"), "melee_attack")
                     end
                 end, attackDelay)
             else
-                -- entity:Attack(entity.target, entity:GetStat("攻击"), "melee_attack")
+                entity:Attack(entity.target, entity:GetStat("攻击"), "melee_attack")
             end
 
             entity:Freeze(entity:GetAttackDuration())

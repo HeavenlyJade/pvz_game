@@ -192,6 +192,9 @@ function SummonSpell:CastReal(caster, target, param)
     local radius = param:GetValue(self, "召唤范围", self.summonRadius)
     local level = self.inheritLevel and caster.level or param:GetValue(self, "召唤等级", 1)
 
+    -- 获取施法者朝向
+    local casterRot = caster.actor.Rotation
+
     -- 执行召唤
     local angle = math.random() * math.pi * 2
     local distance = math.random() * radius
@@ -205,6 +208,8 @@ function SummonSpell:CastReal(caster, target, param)
     -- 延迟召唤
     local summoned = mobType:Spawn(spawnPos, level, caster.scene)
     if summoned then
+        -- 设置召唤物朝向与施法者相同
+        summoned.actor.Rotation = casterRot
         summoned:SetOwner(caster)
         self:AddSummon(caster, summoned)
         caster:TriggerTags("召唤时", target, param, summoned)

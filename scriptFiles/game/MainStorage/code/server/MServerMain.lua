@@ -168,9 +168,6 @@ function MainServer.player_enter_game(player)
 
     actor_.Size = Vector3.New(120, 160, 120)      --碰撞盒子的大小
     actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置
-    if Scene.spawnScene then
-        actor_.Position = Scene.spawnScene.node.Position
-    end
 
     player_:setGameActor(actor_)     --player
     actor_.CollideGroupID = 4
@@ -180,6 +177,11 @@ function MainServer.player_enter_game(player)
     player_:RefreshStats()               --重生 --刷新战斗属性
     player_:SetHealth(player_.maxHealth)
     player_:UpdateHud()
+    if Scene.spawnScene then
+        if not player_:IsNear(Scene.spawnScene.node.Position, 500) then
+            actor_.Position = Scene.spawnScene.node.Position
+        end
+    end
     gg.network_channel:fireClient(player.UserId, {cmd = "cmd_update_player_ui",{}})
 
 end

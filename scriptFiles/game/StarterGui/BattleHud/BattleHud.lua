@@ -216,7 +216,7 @@ end
 function BattleHud:SendCastSpellEvent(skillId)
     local camera = game.WorkSpace.CurrentCamera
     local direction = CameraController.GetRealForward(-accumulatedVerticalRecoil, accumulatedHorizontalRecoil)
-    local targetPos = CameraController.RaytraceScene({1, 2, 3})
+    local targetPos, _ = CameraController.RaytraceScene({1, 2, 3})
     gg.network_channel:FireServer({
         cmd = "CastSpell",
         skill = skillId,

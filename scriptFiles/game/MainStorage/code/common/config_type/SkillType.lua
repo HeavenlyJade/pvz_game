@@ -38,6 +38,9 @@ function SkillType:OnInit(data)
     self.battleStateMachine = data["更改状态机"]
     self.freezesMove = data["禁止移动"]
     self.maxGrowthFormula = data["最大经验"]
+    local is = (data["指示器半径"] or 3) * 2
+    self.indicatorScale = Vector3.New(is, is, is)
+    self.indicatorRange = data["最大施法距离"] or 3000
 
     -- 加载被动词条
     self.passiveTags = {}

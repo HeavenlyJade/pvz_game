@@ -9,6 +9,24 @@ local ServerEventManager = require(MainStorage.code.server.event.ServerEventMana
 ---@field New fun( levelType:LevelType, scene:Scene, index:number ):Level
 local Level = ClassMgr.Class("Level")
 
+-- 存储所有活跃的关卡实例
+local activeLevels = {} ---@type table<string, Level>
+
+--- 获取玩家当前所在的关卡
+---@param player Player 玩家对象
+---@return Level|nil 玩家所在的关卡，如果不在任何关卡中则返回nil
+function Level.GetCurrentLevel(player)
+    if not player or not player.uin then return nil end
+    
+    -- 遍历所有活跃关卡
+    for _, level in pairs(activeLevels) do
+        if level.players[player.uin] then
+            return level
+        end
+    end
+    return nil
+end
+
 ---@param levelType LevelType
 function Level:OnInit(levelType, scene, index)
     self.scene = scene ---@type Scene
@@ -80,6 +98,9 @@ function Level:Start()
     self.isActive = true
     self.startTime = os.time()
     self.currentStars = 0
+
+    -- 将关卡添加到活跃关卡列表
+    activeLevels[self.scene.uuid] = self
 
     -- 计算所有波次的怪物数量
     local waveMobCounts = {} ---@type table<number, number>
@@ -299,6 +320,9 @@ function Level:End(success)
     self.isActive = false
     self.endTime = os.time()
     
+    -- 从活跃关卡列表中移除
+    activeLevels[self.scene.uuid] = nil
+    
     if self.updateTask then
         ServerScheduler.cancel(self.updateTask)
         self.updateTask = nil
@@ -370,6 +394,45 @@ end
 function Level:CheckStarConditions(starLevel)
     -- TODO: 实现星级条件检查
     return false
+end
+
+---暂停关卡
+function Level:Pause()
+    if not self.isActive then return end
+    
+    -- 取消更新任务
+    if self.updateTask then
+        ServerScheduler.cancel(self.updateTask)
+        self.updateTask = nil
+    end
+    
+    -- 记录暂停时间
+    self.pauseTime = os.time()
+    
+    -- 通知所有玩家
+    for _, player in pairs(self.players) do
+        player:SendChatText("关卡已暂停")
+    end
+end
+
+---恢复关卡
+function Level:Resume()
+    if not self.isActive then return end
+    
+    -- 计算暂停时长
+    local pauseDuration = os.time() - (self.pauseTime or os.time())
+    
+    -- 调整时间相关变量
+    self.waveStartTime = self.waveStartTime + pauseDuration
+    self.timeElapsed = self.timeElapsed + pauseDuration
+    
+    -- 重新启动更新任务
+    self:StartUpdateTask()
+    
+    -- 通知所有玩家
+    for _, player in pairs(self.players) do
+        player:SendChatText("关卡已继续")
+    end
 end
 
 return Level

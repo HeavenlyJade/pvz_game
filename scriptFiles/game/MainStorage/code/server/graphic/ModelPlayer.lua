@@ -50,7 +50,7 @@ function ModelPlayer:OnInit(name, animator, stateConfig)
 end
 
 function ModelPlayer:FetchModelAnim()
-    if not modelAnimCache[self.animName] then
+    if not modelAnimCache[self.animName] and self.animator:IsValid() and self.animator.Parent then
         local states = {}
         for stateId, _ in pairs(self.stateConfig["状态"]) do
             states[stateId] = 0
@@ -130,16 +130,16 @@ end
 function ModelPlayer:OnStand()
     self.isMoving = false
     -- print("OnIdle")
-    self:PlayTransition("无")
+    return self:PlayTransition("无")
 end
 function ModelPlayer:OnWalk()
     self.isMoving = true
     -- print("OnWalk")
-    self:PlayTransition("无")
+    return self:PlayTransition("无")
 end
 function ModelPlayer:OnAttack()
     -- print("OnAttack")
-    self:PlayTransition("攻击时")
+    return self:PlayTransition("攻击时")
 end
 function ModelPlayer:OnDead()
     -- print("OnDead")
@@ -174,7 +174,7 @@ function ModelPlayer:SwitchState(stateId, speed)
     end
     local playTime = 0
     if playMode == "单次" then
-        local playTime = 1
+        playTime = 1
         if not state[self.animName] then
             self:FetchModelAnim()
         else

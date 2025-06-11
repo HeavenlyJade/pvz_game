@@ -893,7 +893,7 @@ function gg.log(...)
         if v == nil then
             tab[i] = "nil"
         elseif type(v) == 'table' then
-            if v.className then
+            if v.ToString then
                 tab[i] = v:ToString()
             else
                 tab[i] = gg.table2str(v)

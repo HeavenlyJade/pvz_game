@@ -55,7 +55,7 @@ local function LoadConfig()
             0
         },
         ["看向附近玩家"] = false,
-        ["名字尺寸"] = 0
+        ["名字尺寸"] = 1
     }
 }loaded = true
 end
