@@ -11,6 +11,7 @@ function StatType:OnInit(data)
     self.powerRate = data["战力倍率"]
     self.priority = data["优先级"]
     self.baseValue = data["玩家基础值"]
+    self.valuePerLevel = data["玩家每级成长"] or 0
     self.icon = data["图标"]
 end
 
@@ -33,6 +34,7 @@ local function LoadConfig()
             ["战力倍率"] = 1.0,
             ["优先级"] = 1,
             ["玩家基础值"] = 100,
+            ["玩家每级成长"] = 5,
             ["图标"] = "icon_hp"
         }),
         ["攻击"] = StatType.New({
@@ -42,6 +44,7 @@ local function LoadConfig()
             ["战力倍率"] = 1.2,
             ["优先级"] = 3,
             ["玩家基础值"] = 10,
+            ["玩家每级成长"] = 3,
             ["图标"] = "icon_atk"
         }),
         ["防御"] = StatType.New({
@@ -89,7 +92,7 @@ local function LoadConfig()
             ["玩家基础值"] = 0,
             ["图标"] = "icon_cdr"
         })
-    }
+    }loaded = true
     
     -- 创建按优先级排序的属性列表
     local statArray = {}

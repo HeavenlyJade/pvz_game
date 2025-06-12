@@ -22,6 +22,8 @@ local ServerScheduler    = require(MainStorage.code.server.ServerScheduler) ---@
 ---@field npc_config any
 local _M = ClassMgr.Class('TriggerZone', Entity) --父类Entity
 
+-- 存储未初始化玩家的触发区域
+local pendingTriggerZones = {}
 
 ---@param TriggerZone TriggerZone
 ---@param actor Actor
@@ -60,6 +62,15 @@ function _M:OnInit(TriggerZone, actor)
         if node and node.UserId then
             local player = gg.getPlayerByUin(node.UserId)
             if player then
+                -- 如果玩家未初始化完成，缓存触发区域
+                if not player.inited then
+                    if not pendingTriggerZones[player.uuid] then
+                        pendingTriggerZones[player.uuid] = {}
+                    end
+                    pendingTriggerZones[player.uuid][self.uuid] = self
+                    return
+                end
+
                 -- 如果玩家在待移除列表中，不做任何事
                 if self.pendingLeavePlayers[player.uuid] then
                     self.pendingLeavePlayers[player.uuid] = nil
@@ -83,6 +94,11 @@ function _M:OnInit(TriggerZone, actor)
         if node and node.UserId then
             local player = gg.getPlayerByUin(node.UserId)
             if player then
+                -- 如果玩家未初始化完成，不做任何处理
+                if not player.inited then
+                    return
+                end
+
                 -- 将玩家加入待移除列表
                 self.pendingLeavePlayers[player.uuid] = player
                 -- 使用ServerScheduler延迟0.1秒后检查并移除玩家
@@ -102,6 +118,24 @@ function _M:OnInit(TriggerZone, actor)
             end
         end
     end)
+
+    -- 监听玩家初始化完成事件
+    ServerEventManager.Subscribe("PlayerInited", function(evt)
+        local player = evt.player
+        if pendingTriggerZones[player.uuid] then
+            for _, zone in pairs(pendingTriggerZones[player.uuid]) do
+                -- 执行进入指令
+                if zone.enterCommands then
+                    player:ExecuteCommands(zone.enterCommands)
+                end
+                -- 记录玩家进入
+                zone.playersInZone[player.uuid] = player
+            end
+            -- 清除缓存的触发区域
+            pendingTriggerZones[player.uuid] = nil
+        end
+    end)
+
     self:createTitle()
 end
 

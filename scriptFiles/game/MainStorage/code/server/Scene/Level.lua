@@ -68,7 +68,6 @@ function Level:OnInit(levelType, scene, index)
     
     -- 监听怪物死亡事件
     ServerEventManager.Subscribe("MobDeadEvent", function(data)
-        gg.log("MobDeadEvent", data.mob, self.activeMobs[data.mob.uuid], self.activeMobs)
         if data.mob and self.activeMobs[data.mob.uuid] then
             -- 减少剩余怪物数量
             self.remainingMobCount = math.max(0, self.remainingMobCount - 1)
@@ -100,7 +99,7 @@ function Level:Start()
     self.currentStars = 0
 
     -- 将关卡添加到活跃关卡列表
-    activeLevels[self.scene.uuid] = self
+    activeLevels[self.scene] = self
 
     -- 计算所有波次的怪物数量
     local waveMobCounts = {} ---@type table<number, number>
@@ -133,7 +132,7 @@ function Level:Start()
         -- 传送玩家
         if player.actor and entryPoint then
             player.actor.Position = entryPoint.Position
-            player.actor.Euler = entryPoint.Euler
+            player.actor.Euler = Vector3.New(0, entryPoint.Euler.y, 0)
             player:SetCameraView(entryPoint.Euler)
             local oldGrav = player.actor.Gravity
             player.actor.Gravity = 0
@@ -153,12 +152,8 @@ function Level:Start()
         
         playerIndex = playerIndex + 1
     end
-
-    -- 初始化波次
     self:InitializeWaves()
-    -- 开始第一波
     self:StartWave()
-    -- 启动更新任务
     self:StartUpdateTask()
 end
 
@@ -189,6 +184,13 @@ function Level:StartWave()
     self.notSpawningWaves = {}
     for _, wave in ipairs(self.currentWave.spawningWaves) do
         table.insert(self.notSpawningWaves, wave)
+    end
+
+    -- 执行波次开始时的指令
+    if self.currentWave.startCommands then
+        for _, player in pairs(self.players) do
+            player:ExecuteCommands(self.currentWave.startCommands)
+        end
     end
 
     -- 通知玩家波次开始和初始怪物数量
@@ -321,7 +323,7 @@ function Level:End(success)
     self.endTime = os.time()
     
     -- 从活跃关卡列表中移除
-    activeLevels[self.scene.uuid] = nil
+    activeLevels[self.scene] = nil
     
     if self.updateTask then
         ServerScheduler.cancel(self.updateTask)
@@ -337,6 +339,7 @@ function Level:End(success)
             player:SetCameraView(originalPos.euler)
             player:ExitBattle()
             player:SendChatText("已传送回原位置")
+            player:ProcessQuestEvent("level_".. self.levelType.levelId)
         end
     end
 

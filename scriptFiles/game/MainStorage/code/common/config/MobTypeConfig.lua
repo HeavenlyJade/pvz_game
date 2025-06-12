@@ -168,9 +168,9 @@ local function LoadConfig()
         },
         ["offset"] = nil
     }),
-    ["副-召唤物-白菜拳击手"] = MobType.New({
-        ["怪物ID"] = "副-召唤物-白菜拳击手",
-        ["显示名"] = "白菜拳击手",
+    ["副-召唤物-菜问"] = MobType.New({
+        ["怪物ID"] = "副-召唤物-菜问",
+        ["显示名"] = "菜问",
         ["尺寸"] = {
             0,
             0
@@ -246,7 +246,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = nil,
+        ["攻击音效"] = nil,
+        ["受击音效"] = nil,
+        ["死亡音效"] = nil
     }),
     ["副-召唤物-辣椒投手"] = MobType.New({
         ["怪物ID"] = "副-召唤物-辣椒投手",
@@ -291,7 +295,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = nil,
+        ["攻击音效"] = nil,
+        ["受击音效"] = nil,
+        ["死亡音效"] = nil
     }),
     ["副-召唤物-魅惑菇"] = MobType.New({
         ["怪物ID"] = "副-召唤物-魅惑菇",
@@ -325,7 +333,11 @@ local function LoadConfig()
         ["显示血条"] = true,
         ["额外攻击距离"] = 100,
         ["攻击时点"] = 0.5,
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = nil,
+        ["攻击音效"] = nil,
+        ["受击音效"] = nil,
+        ["死亡音效"] = nil
     }),
     ["test"] = MobType.New({
         ["怪物ID"] = "test",
@@ -335,7 +347,7 @@ local function LoadConfig()
             0,
             0
         },
-        ["模型"] = "僵尸",
+        ["模型"] = "僵尸/僵尸",
         ["状态机"] = "僵尸",
         ["是首领"] = true,
         ["基础等级"] = 26,
@@ -371,6 +383,81 @@ local function LoadConfig()
         ["闲置音效"] = "sandboxId://soundeffect/groan5_僵尸呻吟.ogg",
         ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
         ["受击音效"] = "sandboxId://soundeffect/groan_僵尸呻吟.ogg",
+        ["死亡音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg"
+    }),
+    ["僵尸"] = MobType.New({
+        ["怪物ID"] = "僵尸",
+        ["显示名"] = "僵尸",
+        ["描述"] = "渴望战斗，攻击欲极强的僵尸。",
+        ["尺寸"] = {
+            0,
+            0
+        },
+        ["模型"] = "僵尸/普通僵尸",
+        ["状态机"] = "僵尸",
+        ["是首领"] = true,
+        ["基础等级"] = 26,
+        ["属性公式"] = {
+            ["攻击"] = "7 + LVL*3",
+            ["生命"] = "LVL*30",
+            ["速度"] = "20"
+        },
+        ["图鉴击杀数"] = 0,
+        ["图鉴完成奖励"] = nil,
+        ["图鉴完成奖励数量"] = 0,
+        ["显示血条"] = true,
+        ["额外攻击距离"] = 100,
+        ["攻击时点"] = 0.5,
+        ["行为"] = {
+            {
+                ["脱战距离"] = 0,
+                ["主动索敌"] = 0,
+                ["攻击时静止"] = true,
+                ["类型"] = "近战攻击"
+            },
+            {
+                ["距离"] = 500,
+                ["保持在出生点附近"] = true,
+                ["几率"] = 50,
+                ["类型"] = "随机移动"
+            },
+            {
+                ["类型"] = "静止"
+            }
+        },
+        ["offset"] = nil,
+        ["闲置音效"] = "sandboxId://soundeffect/lowgroan僵尸咆哮.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan4_僵尸呻吟.ogg",
+        ["死亡音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg"
+    }),
+    ["呆滞僵尸"] = MobType.New({
+        ["怪物ID"] = "呆滞僵尸",
+        ["显示名"] = "僵尸",
+        ["描述"] = "渴望战斗，攻击欲极强的僵尸。",
+        ["尺寸"] = {
+            0,
+            0
+        },
+        ["模型"] = "僵尸/普通僵尸",
+        ["状态机"] = "僵尸",
+        ["是首领"] = true,
+        ["基础等级"] = 1,
+        ["属性公式"] = {
+            ["攻击"] = "7 + LVL*3",
+            ["生命"] = "LVL*30",
+            ["速度"] = "0"
+        },
+        ["图鉴击杀数"] = 0,
+        ["图鉴完成奖励"] = nil,
+        ["图鉴完成奖励数量"] = 0,
+        ["显示血条"] = true,
+        ["额外攻击距离"] = 100,
+        ["攻击时点"] = 0.5,
+        ["offset"] = nil,
+        ["闲置音效"] = "sandboxId://soundeffect/lowgroan僵尸咆哮.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan4_僵尸呻吟.ogg",
         ["死亡音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg"
     }),
     ["士兵僵尸"] = MobType.New({
@@ -510,52 +597,6 @@ local function LoadConfig()
         ["攻击音效"] = "sandboxId://soundeffect/chompsoft_僵尸吃4.ogg",
         ["受击音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg",
         ["死亡音效"] = "sandboxId://soundeffect/僵尸死亡_08(Zombie Death_08)_爱给网_aigei_com.mp3"
-    }),
-    ["普通僵尸"] = MobType.New({
-        ["怪物ID"] = "普通僵尸",
-        ["显示名"] = "士兵僵尸",
-        ["描述"] = "渴望战斗，攻击欲极强的僵尸。",
-        ["尺寸"] = {
-            0,
-            0
-        },
-        ["模型"] = "僵尸/士兵僵尸",
-        ["状态机"] = "僵尸",
-        ["是首领"] = true,
-        ["基础等级"] = 26,
-        ["属性公式"] = {
-            ["攻击"] = "(2^(LVL/10))*(10*LVL*1*1.13*20)^1.1",
-            ["生命"] = "(2^(LVL/10))*(10*LVL*1*1.13*20)^1.1",
-            ["速度"] = "100"
-        },
-        ["图鉴击杀数"] = 0,
-        ["图鉴完成奖励"] = nil,
-        ["图鉴完成奖励数量"] = 0,
-        ["显示血条"] = true,
-        ["额外攻击距离"] = 100,
-        ["攻击时点"] = 0.5,
-        ["行为"] = {
-            {
-                ["脱战距离"] = 0,
-                ["主动索敌"] = 0,
-                ["攻击时静止"] = true,
-                ["类型"] = "近战攻击"
-            },
-            {
-                ["距离"] = 500,
-                ["保持在出生点附近"] = true,
-                ["几率"] = 50,
-                ["类型"] = "随机移动"
-            },
-            {
-                ["类型"] = "静止"
-            }
-        },
-        ["offset"] = nil,
-        ["闲置音效"] = "sandboxId://soundeffect/lowgroan僵尸咆哮.ogg",
-        ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
-        ["受击音效"] = "sandboxId://soundeffect/groan4_僵尸呻吟.ogg",
-        ["死亡音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg"
     }),
     ["绅士僵尸"] = MobType.New({
         ["怪物ID"] = "绅士僵尸",

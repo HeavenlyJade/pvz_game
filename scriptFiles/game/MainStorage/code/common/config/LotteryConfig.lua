@@ -66,7 +66,7 @@ local function LoadConfig()
                 ["itemCountMax"] = 1
             },
             {
-                ["itemType"] = "白菜拳手碎片",
+                ["itemType"] = "菜问碎片",
                 ["weight"] = 20,
                 ["itemCountMin"] = 1,
                 ["itemCountMax"] = 1

@@ -428,6 +428,11 @@ end
 function Bag:GiveItem(item)
     ---玩家从系统处获得物品走此函数
     self:AddItem(item)
+    if not item.itemType.isMoney then
+        self.player:SendEvent("GainedItem", {
+            item = item:Save()
+        })
+    end
     return true
 end
 

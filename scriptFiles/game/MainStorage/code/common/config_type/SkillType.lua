@@ -23,6 +23,7 @@ function SkillType:OnInit(data)
     self.maxLevel = data["最大等级"] or 1
     self.description = data["技能描述"] or ""
     self.icon = data["技能图标"] or ""
+    self.levelUpPlayer = data["提升玩家等级"] or 0
     self.miniIcon = data["技能小角标"] or ""
     self.effectiveWithoutEquip = data["无需装备也可生效"] or false
     ---客户端
@@ -36,11 +37,15 @@ function SkillType:OnInit(data)
     self.battleModel = data["更改模型"]
     self.battleAnimator = data["更改动画"]
     self.battleStateMachine = data["更改状态机"]
+    self.afkScale = gg.Vec3.new(data["副卡挂机尺寸"]):ToVector3()
     self.freezesMove = data["禁止移动"]
     self.maxGrowthFormula = data["最大经验"]
+    self.oneKeyUpgradeCosts = data["一键强化素材"]
     local is = (data["指示器半径"] or 3) * 2
     self.indicatorScale = Vector3.New(is, is, is)
     self.indicatorRange = data["最大施法距离"] or 3000
+    self.isEquipable = data["主动释放魔法"] or nil
+
 
     -- 加载被动词条
     self.passiveTags = {}
@@ -75,14 +80,34 @@ function SkillType:OnInit(data)
 end
 
 function SkillType:GetMaxGrowthAtLevel(level)
+    if not self.maxGrowthFormula then
+        return nil
+    end
     local expr = self.maxGrowthFormula:gsub("LVL", tostring(level))
-    if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
-        print(string.format("技能%s的成长上限包含非法字符: %s", self["名字"], expr))
+    if not expr:match("^[%d%+%-%*%/%%%^%(%).%s]+$") then
+        print(string.format("技能%s的最大经验公式包含非法字符: %s", self.name, expr))
         return 0
     end
-
     local result = gg.eval(expr)
     return result
+end
+
+--- 一键强化的这个素材公式
+function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
+    if not self.oneKeyUpgradeCosts then
+        return {}
+    end
+    local costs = {}
+    for resourceType, costExpr in pairs(self.oneKeyUpgradeCosts) do
+        local expr = costExpr:gsub("LVL", tostring(level))
+        if not expr:match("^[%d%+%-%*%/%%%^%(%).%s]+$") then
+            print(string.format("技能%s的一键强化消耗%s包含非法字符: %s", self.name, resourceType, expr))
+        else
+            local result = gg.eval(expr)
+            costs[resourceType] = result
+        end
+    end
+    return costs
 end
 
 function SkillType:GetCostAtLevel(level)

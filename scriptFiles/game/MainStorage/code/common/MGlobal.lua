@@ -160,6 +160,21 @@ function vec.Dot2(v1, v2)
     return Vector2.Dot(v1, v2)
 end
 
+
+---@param target Vector3|Entity|Vec3
+---@return Vector3
+function vec.ToVector3(target)
+    if type(target) == "userdata" then
+        return target
+    else
+        if type(target) == "table" and target.Is and target:Is("Entity") then
+            return target:GetPosition():ToVector3()
+        else
+            return target:ToVector3()
+        end
+    end
+end
+
 ---@param v1 Vector2 起始向量
 ---@param v2 Vector2 目标向量
 ---@param percent number 插值比例(0-1)

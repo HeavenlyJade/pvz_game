@@ -1,4 +1,3 @@
-
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
@@ -135,8 +134,50 @@ function ShieldCondition:Check(modifier, caster, target)
     return self:CheckAmount(modifier, amount)
 end
 
+---@class QuestConditionType
+local QuestConditionType = {
+    ACCEPTED = "已领取",
+    FINISHED = "已完成或提交",
+    IN_PROGRESS = "正在进行",
+    COMPLETED = "已完成",
+}
+
+---@class QuestCondition:Condition
+local QuestCondition = ClassMgr.Class("QuestCondition", Condition)
+function QuestCondition:OnInit(data)
+    self.quest = data["任务"]
+    self.conditionType = data["条件"]
+end
+
+function QuestCondition:Check(modifier, caster, target)
+    if not target.isPlayer then return false end
+    local player = target ---@cast player Player
+    
+    -- 检查任务状态
+    if self.conditionType == QuestConditionType.ACCEPTED then
+        -- 检查是否已领取任务
+        return player.quests[self.quest] ~= nil
+    elseif self.conditionType == QuestConditionType.FINISHED then
+        if player.acceptedQuestIds[self.quest] == 1 then
+            return true
+        end
+        local q = player.quests[self.quest]
+        if not q then
+            return false
+        end
+        return q:IsCompleted()
+    elseif self.conditionType == QuestConditionType.COMPLETED then
+        -- 检查任务是否已完成
+        return player.acceptedQuestIds[self.quest] == 1
+    elseif self.conditionType == QuestConditionType.IN_PROGRESS then
+        -- 检查任务是否正在进行中
+        return player.quests[self.quest] ~= nil
+    end
+    
+    return false
+end
+
 return {
-    CONDITION = CONDITION,
     Condition = Condition,
     BetweenCondition = BetweenCondition,
     HealthCondition = HealthCondition,
@@ -146,5 +187,6 @@ return {
     ChanceCondition = ChanceCondition,
     BuffActiveCondition = BuffActiveCondition,
     TagLevelCondition = TagLevelCondition,
-    ShieldCondition = ShieldCondition
+    ShieldCondition = ShieldCondition,
+    QuestCondition = QuestCondition
 }

@@ -112,6 +112,7 @@ end
 ---@field totalExp number
 ---@field healthSum number
 ---@field waveHealths table<number, number> 每个波次的血量
+---@field startCommands string[] 开始时执行的指令
 local Wave = ClassMgr.Class("Wave")
 
 function Wave:OnInit(data)
@@ -120,10 +121,21 @@ function Wave:OnInit(data)
         table.insert(self.spawningWaves, SpawningWave.New(waveData))
     end
     self.attributeMultiplier = data["属性倍率"] or 1
-    self.spiritReward = data["给予灵蕴"] or 0
     self.totalExp = data["总计经验"] or 0
+    self.startCommands = data["开始时执行指令"]
     self.healthSum = 0
     self.waveHealths = {} ---@type table<number, number>
+end
+
+---执行波次开始时的指令
+---@param level Level 关卡实例
+function Wave:ExecuteStartCommands(level)
+    if self.startCommands then
+        -- 对关卡中的所有玩家执行指令
+        for _, player in pairs(level.players) do
+            player:ExecuteCommands(self.startCommands)
+        end
+    end
 end
 
 ---计算波次中的怪物总数

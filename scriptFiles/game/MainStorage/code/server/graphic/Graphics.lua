@@ -291,7 +291,7 @@ function ParticleGraphic:CreateEffect(target, scene)
     
     fx:SetParent(container)
     if not self.boundToEntity then
-        fx.Position = (self.offset + target:GetCenterPosition()):ToVector3()
+        fx.Position = gg.vec.ToVector3(self.offset + target:GetCenterPosition())
     else
         fx.LocalPosition = previous.LocalPosition
         fx.LocalEuler = previous.LocalEuler
@@ -381,7 +381,7 @@ function ModelGraphic:CreateEffect(target, scene)
     
     model:SetParent(container)
     if not self.boundToEntity then
-        model.LocalPosition = target:GetPosition()
+        model.LocalPosition = gg.vec.ToVector3(target:GetPosition())
     else
         model.LocalPosition = previous.LocalPosition
         model.LocalEuler = previous.LocalEuler

@@ -11,7 +11,7 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 ---@class ServerEventManager
 local ServerEventManager = {
     _eventDictionary = {}, -- @type table<string, ServerEventListener[]>
-    _callbackMap = {}, -- @type table<string, fun(data: table)> 存储回调函数
+    _callbackMap = {}, -- @type table<string, table<uin, fun(data: table)>> 按uin存储回调函数
     _callbackCounter = 0, -- 用于生成唯一ID
     _callbackTimeout = 2 -- 回调超时时间（秒）
 }
@@ -31,11 +31,39 @@ end
 
 --- 清理回调
 ---@param callbackId string
-local function CleanupCallback(callbackId)
+---@param uin? number 玩家uin，如果提供则只清理该玩家的回调
+local function CleanupCallback(callbackId, uin)
     -- 取消超时定时任务
-    ServerScheduler.cancel("callback_timeout_" .. callbackId)
-    ServerEventManager._callbackMap[callbackId] = nil
+    if uin then
+        -- 只清理指定玩家的回调
+        if ServerEventManager._callbackMap[callbackId] then
+            ServerEventManager._callbackMap[callbackId][uin] = nil
+            -- 如果该callbackId下没有其他玩家的回调了，则移除整个callbackId
+            local hasCallbacks = false
+            for _ in pairs(ServerEventManager._callbackMap[callbackId]) do
+                hasCallbacks = true
+                break
+            end
+            if not hasCallbacks then
+                ServerEventManager._callbackMap[callbackId] = nil
+            end
+        end
+    else
+        -- 清理所有玩家的回调
+        ServerEventManager._callbackMap[callbackId] = nil
+    end
+    
     ServerEventManager.Unsubscribe(callbackId .. "_Return", nil, nil, callbackId)
+end
+
+--- 清理指定玩家的所有回调
+---@param uin number 玩家uin
+function ServerEventManager.CleanupPlayerCallbacks(uin)
+    for callbackId, callbacks in pairs(ServerEventManager._callbackMap) do
+        if callbacks[uin] then
+            CleanupCallback(callbackId, uin)
+        end
+    end
 end
 
 --- 订阅事件
@@ -129,21 +157,20 @@ function ServerEventManager.SendToClient(uin, eventType, eventData, callback)
     if callback then
         local callbackId = GenerateCallbackId()
         eventData.__cb = callbackId
-        -- 存储回调函数
-        ServerEventManager._callbackMap[callbackId] = callback
+        -- 存储回调函数，按uin分类
+        if not ServerEventManager._callbackMap[callbackId] then
+            ServerEventManager._callbackMap[callbackId] = {}
+        end
+        ServerEventManager._callbackMap[callbackId][uin] = callback
+        
         -- 监听客户端返回的事件
         ServerEventManager.Subscribe(callbackId .. "_Return", function(returnData)
-            local cb = ServerEventManager._callbackMap[callbackId]
-            if cb then
-                cb(returnData.data)
-                CleanupCallback(callbackId)
+            local callbacks = ServerEventManager._callbackMap[callbackId]
+            if callbacks and callbacks[uin] then
+                callbacks[uin](returnData.data)
+                CleanupCallback(callbackId, uin)
             end
         end, 0, callbackId)
-
-        -- 添加超时处理
-        ServerScheduler.add(function()
-            CleanupCallback(callbackId)
-        end, ServerEventManager._callbackTimeout, 0)
     end
     gg.network_channel:fireClient(uin, eventData)
 end

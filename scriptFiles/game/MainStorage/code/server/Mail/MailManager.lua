@@ -18,6 +18,7 @@ local CloudMailData = require(MainStorage.code.server.cloundData.CloudMailData) 
 local BagMgr = require(MainStorage.code.server.bag.BagMgr)  ---@type BagMgr
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local MailTypes = require(MainStorage.code.common.Mail.MailTypes) ---@type MailTypes
+local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) ---@type MailEventConfig
 
 ---@class MailManager
 local MailManager = {
@@ -46,24 +47,28 @@ end
 
 --- 注册网络消息处理函数
 function MailManager:RegisterNetworkHandlers()
-    -- 使用新的邮件前缀命令格式
-    ServerEventManager.Subscribe("mail_get_list", function(event)
+    -- 使用统一的邮件事件配置
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.GET_LIST, function(event)
         self:HandleGetMailList(event)
     end)
 
-    ServerEventManager.Subscribe("mail_read", function(event)
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.READ_MAIL, function(event)
         self:HandleReadMail(event)
     end)
 
-    ServerEventManager.Subscribe("mail_claim_attachment", function(event)
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.CLAIM_MAIL, function(event)
         self:HandleClaimAttachment(event)
     end)
 
-    ServerEventManager.Subscribe("mail_delete", function(event)
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.BATCH_CLAIM, function(event)
+        self:HandleBatchClaim(event)
+    end)
+
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.DELETE_MAIL, function(event)
         self:HandleDeleteMail(event)
     end)
 
-    gg.log("邮件网络消息处理函数注册完成")
+    gg.log("邮件网络消息处理函数注册完成，共注册", 5, "个事件处理器")
 end
 
 ---------------------------
@@ -82,10 +87,8 @@ function MailManager:HandleGetMailList(event)
     local globalMails = self:GetGlobalMailList(uin)
 
     -- 发送邮件列表到客户端
-
-    -- 发送邮件列表到客户端
     gg.network_channel:fireClient(uin, {
-        cmd = "mail_list_response",
+        cmd = MailEventConfig.RESPONSE.MAIL_LIST,
         personal_mails = personalMails,
         global_mails = globalMails
     })
@@ -108,7 +111,7 @@ function MailManager:HandleReadMail(event)
 
     -- 发送结果到客户端
     gg.network_channel:fireClient(uin, {
-        cmd = "mail_read_response",
+        cmd = MailEventConfig.RESPONSE.READ_SUCCESS,
         success = success,
         message = message,
         mail_id = mailId,
@@ -133,7 +136,7 @@ function MailManager:HandleClaimAttachment(event)
 
     -- 发送结果到客户端
     gg.network_channel:fireClient(uin, {
-        cmd = "mail_claim_attachment_response",
+        cmd = MailEventConfig.RESPONSE.CLAIM_SUCCESS,
         success = success,
         message = message,
         mail_id = mailId,
@@ -156,6 +159,62 @@ function MailManager:HandleClaimAttachment(event)
     end
 end
 
+--- 处理批量领取请求
+---@param event table 事件数据
+function MailManager:HandleBatchClaim(event)
+    local uin = event.uin
+    local category = event.category or "全部"
+
+    gg.log("处理批量领取请求", uin, category)
+
+    local claimedMails = {}
+    local claimedCount = 0
+    local totalRewards = {}
+
+    -- 获取个人邮件列表并领取附件
+    local personalMails = self:GetPersonalMailList(uin)
+    for _, mail in ipairs(personalMails) do
+        if mail.has_attachment and mail.status < self.MAIL_STATUS.CLAIMED then
+            local success, message, attachments = self:ClaimPersonalMailAttachment(uin, mail.id)
+            if success and attachments then
+                table.insert(claimedMails, mail.id)
+                claimedCount = claimedCount + 1
+                -- 合并奖励
+                for _, attachment in ipairs(attachments) do
+                    totalRewards[attachment.type] = (totalRewards[attachment.type] or 0) + attachment.amount
+                end
+            end
+        end
+    end
+
+    -- 获取全服邮件列表并领取附件
+    local globalMails = self:GetGlobalMailList(uin)
+    for _, mail in ipairs(globalMails) do
+        if mail.has_attachment and not mail.is_claimed then
+            local success, message, attachments = self:ClaimGlobalMailAttachment(uin, mail.id)
+            if success and attachments then
+                table.insert(claimedMails, mail.id)
+                claimedCount = claimedCount + 1
+                -- 合并奖励
+                for _, attachment in ipairs(attachments) do
+                    totalRewards[attachment.type] = (totalRewards[attachment.type] or 0) + attachment.amount
+                end
+            end
+        end
+    end
+
+    -- 发送结果到客户端
+    gg.network_channel:fireClient(uin, {
+        cmd = MailEventConfig.RESPONSE.BATCH_CLAIM_SUCCESS,
+        success = claimedCount > 0,
+        claimed_mails = claimedMails,
+        claimed_count = claimedCount,
+        total_rewards = totalRewards
+    })
+
+    gg.log("批量领取完成", "领取邮件数:", claimedCount)
+end
+
 --- 处理删除邮件请求
 ---@param event table 事件数据
 function MailManager:HandleDeleteMail(event)
@@ -173,7 +232,7 @@ function MailManager:HandleDeleteMail(event)
 
     -- 发送结果到客户端
     gg.network_channel:fireClient(uin, {
-        cmd = "mail_delete_response",
+        cmd = MailEventConfig.RESPONSE.DELETE_SUCCESS,
         success = success,
         message = message,
         mail_id = mailId,
@@ -189,12 +248,14 @@ end
 ---@param uin number 玩家ID
 ---@return table 邮件列表
 function MailManager:GetPersonalMailList(uin)
-        -- 获取玩家对象并获取邮件数据
+    -- 获取玩家对象并获取邮件数据
     local player = gg.server_players_list[uin]
     if not player then
         return {}
     end
     local playerMail = player.mail.player_mail_data_
+    local result = {}
+    
     -- 过滤非删除状态的邮件
     for mailId, mail in pairs(playerMail.mails) do
         if mail.status < self.MAIL_STATUS.DELETED then  -- 非删除状态
@@ -666,7 +727,7 @@ end
 ---@param uin number 玩家ID
 function MailManager:NotifyNewMail(uin)
     gg.network_channel:fireClient(uin, {
-        cmd = "mail_new_notification",
+        cmd = MailEventConfig.NOTIFY.NEW_MAIL,
         has_new_mail = true
     })
 end

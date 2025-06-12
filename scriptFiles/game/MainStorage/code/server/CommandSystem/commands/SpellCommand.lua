@@ -36,7 +36,10 @@ function SpellCommand.skill(params, player)
     end
 
     local action = params["操作"] or "升级"
-    if action == "升级" then
+    if action == "升级" or action == "习得" then
+        if action == "习得" and player.skills[skillType.name] then
+            return false
+        end
         if player:UpgradeSkill(skillType) then
             player:syncSkillData()
             player:SendChatText("技能操作成功: %s", skillType.name)
@@ -143,7 +146,7 @@ function SpellCommand.var(params, player)
         table.insert(changes, string.format("%s的变量[%s]从%d改为%d", player.name, varName, oldValue, vars[varName]))
     elseif action == "全部增加" then
         for k, _ in pairs(vars) do
-            if string.find(k, varName) then
+            if not varName or string.find(k, varName) then
                 local oldValue = vars[k] or 0
                 vars[k] = oldValue + value
                 table.insert(changes, string.format("%s的变量[%s]从%d改为%d", player.name, k, oldValue, vars[k]))
@@ -151,7 +154,7 @@ function SpellCommand.var(params, player)
         end
     elseif action == "全部减少" then
         for k, _ in pairs(vars) do
-            if string.find(k, varName) then
+            if not varName or string.find(k, varName) then
                 local oldValue = vars[k] or 0
                 vars[k] = oldValue - value
                 table.insert(changes, string.format("%s的变量[%s]从%d改为%d", player.name, k, oldValue, vars[k]))
@@ -159,7 +162,7 @@ function SpellCommand.var(params, player)
         end
     elseif action == "全部改为" then
         for k, _ in pairs(vars) do
-            if string.find(k, varName) then
+            if not varName or string.find(k, varName) then
                 local oldValue = vars[k] or 0
                 vars[k] = value
                 table.insert(changes, string.format("%s的变量[%s]从%d改为%d", player.name, k, oldValue, vars[k]))

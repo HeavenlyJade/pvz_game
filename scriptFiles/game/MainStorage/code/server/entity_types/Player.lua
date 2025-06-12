@@ -35,6 +35,7 @@ local _M = ClassMgr.Class('Player', Entity)
 
 -- 初始化玩家
 function _M:OnInit(info_)
+    self.inited = false
     self.name = info_.nickname
     self.isPlayer = true
     self.bag = nil ---@type Bag
@@ -65,12 +66,15 @@ function _M:OnInit(info_)
 
     self:SubscribeEvent("ClickQuest", function (evt)
         local quest = self.quests[evt.name]
-        gg.log("ClickQuest", evt, quest)
         if not quest then
             self:SendHoverText("不存在的任务 %s", evt.name)
             return
         end
-        quest.quest:OnClick(self)
+        if quest:IsCompleted() then
+            quest:Finish()
+        else
+            quest.quest:OnClick(self)
+        end
     end)
 
     self:SubscribeEvent("NavigateReached", function()
@@ -186,11 +190,6 @@ function _M:setPlayerNetStat(player_net_stat_)
     self.player_net_stat = player_net_stat_
 end
 
-function _M:ExecuteCommands(commands, castParam)
-    for _, command in ipairs(commands) do
-        self:ExecuteCommand(command, castParam)
-    end
-end
 
 
 function _M:DisplayCollectItem(imgIcon, text, position, from)
@@ -207,6 +206,15 @@ function _M:DisplayCollectItem(imgIcon, text, position, from)
         data.from = { from.x, from.y, from.z }
     end
     self:SendEvent("DropItemAnim", data)
+end
+
+function _M:SetLevel(level)
+    Entity.SetLevel(self,level)
+    self:RefreshStats()
+    self:SetVariable("level", level)
+    self:SendEvent("UpdateHud", {
+        level = self.level
+    })
 end
 
 function _M:EnterBattle()
@@ -233,35 +241,54 @@ end
 
 ---@override
 function _M:Die()
+    print("Die", self.isDead, self.name)
+    if self.isDead then return end
     self:StopSkillCastabilityCheck()
     -- 发布死亡事件
-    ServerEventManager.Publish("PlayerDeadEvent", { player = self })
+    local evt = { player = self, viewDeath=true }
+    ServerEventManager.Publish("PlayerDeadEvent", evt)
     Entity.Die(self)
-    gg.network_channel:fireClient(self.uin, {
-        cmd = 'cmd_player_actor_stat',
-        v = 'dead'
+    if evt.viewDeath then
+        self:SendEvent("ViewDeath", {}, function ()
+            self:CompleteRespawn()
+        end)
+    end
+end
+
+function _M:CompleteRespawn()
+    self.isDead = false
+    -- 重置属性
+    self:resetBattleData(true)
+    -- 重置目标
+    if self.isPlayer then
+        self.target = nil
+    end
+    -- 重置战斗时间
+    self.combatTime = 0
+    if self.modelPlayer then
+        self.modelPlayer:SwitchState("idle")
+    end
+    local Scene = require(MainStorage.code.server.Scene)         ---@type Scene
+    self.actor.Position = Scene.spawnScene.node.Position
+    self:SendEvent("ViewDeath", {
+        respawn = true
     })
 end
 
 ---@protected
 function _M:DestroyObject()
-    -- 从场景中移除
-    if self.scene then
-        self.scene.players[self.uin] = nil
-    end
-    Entity.DestroyObject(self)
+    print("Destroy Player")
+    print(debug.traceback())
+    -- if self.scene then
+    --     self.scene.players[self.uin] = nil
+    -- end
+    -- Entity.DestroyObject(self)
 end
 
 function _M:OnLeaveGame()
     -- 发布玩家退出游戏事件
     ServerEventManager.Publish("PlayerLeaveGameEvent", { player = self })
     Entity.DestroyObject(self)
-end
-
-function _M:ExecuteCommand(command, castParam)
-    local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
-    command = command:gsub("%%p", tostring(self.uin))
-    CommandManager.ExecuteCommand(command, self)
 end
 
 --------------------------------------------------
@@ -309,11 +336,11 @@ function _M:RefreshStats()
     -- 添加所有属性的基础值
     local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
     for statName, statType in pairs(StatTypeConfig.GetAll()) do
-        self:AddStat(statName, statType.baseValue,"EQUIP", false)
+        self:AddStat(statName, statType.baseValue + self.level * statType.valuePerLevel,"EQUIP", false)
+
     end
 
     -- 直接遍历bag_items，跳过c =0
-    gg.log("RefreshStats", self.bag)
     if  self.bag then
         for category, items in pairs(self.bag.bag_items) do
             if category > 0 then
@@ -389,6 +416,7 @@ function _M:syncSkillData()
             slot = skill.equipSlot,
             growth = skill.growth,
             star_level = skill.star_level,
+            currentExp = skill.currentExp 
         }
 
         -- 记录已装备的技能
@@ -460,7 +488,8 @@ function _M:LearnSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = 0,
-            star_level = 1
+            star_level = 1,
+            currentExp = 0
         })
         self:saveSkillConfig()
         return true
@@ -515,8 +544,10 @@ function _M:UpgradeSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = skillSlot,
-            star_level = 1
+            star_level = 1,
+            currentExp = 0
         })
+        self:SetLevel(self.level + skillType.levelUpPlayer)
         self:saveSkillConfig()
         return true
     end
@@ -528,6 +559,9 @@ function _M:UpgradeSkill(skillType)
 
     -- 升级技能
     foundSkill.level = foundSkill.level + 1
+    self:SetLevel(self.level + foundSkill.skillType.levelUpPlayer)
+    self:SetVariable("skill_".. foundSkill.skillName, foundSkill.level)
+    self:SetVariable("skill_enhance_".. foundSkill.skillType.category, foundSkill.level)
     self:RefreshStats()
 
     -- 保存配置
@@ -723,6 +757,12 @@ function _M:UpdateHud()
     self:UpdateQuestsData()
     self:syncSkillData()
     self.bag:SyncToClient()
+
+    self.level = self:GetVariable("level", 1)
+    self:RefreshStats()
+    self:SendEvent("UpdateHud", {
+        level = self.level
+    })
 end
 
 -- 同步任务数据到客户端

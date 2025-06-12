@@ -11,7 +11,7 @@ local LevelCommand = {}
 ---@param player Player
 function LevelCommand.enter(params, player)
     -- 获取操作类型
-    local action = params["操作"]
+    local action = params["操作"] or "进入"
     if not action then
         player:SendChatText("缺少操作参数")
         return false

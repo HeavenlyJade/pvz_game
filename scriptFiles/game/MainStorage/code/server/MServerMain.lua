@@ -183,7 +183,8 @@ function MainServer.player_enter_game(player)
         end
     end
     gg.network_channel:fireClient(player.UserId, {cmd = "cmd_update_player_ui",{}})
-
+    player_.inited = true
+    ServerEventManager.Publish("PlayerInited", {player = player_})
 end
 
 --玩家离开游戏

@@ -55,18 +55,6 @@ function Lottery:OnInit(data)
     self.mythicPrizes = data["神话品级"] or {}
 end
 
----抽奖
----@param count number 抽奖次数
----@param isFree boolean 是否免费
-function Lottery:DrawRoulette(count, isFree)
-    gg.log("DrawRoulette: " .. self.poolName .. " " .. count .. " " .. tostring(isFree))
-    gg.server.Call("shop", "draw", {
-        roulette = self.poolName,
-        count = count,
-        isFree = isFree
-    })
-end
-
 ---执行单次抽奖
 ---@param player Player 玩家对象
 ---@return ItemStack|nil 抽中的奖品
@@ -88,6 +76,8 @@ function Lottery:Draw(player)
     
     if rewards then
         gg.log(player.uid .. "抽中了" .. rarity .. "品级，获得了" .. rewards.itemType .. "x" .. rewards.amount)
+        player:AddVariable("lottery_".. self.poolName, 1)
+        player:AddVariable("rarity_".. rarity, 1)
     end
     
     return rewards

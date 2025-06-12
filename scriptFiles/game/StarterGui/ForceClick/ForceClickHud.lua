@@ -34,6 +34,7 @@ function ForceClickHud:OnInit(node, config)
     self.focusingChain = nil ---@type FocusChain
     self.index = 0
     self.lastFocusTime = 0 ---@type number
+    self.allowClickAnywhere = false
     ClientEventManager.Subscribe("FocusOnUI", function (evt)
         ---@cast evt FocusChain
         self.focusingChain = evt
@@ -42,7 +43,7 @@ function ForceClickHud:OnInit(node, config)
     end)
 
     -- 监听按钮点击事件
-    ClientEventManager.Subscribe("ButtonClick", function(data)
+    ClientEventManager.Subscribe("ButtonTouchIn", function(data)
         if self.displaying then
             self:FocusOnNextNode()
             if self.nodePressCb then
@@ -51,6 +52,34 @@ function ForceClickHud:OnInit(node, config)
             end
         end
     end)
+    
+    if game.UserInputService.TouchEnabled then -- 触摸设备
+        game.UserInputService.TouchStarted:Connect(
+            function(inputObj, gameprocessed)
+                self:OnClickAnywhere()
+            end
+        )
+    elseif game.UserInputService.MouseEnabled then -- 鼠标设备
+        game.UserInputService.InputBegan:Connect(
+            function(inputObj, gameprocessed)
+                -- 只有鼠标右键才开始摄像头控制
+                if inputObj.UserInputType == Enum.UserInputType.MouseButton1.Value then
+                    self:OnClickAnywhere()
+                end
+            end
+        )
+    end
+end
+
+function ForceClickHud:OnClickAnywhere()
+    if self.allowClickAnywhere then
+        self.allowClickAnywhere = false
+        self:FocusOnNextNode()
+        if self.nodePressCb then
+            self.nodePressCb:Disconnect()
+            self.nodePressCb = nil
+        end
+    end
 end
 
 function ForceClickHud:FocusOnNextNode()
@@ -82,11 +111,12 @@ function ForceClickHud:FocusOnNextNode()
         print(string.format("配置错误: UI %s 的节点 %s 不存在!", focus["UI名"], focus["控件路径"]))
         return
     end
-    self:FocusOnNode(node.node, focus["提示文本"])
+    self:FocusOnNode(node.node, focus["提示文本"], focus["可点击任意位置"])
 end
 
 ---@param node UIComponent
-function ForceClickHud:FocusOnNode(node, text)
+function ForceClickHud:FocusOnNode(node, text, allowClickAnywhere)
+    self.allowClickAnywhere = allowClickAnywhere or false
     local size = node.Size
     local pos = node:GetGlobalPos() - Vector2.New(node.Pivot.x * size.x, node.Pivot.y * size.y)
     if self.nodePressCb then

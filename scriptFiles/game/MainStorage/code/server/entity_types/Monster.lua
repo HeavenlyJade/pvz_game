@@ -79,7 +79,6 @@ function _M:Die()
         self.scene:PlaySound(self.mobType.deadSound, self.actor, 1.0, 1.0)
     end
 
-    -- 发布死亡事件
     ServerEventManager.Publish("MobDeadEvent", {
         mob = self
     })
@@ -394,7 +393,6 @@ end
 --     end
 -- end
 
----@protected
 function _M:DestroyObject()
     -- 从场景中移除
     if self.scene then

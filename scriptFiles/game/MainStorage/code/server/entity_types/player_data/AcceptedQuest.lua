@@ -27,25 +27,57 @@ end
 
 ---@param amount number
 function AcceptedQuest:AddProgress(amount)
-    if self:IsCompleted() or self.quest.questType ~= "无类型" then
+    if self:IsCompleted() then
         return
     end
     self.progress = math.min(self.progress + amount, self.quest.completionCount)
+    self.player:UpdateQuestsData()
+    
+    -- 检查是否达到完成条件且设置了自动提交
+    if self:IsCompleted() then
+        if self.quest.finishCommands then
+            self.player:ExecuteCommands(self.quest.finishCommands)
+        end
+        if self.quest.autoTurnIn then
+            self:Finish()
+        end
+    end
 end
 
 ---@param amount number
 function AcceptedQuest:SetProgress(amount)
-    if self:IsCompleted() or self.quest.questType ~= "无类型" then
+    if self:IsCompleted() then
         return
     end
     self.progress = math.min(amount, self.quest.completionCount)
+    self.player:UpdateQuestsData()
+    
+    -- 检查是否达到完成条件且设置了自动提交
+    if self:IsCompleted() then
+        if self.quest.finishCommands then
+            self.player:ExecuteCommands(self.quest.finishCommands)
+        end
+        if self.quest.autoTurnIn then
+            self:Finish()
+        end
+    end
 end
 
 function AcceptedQuest:GetProgress()
     if self.quest.questType == "物品" then
-        return self.player.bag:GetItemAmount(self.quest.requiredItem)
+        local progress = self.player.bag:GetItemAmount(self.quest.requiredItem)
+        -- 检查是否达到完成条件且设置了自动提交
+        if progress >= self.quest.completionCount and self.quest.autoTurnIn then
+            self:Finish()
+        end
+        return progress
     elseif self.quest.questType == "变量" then
-        return self.player:GetVariable(self.quest.questVariable)
+        local progress = self.player:GetVariable(self.quest.questVariable)
+        -- 检查是否达到完成条件且设置了自动提交
+        if progress >= self.quest.completionCount and self.quest.autoTurnIn then
+            self:Finish()
+        end
+        return progress
     else
         return self.progress
     end

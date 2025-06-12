@@ -187,7 +187,6 @@ function _M:OnInit(node)
     self.sceneZone = self.node["场景区域"] ---@type TriggerBox
     if self.sceneZone then
         self.sceneZone.Touched:Connect(function (node)
-            print("EnterScene", node)
             if node then
                 local entity = Entity.node2Entity[node] ---@type Entity
                 if entity then

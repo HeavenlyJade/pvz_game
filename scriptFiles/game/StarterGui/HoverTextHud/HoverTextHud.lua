@@ -18,8 +18,8 @@ local HoverTextHud = ClassMgr.Class("HoverTextHud", ViewBase)
 
 local uiConfig = {
     uiName = "HoverTextHud",
-    layer = 10,
-    hideOnInit = true
+    layer = 0,
+    hideOnInit = false
 }
 
 function HoverTextHud:OnInit(node, config)

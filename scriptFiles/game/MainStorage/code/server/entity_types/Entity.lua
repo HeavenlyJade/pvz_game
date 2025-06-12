@@ -60,7 +60,6 @@ function _M:OnInit(info_)
 
     self.isDead = false -- 是否已死亡
     self.deleted = false -- 是否已删除
-    self.deathWaitTime = 0 -- 死亡等待时间
     self.combatTime = 0 -- 战斗时间计数器
 
     self.bb_title = nil -- 头顶名字和等级 billboard
@@ -121,6 +120,20 @@ function _M:SubscribeEvent(eventType, listener, priority)
     ServerEventManager.Subscribe(eventType, listener, priority, self.uuid)
 end
 
+function _M:ExecuteCommand(command, castParam)
+    local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
+    CommandManager.ExecuteCommand(command, self)
+end
+
+function _M:ExecuteCommands(commands, castParam)
+    for _, command in ipairs(commands) do
+        local success, result = pcall(self.ExecuteCommand, self, command, castParam)
+        if not success then
+            gg.log("命令执行错误: " .. command .. ", " .. tostring(result))
+            return false
+        end
+    end
+end
 
 function _M:SetModel(model, animator, stateMachine)
     self.actor.ModelId = model
@@ -433,7 +446,8 @@ end
 --- 获取变量
 ---@param key string 变量名
 ---@return number 变量值
-function _M:GetVariable(key)
+function _M:GetVariable(key, defaultValue)
+    defaultValue = defaultValue or 1
     -- 检查是否是特殊格式的变量名（category#variable）
     if string.find(key, "#") then
         local parts = {}
@@ -447,21 +461,18 @@ function _M:GetVariable(key)
 
             -- 创建并发布事件
             local evt = {
-                __class = "VariableEvent",
                 category = category,
                 variable = variable,
                 value = 0
             }
+            ServerEventManager.Publish("VariableEvent", evt)
 
-            -- 这里应该触发事件系统，但Lua中可能需要其他实现
-            ServerEventManager.Publish(evt)
-
-            return evt.value or 0
+            return evt.value or defaultValue
         end
     end
 
     -- 如果不是特殊格式或解析失败，返回普通变量值
-    return self.variables[key] or 0
+    return self.variables[key] or defaultValue
 end
 
 --- 增加变量值
@@ -498,6 +509,9 @@ end
 ---@param source? string 来源，默认为"BASE"
 ---@param refresh? boolean 是否刷新，默认为true
 function _M:AddStat(statName, amount, source, refresh)
+    if not amount then
+        return
+    end
     source = source or "BASE"
     refresh = refresh == nil and true or refresh
 
@@ -650,7 +664,7 @@ end
 
 --- 开始处理死亡逻辑, 如果要移除对象, 请调用 DestroyObject
 function _M:Die()
-    print("Mob Die", self.name, self.isDead)
+    print("Die Entity", self.isDead, self.name)
     if self.isDead then return end
     self.isDead = true
 
@@ -666,12 +680,14 @@ function _M:Die()
         deathTime = deathTime
     }
     ServerEventManager.Publish("EntityDeadEvent", evt)
-    if evt.deathTime > 0 then
-        ServerScheduler.add(function()
+    if not self.isPlayer then
+        if evt.deathTime > 0 then
+            ServerScheduler.add(function()
+                self:DestroyObject()
+            end, evt.deathTime, nil, "destroy_" .. self.uuid)
+        else
             self:DestroyObject()
-        end, evt.deathTime, nil, "destroy_" .. self.uuid)
-    else
-        self:DestroyObject()
+        end
     end
 end
 
@@ -697,6 +713,10 @@ function _M:DestroyObject()
         self.actor = nil
     end
     ServerEventManager.UnsubscribeByKey(self.uuid)
+end
+
+function _M:SetLevel(level)
+    self.level = level
 end
 
 --- 设置最大生命值
@@ -981,53 +1001,8 @@ end
 -- tick刷新
 function _M:update()
     self.tick = self.tick + 1
-
-    -- 处理死亡状态
-    if self.isDead then
-        if self.deathWaitTime > 0 then
-            self.deathWaitTime = self.deathWaitTime - 1
-            gg.log("死亡倒计时", self, self.deathWaitTime)
-        else
-            self:CompleteRespawn()
-        end
-        return
-    end
-
-    -- 更新战斗时间
     if self.combatTime > 0 then
         self.combatTime = self.combatTime - 1
-    end
-end
-
---- 完成复活
-function _M:CompleteRespawn()
-    self.isDead = false
-    self.deathWaitTime = 0
-
-    -- 重置属性
-    self:resetBattleData(true)
-
-    -- 重置目标
-    if self.isPlayer then
-        self.target = nil
-    end
-
-    -- 重置战斗时间
-    self.combatTime = 0
-    if self.modelPlayer then
-        self.modelPlayer:SwitchState("idle")
-    end
-
-    -- 同步状态到客户端
-    if self.isPlayer then
-        gg.network_channel:fireClient(self.uin, {
-            cmd = 'cmd_player_actor_stat',
-            v = 'revive',
-            hp = self.health,
-            hp_max = self.maxHealth,
-            mp = self.mana,
-            mp_max = self.maxMana
-        })
     end
 end
 

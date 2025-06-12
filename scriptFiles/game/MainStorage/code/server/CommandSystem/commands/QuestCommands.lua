@@ -11,7 +11,8 @@ local QuestCommand = {}
 
 ---@param player Player
 function QuestCommand.main(params, player)
-    if params["动作"] == "刷新" then
+    local action = params["动作"] or "事件"
+    if action == "刷新" then
         local keyword
         if params["刷新类型"] == "关键词" then
             keyword = params["关键词"]
@@ -21,7 +22,7 @@ function QuestCommand.main(params, player)
         player:RefreshQuest(keyword)
         return true
     end
-    if params["动作"] == "事件" then
+    if action == "事件" then
         player:ProcessQuestEvent(params["事件名"], params["推进数量"] or 1)
         return true
     end
@@ -32,7 +33,7 @@ function QuestCommand.main(params, player)
         return false
     end
 
-    if params["动作"] == "领取" then
+    if action == "领取" then
         -- 检查是否已接受或完成
         if quest:Has(player) then
             player:SendChatText("你已经接受或完成了该任务")
@@ -48,7 +49,7 @@ function QuestCommand.main(params, player)
             return false
         end
         
-    elseif params["动作"] == "放弃" then
+    elseif action == "放弃" then
         -- 检查是否已接受该任务
         if not player.quests[quest.name] then
             player:SendChatText("你未接受该任务")
@@ -62,7 +63,7 @@ function QuestCommand.main(params, player)
         player:SendChatText("已放弃任务: %s", quest.name)
         return true
         
-    elseif params["动作"] == "增加进度" then
+    elseif action == "增加进度" then
         -- 检查是否已接受该任务
         if not player.quests[quest.name] then
             player:SendChatText("你未接受该任务")
@@ -75,7 +76,7 @@ function QuestCommand.main(params, player)
         player:SendChatText("任务进度已更新: %s", quest.name)
         return true
         
-    elseif params["动作"] == "设置进度" then
+    elseif action == "设置进度" then
         -- 检查是否已接受该任务
         if not player.quests[quest.name] then
             player:SendChatText("你未接受该任务")
@@ -88,7 +89,7 @@ function QuestCommand.main(params, player)
         player:SendChatText("任务进度已设置: %s", quest.name)
         return true
         
-    elseif params["动作"] == "完成" then
+    elseif action == "完成" then
         -- 检查是否已接受该任务
         if not player.quests[quest.name] then
             player:SendChatText("你未接受该任务")

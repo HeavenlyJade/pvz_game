@@ -101,6 +101,9 @@ function MobType:Spawn(position, level, scene)
     if not position then
         return nil
     end
+    if type(position) == "table" then
+        position = position:ToVector3()
+    end
     local monster_ = Monster.New({ ---@type Monster
         position = position,
         mobType  = self,

@@ -68,7 +68,7 @@ function ItemCommands.give(params, player)
     if params["强化"] then
         item.enhanceLevel = tonumber(params["强化"]) or 0
     end
-    player.bag:AddItem(item)
+    player.bag:GiveItem(item)
     player.bag:Save()
     gg.log("玩家物品", player.bag.bag_items,player.bag.bag_index)
     return true

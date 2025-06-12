@@ -52,7 +52,6 @@ function Spell:OnInit( data )
     self.cooldown = data["冷却"] or 0
     self.cooldownSpeed = data["冷却加速"] or 1
     self.targetCooldown = data["各目标冷却"] or 0
-    self.targetCooldownRate = data["各目标冷却倍率"] or 0
     self.basePower = data["基础威力"] or 1
     self.castOnSelf = data["释放给自己"] or false
     self.delay = data["延迟"] or 0
@@ -230,6 +229,11 @@ end
 ---@return Action[] 特效动作数组
 function Spell:PlayEffect(effects, playFrom, playAt, param, targetMode)
     if not effects then return nil end
+    if type(playAt) == "userdata" then
+        print("播放特效时传入的目标点类型错误")
+        print(debug.traceback())
+        playAt = gg.Vec3.new(playAt)
+    end
     local actions = {}
     for i, effect in ipairs(effects) do
         if effect and effect:IsTargeter(targetMode) then

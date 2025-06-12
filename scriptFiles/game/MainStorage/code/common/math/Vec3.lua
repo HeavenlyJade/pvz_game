@@ -238,12 +238,14 @@ function Vec3:Normalize()
     return self
 end
 
+---@return Vector3
 function Vec3:GetPosition()
-    return self
+    return self:ToVector3()
 end
 
+---@return Vector3
 function Vec3:GetCenterPosition()
-    return self
+    return self:ToVector3()
 end
 
 --获取归一化向量
@@ -370,6 +372,7 @@ function Vec3:Equals(other)
     return math.abs(self.x - other.x) < r and math.abs(self.y - other.y) < r and math.abs(self.z - other.z) < r
 end
 
+---@return Vector3
 function Vec3:ToVector3()
     return Vector3.New(self.x, self.y, self.z)
 end

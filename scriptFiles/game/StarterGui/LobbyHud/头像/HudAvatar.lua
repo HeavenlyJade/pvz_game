@@ -44,9 +44,17 @@ function HudAvatar:OnInit(node, config)
             ele.extraParams = {
                 questId = child.name
             }
+            if child.count >= child.countMax then
+                ele.node.Icon = "sandboxId://textures/ui/主界面UI/头像信息UI/任务面板_1.png"
+            else
+                ele.node.Icon = "sandboxId://textures/ui/主界面UI/头像信息UI/任务面板.png"
+            end
             ele:Get("任务标题").node.Title = child.description
             ele:Get("任务数量").node.Title = string.format("%d/%d", child.count, child.countMax)
         end
+    end)
+    ClientEventManager.Subscribe("UpdateHud", function(data)
+        self:Get("名字背景/等级").node.Title = tostring(data.level)
     end)
     
     ClientEventManager.Subscribe("NavigateTo", function(data)

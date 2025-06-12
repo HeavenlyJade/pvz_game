@@ -46,74 +46,66 @@ end
 
 -- 更新冷却显示
 function HudCards:UpdateCooldownDisplay()
-    -- 更新主卡冷却显示
-    if self.mainCardButton then
-        for slotId, skill in pairs(self.mainCardData) do
-            local currentTime = os.clock()
-            local lastCastTime = lastCastTimes[skill.skillId]
-            if lastCastTime and skill.cooldownCache > 0 then
-                local elapsedTime = currentTime - lastCastTime
-                local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
-                local fillAmount = remainingTime / skill.cooldownCache
+    -- -- 更新主卡冷却显示
+    -- if self.mainCardButton then
+    --     for slotId, skill in pairs(self.mainCardData) do
+    --         local currentTime = os.clock()
+    --         local lastCastTime = lastCastTimes[skill.skillId]
+    --         if lastCastTime and skill.cooldownCache > 0 then
+    --             local elapsedTime = currentTime - lastCastTime
+    --             local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
+    --             local fillAmount = remainingTime / skill.cooldownCache
 
-                -- 更新主卡冷却显示
-                if self.mainCardButton.node["冷却条"] then
-                    self.mainCardButton.node["冷却条"].FillAmount = fillAmount
-                end
+    --             -- 更新主卡冷却显示
 
-                -- 检查是否在冷却中
-                local isOnCooldown = remainingTime > 0
-                self.mainCardButton:SetTouchEnable(not isOnCooldown, false)
-                if isOnCooldown then
-                    if self.mainCardButton.node["卡片框"] then
-                        self.mainCardButton.node["卡片框"].FillColor = ColorQuad.New(150, 150, 150, 255)
+    --             if self.mainCardButton.node["冷却条"] then
+    --                 self.mainCardButton.node["冷却条"].FillAmount = fillAmount
+    --             end
+
+    --             -- 检查是否在冷却中
+    --             local isOnCooldown = remainingTime > 0
+    --             self.mainCardButton:SetTouchEnable(not isOnCooldown, false)
+    --             if isOnCooldown then
+    --                 if self.mainCardButton.node["卡片框"] then
+    --                     self.mainCardButton.node["卡片框"].FillColor = ColorQuad.New(150, 150, 150, 255)
+    --                 end
+    --             else
+    --                 if self.mainCardButton.node["卡片框"] then
+    --                     self.mainCardButton.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
+    --                 end
+    --             end
+    --         end
+    --         break -- 只有一个主卡
+    --     end
+    -- end
+
+    function HudCards:UpdateCooldownDisplay()
+        if not self.cardsList then return end
+    
+        -- 遍历所有卡片
+        for i = 1, self.cardsList:GetChildCount() do
+            local card = self.cardsList:GetChild(i) ---@type ViewButton
+            local skillId = equippedSkills[i + 1]
+            local skill = skills[skillId]
+    
+            if skill then
+                local currentTime = os.clock()
+                local lastCastTime = lastCastTimes[skillId]
+                if lastCastTime and skill.cooldownCache > 0 then
+                    local elapsedTime = currentTime - lastCastTime
+                    local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
+                    local fillAmount = remainingTime / skill.cooldownCache
+                    -- 更新冷却显示
+                    if card.node["冷却条"] then
+                        card.node["冷却条"].FillAmount = fillAmount
                     end
-                else
-                    if self.mainCardButton.node["卡片框"] then
-                        self.mainCardButton.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
-                    end
-                end
-            end
-            break -- 只有一个主卡
-        end
-    end
-
-    -- 更新副卡冷却显示
-    if not self.cardsList then return end
-
-    -- 获取排序后的槽位列表
-    local subCardSlots = {}
-    for slotId, skill in pairs(self.subCardData) do
-        table.insert(subCardSlots, slotId)
-    end
-    table.sort(subCardSlots)
-
-    -- 遍历所有副卡
-    for i, slotId in ipairs(subCardSlots) do
-        local card = self.cardsList:GetChild(i) ---@type ViewButton
-        local skill = self.subCardData[slotId]
-
-        if skill then
-            local currentTime = os.clock()
-            local lastCastTime = lastCastTimes[skill.skillId]
-            if lastCastTime and skill.cooldownCache > 0 then
-                local elapsedTime = currentTime - lastCastTime
-                local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
-                local fillAmount = remainingTime / skill.cooldownCache
-                -- 更新冷却显示
-                if card.node["冷却条"] then
-                    card.node["冷却条"].FillAmount = fillAmount
-                end
-
-                -- 检查是否在冷却中
-                local isOnCooldown = remainingTime > 0
-                card:SetTouchEnable(not isOnCooldown, false)
-                if isOnCooldown then
-                    if card.node["卡片框"] then
+    
+                    -- 检查是否在冷却中
+                    local isOnCooldown = remainingTime > 0
+                    card:SetTouchEnable(not isOnCooldown, false)
+                    if isOnCooldown then
                         card.node["卡片框"].FillColor = ColorQuad.New(150, 150, 150, 255)
-                    end
-                else
-                    if card.node["卡片框"] then
+                    else
                         card.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
                     end
                 end
@@ -196,39 +188,58 @@ function HudCards:OnEquipSkillCooldownUpdate(data)
     skill.cooldownCache = data.cooldown
 end
 
+-- -- 处理技能可释放状态更新事件
+-- ---@param data {cmd: string, castabilityData: table<string, boolean>}
+-- function HudCards:OnUpdateSkillCastability(data)
+--     if not data or not data.castabilityData then return end
+
+--     -- 更新主卡可释放状态
+--     if self.mainCardButton then
+--         for slotId, skill in pairs(self.mainCardData) do
+--             local canCast = data.castabilityData[skill.skillId]
+--             if canCast ~= nil then
+--                 self.mainCardButton:SetTouchEnable(canCast)
+--             end
+--             break -- 只有一个主卡
+--         end
+--     end
+
+--     -- 更新副卡可释放状态
+--     if not self.cardsList then return end
+
+--     -- 获取排序后的槽位列表
+--     local subCardSlots = {}
+--     for slotId, skill in pairs(self.subCardData) do
+--         table.insert(subCardSlots, slotId)
+--     end
+--     table.sort(subCardSlots)
+
+--     -- 遍历所有副卡
+--     for i, slotId in ipairs(subCardSlots) do
+--         local card = self.cardsList:GetChild(i) ---@cast card ViewButton
+--         local skill = self.subCardData[slotId]
+
+--         if skill then
+--             local canCast = data.castabilityData[skill.skillId]
+--             if canCast ~= nil then
+--                 card:SetTouchEnable(canCast)
+--             end
+--         end
+--     end
+-- end
+
 -- 处理技能可释放状态更新事件
 ---@param data {cmd: string, castabilityData: table<string, boolean>}
 function HudCards:OnUpdateSkillCastability(data)
     if not data or not data.castabilityData then return end
 
-    -- 更新主卡可释放状态
-    if self.mainCardButton then
-        for slotId, skill in pairs(self.mainCardData) do
-            local canCast = data.castabilityData[skill.skillId]
-            if canCast ~= nil then
-                self.mainCardButton:SetTouchEnable(canCast)
-            end
-            break -- 只有一个主卡
-        end
-    end
+    -- 遍历所有卡片
+    for i = 1, self.cardsList:GetChildCount() do
+        local card = self.cardsList:GetChild(i) ---@type ViewButton
+        local skillId = equippedSkills[i + 1]
 
-    -- 更新副卡可释放状态
-    if not self.cardsList then return end
-
-    -- 获取排序后的槽位列表
-    local subCardSlots = {}
-    for slotId, skill in pairs(self.subCardData) do
-        table.insert(subCardSlots, slotId)
-    end
-    table.sort(subCardSlots)
-
-    -- 遍历所有副卡
-    for i, slotId in ipairs(subCardSlots) do
-        local card = self.cardsList:GetChild(i) ---@cast card ViewButton
-        local skill = self.subCardData[slotId]
-
-        if skill then
-            local canCast = data.castabilityData[skill.skillId]
+        if skillId then
+            local canCast = data.castabilityData[skillId]
             if canCast ~= nil then
                 card:SetTouchEnable(canCast)
             end
@@ -329,7 +340,6 @@ function HudCards:UpdateSubCardDisplay()
     for i, slotId in ipairs(subCardSlots) do
         local card = self.cardsList:GetChild(i) ---@cast card ViewButton
         local skill = self.subCardData[slotId]
-        card.node.Name = skill.skillName
 
         if skill and skill.skillType then
             -- 有技能时显示技能信息
@@ -418,6 +428,7 @@ function HudCards:RebindSubCardEvents()
                             decal.Length = 100
                             decal.Cullback = false
                         else
+                            decal.Visible = true
                             decal.Parent = targetObj
                         end
                         decal.LocalScale = skill.skillType.indicatorScale
@@ -470,7 +481,6 @@ function HudCards:RebindSubCardEvents()
 
                 -- 发送技能释放事件（使用新的数据结构）
                 if self.selectedSkill then
-
                     local skillName = skill.skillName
                     gg.log("释放副卡技能:",self.selectedSkill,skillName,self.selectedSkill[skillName])
                     local direction = CameraController.GetForward()
@@ -490,7 +500,7 @@ function HudCards:RebindSubCardEvents()
                         targetPos = targetPos,
                         direction = direction
                     })
-                    gg.log("释放副卡技能:", self.selectedSkill[skillName])
+                    gg.log("释放副卡技能:", self.selectedSkill[skillName], targetPos)
                 end
             end
 

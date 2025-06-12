@@ -38,16 +38,20 @@ function Quest:OnInit(data)
     self.questVariable = data["任务变量"]
     self.requiredItem = ItemTypeConfig.Get(data["需求物品"])
     self.eventName = data["事件名"]
-    self.completionRewards = data["完成奖励"] ---@type table<string, number>
-    self.mailRewards = data["完成奖励_邮件"] ---@type table<string, number>
-    self.completionCommands = data["完成指令"] ---@type string[]
+    self.completionRewards = data["提交奖励"] ---@type table<string, number>
+    self.mailRewards = data["提交奖励_邮件"] ---@type table<string, number>
+    self.completionCommands = data["提交指令"] ---@type string[]
+    self.finishCommands = data["完成指令"] ---@type string[]
     self.gotoSceneNode = data["前往场景节点"] ---@type string
     self.focusOnUI = data["聚焦场景UI"]
+    if not self.focusOnUI["聚焦UI"] then
+        self.focusOnUI = nil
+    end
     self.nextQuest = data["自动领取下一任务"]
     self.refreshType = data["刷新类型"] or QuestRefreshType.NONE
+    self.autoTurnIn = data["自动提交兑奖"] or false
     
     self.autoAcceptOnRefresh = data["刷新时自动领取"] or false
-    self.unfinishedCommands = data["未完成时执行指令"] or {} ---@type string[]
     self.showProgress = data["显示完成进度"]
     
     self.questList = data["任务列表"]

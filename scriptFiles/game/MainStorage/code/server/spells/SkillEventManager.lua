@@ -193,16 +193,24 @@ function SkillEventManager.HandleUpgradeSkill(evt)
 
     -- 根据技能类型进行不同的检查
     if skillType.category == 0 then
-        -- 主卡技能：检查父类技能是否存在
-        local prerequisite = skillType.prerequisite or {}
-        for i, preSkillType in ipairs(prerequisite) do
-                    if not (player.skills and player.skills[preSkillType.name]) then
-            gg.log("父类技能不存在，无法升级: " .. skillName .. " 缺少前置技能: " .. preSkillType.name)
-            return
+        -- 主卡技能：根据是否为入口技能进行不同的检查
+        if skillType.isEntrySkill then
+            -- 入口技能：检查技能本身是否存在
+            if not existingSkill then
+                gg.log("入口技能不存在，无法升级: " .. skillName)
+                return
+            end
+        else
+            -- 非入口技能：检查父类技能是否存在
+            local prerequisite = skillType.prerequisite or {}
+            for i, preSkillType in ipairs(prerequisite) do
+                if not (player.skills and player.skills[preSkillType.name]) then
+                    gg.log("父类技能不存在，无法升级: " .. skillName .. " 缺少前置技能: " .. preSkillType.name)
+                    return
+                end
+            end
         end
-        end
-        
-        
+
         -- 检查是否已达到最大等级
         if existingSkill and existingSkill.level >= skillType.maxLevel then
             gg.log("技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
@@ -383,14 +391,29 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
 
     gg.log("开始一键强化技能: " .. skillName .. " 从等级 " .. currentLevel .. " 到等级 " .. targetLevel)
 
-    -- 一次性计算总升级成本
+    -- 使用一键强化素材公式计算总升级成本
     local totalCost = {}
-    for level = currentLevel + 1, targetLevel do
-        local levelCost = skillType:GetCostAtLevel(level)
-        if levelCost then
-            for resourceName, amount in pairs(levelCost) do
+    
+    -- 优先使用一键强化素材公式
+    if skillType.oneKeyUpgradeCosts then
+        gg.log("使用一键强化素材公式计算成本")
+        local oneKeyUpgradeCosts = skillType:GetOneKeyUpgradeCostsAtLevel(targetLevel)
+        if oneKeyUpgradeCosts then
+            for resourceName, amount in pairs(oneKeyUpgradeCosts) do
                 local consumeAmount = math.abs(amount)
-                totalCost[resourceName] = (totalCost[resourceName] or 0) + consumeAmount
+                totalCost[resourceName] = consumeAmount
+            end
+        end
+    else
+        gg.log("未找到一键强化素材公式，使用普通升级成本累加")
+        -- 如果没有一键强化素材公式，则使用原来的逐级累加方式
+        for level = currentLevel + 1, targetLevel do
+            local levelCost = skillType:GetCostAtLevel(level)
+            if levelCost then
+                for resourceName, amount in pairs(levelCost) do
+                    local consumeAmount = math.abs(amount)
+                    totalCost[resourceName] = (totalCost[resourceName] or 0) + consumeAmount
+                end
             end
         end
     end
@@ -780,7 +803,7 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
 
     -- 获取当前星级
     local currentStar = existingSkill.star_level or 0
-    local maxStar = 7  
+    local maxStar = 7
 
     -- 检查是否已达到最大星级
     if currentStar >= maxStar then

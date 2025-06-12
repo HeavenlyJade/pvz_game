@@ -256,7 +256,7 @@ end
 ---@return boolean 是否成功释放
 function AOESpell:CastReal(caster, target, param)
     local log = {}
-    local loc = target:GetPosition()
+    local loc = self:GetPosition(target)
     if self.printInfo then
         table.insert(log, string.format("%s: 目标位置[%.1f, %.1f, %.1f]", self.spellName, loc.x, loc.y, loc.z))
     end

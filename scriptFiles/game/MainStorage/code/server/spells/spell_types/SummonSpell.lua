@@ -182,6 +182,7 @@ function SummonSpell:CastReal(caster, target, param)
 
     -- 获取召唤位置
     local position
+    gg.log("spawnAtTargetPos", self.summonAtTargetPos, target, self:GetPosition(target))
     if self.summonAtTargetPos and target then
         position = self:GetPosition(target)
     else

@@ -78,7 +78,7 @@ function AfkSpot:OnInit(data, actor)
                 return
             end
             -- 检查挂机数量上限
-            if GetPlayerAfkCount(player) >= player:GetVariable("最大副卡挂机数") then
+            if GetPlayerAfkCount(player) >= (player:GetVariable("最大副卡挂机数")+1) then
                 player:SendHoverText("副卡挂机已达上限!")
                 return
             end
@@ -90,6 +90,8 @@ function AfkSpot:OnInit(data, actor)
                 self.occupiedEntity.EnablePhysics = false
                 self.occupiedEntity.ModelId = skill.skillType.battleModel
                 self.occupiedEntity["Animator"].ControllerAsset = skill.skillType.battleAnimator
+                self.occupiedEntity.LocalScale = skill.skillType.afkScale
+                gg.log("self.occupiedEntity", skill.skillType.name, skill.skillType.afkScale)
                 -- local ModelPlayer = require(MainStorage.code.server.graphic.ModelPlayer) ---@type ModelPlayer
                 -- ModelPlayer.FetchModelSize(self.occupiedEntity, function (modelSize)
                 --     local selfSize = self:GetSize()
@@ -113,7 +115,7 @@ function AfkSpot:CanEnter(player)
     if self.occupiedByPlayer then
         return self.occupiedByPlayer == player
     end
-    if GetPlayerAfkCount(player) >= player:GetVariable("最大副卡挂机数") then
+    if GetPlayerAfkCount(player) >= (player:GetVariable("最大副卡挂机数")+1) then
         player:SendHoverText("副卡挂机已达上限!")
         return false
     end
@@ -155,12 +157,12 @@ function AfkSpot:GetInteractName(player)
         if self.occupiedByPlayer then
             --已有玩家在挂机
             if player == self.occupiedByPlayer then
-                return string.format("取消挂机:%s", self.selectedSkill)
+                return string.format("取消:%s", self.selectedSkill)
             else
                 return nil
             end
         else
-            if GetPlayerAfkCount(player) < player:GetVariable("最大副卡挂机数") then
+            if GetPlayerAfkCount(player) < (player:GetVariable("最大副卡挂机数")+1) then
                 return "选择副卡挂机"
             else
                 return "副卡挂机已达上限"

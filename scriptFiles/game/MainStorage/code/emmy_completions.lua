@@ -2934,8 +2934,8 @@
 ---@field x number x坐标
 ---@field y number y坐标
 ---@field z number z坐标
----@field New fun(x: number, y: number, z: number) Vector3 构造
----@field Normalize fun(self: Vector3) Vector3 归一化向量（向量方向计算）
+---@field New fun(x: number, y: number, z: number):Vector3 构造
+---@field Normalize fun(self: Vector3):Vector3 归一化向量（向量方向计算）
 
 
 
