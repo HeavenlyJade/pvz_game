@@ -33,19 +33,19 @@ function SkillType:OnInit(data)
     self.targetMode = data["目标模式"]
     self.category = data["技能分类"]
     self.upgradeCosts = data["升级需求素材"]
+    self.maxGrowthFormula = data["最大经验"]
+    self.oneKeyUpgradeCosts = data["一键强化素材"]
     self.quality = data["技能品级"] or "R"
     self.battleModel = data["更改模型"]
     self.battleAnimator = data["更改动画"]
     self.battleStateMachine = data["更改状态机"]
     self.afkScale = gg.Vec3.new(data["副卡挂机尺寸"]):ToVector3()
     self.freezesMove = data["禁止移动"]
-    self.maxGrowthFormula = data["最大经验"]
-    self.oneKeyUpgradeCosts = data["一键强化素材"]
+
     local is = (data["指示器半径"] or 3) * 2
     self.indicatorScale = Vector3.New(is, is, is)
     self.indicatorRange = data["最大施法距离"] or 3000
     self.isEquipable = data["主动释放魔法"] or nil
-
 
     -- 加载被动词条
     self.passiveTags = {}
@@ -80,19 +80,16 @@ function SkillType:OnInit(data)
 end
 
 function SkillType:GetMaxGrowthAtLevel(level)
-    if not self.maxGrowthFormula then
-        return nil
-    end
     local expr = self.maxGrowthFormula:gsub("LVL", tostring(level))
-    if not expr:match("^[%d%+%-%*%/%%%^%(%).%s]+$") then
-        print(string.format("技能%s的最大经验公式包含非法字符: %s", self.name, expr))
+    if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
+        print(string.format("技能%s的成长上限包含非法字符: %s", self["名字"], expr))
         return 0
     end
+
     local result = gg.eval(expr)
     return result
 end
 
---- 一键强化的这个素材公式
 function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
     if not self.oneKeyUpgradeCosts then
         return {}

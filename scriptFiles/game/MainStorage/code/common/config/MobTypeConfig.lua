@@ -246,11 +246,7 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil,
-        ["闲置音效"] = nil,
-        ["攻击音效"] = nil,
-        ["受击音效"] = nil,
-        ["死亡音效"] = nil
+        ["offset"] = nil
     }),
     ["副-召唤物-辣椒投手"] = MobType.New({
         ["怪物ID"] = "副-召唤物-辣椒投手",
@@ -295,11 +291,7 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil,
-        ["闲置音效"] = nil,
-        ["攻击音效"] = nil,
-        ["受击音效"] = nil,
-        ["死亡音效"] = nil
+        ["offset"] = nil
     }),
     ["副-召唤物-魅惑菇"] = MobType.New({
         ["怪物ID"] = "副-召唤物-魅惑菇",
@@ -333,11 +325,7 @@ local function LoadConfig()
         ["显示血条"] = true,
         ["额外攻击距离"] = 100,
         ["攻击时点"] = 0.5,
-        ["offset"] = nil,
-        ["闲置音效"] = nil,
-        ["攻击音效"] = nil,
-        ["受击音效"] = nil,
-        ["死亡音效"] = nil
+        ["offset"] = nil
     }),
     ["test"] = MobType.New({
         ["怪物ID"] = "test",

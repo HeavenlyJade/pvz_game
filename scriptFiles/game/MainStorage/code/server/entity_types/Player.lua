@@ -416,7 +416,6 @@ function _M:syncSkillData()
             slot = skill.equipSlot,
             growth = skill.growth,
             star_level = skill.star_level,
-            currentExp = skill.currentExp 
         }
 
         -- 记录已装备的技能
@@ -488,8 +487,7 @@ function _M:LearnSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = 0,
-            star_level = 1,
-            currentExp = 0
+            star_level = 1
         })
         self:saveSkillConfig()
         return true
@@ -544,8 +542,7 @@ function _M:UpgradeSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = skillSlot,
-            star_level = 1,
-            currentExp = 0
+            star_level = 1
         })
         self:SetLevel(self.level + skillType.levelUpPlayer)
         self:saveSkillConfig()

@@ -1050,7 +1050,7 @@ function CardsGui:RegisterMainCardFunctionButtons()
 end
 -- 处理技能同步数据
 function CardsGui:HandleSkillSync(data)
-     gg.log("CardsGui获取来自服务端的技能数据", data)
+     -- gg.log("CardsGui获取来自服务端的技能数据", data)
     if not data or not data.skillData then return end
     local skillDataDic = data.skillData.skills
 
@@ -1567,7 +1567,9 @@ function CardsGui:AutoSelectFirstMainCard()
         -- === 新增：自动点击技能树中的主卡框 ===
         self:AutoClickMainCardFrameInSkillTree(targetSkillId)
 
+        gg.log("✅ 自动选择主卡成功:", targetSkillId)
     else
+        gg.log("❌ 未找到可自动选择的主卡按钮")
     end
 end
 
@@ -1582,7 +1584,10 @@ function CardsGui:AutoClickMainCardFrameInSkillTree(skillId)
         -- 模拟点击技能树中的主卡框
         -- 调用OnSkillTreeNodeClick方法来处理点击逻辑
         self:OnSkillTreeNodeClick(nil, mainCardFrameButton, mainCardFrameButton.node)
+
+        gg.log("✅ 自动点击技能树主卡框成功:", skillId)
     else
+        gg.log("❌ 未找到技能树中的主卡框按钮:", skillId)
     end
 end
 
@@ -1599,6 +1604,7 @@ function CardsGui:AutoSelectFirstSubCard()
         if buttonState and buttonState.button and buttonState.serverUnlocked then
             targetButton = buttonState.button
             targetSkillId = skillName
+            gg.log("自动选择已解锁的副卡:", skillName)
             break
         end
     end
@@ -1610,6 +1616,7 @@ function CardsGui:AutoSelectFirstSubCard()
             if buttonState and buttonState.button then
                 targetButton = buttonState.button
                 targetSkillId = skillName
+                gg.log("自动选择第一个副卡（未解锁）:", skillName)
                 break
             end
         end
@@ -1619,7 +1626,10 @@ function CardsGui:AutoSelectFirstSubCard()
     if targetButton and targetSkillId then
         -- 模拟副卡按钮点击
         self:OnSubCardButtonClick(nil, targetButton)
+
+        gg.log("✅ 自动选择副卡成功:", targetSkillId)
     else
+        gg.log("❌ 未找到可自动选择的副卡按钮")
     end
 end
 
@@ -1806,6 +1816,8 @@ function CardsGui:LoadMainCardsAndClone()
 
     -- 使用美化的打印函数显示技能树结构
     --SkillTypeUtils.PrintSkillForest(skillMainTrees)
+
+    -- 克隆技能树纵列表（为所有配置的主卡预生成技能树）
     self:CloneVerticalListsForSkillTrees(skillMainTrees)
 end
 
@@ -3065,7 +3077,7 @@ function CardsGui:CheckSkillUpgradeResources(skillName)
     end
 end
 
--- 计算一键强化的总消耗（优先使用一键强化素材公式）
+-- 计算一键强化的总消耗（逐级检查资源限制）
 function CardsGui:CalculateUpgradeAllCost(skillName)
     local skillType = SkillTypeConfig.Get(skillName)
     if not skillType then
@@ -3080,102 +3092,59 @@ function CardsGui:CalculateUpgradeAllCost(skillName)
         return
     end
 
+
     -- 获取玩家当前拥有的资源（创建副本，避免修改原始数据）
     local availableResources = {}
     for resourceName, amount in pairs(self.playerInventory or {}) do
         availableResources[resourceName] = amount
     end
 
+    -- 逐级计算消耗，找到最高可达等级
     local cumulativeCost = {}  -- 累计总消耗
     local levelDetails = {}    -- 每一级的详细信息
     local maxAchievableLevel = currentLevel  -- 最高可达等级
     local isResourceLimited = false  -- 是否受资源限制
     local limitingResource = nil     -- 限制资源名称
 
-    -- 优先使用一键强化素材公式
-    if skillType.oneKeyUpgradeCosts then
-        gg.log("使用一键强化素材公式计算成本")
-        
-        -- 使用一键强化素材公式计算总成本
-        local oneKeyUpgradeCosts = skillType:GetOneKeyUpgradeCostsAtLevel(maxLevel)
-        if oneKeyUpgradeCosts then
-            for resourceName, amount in pairs(oneKeyUpgradeCosts) do
+    for level = currentLevel + 1, maxLevel do
+        local levelCost = skillType:GetOneKeyUpgradeCostsAtLevel(level)
+
+        if levelCost then
+            -- 检查这一级是否有足够资源
+            local canUpgradeThisLevel = true
+            local thisLevelCost = {}
+
+            for resourceName, amount in pairs(levelCost) do
                 local consumeAmount = math.abs(amount)
-                cumulativeCost[resourceName] = consumeAmount
-            end
-        end
-        
-        -- 检查资源是否充足
-        local canFullUpgrade = true
-        for resourceName, needAmount in pairs(cumulativeCost) do
-            local available = availableResources[resourceName] or 0
-            if available < needAmount then
-                canFullUpgrade = false
-                isResourceLimited = true
-                limitingResource = resourceName
-                break
-            end
-        end
-        
-        if canFullUpgrade then
-            maxAchievableLevel = maxLevel
-            levelDetails[maxLevel] = "一键强化到满级 [使用一键强化素材公式]"
-        else
-            -- 如果一键强化资源不足，回退到逐级计算
-            gg.log("一键强化资源不足，回退到逐级计算")
-            cumulativeCost = {}
-            levelDetails = {}
-        end
-    end
-    
-    -- 如果没有一键强化公式或一键强化资源不足，使用逐级计算
-    if not skillType.oneKeyUpgradeCosts or isResourceLimited then
-        gg.log("使用逐级累加方式计算升级成本")
-        cumulativeCost = {}
-        levelDetails = {}
-        maxAchievableLevel = currentLevel
-        isResourceLimited = false
-        limitingResource = nil
-        
-        for level = currentLevel + 1, maxLevel do
-            local levelCost = skillType:GetCostAtLevel(level)
+                thisLevelCost[resourceName] = consumeAmount
 
-            if levelCost then
-                -- 检查这一级是否有足够资源
-                local canUpgradeThisLevel = true
-                local thisLevelCost = {}
+                -- 检查累计消耗后是否还有足够资源
+                local totalNeeded = (cumulativeCost[resourceName] or 0) + consumeAmount
+                local available = availableResources[resourceName] or 0
 
-                for resourceName, amount in pairs(levelCost) do
-                    local consumeAmount = math.abs(amount)
-                    thisLevelCost[resourceName] = consumeAmount
-
-                    -- 检查累计消耗后是否还有足够资源
-                    local totalNeeded = (cumulativeCost[resourceName] or 0) + consumeAmount
-                    local available = availableResources[resourceName] or 0
-
-                    if available < totalNeeded then
-                        canUpgradeThisLevel = false
-                        isResourceLimited = true
-                        limitingResource = resourceName
-                        break
-                    end
-                end
-
-                if canUpgradeThisLevel then
-                    -- 更新累计消耗
-                    local levelInfo = {}
-                    for resourceName, consumeAmount in pairs(thisLevelCost) do
-                        cumulativeCost[resourceName] = (cumulativeCost[resourceName] or 0) + consumeAmount
-                        table.insert(levelInfo, resourceName .. ":" .. consumeAmount)
-                    end
-
-                    maxAchievableLevel = level
-                    if #levelInfo > 0 then
-                        levelDetails[level] = "等级" .. (level-1) .. "→" .. level .. " [" .. table.concat(levelInfo, ", ") .. "]"
-                    end
-                else
+                if available < totalNeeded then
+                    canUpgradeThisLevel = false
+                    isResourceLimited = true
+                    limitingResource = resourceName
                     break
                 end
+
+            end
+
+            if canUpgradeThisLevel then
+                -- 更新累计消耗
+                local levelInfo = {}
+                for resourceName, consumeAmount in pairs(thisLevelCost) do
+                    cumulativeCost[resourceName] = (cumulativeCost[resourceName] or 0) + consumeAmount
+                    table.insert(levelInfo, resourceName .. ":" .. consumeAmount)
+                end
+
+                maxAchievableLevel = level
+                if #levelInfo > 0 then
+                    levelDetails[level] = "等级" .. (level-1) .. "→" .. level .. " [" .. table.concat(levelInfo, ", ") .. "]"
+                end
+            else
+                break
             end
         end
     end

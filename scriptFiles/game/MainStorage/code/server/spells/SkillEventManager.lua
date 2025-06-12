@@ -391,31 +391,20 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
 
     gg.log("开始一键强化技能: " .. skillName .. " 从等级 " .. currentLevel .. " 到等级 " .. targetLevel)
 
-    -- 使用一键强化素材公式计算总升级成本
+    -- 一次性计算总升级成本
     local totalCost = {}
-    
-    -- 优先使用一键强化素材公式
     if skillType.oneKeyUpgradeCosts then
         gg.log("使用一键强化素材公式计算成本")
-        local oneKeyUpgradeCosts = skillType:GetOneKeyUpgradeCostsAtLevel(targetLevel)
-        if oneKeyUpgradeCosts then
-            for resourceName, amount in pairs(oneKeyUpgradeCosts) do
-                local consumeAmount = math.abs(amount)
-                totalCost[resourceName] = consumeAmount
-            end
+        totalCost = skillType:GetOneKeyUpgradeCostsAtLevel(targetLevel)
+        if not totalCost or next(totalCost) == nil then
+            gg.log("一键强化公式配置为空，无法进行一键强化")
+            player:SendHoverText("该技能没有一键强化配置，无法一键强化！")
+            return
         end
     else
-        gg.log("未找到一键强化素材公式，使用普通升级成本累加")
-        -- 如果没有一键强化素材公式，则使用原来的逐级累加方式
-        for level = currentLevel + 1, targetLevel do
-            local levelCost = skillType:GetCostAtLevel(level)
-            if levelCost then
-                for resourceName, amount in pairs(levelCost) do
-                    local consumeAmount = math.abs(amount)
-                    totalCost[resourceName] = (totalCost[resourceName] or 0) + consumeAmount
-                end
-            end
-        end
+        gg.log("未找到一键强化素材公式，无法一键强化")
+        player:SendHoverText("该技能没有一键强化配置，无法一键强化！")
+        return
     end
 
     gg.log("一键强化总成本计算完成:", totalCost)

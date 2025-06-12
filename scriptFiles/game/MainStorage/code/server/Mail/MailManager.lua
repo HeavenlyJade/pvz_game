@@ -255,7 +255,7 @@ function MailManager:GetPersonalMailList(uin)
     end
     local playerMail = player.mail.player_mail_data_
     local result = {}
-    
+
     -- 过滤非删除状态的邮件
     for mailId, mail in pairs(playerMail.mails) do
         if mail.status < self.MAIL_STATUS.DELETED then  -- 非删除状态

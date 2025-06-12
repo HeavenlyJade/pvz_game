@@ -10,7 +10,6 @@ local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) 
 ---@field level number 技能等级
 ---@field equipSlot number 装备槽位
 ---@field cooldownCache number 冷却缓存
----@field currentExp number 当前经验
 local Skill = ClassMgr.Class("Skill")
 
 function Skill:OnInit(player, data)
@@ -22,8 +21,6 @@ function Skill:OnInit(player, data)
     self.cooldownCache = 0
     self.afking = false
     self.star_level = data["star_level"] or 0
-    self.currentExp = data["currentExp"] or 0
-    
 
     -- 添加技能名称属性方便访问
     self.skillName = data["skill"]
@@ -124,8 +121,7 @@ function Skill:GetSaveData()
         level = self.level,
         equipSlot = self.equipSlot,
         growth = self.growth,
-        star_level = self.star_level,
-        currentExp = self.currentExp
+        star_level = self.star_level
     }
 end
 
