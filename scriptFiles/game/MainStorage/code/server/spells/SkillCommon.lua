@@ -270,4 +270,91 @@ function SkillCommon.SendMessageAndLog(player, message, isError)
     end
 end
 
+--[[
+===================================
+技能数据更新相关公共方法
+===================================
+]]
+
+--- 设置技能等级和经验（管理员指令用）
+---@param player Player 玩家对象
+---@param skillName string 技能名称
+---@param level number 目标等级
+---@param growth number|nil 目标经验值（可选，默认为0）
+---@return table 操作结果 {success, errorCode, skillData}
+function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
+    growth = growth or 0
+    
+    -- 验证技能配置
+    local skillType, configError = SkillCommon.ValidateSkillConfig(skillName)
+    if not skillType then
+        return {
+            success = false,
+            errorCode = configError,
+            skillData = nil
+        }
+    end
+
+    -- 检查等级是否有效
+    local maxLevel = skillType.maxLevel or 1
+    if level < 0 or level > maxLevel then
+        return {
+            success = false,
+            errorCode = SkillEventConfig.ERROR_CODES.INVALID_PARAMETERS,
+            skillData = nil
+        }
+    end
+
+    -- 检查经验是否有效
+    if growth < 0 then
+        return {
+            success = false,
+            errorCode = SkillEventConfig.ERROR_CODES.INVALID_PARAMETERS,
+            skillData = nil
+        }
+    end
+
+    -- 检查玩家是否拥有该技能
+    local existingSkill = player.skills[skillName]
+    
+    if not existingSkill then
+        return {
+                success = false,
+                errorCode = SkillEventConfig.ERROR_CODES.SKILL_NOT_OWNED,
+                skillData = nil
+            }
+      
+    end
+
+    -- 记录原始数据
+    local originalLevel = existingSkill.level 
+    local originalGrowth = existingSkill.growth 
+    -- 设置新的等级和经验
+    if level then
+        existingSkill.level = level
+    end
+    if growth then
+        existingSkill.growth = growth
+    end
+
+
+    -- 保存玩家数据
+    player:saveSkillConfig()
+
+    return {
+        success = true,
+        errorCode = SkillEventConfig.ERROR_CODES.SUCCESS,
+        skillData = {
+            skillName = skillName,
+            level = existingSkill and existingSkill.level or 0,
+            growth = existingSkill and existingSkill.growth or 0,
+            slot = existingSkill and existingSkill.equipSlot or 0,
+            maxLevel = maxLevel,
+            removed = (level == 0),
+            originalLevel = originalLevel,
+            originalGrowth = originalGrowth
+        }
+    }
+end
+
 return SkillCommon

@@ -101,6 +101,53 @@ end
 
 ---@param params table
 ---@param player Player
+function SkillCommands.setLevel(params, player)
+    local skillName = params["skillName"]
+    local level = params["level"] or 1
+    local growth = params["growth"] or 0
+
+    -- 使用SkillCommon的公共方法设置技能等级和经验
+    local result = SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
+
+    if not result.success then
+        local errorMsg = SkillCommon.FormatErrorMessage(
+            "设置技能等级失败: " .. SkillEventConfig.GetErrorMessage(result.errorCode),
+            player,
+            skillName
+        )
+        SkillCommon.SendMessageAndLog(player, errorMsg, true)
+        return
+    end
+
+    local skillData = result.skillData
+    
+    -- 生成成功消息
+    local successMsg
+    if skillData.removed then
+        successMsg = SkillCommon.FormatSuccessMessage(
+            "技能已移除（等级设为0）",
+            player,
+            skillName
+        )
+    else
+        successMsg = SkillCommon.FormatSuccessMessage(
+            string.format("技能等级和经验设置成功：%d级→%d级，经验 %d→%d", 
+                skillData.originalLevel, skillData.level, skillData.originalGrowth, skillData.growth),
+            player,
+            skillName
+        )
+    end
+    SkillCommon.SendMessageAndLog(player, successMsg, false)
+
+    -- 发送响应到客户端
+    gg.network_channel:fireClient(player.uin, {
+        cmd = SkillEventConfig.RESPONSE.SET_LEVEL,
+        data = skillData
+    })
+end
+
+---@param params table
+---@param player Player
 function SkillCommands.destroyAll(params, player)
     gg.log("开始销毁所有技能，玩家:" .. player.name)
 
@@ -202,6 +249,7 @@ function SkillCommands.main(params, player)
     local player = gg.getPlayerByUin(uin)
     local skillName = params["技能"]
     local level = params["等级"]
+    local growth = params["经验"] or params["成长值"] or 0
     local optype = params["类型"]
 
     if not player then
@@ -218,6 +266,9 @@ function SkillCommands.main(params, player)
     elseif optype == "销毁所有" then
         local args = {}
         SkillCommands.destroyAll(args, player)
+    elseif optype == "设置等级" or optype == "设置" then
+        local args = {skillName = skillName, level = level, growth = growth}
+        SkillCommands.setLevel(args, player)
     -- elseif optype == "装载" then
     --     player:LoadingConfSkills(args)
     end

@@ -58,11 +58,8 @@ end
 
 function ViewButton:OnTouchIn(vector2)
     if not self.enabled then return end
-    self.normalImg = self.img.Icon
-    if not self.isHover then
-        if self.clickImg then
-            self.img.Icon = self.clickImg
-        end
+    if self.clickImg then
+        self.img.Icon = self.clickImg
     end
     if self.clickColor then
         self.img.FillColor = self.clickColor
@@ -114,7 +111,6 @@ end
 function ViewButton:OnHoverIn()
     if not self.enabled then return end
     self.isHover = true
-    self.normalImg = self.img.Icon
     if self.hoverImg then
         self.img.Icon = self.hoverImg
     end
@@ -159,11 +155,7 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     self.touchMoveCb = nil
     self.touchEndCb = nil
     self.clickImg = img:GetAttribute("图片-点击") ---@type string
-    if self.clickImg == "" then
-        self.clickImg = nil
-    end
     self.hoverImg = img:GetAttribute("图片-悬浮") ---@type string
-    self.defaultImg = img:GetAttribute("图片-默认") ---@type string
     if self.hoverImg == "" then
         self.hoverImg = self.clickImg
     end
@@ -172,11 +164,6 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     self.hoverColor = img:GetAttribute("悬浮颜色") ---@type ColorQuad
     self.clickColor = img:GetAttribute("点击颜色") ---@type ColorQuad
     self.normalColor = img.FillColor
-
-    -- === 新增：单个按钮的选中状态管理（不涉及其他按钮） ===
-    self.isSelected = false              -- 是否处于选中状态
-    self.selectedImg = self.clickImg     -- 选中状态图片（默认使用点击图片）
-    self.selectedColor = self.clickColor -- 选中状态颜色（默认使用点击颜色）
 
     self.soundPress = img:GetAttribute("音效-点击") ---@type string
     if self.soundPress == "" then
@@ -252,56 +239,6 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     end
 end
 
--- 设置按钮的选中状态（仅管理自身，不涉及其他按钮）
----@param selected boolean 是否选中
----@param targetNodePath? string 目标节点路径（可选，用于自定义节点）
-function ViewButton:SetSelected(selected, targetNodePath)
-    if self.isSelected == selected then return end -- 状态没有变化，直接返回
-    self.isSelected = selected
-    -- 获取目标节点
-    local targetNode = self.img
-    if targetNodePath then
-        -- 解析自定义节点路径
-        local pathParts = {}
-        for part in string.gmatch(targetNodePath, "[^/]+") do
-            table.insert(pathParts, part)
-        end
-
-        targetNode = self.node
-        for _, part in ipairs(pathParts) do
-            targetNode = targetNode[part]
-            if not targetNode then
-                return
-            end
-        end
-    end
-
-    if selected then
-        -- 设置为选中状态
-        local selectedImg = targetNode:GetAttribute("图片-点击") or self.selectedImg
-        if selectedImg and selectedImg ~= "" and targetNode.Icon ~= selectedImg then
-            targetNode.Icon = selectedImg
-        end
-        if self.selectedColor and targetNode.FillColor ~= self.selectedColor then
-            targetNode.FillColor = self.selectedColor
-        end
-    else
-        -- 恢复为默认状态
-        local defaultImg = targetNode:GetAttribute("图片-默认") or self.normalImg
-        if defaultImg and defaultImg ~= "" and targetNode.Icon ~= defaultImg then
-            targetNode.Icon = defaultImg
-        end
-        if targetNode.FillColor ~= self.normalColor then
-            targetNode.FillColor = self.normalColor
-        end
-    end
-end
-
--- 检查是否选中
----@return boolean
-function ViewButton:IsSelected()
-    return self.isSelected
-end
 
 -- === 新增：重新绑定到新的UI节点 ===
 -- 用于在按钮复用时重新绑定到新的UI节点，重新设置所有事件监听器和属性
@@ -368,9 +305,7 @@ function ViewButton:RebindToNewNode(newNode, realButtonPath)
     self.clickColor = img:GetAttribute("点击颜色")
     self.normalColor = img.FillColor
 
-    -- 更新选中状态相关属性
-    self.selectedImg = self.clickImg
-    self.selectedColor = self.clickColor
+    -- === 移除了选中状态相关属性 ===
 
     -- 重新获取音效属性
     self.soundPress = img:GetAttribute("音效-点击")
@@ -423,5 +358,6 @@ function ViewButton:RebindToNewNode(newNode, realButtonPath)
     end
 
 end
+
 
 return ViewButton

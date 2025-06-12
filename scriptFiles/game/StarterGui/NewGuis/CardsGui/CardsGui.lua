@@ -393,77 +393,10 @@ function CardsGui:_setSubCardQualityIcons(cardNode, skillType)
 end
 
 
--- 将按钮添加到选择组
----@param button ViewButton 按钮对象
----@param groupName string 选择组名称
-function CardsGui:AddButtonToSelectionGroup(button, groupName)
-    if not button or not groupName then return end
+-- === 移除了选择组管理方法 ===
 
-    -- 初始化选择组
-    self.selectionGroups[groupName] = self.selectionGroups[groupName] or {}
-
-    -- 检查按钮是否已经在组中
-    for _, existingButton in ipairs(self.selectionGroups[groupName]) do
-        if existingButton == button then
-            return -- 已经在组中，无需重复添加
-        end
-    end
-
-    -- 添加到选择组
-    table.insert(self.selectionGroups[groupName], button)
-    -- gg.log("✅ 按钮已添加到选择组:", groupName)
-end
-
--- 选择组内选中指定按钮（自动取消组内其他按钮的选中状态）
----@param button ViewButton 要选中的按钮
----@param groupName string 选择组名称
----@param targetNodePath? string 目标节点路径
-function CardsGui:SelectButtonInGroup(button, groupName, targetNodePath)
-    if not button or not groupName then return end
-
-    local group = self.selectionGroups[groupName]
-    if not group then
-        -- gg.log("❌ 找不到选择组:", groupName)
-        return
-    end
-
-    -- 取消组内其他按钮的选中状态
-    for _, groupButton in ipairs(group) do
-        if groupButton ~= button and groupButton:IsSelected() then
-            groupButton:SetSelected(false, targetNodePath)
-        end
-    end
-
-    -- 选中指定按钮
-    button:SetSelected(true, targetNodePath)
-
-    local skillId = button.extraParams and button.extraParams.skillId or "未知按钮"
-    -- gg.log("✅ 按钮已在组中选中:", skillId, "组:", groupName)
-end
-
--- 取消选择组内所有按钮的选中状态
----@param groupName string 选择组名称
----@param targetNodePath? string 目标节点路径
-function CardsGui:ClearSelectionGroup(groupName, targetNodePath)
-    local group = self.selectionGroups[groupName]
-    if not group then return end
-
-    for _, button in ipairs(group) do
-        if button:IsSelected() then
-            button:SetSelected(false, targetNodePath)
-        end
-    end
-
-    -- gg.log("🔄 已清除选择组的所有选中状态:", groupName)
-end
-
--- 主卡按钮选中（便捷方法）
----@param button ViewButton 按钮对象
----@param targetNodePath? string 目标节点路径，默认为"卡框背景/卡框"
-function CardsGui:SelectMainCardButton(button, targetNodePath)
-    local nodePath = targetNodePath or "卡框背景/卡框"
-    self:SelectButtonInGroup(button, self.mainCardSelectionGroup, nodePath)
-end
+-- === 移除了选择组管理的相关方法 ===
+-- 现在直接使用简单的按钮状态记录，不再使用SetSelected/IsSelected方法
 
 -- 副卡功能按钮状态更新
 function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
@@ -558,6 +491,11 @@ function CardsGui:RegisterSkillEvents()
         self:OnSkillUnequipResponse(data)
     end)
 
+    -- 监听技能等级设置响应（管理员指令）
+    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SET_LEVEL, function(data)
+        self:OnSkillSetLevelResponse(data)
+    end)
+
     -- 监听背包库存同步事件
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
         self:HandleInventorySync(data)
@@ -589,7 +527,8 @@ function CardsGui:OnInit(node, config)
     self.SubcardUnEquipButton = self:Get("框体/副卡属性/副卡_卸下", ViewButton) ---@type ViewButton
     self.SubcardUpgradeStarButton = self:Get("框体/副卡属性/副卡_升星", ViewButton) ---@type ViewButton
     self.ConfirmStrengthenUI = self:Get("框体/副卡属性/确认强化", ViewComponent) ---@type ViewComponent
-
+    self.StrengthenProgressUI = self:Get("框体/副卡/强化进度", ViewComponent) ---@type ViewComponent
+    
     self.ConfirmButton = self:Get("框体/副卡属性/确认强化/b_confirm", ViewButton) ---@type ViewButton
     self.CancelButton = self:Get("框体/副卡属性/确认强化/b_cancel", ViewButton) ---@type ViewButton
 
@@ -620,11 +559,12 @@ function CardsGui:OnInit(node, config)
     self.currentMCardButtonName = nil
     self.currentSubCardButtonName = nil
 
-    -- === 新增：选择组管理（在CardsGui中管理按钮的互斥选择） ===
-    self.selectionGroups = {}           -- 选择组管理器
-    self.mainCardSelectionGroup = "mainCards"  -- 主卡按钮选择组名称
+    -- === 移除了选择组管理 ===
     -- 当前显示的卡片类型 ("主卡" 或 "副卡")
     self.currentCardType = "主卡"
+    
+    -- === 新增：防止重复切换的标志 ===
+    self.isSwitching = false
 
     -- === 新增：跟踪是否是第一次切换到主卡 ===
     self.isFirstTimeToMainCard = true
@@ -900,11 +840,9 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
                 if not button then
                     -- 使用工具函数创建按钮
                     button = self:_createButtonWithCallback(child.node, function(ui, button)
-                        local skillId = button.extraParams["skillId"]
-                        gg.log("点击主卡按钮:", skillId, "按钮节点:", button.node.Name, "extraParams:", button.extraParams)
-                        -- === 使用CardsGui的选择组管理 ===
-                        self:SelectMainCardButton(button, "卡框背景/卡框")
-                        self:ShowSkillTree(skillId)
+                                            local skillId = button.extraParams["skillId"]
+                    -- === 移除了选择组管理，直接调用相关方法 ===
+                    self:ShowSkillTree(skillId)
                         if self.skillLists[skillId] then
                             self.attributeButton:SetVisible(true)
                         end
@@ -919,8 +857,7 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
 
                     gg.log("使用RebindToNewNode重新绑定按钮:", skillName, "节点:", child.node.Name)
                 end
-                -- === 将主卡按钮加入选择组 ===
-                self:AddButtonToSelectionGroup(button, self.mainCardSelectionGroup)
+                -- === 移除了选择组管理 ===
                 -- 使用工具函数设置按钮状态
                 self:_updateButtonGrayState(button, data.serverUnlocked)
                 gg.log('设置按钮状态', skillName, '位置', newIndex, '解锁状态', data.serverUnlocked, '按钮节点', button.node.Name, '按钮img节点', button.img, '灰色状态', button.img.Grayed)
@@ -951,6 +888,7 @@ function CardsGui:RegisterMainCardFunctionButtons()
             cmd = SkillEventConfig.REQUEST.UPGRADE,
             skillName = skillName
         })
+        -- === 移除了SetSelected调用 ===
     end
     self.EquipmentSkillsButton.clickCb = function (ui, button)
         -- gg.log("主卡_装备发送了装备的请求")
@@ -1050,7 +988,7 @@ function CardsGui:RegisterMainCardFunctionButtons()
 end
 -- 处理技能同步数据
 function CardsGui:HandleSkillSync(data)
-     -- gg.log("CardsGui获取来自服务端的技能数据", data)
+     gg.log("CardsGui获取来自服务端的技能数据", data)
     if not data or not data.skillData then return end
     local skillDataDic = data.skillData.skills
 
@@ -1447,17 +1385,30 @@ end
 
 -- 切换到指定的卡片类型
 function CardsGui:SwitchToCardType(cardType)
+    -- === 防止重复调用 ===
+    if self.isSwitching then
+        gg.log("正在切换中，忽略重复调用:", cardType)
+        return
+    end
+    
+    if self.currentCardType == cardType then
+        gg.log("当前已经是", cardType, "类型，无需切换")
+        return
+    end
+    
+    self.isSwitching = true
     self.currentCardType = cardType
     gg.log("切换的卡片类型",cardType)
-    -- === 切换卡片类型时重置主卡选中状态 ===
+    
+    -- === 移除了主卡副卡按钮的选中状态设置 ===
     if cardType == "主卡" then
-        -- 使用CardsGui的选择组管理，取消所有主卡的选中状态
-        self:ClearSelectionGroup(self.mainCardSelectionGroup, "卡框背景/卡框")
-
-    end
-
-    -- 如果切换到副卡，默认显示ALL品质的副卡列表（但保持选中状态）
-    if cardType == "副卡" then
+        gg.log("切换到主卡类型")
+        -- === 移除了SetSelected调用 ===
+        
+    elseif cardType == "副卡" then
+        gg.log("切换到副卡类型")
+        -- === 移除了SetSelected调用 ===
+        
         -- === 新增：第一次切换到副卡时自动点击第一个副卡按钮 ===
         if self.isFirstTimeToSubCard then
             self:ShowSubCardQuality("ALL")
@@ -1471,6 +1422,10 @@ function CardsGui:SwitchToCardType(cardType)
     if self.qualityList then
         self.qualityList:SetVisible(cardType == "副卡")
     end
+    
+    -- === 切换完成，重置标志 ===
+    self.isSwitching = false
+    gg.log("切换完成:", cardType)
 end
 
 -- 更新指定卡片类型的显示
@@ -1551,9 +1506,8 @@ function CardsGui:AutoSelectFirstMainCard()
 
     -- 3. 如果找到了目标按钮，模拟点击
     if targetButton and targetSkillId then
-        -- 选中该主卡按钮
-        self:SelectMainCardButton(targetButton, "卡框背景/卡框")
-
+        -- === 移除了选择组管理，直接调用相关方法 ===
+        
         -- 显示对应的技能树
         self:ShowSkillTree(targetSkillId)
 
@@ -1912,12 +1866,16 @@ function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
     local severSkill = self.ServerSkills[skill.name]
     local skillLevel = severSkill and severSkill.level or 0
     local star_level = severSkill and severSkill.star_level or 0
+    local growth = severSkill and severSkill.growth or 0
 
     -- 使用工具函数设置等级
     local levelNode = cardFrame["强化等级"]
     if levelNode then
         levelNode.Title = "强化等级:" .. skillLevel
     end
+
+    -- === 移除：不在这里更新进度条，只在点击副卡时更新 ===
+    -- self:UpdateSubCardProgress(cardFrame, skill, growth, skillLevel)
 
     -- 使用工具函数设置图标和名称
     local iconResources = {
@@ -1938,6 +1896,172 @@ function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
 
     -- 使用工具函数设置星级
     self:_updateStarDisplay(cardFrame, star_level)
+end
+
+-- === 新增：更新副卡强化进度显示 ===
+function CardsGui:UpdateSubCardProgress( skill, growth, skillLevel)
+    local cardFrame = self.StrengthenProgressUI
+    if not cardFrame or not skill then
+        return
+    end
+
+    -- 检查技能对象是否有效
+    if not skill.GetMaxGrowthAtLevel then
+        gg.log("错误: 技能对象缺少GetMaxGrowthAtLevel方法:", skill.name or "unknown")
+        return
+    end
+    
+    
+    -- 获取进度条节点（根据UI结构调整路径）
+    local progressBar = cardFrame.node["强化进度条"] 
+    local progressText = cardFrame.node["强化进度值"] 
+
+
+    -- 检查是否满级
+    local maxLevel = skill.maxLevel or 1
+    if skillLevel >= maxLevel then
+        -- 满级处理：设置进度条为100%
+        if progressBar then
+            progressBar.FillAmount = 1
+           
+        end
+
+        if progressText then
+            progressText.Title = "满级"
+        end
+
+
+        return
+    end
+
+    -- 获取当前等级需要的最大经验值
+    local maxGrowthThisLevel = skill:GetMaxGrowthAtLevel(skillLevel)
+    if not maxGrowthThisLevel or maxGrowthThisLevel <= 0 then
+        maxGrowthThisLevel = 100  -- 使用默认值
+    end
+
+    -- 当前经验直接用于进度计算: 当前经验/当前等级最大经验
+    local currentLevelProgress = growth
+    if currentLevelProgress > maxGrowthThisLevel then
+        currentLevelProgress = maxGrowthThisLevel
+    end
+
+    -- 计算进度百分比: 当前经验/当前等级最大经验
+    local progressPercent = currentLevelProgress / maxGrowthThisLevel
+    
+
+    if progressBar then
+        progressBar.FillAmount = progressPercent  -- Fill属性通常是0-1范围 
+    end
+    -- 更新进度文本
+    if progressText then
+        -- 显示当前经验/当前等级最大经验
+        progressText.Title = string.format("%d/%d", currentLevelProgress, maxGrowthThisLevel)
+    end
+
+
+end
+
+-- === 新增：更新副卡属性面板中的强化进度显示 ===
+function CardsGui:UpdateSubCardProgressInAttributePanel(attributePanel, skill, growth, skillLevel)
+    if not attributePanel or not skill then
+        return
+    end
+
+    -- 检查技能对象是否有效
+    if not skill.GetMaxGrowthAtLevel then
+        gg.log("错误: 技能对象缺少GetMaxGrowthAtLevel方法:", skill.name or "unknown")
+        return
+    end
+
+    -- 使用StrengthenProgressUI获取进度条和进度文本节点
+    local progressBar = nil
+    local progressText = nil
+    
+    if self.StrengthenProgressUI and self.StrengthenProgressUI.node then
+        local progressUI = self.StrengthenProgressUI.node
+        progressBar = progressUI["强化进度条"]
+        progressText = progressUI["强化进度显示"] 
+    end
+
+    -- 检查是否满级
+    local maxLevel = skill.maxLevel or 1
+    if skillLevel >= maxLevel then
+        -- 满级处理 - 使用FillAmount，不修改节点大小
+        if progressBar then
+            -- 使用FillAmount属性设置满级（100%）
+            if progressBar.FillAmount ~= nil then
+                progressBar.FillAmount = 1.0
+                gg.log("属性面板满级FillAmount设置: 1.0")
+            end
+            -- 使用Value属性设置满级
+            if progressBar.Value ~= nil then
+                progressBar.Value = 100
+                gg.log("属性面板满级Value设置: 100")
+            end
+            -- 兼容性：使用Fill属性
+            if progressBar.Fill ~= nil then
+                progressBar.Fill = 1.0
+            end
+            -- ⚠️ 移除Size修改，避免改变节点大小
+            -- 移除了progressBar.Size的修改代码
+        end
+
+        if progressText then
+            progressText.Title = "MAX"
+        end
+
+        gg.log(string.format("属性面板进度更新: %s, 等级: %d (满级), 成长值: %d",
+            skill.name, skillLevel, growth))
+        return
+    end
+
+    -- 获取当前等级需要的最大经验值
+    local maxGrowthThisLevel = skill:GetMaxGrowthAtLevel(skillLevel)
+    if not maxGrowthThisLevel or maxGrowthThisLevel <= 0 then
+        gg.log("警告: 无法获取技能当前等级的最大经验值:", skill.name, "等级:", skillLevel)
+        maxGrowthThisLevel = 100  -- 使用默认值
+    end
+
+    -- 当前经验直接用于进度计算: 当前经验/当前等级最大经验
+    local currentLevelProgress = growth
+    if currentLevelProgress > maxGrowthThisLevel then
+        currentLevelProgress = maxGrowthThisLevel
+    end
+
+    -- 计算进度百分比: 当前经验/当前等级最大经验
+    local progressPercent = currentLevelProgress / maxGrowthThisLevel
+
+    -- 更新进度条 - 使用FillAmount，不修改节点大小
+    if progressBar then
+        -- 使用FillAmount属性控制进度（0-1范围）
+        if progressBar.FillAmount ~= nil then
+            progressBar.FillAmount = progressPercent
+            gg.log("属性面板进度条FillAmount设置:", progressPercent)
+        end
+        -- 如果是UIProgressBar类型，使用Value属性
+        if progressBar.Value ~= nil then
+            progressBar.Value = progressPercent * 100  -- Value通常是0-100范围
+            gg.log("属性面板进度条Value设置:", progressPercent * 100)
+        end
+        -- 兼容性：尝试Fill属性
+        if progressBar.Fill ~= nil then
+            progressBar.Fill = progressPercent
+        end
+        -- ⚠️ 移除Size修改，避免改变节点大小
+        -- 移除了progressBar.Size的修改代码
+    end
+
+    -- 更新进度文本
+    if progressText then
+        -- 显示当前经验/当前等级最大经验和百分比
+        progressText.Title = string.format("强化进度: %d/%d (%.1f%%)", 
+            currentLevelProgress, maxGrowthThisLevel, progressPercent * 100)
+    end
+
+    -- 调试日志
+    gg.log(string.format("属性面板进度更新: %s, 等级: %d, 当前经验: %d, 当前等级最大经验: %d, 进度: %d/%d, 百分比: %.2f%%",
+        skill.name, skillLevel, growth, maxGrowthThisLevel, currentLevelProgress, maxGrowthThisLevel, progressPercent * 100))
 end
 
 -- 更新星级显示 - 重定向到工具函数
@@ -2379,11 +2503,7 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
         button.clickCb = function(ui, button)
             local skillId = button.extraParams["skillId"]
 
-            -- === 使用CardsGui的选择组管理 ===
-            self:SelectMainCardButton(button, "卡框背景/卡框")
-
-
-
+            -- === 移除了选择组管理，直接调用相关方法 ===
 
             local currentList = self.skillLists[skillId]
             if currentList then
@@ -2413,8 +2533,7 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
             end
         end
 
-        -- === 将动态主卡按钮加入选择组 ===
-        self:AddButtonToSelectionGroup(button, self.mainCardSelectionGroup)
+        -- === 移除了选择组管理 ===
 
         -- 存储按钮状态
         self.skillButtons[skillName] = button
@@ -2737,6 +2856,10 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
         descNode.Title = skill.description or "暂无描述"
     end
 
+    -- === 新增：更新属性面板中的强化进度显示 ===
+    local growth = serverData and serverData.growth or 0
+    self:UpdateSubCardProgressInAttributePanel(attributeButton, skill, growth, skillLevel)
+
     -- 更新强化前后属性
     local descPreTitleNode = attributeButton["列表_强化前"]["强化标题"]
     local descPostTitleNode = attributeButton["列表_强化后"]["强化标题"]
@@ -2931,6 +3054,213 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
 
 end
 
+-- === 新增方法：处理技能等级设置响应（管理员指令）===
+function CardsGui:OnSkillSetLevelResponse(response)
+    gg.log("收到技能等级设置响应", response)
+    local data = response.data
+    local skillName = data.skillName
+    local newLevel = data.level
+    local newGrowth = data.growth or 0
+    local slot = data.slot or 0
+    local removed = data.removed or false
+
+    if not skillName then
+        gg.log("技能等级设置响应缺少技能名称")
+        return
+    end
+
+    -- 获取技能类型配置
+    local skillType = SkillTypeConfig.Get(skillName)
+    if not skillType then
+        gg.log("技能配置不存在:", skillName)
+        return
+    end
+
+    if removed then
+        -- 技能被移除：从服务端技能数据中移除
+        gg.log("技能已被移除:", skillName)
+        self.ServerSkills[skillName] = nil
+
+        -- 从装备槽中移除
+        for equipSlot, equippedSkillName in pairs(self.equippedSkills) do
+            if equippedSkillName == skillName then
+                self.equippedSkills[equipSlot] = nil
+                break
+            end
+        end
+
+        -- 根据技能类型更新UI
+        if skillType.category == 0 then
+            -- 主卡被移除：更新主卡状态
+            self:HandleMainCardRemoval(skillName, skillType)
+        elseif skillType.category == 1 then
+            -- 副卡被移除：更新副卡状态  
+            self:HandleSubCardRemoval(skillName, skillType)
+        end
+    else
+        -- 技能等级/经验被更新：更新服务端数据
+        gg.log("技能等级/经验已更新:", skillName, "等级:", newLevel, "经验:", newGrowth)
+        
+        -- 更新或创建服务端技能数据
+        if not self.ServerSkills[skillName] then
+            self.ServerSkills[skillName] = {}
+        end
+        
+        local skillData = self.ServerSkills[skillName]
+        skillData.level = newLevel
+        skillData.growth = newGrowth
+        skillData.slot = slot
+        skillData.skill = skillName
+
+        -- 更新装备槽数据
+        if slot > 0 then
+            self.equippedSkills[slot] = skillName
+        end
+
+        -- 根据技能类型更新UI
+        if skillType.category == 0 then
+            -- 主卡更新：更新主卡状态和显示
+            self:HandleMainCardUpdate(skillName, skillType, skillData)
+        elseif skillType.category == 1 then
+            -- 副卡更新：更新副卡状态和显示
+            self:HandleSubCardUpdate(skillName, skillType, skillData)
+        end
+    end
+
+    gg.log("技能等级设置响应处理完成:", skillName)
+end
+
+-- === 新增方法：处理主卡移除 ===
+function CardsGui:HandleMainCardRemoval(skillName, skillType)
+    -- 更新主卡按钮状态
+    local buttonState = self.mainCardButtonStates[skillName]
+    if buttonState then
+        buttonState.serverUnlocked = false
+        buttonState.isEquipped = false
+        buttonState.equipSlot = 0
+        buttonState.serverData = nil
+
+        -- 更新按钮显示（设为灰色）
+        if buttonState.button then
+            buttonState.button.img.Grayed = true
+            self:SetMainCardEquippedVisual(skillName, false)
+        end
+    end
+
+    -- 更新主卡技能树显示
+    self:UpdateSkillTreeNodeDisplay(skillName)
+
+    -- 重新排序主卡布局
+    self:SortAndUpdateMainCardLayout()
+
+    gg.log("主卡移除处理完成:", skillName)
+end
+
+-- === 新增方法：处理副卡移除 ===
+function CardsGui:HandleSubCardRemoval(skillName, skillType)
+    -- 更新副卡按钮状态
+    local buttonState = self.subCardButtonStates[skillName]
+    if buttonState then
+        buttonState.serverUnlocked = false
+        buttonState.serverData = nil
+
+        -- 更新按钮显示（设为灰色）
+        if buttonState.button then
+            buttonState.button.img.Grayed = true
+            buttonState.button.extraParams.serverData = nil
+        end
+    end
+
+    -- 更新副卡显示
+    self:UpdateSubCardTreeNodeDisplay(skillName)
+
+    -- 重新排序副卡布局
+    self:SortAndUpdateSubCardLayout()
+
+    -- 如果当前选中的是被移除的副卡，清除选择状态
+    if self.currentSubCardButtonName and 
+       self.currentSubCardButtonName.extraParams.skillId == skillName then
+        self.currentSubCardButtonName = nil
+        self.subCardAttributeButton:SetVisible(false)
+    end
+
+    gg.log("副卡移除处理完成:", skillName)
+end
+
+-- === 新增方法：处理主卡更新 ===
+function CardsGui:HandleMainCardUpdate(skillName, skillType, skillData)
+    -- 更新主卡按钮状态
+    local buttonState = self.mainCardButtonStates[skillName]
+    if buttonState then
+        buttonState.serverUnlocked = true
+        buttonState.serverData = skillData
+        self:UpdateMainCardEquipStatus(skillName, skillData)
+
+        -- 更新按钮显示（恢复正常颜色）
+        if buttonState.button then
+            buttonState.button.img.Grayed = false
+            self:SetMainCardEquippedVisual(skillName, buttonState.isEquipped)
+        end
+    else
+        -- 如果是新创建的主卡技能，需要动态添加
+        self:AddDynamicMainCardSkill(skillName, skillType, skillData)
+    end
+
+    -- 更新主卡技能树显示
+    self:UpdateSkillTreeNodeDisplay(skillName)
+
+    -- 重新排序主卡布局
+    self:SortAndUpdateMainCardLayout()
+
+    -- 如果当前选中的是这个主卡，更新属性面板
+    if self.currentMCardButtonName and
+       self.currentMCardButtonName.extraParams.skillId == skillName then
+        -- 重新触发点击事件以更新属性面板
+        local mainCardFrameButton = self.mainCardButtondict[skillName]
+        if mainCardFrameButton then
+            self:OnSkillTreeNodeClick(nil, mainCardFrameButton, mainCardFrameButton.node)
+        end
+    end
+
+    gg.log("主卡更新处理完成:", skillName, "等级:", skillData.level)
+end
+
+-- === 新增方法：处理副卡更新 ===
+function CardsGui:HandleSubCardUpdate(skillName, skillType, skillData)
+    -- 更新副卡按钮状态
+    local buttonState = self.subCardButtonStates[skillName]
+    if buttonState then
+        buttonState.serverUnlocked = true
+        buttonState.serverData = skillData
+
+        -- 更新按钮显示（恢复正常颜色）
+        if buttonState.button then
+            buttonState.button.img.Grayed = false
+            buttonState.button.extraParams.serverData = skillData
+        end
+    else
+        -- 如果是新创建的副卡技能，需要动态添加
+        self:AddDynamicSubCardSkill(skillName, skillType, skillData)
+    end
+
+    -- 更新副卡显示
+    self:UpdateSubCardTreeNodeDisplay(skillName)
+
+    -- 重新排序副卡布局
+    self:SortAndUpdateSubCardLayout()
+
+    -- 如果当前选中的是这个副卡，更新属性面板和进度显示
+    if self.currentSubCardButtonName and
+       self.currentSubCardButtonName.extraParams.skillId == skillName then
+        -- 更新按钮的服务端数据
+        self.currentSubCardButtonName.extraParams.serverData = skillData
+        
+        -- 重新触发点击事件以更新属性面板和进度条
+        self:OnSubCardButtonClick(nil, self.currentSubCardButtonName)
+    end
+
+    gg.log("副卡更新处理完成:", skillName, "等级:", skillData.level, "经验:", skillData.growth)
+end
 
 -- === 背包库存处理方法 ===
 -- 处理背包库存同步事件
@@ -3387,6 +3717,7 @@ function CardsGui:OnSubCardButtonClick(ui, button)
     local buttonState = self.subCardButtonStates[skillId]
     local serverData = buttonState and buttonState.serverData
     local skillLevel = serverData and serverData.level or 0
+    local growth = serverData and serverData.growth or 0
 
     -- 更新副卡图标和星级显示
     local subNode = self.subCardComponent.node
@@ -3409,6 +3740,9 @@ function CardsGui:OnSubCardButtonClick(ui, button)
             end
         else
         end
+
+        -- === 新增：更新副卡组件中的强化进度显示 ===
+        self:UpdateSubCardProgress( skill, growth, skillLevel)
 
         -- 更新星级显示
         local starContainer = subNode["星级"]

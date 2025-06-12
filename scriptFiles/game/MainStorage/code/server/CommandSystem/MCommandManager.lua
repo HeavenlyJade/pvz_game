@@ -45,7 +45,7 @@ CommandManager.handlers = {
     ["mail"] = MailCommand.main,
         -- 玩家技能相关命令
     -- 装载默认的配置技能
-    ["loadSkill"] = SkillCommands.main,
+    ["skillConf"] = SkillCommands.main,
     -- ["装备"] = {},
 
     -- -- 玩家属性相关

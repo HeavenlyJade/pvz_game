@@ -80,14 +80,20 @@ function SkillType:OnInit(data)
 end
 
 function SkillType:GetMaxGrowthAtLevel(level)
+    -- 检查是否存在最大经验公式
+    if not self.maxGrowthFormula or self.maxGrowthFormula == "" then
+        gg.log("警告: 技能", self.name, "没有设置最大经验公式，使用默认值100")
+        return 100  -- 返回默认值
+    end
+    
     local expr = self.maxGrowthFormula:gsub("LVL", tostring(level))
     if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
-        print(string.format("技能%s的成长上限包含非法字符: %s", self["名字"], expr))
-        return 0
+        print(string.format("技能%s的成长上限包含非法字符: %s", self.name, expr))
+        return 100  -- 返回默认值而不是0
     end
 
     local result = gg.eval(expr)
-    return result
+    return result or 100  -- 如果计算失败，返回默认值
 end
 
 function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
