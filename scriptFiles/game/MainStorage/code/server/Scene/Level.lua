@@ -306,7 +306,6 @@ end
 
 ---更新关卡状态
 function Level:Update()
-    gg.log("[Level] Update", self.levelType.levelId, "Player count:", self.playerCount, "Active:", self.isActive, "Current wave:", self.waveCount)
     if not self.isActive or not self.currentWave then return end
     local newTimeElapsed = os.time() - self.waveStartTime
 
@@ -335,8 +334,6 @@ function Level:Update()
         )
         -- 更新生成计数
         self.waveSpawnedCounts[wave] = newSpawnedCount
-        
-        gg.log("[Level] TrySpawn", self.levelType.levelId, "Player count:", self.playerCount, "Spawned mobs:", #spawnedMobs, "Complete:", isComplete, "Total spawned:", newSpawnedCount)
         -- 处理生成的怪物
         for _, mob in ipairs(spawnedMobs) do
             -- 缓存怪物实例

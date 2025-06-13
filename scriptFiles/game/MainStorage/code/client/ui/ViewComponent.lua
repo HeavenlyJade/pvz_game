@@ -26,7 +26,7 @@ function ViewComponent:OnInit(node, ui, path)
 end
 
 function ViewComponent:GetGlobalPos()
-    
+
 end
 
 function ViewComponent:SetGray(isGray)
@@ -68,12 +68,6 @@ end
 
 ---@param visible boolean
 function ViewComponent:SetVisible(visible)
-    -- === 新增：调试日志，追踪副卡强化按钮的可见性变化 ===
-    if self.node and self.node.Name and (string.find(self.node.Name, "副卡_强化") or string.find(self.node.Name, "副卡一键强化")) then
-        local gg = require(game:GetService("MainStorage").code.common.MGlobal)
-        gg.log("👁️ SetVisible:", self.node.Name, "visible:", visible, "路径:", self.path or "unknown")
-    end
-    
     self.node.Visible = visible
     self.node.Enabled = visible
 end

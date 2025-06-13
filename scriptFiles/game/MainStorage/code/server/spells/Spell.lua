@@ -288,7 +288,7 @@ function Spell:CanCast(caster, target, param, log, checkCd)
     if checkCd then
         if  self.cooldown > 0 and caster:IsCoolingdown(self.spellName) then
             if log then
-                log[#log + 1] = string.format("%s：冷却中", self.spellName)
+                log[#log + 1] = string.format("%s：冷却中 %s", self.spellName, caster:GetCooldown(self.spellName))
             end
             return false
         end

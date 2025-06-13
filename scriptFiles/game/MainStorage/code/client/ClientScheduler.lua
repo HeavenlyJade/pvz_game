@@ -10,7 +10,6 @@ local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 ---@field taskId number Unique identifier for the task
 ---@field rounds number For time wheel implementation (number of wheel rotations needed)
 
-print("ClientScheduler INIT")
 ---@class ClientScheduler
 local ClientScheduler = {
     tasks = {},  -- All tasks by ID
@@ -26,7 +25,10 @@ local ClientScheduler = {
     lastTime = os.time(),
     updateCount = 0,
     updatesPerSecond = 0,
-    tick = 0
+    tick = 0,
+    
+    -- FPS control
+    lastFrameTime = 0,       -- 上一帧的时间
 }
 
 -- Initialize the time wheel
@@ -78,7 +80,6 @@ end
 
 ---Update all scheduled tasks
 function ClientScheduler.update()
-    -- Update timing statistics
     local tasks = ClientScheduler.timeWheel[ClientScheduler.currentSlot]
     local remainingTasks = {}
     local tasksToReschedule = {}  -- 新增：收集需要重新调度的任务
@@ -122,5 +123,7 @@ function ClientScheduler.update()
     
     ClientScheduler.currentSlot = ClientScheduler.currentSlot % ClientScheduler.wheelSlots + 1
 end
+
+game.RunService.Stepped:Connect(ClientScheduler.update)
 
 return ClientScheduler

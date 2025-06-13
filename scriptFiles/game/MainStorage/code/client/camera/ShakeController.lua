@@ -67,7 +67,7 @@ local ShakeModeImplementations = {
 local ShakeAnim = ClassMgr.Class("ShakeAnim")
 
 function ShakeAnim:OnInit(data)
-    self.startTime = os.clock()
+    self.startTime = gg.GetTimeStamp()
     self.duration = data.dura
     self.frequency = data.frequency or 10
     self.mode = data.mode or ShakeModes.SINE
@@ -94,7 +94,7 @@ function ShakeAnim:OnInit(data)
     
     -- 使用ClientScheduler注册更新任务
     self.taskId = ClientScheduler.add(function()
-        local elapsed = os.clock() - self.startTime
+        local elapsed = gg.GetTimeStamp() - self.startTime
         if elapsed >= self.duration then
             -- 移除震动动画
             for i, shake in ipairs(shaking) do

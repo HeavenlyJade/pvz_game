@@ -76,6 +76,7 @@ function HudAvatar:OnInit(node, config)
             local currentPos = character.Position
             local distance = gg.vec.DistanceSq3(currentPos, self.targetPos)
             
+            print("distance", distance, stopRange, data.range)
             if distance <= stopRange then
                 character:StopNavigate()
                 gg.network_channel:FireServer({
@@ -86,7 +87,7 @@ function HudAvatar:OnInit(node, config)
                 self.navigationCheckTaskId = nil
                 self.targetPos = nil
             end
-        end, 0, 1) -- 每秒检查一次
+        end, 1, 1) -- 每秒检查一次
     end)
 end
 

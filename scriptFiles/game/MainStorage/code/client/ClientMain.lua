@@ -12,12 +12,8 @@ local Controller = require(MainStorage.code.client.MController) ---@type Control
 local CameraController = require(MainStorage.code.client.camera.CameraController) ---@type CameraController
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
-local tick = 0
-local lastTickTime = os.clock()
-
 function ClientMain.start_client()
     ClientMain.tick = 0
-    math.randomseed(os.time() + os.clock());
     gg.uuid_start = gg.rand_int_between(100000, 999999);
     ClientMain.createNetworkChannel()
     ClientMain.handleCoreUISettings()
@@ -29,12 +25,6 @@ function ClientMain.start_client()
     local timer = SandboxNode.New("Timer", game.StarterGui)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
 
-    timer.Name = 'timer_client'
-    timer.Delay = 0.1      -- 延迟多少秒Q开始
-    timer.Loop = true      -- 是否循环
-    timer.Interval = 0.03  -- 循环间隔多少秒 (1秒=20帧)
-    timer.Callback = ClientMain.update
-    timer:Start()     -- 启动定时器
 
     require(MainStorage.code.client.graphic.DamagePool)
     require(MainStorage.code.client.graphic.WorldTextAnim)
@@ -64,13 +54,6 @@ function ClientMain.start_client()
 end
 
 
-
---定时器update
-function ClientMain.update()
-    tick = tick + 1
-    ClientScheduler.tick = tick  -- 对于服务器端
-    ClientScheduler.update()  -- 对于服务器端
-end
 
 function ClientMain.createNetworkChannel()
     gg.network_channel = MainStorage:WaitForChild("NetworkChannel") ---@type NetworkChannel

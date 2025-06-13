@@ -31,7 +31,7 @@ local waitingPlayers = {} -- 存储等待初始化的玩家
 
 
 function MainServer.start_server()
-    math.randomseed(os.time() + os.clock())
+    math.randomseed(os.time() + gg.GetTimeStamp())
     gg.uuid_start = gg.rand_int_between(100000, 999999)
     MainServer.register_player_in_out()   --玩家进出游戏
 
@@ -204,13 +204,11 @@ function MainServer.createNetworkChannel()
     --begin listen
     gg.network_channel = MainStorage:WaitForChild("NetworkChannel")
     gg.network_channel.OnServerNotify:Connect(MainServer.OnServerNotify)
-    gg.log('服务端的网络通道建立完成')
 
 end
 
 --消息回调 (优化版本，使用命令表和错误处理)
 function MainServer.OnServerNotify(uin_, args)
-    -- 参数校验
     if type(args) ~= 'table' then return end
     if not args.cmd then return end
 

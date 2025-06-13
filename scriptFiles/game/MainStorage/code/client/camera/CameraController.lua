@@ -86,6 +86,7 @@ local _isTouching = false
 local _touchId = nil
 local _touchMoving = false
 local _canSightTouch = false
+local _blockMouseMove = false
 
 local _TouchStartedEvent = nil
 local _TouchEndedEvent = nil
@@ -156,7 +157,7 @@ function CameraController.SetActive(active)
                         if _isTouching then
                             CameraController.OnTouchMoved(
                                 _currentTouchPos.x + inputObj.Delta.x,
-                                _currentTouchPos.y - inputObj.Delta.y,
+                                _currentTouchPos.y + inputObj.Delta.y,
                                 inputObj.TouchId
                             )
                         end
@@ -570,7 +571,7 @@ function CameraController.OnTouchStarted(x, y, touchId)
     _currentTouchPos.x = x
     _currentTouchPos.y = y
     _canSightTouch = false
-    _touchStartTime = os.clock()  -- Use os.clock() instead of game.TimeService:GetTime()
+    _touchStartTime = gg.GetTimeStamp()  -- Use gg.GetTimeStamp() instead of game.TimeService:GetTime()
 end
 
 function CameraController.EnableSightTouch()
@@ -588,14 +589,14 @@ function CameraController.OnTouchMoved(x, y, touchId)
     _currentTouchPos.y = y
 
     local delta = _currentTouchPos - _lastTouchPos
-    local currentTime = os.clock()  -- Use os.clock() instead of game.TimeService:GetTime()
+    local currentTime = gg.GetTimeStamp()  -- Use gg.GetTimeStamp() instead of game.TimeService:GetTime()
     local elapsedTime = currentTime - _touchStartTime
 
     if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
         if _alignWhenMoving and _lockedOnTarget then
-            CameraController.InputMove(0, delta.y)
+            CameraController.InputMove(0, -delta.y)
         else
-            CameraController.InputMove(delta.x, delta.y)
+            CameraController.InputMove(delta.x, -delta.y)
         end
     end
 

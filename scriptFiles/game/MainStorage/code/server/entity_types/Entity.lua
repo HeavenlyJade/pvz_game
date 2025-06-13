@@ -381,7 +381,7 @@ function _M:GetCooldown(reason, target)
         if self.cooldownTarget[reason] then
             local targetId = target.actor and target.actor.InstanceID or 0
             if self.cooldownTarget[reason][targetId] then
-                local remainingTime = self.cooldownTarget[reason][targetId] - os.clock()
+                local remainingTime = self.cooldownTarget[reason][targetId] - gg.GetTimeStamp()
                 return remainingTime > 0 and remainingTime or 0
             end
         end
@@ -389,7 +389,7 @@ function _M:GetCooldown(reason, target)
 
     -- 检查全局冷却
     if self.cd_list[reason] then
-        local remainingTime = self.cd_list[reason] - os.clock()
+        local remainingTime = self.cd_list[reason] - gg.GetTimeStamp()
         return remainingTime > 0 and remainingTime or 0
     end
 
@@ -415,10 +415,10 @@ function _M:SetCooldown(reason, time, target)
             self.cooldownTarget[reason] = {}
         end
         local targetId = target.actor and target.actor.InstanceID or 0
-        self.cooldownTarget[reason][targetId] = os.clock() + time
+        self.cooldownTarget[reason][targetId] = gg.GetTimeStamp() + time
     else
         -- 设置全局冷却
-        self.cd_list[reason] = os.clock() + time
+        self.cd_list[reason] = gg.GetTimeStamp() + time
     end
 end
 

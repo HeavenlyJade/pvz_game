@@ -582,7 +582,7 @@ end
 ---@return string 生成的UUID
 function gg.create_uuid(pre_)
     gg.uuid_start = gg.uuid_start + 1
-    return pre_ .. gg.uuid_start .. '_' .. (os.clock() * 1000 + math.random(1, 1000)) % 1000 .. '_' ..
+    return pre_ .. gg.uuid_start .. '_' .. (gg.GetTimeStamp() * 1000 + math.random(1, 1000)) % 1000 .. '_' ..
                math.random(10000, 99999)
 end
 
@@ -881,6 +881,10 @@ function gg.DeepCopy(object)
         return setmetatable(new_table, getmetatable(object))
     end
     return _copy(object)
+end
+
+function gg.GetTimeStamp()
+    return game.RunService:CurrentSteadyTimeStampMS() / 1000
 end
 
 function gg.GetSceneNode(path)

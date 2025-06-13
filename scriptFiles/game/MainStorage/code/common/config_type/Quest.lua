@@ -69,13 +69,16 @@ function Quest:OnClick(player)
         end
         local cb = nil
         local e = Entity.node2Entity[node] ---@cast e Npc
-        gg.log("e", node.Name, e)
         if ClassMgr.Is(e, "Npc") then
             cb = function ()
                 e:HandleInteraction(player)
             end
         end
-        player:NavigateTo(node.Position, math.max(node.Size.x, node.Size.z) + 100, cb)
+        local range = 300
+        if node:IsA("Actor") then
+            range = range + math.max(node.Size.x, node.Size.z)
+        end
+        player:NavigateTo(node.Position, range, cb)
     end
     if self.focusOnUI then
         player.focusOnCommandsCb = self.focusOnUI["完成时执行指令"]

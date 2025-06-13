@@ -88,7 +88,7 @@ local function LoadConfig()
         ["最大等级"] = 1,
         ["技能描述"] = "比起向日葵，更够收获更多的阳光。",
         ["技能品级"] = "UR",
-        ["是入口技能"] = true,
+        ["是入口技能"] = false,
         ["技能分类"] = 0,
         ["提升玩家等级"] = 0,
         ["下一技能"] = {
@@ -97,7 +97,6 @@ local function LoadConfig()
             "丰收葵_阳光产量提升"
         },
         ["无需装备也可生效"] = false,
-        ["最大经验"] = nil,
         ["主动释放魔法"] = "丰收葵_阳光获取",
         ["目标模式"] = "自己",
         ["位置偏移"] = {
@@ -414,7 +413,7 @@ local function LoadConfig()
         ["技能名"] = "大喷菇",
         ["最大等级"] = 0,
         ["技能描述"] = "不再发射孢子而是改为释放毒雾，会对敌人造成范围伤害及持续伤害并附加减速效果",
-        ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png ",
+        ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png",
         ["技能品级"] = "UR",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
@@ -455,6 +454,7 @@ local function LoadConfig()
         ["显示名"] = "持续伤害提升",
         ["最大等级"] = 10,
         ["技能描述"] = "持续伤害增加",
+        ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/大攻击提升.png",
         ["技能品级"] = "SR",
         ["是入口技能"] = false,
@@ -464,7 +464,6 @@ local function LoadConfig()
         ["被动词条"] = {
             "持续伤害_词条_大喷菇"
         },
-        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,
@@ -485,6 +484,7 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 20,
         ["技能描述"] = "伤害增加",
+        ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "SR",
         ["是入口技能"] = false,
@@ -494,7 +494,6 @@ local function LoadConfig()
         ["被动词条"] = {
             "攻击1_词条_胆小菇"
         },
-        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,
@@ -514,8 +513,9 @@ local function LoadConfig()
         ["技能名"] = "小喷菇",
         ["最大等级"] = 1,
         ["技能描述"] = "一次性射出5发孢子，且能够穿透3名敌人",
+        ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能品级"] = "SR",
-        ["是入口技能"] = false,
+        ["是入口技能"] = true,
         ["技能分类"] = 0,
         ["提升玩家等级"] = 0,
         ["下一技能"] = {
@@ -524,7 +524,6 @@ local function LoadConfig()
             "生命1_小喷菇"
         },
         ["无需装备也可生效"] = false,
-        ["最大经验"] = nil,
         ["主动释放魔法"] = "小喷菇_入口",
         ["目标模式"] = "敌人",
         ["启用后坐力"] = true,
@@ -556,6 +555,7 @@ local function LoadConfig()
         ["显示名"] = "射速提升",
         ["最大等级"] = 10,
         ["技能描述"] = "所有喷菇射速+50%",
+        ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/冷却提升.png",
         ["技能品级"] = "R",
         ["是入口技能"] = false,
@@ -568,7 +568,6 @@ local function LoadConfig()
         ["被动词条"] = {
             "射速1_词条_小喷菇"
         },
-        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,
@@ -589,6 +588,7 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 10,
         ["技能描述"] = "伤害增加",
+        ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "R",
         ["是入口技能"] = false,
@@ -601,7 +601,6 @@ local function LoadConfig()
         ["被动词条"] = {
             "攻击1_词条_小喷菇"
         },
-        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,
@@ -622,6 +621,7 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 10,
         ["技能描述"] = "生命增加",
+        ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/生命提升.png",
         ["技能品级"] = "R",
         ["是入口技能"] = false,
@@ -631,7 +631,6 @@ local function LoadConfig()
         ["被动词条"] = {
             "生命1_词条_小喷菇"
         },
-        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,
@@ -651,6 +650,7 @@ local function LoadConfig()
         ["技能名"] = "胆小菇",
         ["最大等级"] = 0,
         ["技能描述"] = "一次能射出5发孢子，能穿透敌人，并对其造成毒性伤害",
+        ["技能图标"] = "sandboxId://textures/plants/Tex_胆小菇_BaseColor.png",
         ["技能品级"] = "SR",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
@@ -725,6 +725,7 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 10,
         ["技能描述"] = "伤害增加",
+        ["技能图标"] = "sandboxId://textures/plants/Tex_胆小菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "R",
         ["是入口技能"] = false,
@@ -737,7 +738,6 @@ local function LoadConfig()
         ["被动词条"] = {
             "攻击1_词条_胆小菇"
         },
-        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,

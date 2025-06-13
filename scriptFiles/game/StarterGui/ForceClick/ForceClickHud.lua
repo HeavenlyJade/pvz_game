@@ -83,7 +83,7 @@ function ForceClickHud:OnClickAnywhere()
 end
 
 function ForceClickHud:FocusOnNextNode()
-    local currentTime = os.clock()
+    local currentTime = gg.GetTimeStamp()
     if currentTime - self.lastFocusTime < 0.1 then
         return
     end

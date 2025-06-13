@@ -78,7 +78,7 @@ function BattleHud:Open()
     self.recoilRecoveryFunc = function(deltaTime)
         if not recoil then return end
         if not isCasting then
-            local currentTime = os.clock()
+            local currentTime = gg.GetTimeStamp()
             -- 只有在超过冷却时间后才开始恢复后座力
             if currentTime - lastShotTime >= recoil.recoil_cooling_time then
                 -- 恢复垂直后座力
@@ -128,7 +128,7 @@ function BattleHud:UpdateCooldownAndCasting()
         return
     end
     
-    local currentTime = os.clock()
+    local currentTime = gg.GetTimeStamp()
     local elapsedTime = currentTime - lastCastTime
     local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
     local fillAmount = 1-remainingTime / skill.cooldownCache
@@ -223,7 +223,7 @@ function BattleHud:SendCastSpellEvent(skillId)
     if recoil then
         self:CalculateRecoil()
     end
-    lastShotTime = os.clock()  -- 更新最后射击时间
+    lastShotTime = gg.GetTimeStamp()  -- 更新最后射击时间
 end
 
 function BattleHud:OnInit(node, config)
@@ -255,7 +255,7 @@ function BattleHud:OnInit(node, config)
     end)
     
     ClientEventManager.Subscribe("ShowDamage", function(data)
-        local currentTime = os.clock()
+        local currentTime = gg.GetTimeStamp()
         
         -- 如果距离上次伤害超过0.1秒，重置累计伤害
         if currentTime - self.lastDamageTime > 0.1 then

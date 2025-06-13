@@ -46,69 +46,47 @@ end
 
 -- 更新冷却显示
 function HudCards:UpdateCooldownDisplay()
-    -- -- 更新主卡冷却显示
-    -- if self.mainCardButton then
-    --     for slotId, skill in pairs(self.mainCardData) do
-    --         local currentTime = os.clock()
-    --         local lastCastTime = lastCastTimes[skill.skillId]
-    --         if lastCastTime and skill.cooldownCache > 0 then
-    --             local elapsedTime = currentTime - lastCastTime
-    --             local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
-    --             local fillAmount = remainingTime / skill.cooldownCache
+    if not self.cardsList then return end
 
-    --             -- 更新主卡冷却显示
+    -- 遍历所有卡片
+    for i = 1, self.cardsList:GetChildCount() do
+        local card = self.cardsList:GetChild(i) ---@type ViewButton
+        local skillId = equippedSkills[i + 1]
+        local skill = skills[skillId]
 
-    --             if self.mainCardButton.node["冷却条"] then
-    --                 self.mainCardButton.node["冷却条"].FillAmount = fillAmount
-    --             end
+        if skill then
+            local currentTime = gg.GetTimeStamp()
+            local lastCastTime = lastCastTimes[skillId]
+            if lastCastTime and skill.cooldownCache > 0 then
+                local elapsedTime = currentTime - lastCastTime
+                local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
+                local fillAmount = remainingTime / skill.cooldownCache
+                -- 更新冷却显示
+                if card.node["冷却条"] then
+                    card.node["冷却条"].FillAmount = fillAmount
+                end
 
-    --             -- 检查是否在冷却中
-    --             local isOnCooldown = remainingTime > 0
-    --             self.mainCardButton:SetTouchEnable(not isOnCooldown, false)
-    --             if isOnCooldown then
-    --                 if self.mainCardButton.node["卡片框"] then
-    --                     self.mainCardButton.node["卡片框"].FillColor = ColorQuad.New(150, 150, 150, 255)
-    --                 end
-    --             else
-    --                 if self.mainCardButton.node["卡片框"] then
-    --                     self.mainCardButton.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
-    --                 end
-    --             end
-    --         end
-    --         break -- 只有一个主卡
-    --     end
-    -- end
-
-    function HudCards:UpdateCooldownDisplay()
-        if not self.cardsList then return end
-    
-        -- 遍历所有卡片
-        for i = 1, self.cardsList:GetChildCount() do
-            local card = self.cardsList:GetChild(i) ---@type ViewButton
-            local skillId = equippedSkills[i + 1]
-            local skill = skills[skillId]
-    
-            if skill then
-                local currentTime = os.clock()
-                local lastCastTime = lastCastTimes[skillId]
-                if lastCastTime and skill.cooldownCache > 0 then
-                    local elapsedTime = currentTime - lastCastTime
-                    local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
-                    local fillAmount = remainingTime / skill.cooldownCache
-                    -- 更新冷却显示
-                    if card.node["冷却条"] then
-                        card.node["冷却条"].FillAmount = fillAmount
-                    end
-    
-                    -- 检查是否在冷却中
-                    local isOnCooldown = remainingTime > 0
-                    card:SetTouchEnable(not isOnCooldown, false)
-                    if isOnCooldown then
+                -- 检查是否在冷却中
+                local isOnCooldown = remainingTime > 0
+                card:SetTouchEnable(not isOnCooldown, false)
+                if isOnCooldown then
+                    if card.node["卡片框"] then
                         card.node["卡片框"].FillColor = ColorQuad.New(150, 150, 150, 255)
-                    else
+                    end
+                else
+                    if card.node["卡片框"] then
                         card.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
                     end
                 end
+            else
+                -- 如果没有冷却时间或冷却已结束，确保卡片显示正常颜色
+                if card.node["卡片框"] then
+                    card.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
+                end
+                if card.node["冷却条"] then
+                    card.node["冷却条"].FillAmount = 0
+                end
+                card:SetTouchEnable(true, false)
             end
         end
     end
@@ -270,7 +248,7 @@ function HudCards:UpdateMainCardDisplay()
 
         -- self.mainCardButton.clickCb = function(ui, button)
         --     -- 检查技能是否在冷却中
-        --     local currentTime = os.clock()
+        --     local currentTime = gg.GetTimeStamp()
         --     local lastCastTime = lastCastTimes[mainCardSkill.skillId]
         --     if lastCastTime and mainCardSkill.cooldownCache > 0 then
         --         local elapsedTime = currentTime - lastCastTime
@@ -283,7 +261,7 @@ function HudCards:UpdateMainCardDisplay()
         --     -- 释放主卡技能
         --     local direction = CameraController.GetForward()
         --     local targetPos, _ = CameraController.RaytraceScene({1})
-        --     lastCastTimes[mainCardSkill.skillId] = os.clock()
+        --     lastCastTimes[mainCardSkill.skillId] = gg.GetTimeStamp()
         --     gg.network_channel:FireServer({
         --         cmd = "CastSpell",
         --         skill = mainCardSkill.skillId,
@@ -370,7 +348,7 @@ function HudCards:RebindSubCardEvents()
                     return
                 end
                 -- 检查技能是否在冷却中
-                local currentTime = os.clock()
+                local currentTime = gg.GetTimeStamp()
                 local lastCastTime = lastCastTimes[skill.skillName]
                 if lastCastTime and skill.cooldownCache > 0 then
                     local elapsedTime = currentTime - lastCastTime
@@ -428,7 +406,7 @@ function HudCards:RebindSubCardEvents()
                 end
                 decal.Position = targetPos
 
-                end, 0, 0.067) 
+                end, 0, 0.067)
             end
 
             card.touchEndCb = function(ui, btn)
@@ -447,7 +425,7 @@ function HudCards:RebindSubCardEvents()
                     self.pressedSkillId = nil
                     return
                 end
-                local currentTime = os.clock()
+                local currentTime = gg.GetTimeStamp()
                 local lastCastTime = lastCastTimes[skill.skillName]
                 if lastCastTime and skill.cooldownCache > 0 then
                     local elapsedTime = currentTime - lastCastTime
@@ -481,7 +459,7 @@ function HudCards:RebindSubCardEvents()
                                 targetPos = localPlayer.Position + direction * indicatorRange
                             end
                         end
-                        lastCastTimes[skillName] = os.clock()
+                        lastCastTimes[skillName] = gg.GetTimeStamp()
                         gg.network_channel:FireServer({
                             cmd = "CastSpell",
                             skill = skill.skillType.name,
@@ -495,7 +473,7 @@ function HudCards:RebindSubCardEvents()
 
             card.touchMoveCb = function(ui, btn, vector2)
                 -- 检查技能是否在冷却中
-                local currentTime = os.clock()
+                local currentTime = gg.GetTimeStamp()
                 local lastCastTime = lastCastTimes[skill.skillName]
                 if lastCastTime and skill.cooldownCache > 0 then
                     local elapsedTime = currentTime - lastCastTime
@@ -550,7 +528,7 @@ function HudCards:OnInit(node, config)
     self.selectSkillCb = nil
     -- 注册技能同步事件监听
     ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SYNC_SKILLS, function(data)
-        self:OnSyncPlayerSkills(data) 
+        self:OnSyncPlayerSkills(data)
     end)
     ClientEventManager.Subscribe("AfkSpotSelectCard", function(data)
         local ui = ViewBase.GetUI("ForceClickHud") ---@cast ui ForceClickHud
@@ -703,3 +681,4 @@ end
 
 
 return HudCards.New(script.Parent, uiConfig)
+
