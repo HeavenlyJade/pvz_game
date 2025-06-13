@@ -91,20 +91,32 @@ function AfkSpot:OnInit(data, actor)
                 self.occupiedEntity.ModelId = skill.skillType.battleModel
                 self.occupiedEntity["Animator"].ControllerAsset = skill.skillType.battleAnimator
                 self.occupiedEntity.LocalScale = skill.skillType.afkScale
-                gg.log("self.occupiedEntity", skill.skillType.name, skill.skillType.afkScale)
                 -- local ModelPlayer = require(MainStorage.code.server.graphic.ModelPlayer) ---@type ModelPlayer
                 -- ModelPlayer.FetchModelSize(self.occupiedEntity, function (modelSize)
                 --     local selfSize = self:GetSize()
                 --     self.occupiedEntity.LocalScale = Vector3.New(selfSize.x / modelSize[1], selfSize.y / modelSize[2], selfSize.z / modelSize[3])
                 -- end)
             end
-            self:createTitle(string.format("%s的%s", player.name, skill.skillType.displayName))
             self.occupiedByPlayer = player
             self.selectedSkill = skill.skillType.name
             self:StartSpellTimer(player)
+            self:RefreshTitle()
             player:UpdateNearbyNpcsToClient()
         end
     end)
+end
+
+function AfkSpot:RefreshTitle()
+    local skill = self.occupiedByPlayer.skills[self.selectedSkill]
+    local maxGrowth = skill.skillType:GetMaxGrowthAtLevel(skill.level)
+    local growth = skill.growth
+    if growth >= maxGrowth then
+        self:createTitle(string.format("%s的%s\n%s级\n进度已满，可升级", 
+            self.occupiedByPlayer.name, skill.skillType.displayName, skill.level))
+    else
+        self:createTitle(string.format("%s的%s\n%s级\n进度%s/%s", 
+            self.occupiedByPlayer.name, skill.skillType.displayName, skill.level, growth, maxGrowth))
+    end
 end
 
 
@@ -157,7 +169,8 @@ function AfkSpot:GetInteractName(player)
         if self.occupiedByPlayer then
             --已有玩家在挂机
             if player == self.occupiedByPlayer then
-                return string.format("取消:%s", self.selectedSkill)
+                local skill = self.occupiedByPlayer.skills[self.selectedSkill]
+                return string.format("取消:%s", skill.skillType.displayName)
             else
                 return nil
             end
@@ -231,6 +244,7 @@ function AfkSpot:CastSpells(player)
         end
         local amount = (1+mult) * self.growthPerSecond
         skill.growth = amount + skill.growth
+        self:RefreshTitle()
         if player:IsNear(self:GetPosition(), 1000) then
             local loc = self:GetPosition()
             player:SendEvent("DropItemAnim", {

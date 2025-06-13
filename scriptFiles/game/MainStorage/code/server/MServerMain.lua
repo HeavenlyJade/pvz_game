@@ -150,11 +150,9 @@ function MainServer.player_enter_game(player)
     local ret2_, bag_ins = cloudDataMgr.ReadPlayerBag(player_)
     if ret2_ == 0 then
         gg.log('cloud_player_bag ok:', uin_)
-        player_:SendHoverText('加载玩家背包数据成功')
         bagMgr.setPlayerBagData(uin_, bag_ins)
     else
         gg.log('cloud_player_bag fail:', uin_)
-        player_:SendHoverText('加载玩家背包数据失败，请退出游戏后重试')
         return     --加载背包数据失败
     end
 

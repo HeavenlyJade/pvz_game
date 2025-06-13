@@ -79,6 +79,7 @@ function MobType:OnInit(data)
     self.attackSound = data["攻击音效"]
     self.hitSound = data["受击音效"]
     self.deadSound = data["死亡音效"]
+    self.dropMult = data["掉落倍率"]
 
     if data["技能"] then
         for _, skillData in ipairs(data["技能"]) do

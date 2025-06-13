@@ -33,15 +33,15 @@ function SkillType:OnInit(data)
     self.targetMode = data["目标模式"]
     self.category = data["技能分类"]
     self.upgradeCosts = data["升级需求素材"]
-    self.maxGrowthFormula = data["最大经验"]
     self.oneKeyUpgradeCosts = data["一键强化素材"]
     self.quality = data["技能品级"] or "R"
     self.battleModel = data["更改模型"]
     self.battleAnimator = data["更改动画"]
     self.battleStateMachine = data["更改状态机"]
+    self.battlePlayerSize = data["更改玩家尺寸"]
     self.afkScale = gg.Vec3.new(data["副卡挂机尺寸"]):ToVector3()
     self.freezesMove = data["禁止移动"]
-
+    self.maxGrowthFormula = data["最大经验"] or "10+(20*LVL)"
     local is = (data["指示器半径"] or 3) * 2
     self.indicatorScale = Vector3.New(is, is, is)
     self.indicatorRange = data["最大施法距离"] or 3000
@@ -83,17 +83,17 @@ function SkillType:GetMaxGrowthAtLevel(level)
     -- 检查是否存在最大经验公式
     if not self.maxGrowthFormula or self.maxGrowthFormula == "" then
         gg.log("警告: 技能", self.name, "没有设置最大经验公式，使用默认值100")
-        return 100  -- 返回默认值
+        return 100000000  -- 返回默认值
     end
-    
+
     local expr = self.maxGrowthFormula:gsub("LVL", tostring(level))
     if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
         print(string.format("技能%s的成长上限包含非法字符: %s", self.name, expr))
-        return 100  -- 返回默认值而不是0
+        return 100000000  -- 返回默认值而不是0
     end
 
     local result = gg.eval(expr)
-    return result or 100  -- 如果计算失败，返回默认值
+    return result or 100000000  -- 如果计算失败，返回默认值
 end
 
 function SkillType:GetOneKeyUpgradeCostsAtLevel(level)

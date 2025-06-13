@@ -80,7 +80,6 @@ function ViewList:SetElementSize(size)
     end
     for i = 1, size do
         if not self.childrens[i] then
-            gg.log("SetElementSize", self.path, self.ui.className, self.childrens)
             local child = self.childrens[1].node:Clone()
             child:SetParent(self.node)
             child.Name = self.childNameTemplate .. i

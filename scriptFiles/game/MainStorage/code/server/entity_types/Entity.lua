@@ -176,7 +176,6 @@ function _M:SetAnimationController(name)
                     self.modelPlayer:OnStand()
                 end
             end)
-            print("SetAnimationController", name)
         end
     end
 end
@@ -692,6 +691,10 @@ function _M:Die()
 end
 
 function _M:GetEnemyGroup()
+    if not self.actor then
+        print(debug.traceback())
+        return {1}
+    end
     local groupId = self.actor.CollideGroupID
     if groupId == 3 then
         return {4}

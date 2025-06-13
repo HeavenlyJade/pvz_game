@@ -15,8 +15,58 @@ local ServerEventManager = require(MainStorage.code.server.event.ServerEventMana
 ---@field maxCount number 最大召唤数量
 ---@field inheritLevel boolean 是否继承施法者等级
 ---@field duration number 召唤物持续时间
----@field summonerSummons table<Entity, Entity[]> 召唤者与其召唤物的映射表
+---@field summonerSummons table<Entity, table<Monster, Spell>> 召唤者与其召唤物的映射表
 local SummonSpell = ClassMgr.Class("SummonSpell", Spell)
+SummonSpell.summonerSummons = {} ---@type table<Entity, table<Monster, Spell>>
+SummonSpell.summoned2Caster = {} ---@type table<Entity, Entity>
+
+--- 处理怪物死亡事件
+---@param mob Monster 死亡的怪物
+local function OnMobDead(mob)
+    local summoner = SummonSpell.summoned2Caster[mob]
+    if not summoner then return end
+
+    -- 从召唤者列表中移除
+    local summons = SummonSpell.summonerSummons[summoner]
+    if summons then
+        summons[mob] = nil
+        -- 如果召唤者没有召唤物了，清理表项
+        if next(summons) == nil then
+            SummonSpell.summonerSummons[summoner] = nil
+        end
+    end
+
+    -- 从召唤物到召唤者的映射中移除
+    SummonSpell.summoned2Caster[mob] = nil
+end
+
+--- 处理战斗后事件
+---@param battle Battle 战斗实例
+local function OnPostBattle(battle)
+    -- 检查是否是主人的战斗
+    local attacker = battle.attacker
+    local target = battle.victim
+
+    local summons = SummonSpell.summonerSummons[attacker]
+    if not summons then return end
+
+    -- 遍历主人的所有召唤物
+    for mob, _ in pairs(summons) do
+        if mob and mob.isEntity and not mob.target then
+            mob:SetTarget(target)
+        end
+    end
+end
+
+-- 订阅怪物死亡事件
+ServerEventManager.Subscribe("MobDeadEvent", function(event)
+    OnMobDead(event.mob)
+end)
+
+-- 订阅战斗后事件
+ServerEventManager.Subscribe("PostBattleEvent", function(event)
+    OnPostBattle(event.battle)
+end)
 
 function SummonSpell:OnInit(data)
     self.summonAtTargetPos = data["召唤在目标位置"] ---@type boolean
@@ -25,77 +75,35 @@ function SummonSpell:OnInit(data)
     self.summonRadius = data["召唤范围"] or 100
     self.inheritLevel = data["继承等级"]
     self.duration = data["持续时间"]
-    self.summonerSummons = {}  -- 初始化召唤者-召唤物映射表
     self.projectileEffects = Graphics.Load(data["特效_召唤物"])
-
-    -- 订阅怪物死亡事件
-    ServerEventManager.Subscribe("MobDeadEvent", function(event)
-        self:OnMobDead(event.mob)
-    end)
-
-    -- 订阅战斗后事件
-    ServerEventManager.Subscribe("PostBattleEvent", function(event)
-        self:OnPostBattle(event.battle)
-    end)
-end
-
---- 处理怪物死亡事件
----@param mob Monster 死亡的怪物
-function SummonSpell:OnMobDead(mob)
-    -- 遍历所有召唤者
-    for summoner, summons in pairs(self.summonerSummons) do
-        -- 检查死亡的怪物是否是召唤物
-        for i, summoned in ipairs(summons) do
-            if summoned == mob then
-                -- 从列表中移除
-                table.remove(summons, i)
-                -- 如果召唤者没有召唤物了，清理表项
-                if #summons == 0 then
-                    self.summonerSummons[summoner] = nil
-                end
-                return
-            end
-        end
-    end
-end
-
---- 处理战斗后事件
----@param battle Battle 战斗实例
-function SummonSpell:OnPostBattle(battle)
-    -- 检查是否是主人的战斗
-    local attacker = battle.attacker
-    local summons = self.summonerSummons[attacker]
-    if not summons then return end
-
-    -- 如果主人有目标，让没有目标的召唤物攻击该目标
-    local target = battle.victim
-
-    -- 遍历主人的所有召唤物
-    for _, summon in ipairs(summons) do
-        if summon and summon.isEntity and not summon.target then
-            summon:SetTarget(target)
-        end
-    end
 end
 
 --- 获取召唤者的召唤物数量
 ---@param summoner Entity 召唤者
 ---@return number 召唤物数量
 function SummonSpell:GetSummonCount(summoner)
-    if not self.summonerSummons[summoner] then
-        return 0
+    local summons = SummonSpell.summonerSummons[summoner]
+    if not summons then return 0 end
+
+    local count = 0
+    for _, spell in pairs(summons) do
+        if spell == self then
+            count = count + 1
+        end
     end
-    return #self.summonerSummons[summoner]
+    return count
 end
 
 --- 添加召唤物到召唤者列表
 ---@param summoner Entity 召唤者
 ---@param summoned Entity 召唤物
 function SummonSpell:AddSummon(summoner, summoned)
-    if not self.summonerSummons[summoner] then
-        self.summonerSummons[summoner] = {}
+    if not SummonSpell.summonerSummons[summoner] then
+        SummonSpell.summonerSummons[summoner] = {}
     end
-    table.insert(self.summonerSummons[summoner], summoned)
+
+    SummonSpell.summonerSummons[summoner][summoned] = self
+    SummonSpell.summoned2Caster[summoned] = summoner
 
     -- 如果设置了持续时间，添加定时销毁
     if self.duration and self.duration > 0 then
@@ -111,33 +119,39 @@ end
 ---@param summoner Entity 召唤者
 ---@param summoned Entity 召唤物
 function SummonSpell:RemoveSummon(summoner, summoned)
-    if not self.summonerSummons[summoner] then
-        return
-    end
-    for i, summon in ipairs(self.summonerSummons[summoner]) do
-        if summon == summoned then
-            table.remove(self.summonerSummons[summoner], i)
-            break
+    local summons = SummonSpell.summonerSummons[summoner]
+    if not summons then return end
+
+    if summons[summoned] == self then
+        summons[summoned] = nil
+        SummonSpell.summoned2Caster[summoned] = nil
+        -- 如果召唤者没有召唤物了，清理表项
+        if next(summons) == nil then
+            SummonSpell.summonerSummons[summoner] = nil
         end
-    end
-    -- 如果召唤者没有召唤物了，清理表项
-    if #self.summonerSummons[summoner] == 0 then
-        self.summonerSummons[summoner] = nil
     end
 end
 
 --- 清理召唤者的所有召唤物
 ---@param summoner Entity 召唤者
 function SummonSpell:ClearSummons(summoner)
-    if not self.summonerSummons[summoner] then
-        return
-    end
-    for _, summoned in ipairs(self.summonerSummons[summoner]) do
-        if summoned and summoned.isEntity then
-            summoned:DestroyObject()
+    local summons = SummonSpell.summonerSummons[summoner]
+    if not summons then return end
+
+    for mob, spell in pairs(summons) do
+        if spell == self then
+            if mob and mob.isEntity then
+                mob:DestroyObject()
+            end
+            SummonSpell.summoned2Caster[mob] = nil
+            summons[mob] = nil
         end
     end
-    self.summonerSummons[summoner] = nil
+
+    -- 如果召唤者没有召唤物了，清理表项
+    if next(summons) == nil then
+        SummonSpell.summonerSummons[summoner] = nil
+    end
 end
 
 --- 检查是否可以释放魔法
@@ -182,7 +196,6 @@ function SummonSpell:CastReal(caster, target, param)
 
     -- 获取召唤位置
     local position
-    gg.log("spawnAtTargetPos", self.summonAtTargetPos, target, self:GetPosition(target))
     if self.summonAtTargetPos and target then
         position = self:GetPosition(target)
     else

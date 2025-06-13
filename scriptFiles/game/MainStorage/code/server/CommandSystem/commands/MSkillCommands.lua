@@ -120,7 +120,7 @@ function SkillCommands.setLevel(params, player)
     end
 
     local skillData = result.skillData
-    
+
     -- 生成成功消息
     local successMsg
     if skillData.removed then
@@ -131,7 +131,7 @@ function SkillCommands.setLevel(params, player)
         )
     else
         successMsg = SkillCommon.FormatSuccessMessage(
-            string.format("技能等级和经验设置成功：%d级→%d级，经验 %d→%d", 
+            string.format("技能等级和经验设置成功：%d级→%d级，经验 %d→%d",
                 skillData.originalLevel, skillData.level, skillData.originalGrowth, skillData.growth),
             player,
             skillName

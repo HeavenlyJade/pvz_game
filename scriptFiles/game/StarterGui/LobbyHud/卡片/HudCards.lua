@@ -119,9 +119,6 @@ end
 ---@param data SyncPlayerSkillsData
 function HudCards:OnSyncPlayerSkills(data)
     if not data or not data.skillData then return end
-    gg.log("获取来自服务端的技能数据111", data)
-    if not data or not data.skillData then return end
-    local skillDataDic = data.skillData.skills
     -- 清空现有技能数据
     skills = {}
     equippedSkills = {}
@@ -147,13 +144,11 @@ function HudCards:OnSyncPlayerSkills(data)
                 -- 主卡技能：slot不等于0且是主卡类型
                 if skill.equipSlot and skill.equipSlot ~= 0 then
                     self.mainCardData[skill.equipSlot] = skill
-                    gg.log("存储主卡技能:", skillId, "槽位:", skill.equipSlot)
                 end
             elseif skillType.category == 1 then
                 -- 副卡技能：slot不等于0且是副卡类型
                 if skill.equipSlot and skill.equipSlot ~= 0 then
                     self.subCardData[skill.equipSlot] = skill
-                    gg.log("存储副卡技能:", skillId, "槽位:", skill.equipSlot)
                 end
             end
         end
@@ -165,23 +160,17 @@ function HudCards:OnSyncPlayerSkills(data)
     end
     -- 更新卡片列表显示
     self:UpdateCardsDisplay()
-
-    gg.log("已同步技能数据:", skills, equippedSkills)
-    gg.log("主卡数据:", self.mainCardData)
-    gg.log("副卡数据:", self.subCardData)
 end
 
 -- 处理技能冷却更新事件
 ---@param data {cmd: string, skillId: string, cooldown: number}
 function HudCards:OnEquipSkillCooldownUpdate(data)
     if not data or not data.skillId or not data.cooldown then
-        gg.log("Invalid cooldown update data:", data)
         return
     end
 
     local skill = skills[data.skillId]
     if not skill then
-        gg.log("Skill not found for cooldown update:", data.skillId)
         return
     end
 
@@ -274,7 +263,6 @@ function HudCards:UpdateMainCardDisplay()
         local cardName = mainCardSkill.skillName
         self.mainCardButton.node["框体"]["Text"].Title = cardName
         local icon = mainCardSkill.skillType.icon
-        gg.log("更新主卡显示:")
         if icon  and icon ~= "" then
             self.mainCardButton.node["框体"]["主卡图标"].Icon =icon
 
@@ -305,12 +293,16 @@ function HudCards:UpdateMainCardDisplay()
         --     gg.log("释放主卡技能:", mainCardSkill.skillName)
         -- end
 
-        gg.log("更新主卡显示:", mainCardSkill.skillName, "等级:", mainCardSkill.level)
+        if self.mainCardButton.node["Title"] then
+            self.mainCardButton.node["Title"].Title = "未装备"
+        end
+        if self.mainCardButton.node["Text"] then
+            self.mainCardButton.node["Text"].Title = ""
+        end
     else
         self.mainCardButton.node["框体"]["Text"].Title = "未装备"
         -- 清除事件绑定
         self.mainCardButton.clickCb = nil
-
 
         if self.mainCardButton.node["Title"] then
             self.mainCardButton.node["Title"].Title = "未装备"
@@ -318,7 +310,6 @@ function HudCards:UpdateMainCardDisplay()
         if self.mainCardButton.node["Text"] then
             self.mainCardButton.node["Text"].Title = ""
         end
-        gg.log("主卡未装备")
     end
 end
 
@@ -349,7 +340,6 @@ function HudCards:UpdateSubCardDisplay()
             if icon and icon ~= "" then
                 card.node["图标"].Icon = icon
             end
-            gg.log("更新副卡显示 槽位" .. slotId .. ":", skill.skillName, "等级:", skill.level)
         end
     end
 
@@ -373,14 +363,8 @@ function HudCards:RebindSubCardEvents()
         local card = self.cardsList:GetChild(i) ---@cast card ViewButton
         ---@type Skill
         local skill = self.subCardData[slotId]
-        gg.log("重新绑定副卡事件",subCardSlots,slotId,skill )
 
         if skill then
-            -- 设置长按卸下装备功能
-            -- card.longPressCb = function(ui, btn)
-            --     gg.log("长按副卡，发送卸下装备请求:", skill.skillName)
-            --     self:SendUnequipRequest(skill.skillName)
-            -- end
             card.touchBeginCb = function(ui, btn, vector2)
                 if self.selectSkillCb then
                     return
@@ -402,10 +386,11 @@ function HudCards:RebindSubCardEvents()
                 postProcessing.ChromaticAberrationIterationStep = 5
                 postProcessing.ChromaticAberrationIterationSamples = 4
 
-                self:SetFov(30)
+                self:SetFov(58)
                 self.touchBeginPos = vector2
                 self.selectedCardSlot = slotId -- 改为使用slotId
                 self.selectedSkill = skill -- 直接存储技能对象
+                self.pressedSkillId = skill.skillName -- 记录按下时的技能ID
 
                 -- 创建追踪任务
                 if self.trackingTaskId then
@@ -459,6 +444,7 @@ function HudCards:RebindSubCardEvents()
                 if self.selectSkillCb then
                     self.selectSkillCb(btn.index, skill)
                     self.selectSkillCb = nil
+                    self.pressedSkillId = nil
                     return
                 end
                 local currentTime = os.clock()
@@ -467,6 +453,7 @@ function HudCards:RebindSubCardEvents()
                     local elapsedTime = currentTime - lastCastTime
                     local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
                     if remainingTime > 0 then
+                        self.pressedSkillId = nil
                         return -- 在冷却中，不处理触摸事件
                     end
                 end
@@ -479,29 +466,31 @@ function HudCards:RebindSubCardEvents()
 
                 self:SetFov(75)
 
-                -- 发送技能释放事件（使用新的数据结构）
-                if self.selectedSkill then
-                    local skillName = skill.skillName
-                    gg.log("释放副卡技能:",self.selectedSkill,skillName,self.selectedSkill[skillName])
-                    local direction = CameraController.GetForward()
-                    local targetPos, targetObj = CameraController.RaytraceScene({1, 2, 3})
-                    local indicatorRange = skill.skillType.indicatorRange
-                    if indicatorRange and indicatorRange > 0 then
-                        local distance = gg.vec.Distance3(targetPos, localPlayer.Position)
-                        if distance > indicatorRange then
-                            local direction = (targetPos - localPlayer.Position) / distance
-                            targetPos = localPlayer.Position + direction * indicatorRange
+                -- 只有按下和抬起是同一个技能才释放
+                if self.pressedSkillId == skill.skillName then
+                    -- 发送技能释放事件（使用新的数据结构）
+                    if self.selectedSkill then
+                        local skillName = skill.skillName
+                        local direction = CameraController.GetForward()
+                        local targetPos, targetObj = CameraController.RaytraceScene({1, 2, 3})
+                        local indicatorRange = skill.skillType.indicatorRange
+                        if indicatorRange and indicatorRange > 0 then
+                            local distance = gg.vec.Distance3(targetPos, localPlayer.Position)
+                            if distance > indicatorRange then
+                                local direction = (targetPos - localPlayer.Position) / distance
+                                targetPos = localPlayer.Position + direction * indicatorRange
+                            end
                         end
+                        lastCastTimes[skillName] = os.clock()
+                        gg.network_channel:FireServer({
+                            cmd = "CastSpell",
+                            skill = skill.skillType.name,
+                            targetPos = targetPos,
+                            direction = direction
+                        })
                     end
-                    lastCastTimes[skillName] = os.clock()
-                    gg.network_channel:FireServer({
-                        cmd = "CastSpell",
-                        skill = skill.skillType.name,
-                        targetPos = targetPos,
-                        direction = direction
-                    })
-                    gg.log("释放副卡技能:", self.selectedSkill[skillName], targetPos)
                 end
+                self.pressedSkillId = nil -- 抬起后清空
             end
 
             card.touchMoveCb = function(ui, btn, vector2)
@@ -548,7 +537,6 @@ end
 function HudCards:RegisterEventFunction()
     if self.CardpackButton then
         self.CardpackButton.clickCb = function (ui, button)
-            gg.log(ViewBase["CardsGui"],"点击事件")
             ViewBase["CardsGui"]:Open()
         end
     end
@@ -571,12 +559,10 @@ function HudCards:OnInit(node, config)
         for _, child in ipairs(self.cardsList.childrens) do ---@cast child ViewButton
             child:SetTouchEnable(false)
         end
-        gg.log("AfkSpotSelectCard", data)
         for _, index in ipairs(data.skills) do
             self.cardsList:GetChild(index - 1):SetTouchEnable(true)
         end
         self.selectSkillCb = function (index, skill) ---@cast skill Skill
-            gg.log("selectSkillCb", index, skill, data.npcId)
             gg.network_channel:FireServer({
                 cmd = "AfkSelectSkill",
                 npcId = data.npcId,
@@ -616,17 +602,11 @@ function HudCards:OnInit(node, config)
         return button
     end) ---@type ViewList<ViewButton>
     self:RegisterEventFunction()
-
-    -- ClientScheduler.add(function ()
-    --     gg.log("HudMenu:OnInit", ViewBase.GetUI("ForceClickHud"), self:Get("卡包", ViewButton))
-    --     ViewBase.GetUI("ForceClickHud"):FocusOnNode(self:Get("卡包", ViewButton).node)
-    -- end, 1)
 end
 
 -- === 新增：发送卸下装备请求 ===
 ---@param skillName string 要卸下的技能名称
 function HudCards:SendUnequipRequest(skillName)
-    gg.log("发送卸下装备请求:", skillName)
     gg.network_channel:FireServer({
         cmd = SkillEventConfig.REQUEST.UNEQUIP,
         skillName = skillName
@@ -637,7 +617,6 @@ end
 ---@param data table 装备技能响应数据 {skillName: string, slot: number}
 function HudCards:OnEquipSkillResponse(data)
     if not data or not data.data then
-        gg.log("装备技能响应数据无效:", data)
         return
     end
 
@@ -645,12 +624,9 @@ function HudCards:OnEquipSkillResponse(data)
     local skillName = responseData.skillName
     local slot = responseData.slot
 
-    gg.log("收到装备技能响应:", skillName, "槽位:", slot)
-
     -- 获取技能对象
     local skill = skills[skillName]
     if not skill then
-        gg.log("未找到技能对象:", skillName)
         return
     end
 
@@ -666,11 +642,9 @@ function HudCards:OnEquipSkillResponse(data)
         if skillType.category == 0 then
             -- 主卡技能
             self.mainCardData[slot] = skill
-            gg.log("装备主卡技能:", skillName, "槽位:", slot)
         elseif skillType.category == 1 then
             -- 副卡技能
             self.subCardData[slot] = skill
-            gg.log("装备副卡技能:", skillName, "槽位:", slot)
         end
 
         -- 更新装备技能列表
@@ -679,15 +653,12 @@ function HudCards:OnEquipSkillResponse(data)
 
     -- 重新更新卡片显示
     self:UpdateCardsDisplay()
-
-    gg.log("装备技能处理完成:", skillName, "槽位:", slot)
 end
 
 -- === 新增：处理卸下装备响应 ===
 ---@param data table 卸下装备响应数据 {skillName: string, slot: number, level: number}
 function HudCards:OnUnequipSkillResponse(data)
     if not data or not data.data then
-        gg.log("卸下装备响应数据无效:", data)
         return
     end
 
@@ -695,14 +666,11 @@ function HudCards:OnUnequipSkillResponse(data)
     local skillName = responseData.skillName
     local oldSlot = nil
 
-    gg.log("收到卸下装备响应:", skillName, "新槽位:", responseData.slot)
-
     -- 从主卡数据中移除
     for slotId, skill in pairs(self.mainCardData) do
         if skill.skillName == skillName then
             oldSlot = slotId
             self.mainCardData[slotId] = nil
-            gg.log("从主卡数据中移除技能:", skillName, "原槽位:", slotId)
             break
         end
     end
@@ -713,7 +681,6 @@ function HudCards:OnUnequipSkillResponse(data)
             if skill.skillName == skillName then
                 oldSlot = slotId
                 self.subCardData[slotId] = nil
-                gg.log("从副卡数据中移除技能:", skillName, "原槽位:", slotId)
                 break
             end
         end
@@ -722,19 +689,15 @@ function HudCards:OnUnequipSkillResponse(data)
     -- 更新本地技能数据
     if skills[skillName] then
         skills[skillName].equipSlot = 0  -- 卸下后槽位为0
-        gg.log("更新本地技能装备槽位:", skillName, "新槽位: 0")
     end
 
     -- 从装备技能列表中移除
     if oldSlot and equippedSkills[oldSlot] == skillName then
         equippedSkills[oldSlot] = nil
-        gg.log("从装备技能列表中移除:", skillName, "槽位:", oldSlot)
     end
 
     -- 重新更新卡片显示（让UpdateCardsDisplay统一处理界面更新）
     self:UpdateCardsDisplay()
-
-    gg.log("卸下装备处理完成:", skillName, "原槽位:", oldSlot)
 end
 
 

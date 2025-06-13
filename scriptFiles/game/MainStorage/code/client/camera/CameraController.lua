@@ -183,6 +183,7 @@ function CameraController.SetActive(active)
             end
         )
     else
+        _camera.CameraType = Enum.CameraType.Custom
         -- 断开所有事件连接的代码保持不变...
         if _TouchStartedEvent then
             _TouchStartedEvent:Disconnect()
@@ -627,4 +628,5 @@ function CameraController.IsShaking()
     return ShakeController.IsShaking()
 end
 
+CameraController.SetActive(true)
 return CameraController

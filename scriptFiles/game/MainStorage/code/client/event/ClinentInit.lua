@@ -22,7 +22,6 @@ function ClientInit.registerEventHandlers()
 
     ClientEventManager.Subscribe("cmd_update_player_ui", function(player_data)
         -- 处理转发后的本地事件
-        gg.log("cmd_update_player_uidata",player_data)
         ClientInit.updatePlayerUI(player_data)
     end)
 end

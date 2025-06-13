@@ -120,7 +120,6 @@ function ForceClickHud:FocusOnNode(node, text, allowClickAnywhere)
     local size = node.Size
     local pos = node:GetGlobalPos() - Vector2.New(node.Pivot.x * size.x, node.Pivot.y * size.y)
     if self.nodePressCb then
-        gg.log("FocusOnNode", self.nodePressCb)
         self.nodePressCb:Disconnect()
         self.nodePressCb = nil
     end
@@ -134,7 +133,7 @@ function ForceClickHud:FocusOnNode(node, text, allowClickAnywhere)
         if self.text.Position.y < 0 then
             self.text.Position = Vector2.New(self.text.Position.x, pos.y + size.y)
         end
-        self.text.Title = text
+        self.text.Title = text:gsub("\\n", "\n")
         self.text.Visible = true
     else
         self.text.Visible = false

@@ -31,7 +31,8 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 local _M = ClassMgr.Class('Monster', Entity)
 local MOB_COLLIDE_GROUP = 3
 game:GetService("PhysXService"):SetCollideInfo(3, 3, false)
-
+game:GetService("PhysXService"):SetCollideInfo(4, 4, false)
+game:GetService("PhysXService"):SetCollideInfo(2, 2, false)
 --------------------------------------------------
 -- 初始化与基础方法
 --------------------------------------------------
@@ -60,6 +61,9 @@ function _M:OnInit(info_)
 
     -- 初始化音效计时器
     self.idleSoundTimer = 0
+
+    -- 初始化伤害记录
+    self.damageRecords = {} ---@type table<string, number> 记录每个玩家造成的伤害
 end
 
 _M.GenerateUUID = function(self)
@@ -74,14 +78,17 @@ end
 
 ---@override
 function _M:Die()
+    -- 发布怪物死亡事件，包含伤害记录
+    ServerEventManager.Publish("MobDeadEvent", {
+        mob = self,
+        damageRecords = self.damageRecords
+    })
+    
     -- 播放死亡音效
     if self.mobType.deadSound then
         self.scene:PlaySound(self.mobType.deadSound, self.actor, 1.0, 1.0)
     end
 
-    ServerEventManager.Publish("MobDeadEvent", {
-        mob = self
-    })
     Entity.Die(self)
 end
 
@@ -198,11 +205,45 @@ function _M:TryFindTarget(detectRange)
     return false
 end
 
+---获取玩家造成的伤害
+---@param player Player 玩家对象
+---@return number 玩家造成的总伤害
+function _M:GetPlayerDamage(player)
+    if not player or not player.uin then return 0 end
+    return self.damageRecords[player.uin] or 0
+end
+
+---获取所有玩家的伤害记录
+---@return table<string, number> 玩家伤害记录表
+function _M:GetAllDamageRecords()
+    return self.damageRecords
+end
+
 ---@override
 function _M:Hurt(amount, damager, isCrit)
     -- 播放受击音效
     if self.mobType.hitSound and amount > self.health * 0.05 then
         self.scene:PlaySound(self.mobType.hitSound, self.actor, 0.8, 1.0)
+    end
+
+    -- 记录玩家造成的伤害
+    if damager then
+        local uin = damager.uuid
+        if damager.isPlayer then
+            uin = damager.uin
+        end
+        local newHatred = (self.damageRecords[uin] or 0) + amount
+        self.damageRecords[uin] = newHatred
+        if self.target and self.target ~= damager then
+            local targetUin = self.target.uuid
+            if self.target.isPlayer then
+                targetUin = self.target.uin
+            end
+            local currentHatred = self.damageRecords[targetUin]
+            if not currentHatred or currentHatred < newHatred then
+                self:SetTarget(damager)
+            end
+        end
     end
 
     Entity.Hurt(self, amount, damager, isCrit)

@@ -218,6 +218,11 @@ end
 function ProjectileSpell:UpdateProjectile(id)
     local item = self.activeProjectiles[id] ---@type ProjectileItem
     if not item then return end
+    -- 新增：如果施法者已死亡，立即销毁飞弹并终止后续逻辑
+    if item.caster.isDestroyed then
+        self:DestroyProjectile(id)
+        return
+    end
     
     -- 应用重力
     if self.gravity ~= 0 then
@@ -306,7 +311,7 @@ function ProjectileSpell:UpdateProjectile(id)
             Vec3.new(item.actor.Position) + Vec3.new(0, item.size.y / 2, 0):ToVector3(),
             Vec3.new(20, 20, 20):ToVector3(),
             item.actor.LocalEuler,
-            {1}
+            {1, 2}
         )
         if hitGround and #hitGround > 0 then
             self:MarkDestroy(item)
@@ -396,7 +401,7 @@ function ProjectileSpell:DestroyProjectile(id)
     end
 
     -- 在飞弹消失位置释放结束子魔法
-    if #self.subSpellsOnEnd > 0 then
+    if not item.caster.isDestroyed and #self.subSpellsOnEnd > 0 then
         local finalPosition = Vec3.new(item.actor.Position)
         for _, subSpell in ipairs(self.subSpellsOnEnd) do
             subSpell:Cast(item.caster, finalPosition, item.param)

@@ -44,7 +44,7 @@ function Quest:OnInit(data)
     self.finishCommands = data["完成指令"] ---@type string[]
     self.gotoSceneNode = data["前往场景节点"] ---@type string
     self.focusOnUI = data["聚焦场景UI"]
-    if not self.focusOnUI["聚焦UI"] then
+    if self.focusOnUI and not self.focusOnUI["聚焦UI"] then
         self.focusOnUI = nil
     end
     self.nextQuest = data["自动领取下一任务"]

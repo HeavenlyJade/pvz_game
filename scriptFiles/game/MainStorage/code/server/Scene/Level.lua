@@ -4,7 +4,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local LevelType = require(MainStorage.code.common.config_type.LevelType) ---@type LevelType
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-
+local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
 ---@class Level
 ---@field New fun( levelType:LevelType, scene:Scene, index:number ):Level
 local Level = ClassMgr.Class("Level")
@@ -81,10 +81,65 @@ function Level:OnInit(levelType, scene, index)
                 })
             end
             
+            -- 处理击杀奖励
+            if data.damageRecords then
+                local topDamager = nil
+                local maxDamage = 0
+                
+                -- 找出造成伤害最高的玩家
+                for entityUuid, damage in pairs(data.damageRecords) do
+                    -- 检查是否是玩家造成的伤害
+                    local player = self.players[entityUuid]
+                    if player and damage > maxDamage then
+                        topDamager = player
+                        maxDamage = damage
+                    end
+                end
+                if topDamager then
+                    if self.levelType.dropItems and #self.levelType.dropItems > 0 then
+                        -- 计算总比重
+                        local totalWeight = 0
+                        for _, item in ipairs(self.levelType.dropItems) do
+                            totalWeight = totalWeight + (tonumber(item["比重"]) or 1)
+                        end
+                        
+                        -- 随机选择掉落物
+                        local randomWeight = math.random() * totalWeight
+                        local currentWeight = 0
+                        local selectedItem = nil
+                        
+                        for _, item in ipairs(self.levelType.dropItems) do
+                            currentWeight = currentWeight + (tonumber(item["比重"]) or 1)
+                            if randomWeight <= currentWeight then
+                                selectedItem = item
+                                break
+                            end
+                        end
+                        
+                        if selectedItem then
+                            -- 计算基础数量
+                            local baseCount = gg.eval(selectedItem["数量"]:gsub("LVL", tostring(data.mob.level)))
+                            if self.levelType.dropModifier then
+                                local castParam = self.levelType.dropModifier:Check(topDamager, topDamager)
+                                if castParam.cancelled then
+                                    baseCount = 0
+                                else
+                                    baseCount = baseCount * castParam.power
+                                end
+                            end
+                            if baseCount > 0 then
+                                -- 如果没有修改器，直接发放基础数量
+                                topDamager.bag:GiveItem(ItemTypeConfig.Get(selectedItem["物品"]):ToItem(baseCount))
+                            end
+                        end
+                    end
+                end
+            end
+            
             self.activeMobs[data.mob.uuid] = nil
             
             -- 检查波次是否结束
-            if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 then
+            if self.remainingMobCount == 0 and #self.spawningWaves == 0 and #self.notSpawningWaves == 0 then
                 self:OnWaveEnd()
             end
         end
@@ -140,6 +195,7 @@ function Level:Start()
                 player.actor.Gravity = oldGrav
                 player.actor.Position = entryPoint.Position
                 player:EnterBattle()
+                player:SetMoveable(false)
             end, 3)
         end
         
@@ -164,6 +220,18 @@ function Level:InitializeWaves()
     self.mobCount = {}
 end
 
+---计算玩家平均等级
+---@return number 平均等级
+function Level:GetAveragePlayerLevel()
+    local totalLevel = 0
+    local playerCount = 0
+    for _, player in pairs(self.players) do
+        totalLevel = totalLevel + player.level
+        playerCount = playerCount + 1
+    end
+    return playerCount > 0 and math.floor(totalLevel / playerCount) or self.levelType.monsterLevel
+end
+
 ---开始波次
 function Level:StartWave()
     if #self.allWaves == 0 then
@@ -176,8 +244,10 @@ function Level:StartWave()
     self.currentWave = table.remove(self.allWaves, 1)
     self.waveCount = self.waveCount + 1
 
-    -- 计算当前波次的怪物总数
-    self.currentWaveMobCount = self.currentWave:CalculateMobCount()
+    -- 计算当前波次的怪物总数，考虑玩家数量倍率
+    local playerCount = #self.players
+    local baseMobCount = self.currentWave:CalculateMobCount()
+    self.currentWaveMobCount = math.floor(baseMobCount * self.levelType:GetScaledMultiplier(1, playerCount))
     self.remainingMobCount = self.currentWaveMobCount
 
     -- 初始化未开始的刷怪波次
@@ -195,7 +265,6 @@ function Level:StartWave()
 
     -- 通知玩家波次开始和初始怪物数量
     for _, player in pairs(self.players) do
-        player:SendChatText(string.format("Wave %d started!", self.waveCount))
         player:SendEvent("WaveHealthUpdate", {
             waveIndex = self.waveCount,
             healthPercent = 1.0
@@ -231,12 +300,22 @@ function Level:Update()
     -- 更新所有正在进行的刷怪波次
     for i = #self.spawningWaves, 1, -1 do
         local wave = self.spawningWaves[i]
-        local isComplete, spawnedMobs = wave:TrySpawn(newTimeElapsed - self.timeElapsed, self.levelType.monsterLevel, self.currentWave.attributeMultiplier, self)
-        
+        -- 计算基于玩家数量的属性倍率
+        local playerCount = #self.players - 1
+        local monsterLevel = self:GetAveragePlayerLevel()
+        local isComplete, spawnedMobs = wave:TrySpawn(
+            newTimeElapsed - self.timeElapsed, 
+            monsterLevel, 
+            self
+        )
         -- 处理生成的怪物
         for _, mob in ipairs(spawnedMobs) do
             -- 缓存怪物实例
             self.activeMobs[mob.uuid] = mob
+            for attrName, baseMultiplier in pairs(self.levelType.playerAttributeMultiplier) do
+                local mult = baseMultiplier * (playerCount - 1)
+                mob:AddStat(attrName, mult * mob:GetStat(attrName), "BASE", true)
+            end
             
             -- 随机选择一个玩家作为目标
             local players = {}
@@ -267,17 +346,6 @@ function Level:OnWaveEnd()
     -- 清理当前波次的所有刷怪波次
     self.spawningWaves = {}
     self.notSpawningWaves = {}
-    
-    -- 发放奖励
-    for _, player in pairs(self.players) do
-        player:AddStat("Spirit", self.currentWave.spiritReward)
-    end
-
-    -- 通知玩家
-    for _, player in pairs(self.players) do
-        player:SendChatText(string.format("Wave %d completed!", self.waveCount))
-    end
-
     -- 开始下一波
     self:StartWave()
 end
@@ -334,12 +402,12 @@ function Level:End(success)
     for _, player in pairs(self.players) do
         local originalPos = self.playerOriginalPositions[player.uin]
         if player.actor and originalPos then
+            player:ProcessQuestEvent("level_".. self.levelType.levelId, 1)
             player.actor.Position = originalPos.position
             player.actor.Euler = originalPos.euler
             player:SetCameraView(originalPos.euler)
             player:ExitBattle()
             player:SendChatText("已传送回原位置")
-            player:ProcessQuestEvent("level_".. self.levelType.levelId)
         end
     end
 

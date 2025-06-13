@@ -32,7 +32,6 @@ function HealthCondition:Check(modifier, caster, target)
     else
         amount = target.health
     end
-    gg.log("HealthCondition", target, target:GetStat("生命"), amount, self.minValue, self.maxValue)
     return self:CheckAmount(modifier, amount)
 end
 
@@ -117,6 +116,8 @@ function TagLevelCondition:Check(modifier, caster, target)
     return false
 end
 
+
+
 ---@class ShieldCondition:BetweenCondition
 local ShieldCondition = ClassMgr.Class("ShieldCondition", BetweenCondition)
 function ShieldCondition:OnInit(data)
@@ -177,6 +178,13 @@ function QuestCondition:Check(modifier, caster, target)
     return false
 end
 
+---@class WorldTimeCondition:BetweenCondition
+local WorldTimeCondition = ClassMgr.Class("WorldTimeCondition", BetweenCondition)
+function WorldTimeCondition:Check(modifier, caster, target)
+    local Scene = require(MainStorage.code.server.Scene)         ---@type Scene
+    return self:CheckAmount(modifier, Scene.worldTime)
+end
+
 return {
     Condition = Condition,
     BetweenCondition = BetweenCondition,
@@ -188,5 +196,6 @@ return {
     BuffActiveCondition = BuffActiveCondition,
     TagLevelCondition = TagLevelCondition,
     ShieldCondition = ShieldCondition,
-    QuestCondition = QuestCondition
+    QuestCondition = QuestCondition,
+    WorldTimeCondition = WorldTimeCondition
 }

@@ -27,7 +27,7 @@ end
 
 ---@param amount number
 function AcceptedQuest:AddProgress(amount)
-    if self:IsCompleted() then
+    if self:IsCompleted() or not amount or amount <= 0 then
         return
     end
     self.progress = math.min(self.progress + amount, self.quest.completionCount)

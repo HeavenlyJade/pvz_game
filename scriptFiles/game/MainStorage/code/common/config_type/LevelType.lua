@@ -6,6 +6,13 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
 local WeightedRandomSelector = require(MainStorage.code.common.WeightedRandomSelector) ---@type WeightedRandomSelector
 local LevelConfig = require(MainStorage.code.common.config.LevelConfig)  ---@type LevelConfig
+local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+
+
+---@class DropItemInfo
+---@field 物品 string
+---@field 数量 string
+---@field 比重 string
 
 ---@class SpawningMob:Class
 ---@field mobType MobType
@@ -62,11 +69,10 @@ end
 ---尝试生成怪物
 ---@param deltaTime number 距离上次更新的时间间隔
 ---@param level number 怪物等级
----@param multiplier number 属性倍率
 ---@param levelInst Level 刷怪点列表
 ---@return boolean 是否完成生成
 ---@return Monster[] 生成的怪物实例列表
-function SpawningWave:TrySpawn(deltaTime, level, multiplier, levelInst)
+function SpawningWave:TrySpawn(deltaTime, level, levelInst)
     -- 计算这次要生成的怪物数量
     local spawnCountF = deltaTime * self.spawnsPerSecond
     local spawnCount = math.floor(spawnCountF)
@@ -211,12 +217,18 @@ function LevelType:OnInit(data)
     self.threeStarConditions = data["条件_3星"] or Modifiers.New({}) ---@type Modifiers
     self.monsterLevel = data["怪物等级"] or 1 ---@type number
     self.level = data["等级"] or 1 ---@type number
+    self.dropItems = data["掉落物"] ---@type DropItemInfo[]
+    self.dropModifier = Modifiers.New(data["掉落物数量修改"]) ---@type Modifiers
+
+    -- 玩家数量倍率配置
+    self.playerCountMultiplier = data["每个玩家增加数量倍率"] or 0 ---@type number
+    self.playerAttributeMultiplier = data["每个玩家增加属性倍率"] or {} ---@type table<string, number>
 
     -- 初始化匹配相关属性
     self.matchQueue = {} ---@type table<string, Player>
     self.playerCount = 0 ---@type number
-    self.virtualPlayerCount = 0 ---@type number
-    self.virtualPlayerTimer = 0 ---@type number
+    self.remainingTime = 0 ---@type number
+    self.lastUpdateTime = 0 ---@type number
 
     -- 加载波次数据
     self.waves = {} ---@type Wave[]
@@ -240,6 +252,14 @@ function LevelType:OnInit(data)
     else
         print(string.format("Warning: Failed to find scene node at %s", data["场景"]))
     end
+
+    -- 注册事件处理器
+    ServerEventManager.Subscribe("LeaveQueue", function(evt)
+        local player = evt.player
+        if player then
+            self:LeaveQueue(player)
+        end
+    end)
 end
 
 --------------------------------------------------
@@ -249,32 +269,31 @@ end
 ---检查是否可以开始游戏
 ---@return boolean
 function LevelType:CanStartGame()
-    return self.playerCount + self.virtualPlayerCount >= self.maxPlayers
+    return self.remainingTime <= 0
 end
 
----更新假人计数
-function LevelType:UpdateVirtualPlayerCount()
+---更新匹配时间
+function LevelType:UpdateMatchTime()
     local currentTime = os.time()
+    local deltaTime = currentTime - self.lastUpdateTime
+    self.lastUpdateTime = currentTime
     
-    -- 如果真实玩家数达到开始玩家数，且距离上次更新超过额外玩家时间
-    if self.playerCount >= self.startPlayers and currentTime - self.virtualPlayerTimer >= self.extraPlayerTime then
-        -- 如果真实玩家数+假人数未达到最大玩家数，增加一个假人
-        if self.playerCount + self.virtualPlayerCount < self.maxPlayers then
-            self.virtualPlayerCount = self.virtualPlayerCount + 1
-            self.virtualPlayerTimer = currentTime
-            
-            -- 通知队列中的玩家
-            for _, player in pairs(self.matchQueue) do
-                player:SendEvent("MatchProgressUpdate", {
-                    currentCount = self.playerCount + self.virtualPlayerCount,
-                    totalCount = self.maxPlayers
-                })
-            end
-            
-            -- 检查是否可以开始游戏
-            if self:CanStartGame() then
-                self:StartLevel()
-            end
+    if self.remainingTime > 0 then
+        self.remainingTime = math.max(0, self.remainingTime - deltaTime)
+        
+        -- 通知队列中的玩家当前匹配进度
+        for _, player in pairs(self.matchQueue) do
+            player:SendEvent("MatchProgressUpdate", {
+                currentCount = self.playerCount,
+                totalCount = self.maxPlayers,
+                levelName = self.levelId,
+                remainingTime = self.remainingTime
+            })
+        end
+        
+        -- 检查是否可以开始游戏
+        if self:CanStartGame() then
+            self:StartLevel()
         end
     end
 end
@@ -324,15 +343,22 @@ function LevelType:Queue(player)
     self.playerCount = self.playerCount + 1
     player:SendChatText("已加入匹配队列")
     
-    -- 重置假人计数和计时器
-    self.virtualPlayerCount = 0
-    self.virtualPlayerTimer = os.time()
+    -- 如果是第一个玩家，初始化匹配时间
+    if self.playerCount == 1 then
+        self.remainingTime = (self.maxPlayers - 1) * self.extraPlayerTime
+        self.lastUpdateTime = os.time()
+    else
+        -- 每加入一个玩家，减少匹配时间
+        self.remainingTime = math.max(0, self.remainingTime - self.extraPlayerTime)
+    end
 
     -- 通知所有玩家当前匹配进度
     for _, p in pairs(self.matchQueue) do
         p:SendEvent("MatchProgressUpdate", {
             currentCount = self.playerCount,
-            totalCount = self.maxPlayers
+            totalCount = self.maxPlayers,
+            levelName = self.levelId,
+            remainingTime = self.remainingTime
         })
     end
 
@@ -348,19 +374,31 @@ end
 function LevelType:StartLevel()
     -- 找到一个可用的关卡实例
     local availableLevel = nil
-    -- for _, level in ipairs(self.levels) do
-    --     if not level.isActive then
-    --         availableLevel = level
-    --         break
-    --     end
-    -- end
-    gg.log("Start availableLevel", availableLevel)
+    
+    -- 遍历所有关卡实例，找到没有玩家的场景
+    for _, level in ipairs(self.levels) do
+        if not level.isActive then
+            -- 检查场景中是否有玩家
+            local hasPlayers = false
+            for _ in pairs(level.scene.players) do
+                hasPlayers = true
+                break
+            end
+            
+            if not hasPlayers then
+                availableLevel = level
+                break
+            end
+        end
+    end
+    
+    -- 如果没有找到可用的关卡实例，创建新的
     if not availableLevel then
         local newScene = self.levels[1].scene:Clone()
         local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
         availableLevel = Level.New(self, newScene, #self.levels + 1)
         table.insert(self.levels, availableLevel)
-        gg.log("Clone", newScene.name)
+        gg.log("Created new level instance with scene:", newScene.name)
     end
 
     -- 将队列中的玩家添加到关卡
@@ -368,11 +406,9 @@ function LevelType:StartLevel()
         availableLevel:AddPlayer(player)
     end
 
-    -- 清空匹配队列和假人计数
+    -- 清空匹配队列
     self.matchQueue = {}
     self.playerCount = 0
-    self.virtualPlayerCount = 0
-    self.virtualPlayerTimer = 0
 
     -- 开始关卡
     availableLevel:Start()
@@ -393,27 +429,49 @@ function LevelType:LeaveQueue(player)
         player:SendChatText("已离开匹配队列")
         player:SendEvent("MatchCancel")
         
-        -- 如果真实玩家数低于开始玩家数，重置假人计数
-        if self.playerCount < self.startPlayers then
-            self.virtualPlayerCount = 0
-            self.virtualPlayerTimer = os.time()
-        end
+        -- 玩家退出时，增加匹配时间
+        self.remainingTime = self.remainingTime + self.extraPlayerTime
 
         -- 通知剩余玩家当前匹配进度
         for _, p in pairs(self.matchQueue) do
             p:SendEvent("MatchProgressUpdate", {
                 currentCount = self.playerCount,
-                totalCount = self.maxPlayers
+                totalCount = self.maxPlayers,
+                levelName = self.levelId,
+                remainingTime = self.remainingTime
             })
         end
     end
 end
 
--- 创建定时器更新所有关卡类型的假人计数
+-- 创建定时器更新所有关卡类型的匹配时间
 ServerScheduler.add(function()
     for _, levelType in pairs(LevelConfig.GetAll()) do
-        levelType:UpdateVirtualPlayerCount()
+        levelType:UpdateMatchTime()
     end
 end, 1, 1)
+
+---获取基于玩家数量的属性倍率
+---@param baseMultiplier number 基础倍率
+---@param playerCount number 玩家数量
+---@return number 计算后的倍率
+function LevelType:GetScaledMultiplier(baseMultiplier, playerCount)
+    if playerCount <= 1 then
+        return baseMultiplier
+    end
+    return baseMultiplier * (1 + self.playerCountMultiplier * (playerCount - 1))
+end
+
+---获取基于玩家数量的属性倍率
+---@param attributeName string 属性名称
+---@param playerCount number 玩家数量
+---@return number 计算后的倍率
+function LevelType:GetScaledAttributeMultiplier(attributeName, playerCount)
+    if playerCount <= 1 then
+        return 1
+    end
+    local baseMultiplier = self.playerAttributeMultiplier[attributeName] or 0
+    return 1 + baseMultiplier * (playerCount - 1)
+end
 
 return LevelType 

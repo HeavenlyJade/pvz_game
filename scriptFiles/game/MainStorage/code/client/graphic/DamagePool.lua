@@ -83,8 +83,10 @@ end
 ---@param isCrit boolean
 ---@param position Vector3
 local function ShowDamage(node, amount, isCrit, position)
+    -- 确保amount是有效的数字
+    amount = tonumber(amount) or 0
     -- 将数字转换为字符串
-    local amountStr = tostring(amount)
+    local amountStr = tostring(math.floor(amount))
     local digitCount = #amountStr
     
     -- 计算起始位置，使数字居中显示
@@ -96,9 +98,13 @@ local function ShowDamage(node, amount, isCrit, position)
         if i >= startIndex and i < startIndex + digitCount then
             -- 显示数字
             local digit = tonumber(string.sub(amountStr, i - startIndex + 1, i - startIndex + 1))
-            local lane = isCrit and CRIT_LANE or NORMAL_LANE
-            damageImg.Icon = string.format("sandboxId://textures/ui/伤害数字/piece_%d_%d.png", lane, digit)
-            damageImg.Visible = true
+            if digit then
+                local lane = isCrit and CRIT_LANE or NORMAL_LANE
+                damageImg.Icon = string.format("sandboxId://textures/ui/伤害数字/piece_%d_%d.png", lane, digit)
+                damageImg.Visible = true
+            else
+                damageImg.Visible = false
+            end
         else
             -- 隐藏多余的数字位
             damageImg.Visible = false
@@ -124,10 +130,12 @@ end
 
 -- 处理伤害事件
 local function OnDamageEvent(evt)
+    if not evt or not evt.amount then return end
+    
     local damageNode = GetNode()
     -- 显示伤害数字
     local position = Vector3.New(evt.position.x, evt.position.y, evt.position.z)
-    ShowDamage(damageNode, evt.amount, evt.isCrit, position)
+    ShowDamage(damageNode, evt.amount, evt.isCrit or false, position)
 end
 
 -- 初始化对象池

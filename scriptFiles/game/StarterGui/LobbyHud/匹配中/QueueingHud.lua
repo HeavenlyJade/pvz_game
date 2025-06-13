@@ -16,13 +16,30 @@ local uiConfig = {
     hideOnInit = true,
 }
 
+-- 格式化时间显示
+local function FormatTime(seconds)
+    if seconds <= 0 then
+        return "即将开始"
+    end
+    local minutes = math.floor(seconds / 60)
+    local remainingSeconds = math.floor(seconds % 60)
+    return string.format("%02d:%02d", minutes, remainingSeconds)
+end
+
 function QueueingHud:OnInit(node, config)
     local exitButton = self:Get("匹配底图/退出按钮", ViewButton)
     self.matchProgress = self:Get("匹配底图/匹配进度") ---@type ViewComponent
     
     ClientEventManager.Subscribe("MatchProgressUpdate", function(data)
         if data.currentCount and data.totalCount then
-            self.matchProgress.node.Title = string.format("匹配中: %d/%d", data.currentCount, data.totalCount)
+            -- 更新匹配进度文本，包含关卡名称和剩余时间
+            local timeText = data.remainingTime and FormatTime(data.remainingTime) or ""
+            self.matchProgress.node.Title = string.format("匹配 %s: %d/%d %s", 
+                data.levelName, 
+                data.currentCount, 
+                data.totalCount,
+                timeText
+            )
             self:Open()
         end
     end)
@@ -37,6 +54,13 @@ function QueueingHud:OnInit(node, config)
     ClientEventManager.Subscribe("MatchCancel", function()
         -- 匹配取消时关闭UI
         self:Close()
+    end)
+
+    -- 监听进入匹配队列事件
+    ClientEventManager.Subscribe("EnterQueue", function(data)
+        if data.levelName then
+            self.currentLevelName = data.levelName
+        end
     end)
     
     exitButton.clickCb = function (ui, button)

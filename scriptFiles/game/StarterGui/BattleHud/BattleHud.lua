@@ -47,7 +47,6 @@ function BattleHud:Close()
     ViewBase.Close(self)
     ViewBase.GetUI("HudAvatar"):Open()
     ViewBase.GetUI("HudMenu"):Open()
-    CameraController.SetActive(false)
     if updateTaskId then
         ClientScheduler.cancel(updateTaskId)
         updateTaskId = nil
@@ -71,7 +70,6 @@ function BattleHud:Open()
     if updateTaskId then
         ClientScheduler.cancel(updateTaskId)
     end
-    CameraController.SetActive(true)
     -- 创建新的更新任务（每帧更新）`
     updateTaskId = ClientScheduler.add(function()
         self:UpdateCooldownAndCasting()
@@ -135,7 +133,7 @@ function BattleHud:UpdateCooldownAndCasting()
     local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
     local fillAmount = 1-remainingTime / skill.cooldownCache
     
-    self.fireIcon.node.FillAmount = fillAmount
+    self.fireIcon.node.FillAmount = math.clamp(fillAmount, 0, 1)
     
     -- 如果正在持续施法且冷却结束
     if isCasting and remainingTime <= 0 then
@@ -167,8 +165,6 @@ function BattleHud:OnSyncPlayerSkills(data)
             end
         end
     end
-    
-    gg.log("已同步技能数据:", skills, equippedSkills)
 end
 
 
@@ -376,7 +372,7 @@ function BattleHud:OnInit(node, config)
             postProcessing.ChromaticAberrationIterationStep = 0.01
             postProcessing.ChromaticAberrationIterationSamples = 1
         
-            self:SetFov(88)
+            self:SetFov(75)
             isCasting = false
         end
     )

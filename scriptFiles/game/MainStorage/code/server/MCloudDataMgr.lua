@@ -56,6 +56,20 @@ end
 
 
 
+-- 保存玩家技能设置
+-- force_:  立即存储，不检查时间间隔
+function MCloudDataMgr.SaveSkillData( uin_ )
+    local player_ = gg.server_players_list[ uin_ ]
+    if  player_ then
+        local data_ = {
+            uin   = uin_,
+            skill = player_.dict_btn_skill
+        }
+
+        cloudService:SetTableAsync( 'sk' .. uin_, data_, function ( ret_ )
+        end )
+    end
+end
 
 
 -- 读取玩家数据 等级 经验值
@@ -184,9 +198,7 @@ function MCloudDataMgr.SaveSkillConfig(player)
         skillData.skills[skillId] = {
             skill = skill.skillType.name,
             level = skill.level,
-            slot = skill.equipSlot,
-            growth = skill.growth,
-            star_level = skill.star_level,
+            slot = skill.equipSlot
         }
     end
     cloudService:SetTableAsync( 'sk' .. player.uin, skillData, function ( ret_ )

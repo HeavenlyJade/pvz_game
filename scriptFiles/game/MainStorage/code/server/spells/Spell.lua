@@ -206,7 +206,7 @@ function Spell:Cast(caster, target, param)
             log[#log + 1] = string.format("%s：延迟%.1f秒后释放", self.spellName, delay)
             print(table.concat(log, "\n"))
         end
-        ServerScheduler.Add(function()
+        ServerScheduler.add(function()
             self:PlayEffect(self.castEffects, caster, target, param)
             self:CastReal(caster, target, param)
         end, delay)
@@ -315,8 +315,8 @@ function Spell:CanCast(caster, target, param, log, checkCd)
             local stop = item:Check(caster, target, param)
             if stop then break end
             if param.cancelled then
-                if self.printInfo then 
-                    table.insert(log, string.format("%s释放失败：第%d个自身条件不满足 条件=%s", self.spellName, i+1, item.condition.condition))
+                if log then 
+                    table.insert(log, string.format("%s释放失败：第%d个自身条件不满足", self.spellName, i+1))
                 end
                 break
             end

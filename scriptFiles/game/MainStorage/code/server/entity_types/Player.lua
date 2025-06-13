@@ -147,7 +147,7 @@ function _M:RefreshQuest(key)
     local questsToRemove = {}
     local refreshedQuestNames = {}
 
-    -- 遍历所有已接受的任务
+    -- 处理当前正在进行的任务
     for questId, quest in pairs(self.quests) do
         local shouldRefresh = false
 
@@ -155,21 +155,36 @@ function _M:RefreshQuest(key)
         if key == "每日" or key == "每周" or key == "每月" then
             shouldRefresh = quest.quest.refreshType == key
         else
-            print("questName", quest.quest.name, key)
             shouldRefresh = string.find(quest.quest.name, key) ~= nil
         end
 
         if shouldRefresh then
             table.insert(questsToRemove, questId)
             table.insert(refreshedQuestNames, quest.quest.name)
-            -- 从acceptedQuestIds中移除
-            self.acceptedQuestIds[questId] = nil
         end
     end
 
     -- 移除需要刷新的任务
     for _, questId in ipairs(questsToRemove) do
         self.quests[questId] = nil
+    end
+
+    -- 处理历史领取记录
+    for questId, _ in pairs(self.acceptedQuestIds) do
+        local shouldRefresh = false
+        -- 检查刷新类型
+        if key == "每日" or key == "每周" or key == "每月" then
+            -- 从任务配置中获取刷新类型
+            local questConfig = require(MainStorage.code.common.config.QuestConfig).Get(questId)
+            shouldRefresh = questConfig and questConfig.refreshType == key
+        else
+            gg.log("refresh", questId, key, string.find(questId, key) )
+            shouldRefresh = string.find(questId, key) ~= nil
+        end
+
+        if shouldRefresh then
+            self.acceptedQuestIds[questId] = nil
+        end
     end
 
     -- 同步到客户端
@@ -217,6 +232,7 @@ function _M:SetLevel(level)
     })
 end
 
+
 function _M:EnterBattle()
     self:showReviveEffect(self:GetPosition())
     local skillId = self.equippedSkills[1]
@@ -227,7 +243,19 @@ function _M:EnterBattle()
                 self:SetMoveable(false)
             end
             self:SetModel(skill.skillType.battleModel, skill.skillType.battleAnimator, skill.skillType.battleStateMachine)
+            self.actor.LocalScale = Vector3.New(skill.skillType.battlePlayerSize, skill.skillType.battlePlayerSize, skill.skillType.battlePlayerSize)
         end
+    end
+
+    -- 清理所有召唤物
+    local SummonSpell = require(MainStorage.code.server.spells.spell_types.SummonSpell) ---@type SummonSpell
+    if SummonSpell.summonerSummons[self] then
+        for _, summoned in ipairs(SummonSpell.summonerSummons[self]) do
+            if summoned and summoned.isEntity then
+                summoned:DestroyObject()
+            end
+        end
+        SummonSpell.summonerSummons[self] = nil
     end
 end
 
@@ -236,8 +264,21 @@ function _M:ExitBattle()
     self:SetModel("sandboxSysId://ministudio/entity/player/defaultplayer/body.prefab",
     "sandboxSysId&restype=12://ministudio/entity/player/player12/Animation/OfficialController.controller",
     nil)
+    self.actor.LocalScale = Vector3.New(1, 1, 1)
     self:RefreshStats()
+
+    -- 清理所有召唤物
+    local SummonSpell = require(MainStorage.code.server.spells.spell_types.SummonSpell) ---@type SummonSpell
+    if SummonSpell.summonerSummons[self] then
+        for _, summoned in ipairs(SummonSpell.summonerSummons[self]) do
+            if summoned and summoned.isEntity then
+                summoned:DestroyObject()
+            end
+        end
+        SummonSpell.summonerSummons[self] = nil
+    end
 end
+
 
 ---@override
 function _M:Die()
@@ -263,6 +304,8 @@ function _M:CompleteRespawn()
     if self.isPlayer then
         self.target = nil
     end
+    self:RefreshStats()
+    self:SetHealth(self.maxHealth)
     -- 重置战斗时间
     self.combatTime = 0
     if self.modelPlayer then
@@ -743,6 +786,7 @@ function _M:UpdateNearbyNpcsToClient()
 end
 
 function _M:ProcessQuestEvent(event, amount)
+    print("ProcessQuestEvent", event, amount)
     for _, quest in pairs(self.quests) do
         if quest.quest.questType == "事件" and string.find(quest.quest.eventName, event) then
             quest:AddProgress(amount)

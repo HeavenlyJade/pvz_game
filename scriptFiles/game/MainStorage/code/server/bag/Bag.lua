@@ -110,7 +110,6 @@ end
 ---@param item Item 物品实例
 ---@return boolean 是否添加成功
 function Bag:AddItem(item)
-    gg.log("Bag:AddItem", item)
     if not item or not item:GetItemType() then
         return false
     end
@@ -174,7 +173,6 @@ function Bag:SyncToClient()
         items = syncItems,
         moneys = moneys
     }
-    gg.log("Bag:SyncToClient", ret)
     gg.network_channel:fireClient(self.player.uin, ret)
 end
 
