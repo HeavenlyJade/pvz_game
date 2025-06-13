@@ -3,13 +3,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
-local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
-local TweenService = game:GetService("TweenService")
-local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
-local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
-local CoreUI = game:GetService("CoreUI")
 ---@class HudMenu:ViewBase
 local HudMenu = ClassMgr.Class("HudMenu", ViewBase)
 
@@ -35,20 +29,9 @@ function HudMenu:RegisterMenuButton(viewButton)
         elseif button.node.Name == "卡包" then
             gg.log("卡包按钮点击")
             ViewBase["CardsGui"]:Open()
-        elseif button.node.Name == "邮件" then
-            gg.log("邮件按钮点击")
-            ViewBase["MailGui"]:Open()
-        elseif button.node.Name == "设置" then
-            gg.log("设置按钮点击")
 
-            CoreUI:ExitGame ()
-            -- ViewBase["SettingGui"]:Open()
         end
-        -- 发送菜单点击事件到服务器
-        gg.network_channel:FireServer({
-            cmd = "MenuClicked",
-            buttonName = button.node.Name
-        })
+
     end
 end
 
@@ -59,8 +42,7 @@ function HudMenu:OnInit(node, config)
     self:RegisterMenuButton(self:Get("活动", ViewButton))
     self:RegisterMenuButton(self:Get("图鉴", ViewButton))
     self:RegisterMenuButton(self:Get("卡包", ViewButton))
-    self:RegisterMenuButton(self:Get("邮件", ViewButton))
-    self:RegisterMenuButton(self:Get("设置", ViewButton))
+
     self:Get("菜单/菜单按钮", ViewList, function(n)
         local button = ViewButton.New(n, self)
         self:RegisterMenuButton(button)

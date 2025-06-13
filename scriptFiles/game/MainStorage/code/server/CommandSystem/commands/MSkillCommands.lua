@@ -120,7 +120,7 @@ function SkillCommands.setLevel(params, player)
     end
 
     local skillData = result.skillData
-
+    
     -- 生成成功消息
     local successMsg
     if skillData.removed then
@@ -131,7 +131,7 @@ function SkillCommands.setLevel(params, player)
         )
     else
         successMsg = SkillCommon.FormatSuccessMessage(
-            string.format("技能等级和经验设置成功：%d级→%d级，经验 %d→%d",
+            string.format("技能等级和经验设置成功：%d级→%d级，经验 %d→%d", 
                 skillData.originalLevel, skillData.level, skillData.originalGrowth, skillData.growth),
             player,
             skillName
@@ -266,7 +266,7 @@ function SkillCommands.main(params, player)
     elseif optype == "销毁所有" then
         local args = {}
         SkillCommands.destroyAll(args, player)
-    elseif optype == "设置等级" or optype == "设置" then
+    elseif optype == "设置等级" then
         local args = {skillName = skillName, level = level, growth = growth}
         SkillCommands.setLevel(args, player)
     -- elseif optype == "装载" then

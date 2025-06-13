@@ -28,6 +28,7 @@ end
 
 
 function ClientInit.updatePlayerUI(player_data)
+    gg.log("updatePlayerUI", player_data)
     local player_ = game.Players.LocalPlayer
     if player_ and player_.PlayerGui then
         player_.PlayerGui.DefaultUi.Visible =false

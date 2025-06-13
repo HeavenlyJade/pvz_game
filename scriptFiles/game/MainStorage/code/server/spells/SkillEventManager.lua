@@ -682,10 +682,10 @@ function SkillEventManager.HandleEquipSkill(evt)
     local success = player:EquipSkill(skillName, slot)
     if success then
         gg.log("技能装备成功: " .. skillName .. " 槽位: " .. slot)
-        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
-            skillName = skillName,
-            slot = slot
-        })
+        -- SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
+        --     skillName = skillName,
+        --     slot = slot
+        -- })
     else
         gg.log("技能装备失败: " .. skillName .. " 槽位: " .. slot)
     end

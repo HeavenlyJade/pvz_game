@@ -284,7 +284,7 @@ end
 ---@return table 操作结果 {success, errorCode, skillData}
 function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
     growth = growth or 0
-
+    
     -- 验证技能配置
     local skillType, configError = SkillCommon.ValidateSkillConfig(skillName)
     if not skillType then
@@ -316,19 +316,19 @@ function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
 
     -- 检查玩家是否拥有该技能
     local existingSkill = player.skills[skillName]
-
+    
     if not existingSkill then
         return {
                 success = false,
                 errorCode = SkillEventConfig.ERROR_CODES.SKILL_NOT_OWNED,
                 skillData = nil
             }
-
+      
     end
 
     -- 记录原始数据
-    local originalLevel = existingSkill.level
-    local originalGrowth = existingSkill.growth
+    local originalLevel = existingSkill.level 
+    local originalGrowth = existingSkill.growth 
     -- 设置新的等级和经验
     if level then
         existingSkill.level = level

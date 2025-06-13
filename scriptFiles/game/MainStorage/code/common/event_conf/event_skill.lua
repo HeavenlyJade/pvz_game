@@ -39,6 +39,7 @@ SkillEventConfig.RESPONSE = {
     UPGRADE = "SkillResponse_Upgrade",
     UPGRADE_ALL = "SkillResponse_UpgradeAll", -- 一键强化响应
     UPGRADE_STAR = "SkillResponse_UpgradeStar", -- 升星响应
+    SET_LEVEL = "SkillResponse_SetLevel", -- 设置技能等级和经验响应
     SYNC_SKILLS = "SyncPlayerSkills"
 
 }
@@ -165,3 +166,4 @@ function SkillEventConfig.GetAllResponseEvents()
 end
 
 return SkillEventConfig
+
