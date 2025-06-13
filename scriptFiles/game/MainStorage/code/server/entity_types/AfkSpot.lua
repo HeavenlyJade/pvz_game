@@ -229,7 +229,7 @@ end
 ---@param player Player 玩家
 function AfkSpot:CastSpells(player)
     if self.mode == "副卡" then
-        if self.occupiedByPlayer.deleted then
+        if self.occupiedByPlayer.isDestroyed then
             self:OnPlayerExit(self.occupiedByPlayer)
             return
         end

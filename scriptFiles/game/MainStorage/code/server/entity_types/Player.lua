@@ -269,8 +269,10 @@ function _M:ExitBattle()
 
     -- 清理所有召唤物
     local SummonSpell = require(MainStorage.code.server.spells.spell_types.SummonSpell) ---@type SummonSpell
+    gg.log("SummonSpell", SummonSpell.summonerSummons[self])
     if SummonSpell.summonerSummons[self] then
-        for _, summoned in ipairs(SummonSpell.summonerSummons[self]) do
+        for summoned, spell in pairs(SummonSpell.summonerSummons[self]) do
+            gg.log("SummonSpell summoned", summoned, summoned.isEntity)
             if summoned and summoned.isEntity then
                 summoned:DestroyObject()
             end

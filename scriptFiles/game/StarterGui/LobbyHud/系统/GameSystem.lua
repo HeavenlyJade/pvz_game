@@ -32,9 +32,8 @@ end
 
 function GameSystem:OnInit(node, config)
     gg.log("GameSystem 初始化")
-    self:RegisterMenuButton(self:Get("活动", ViewButton))
-    self:RegisterMenuButton(self:Get("图鉴", ViewButton))
-    self:RegisterMenuButton(self:Get("卡包", ViewButton))
+    self:RegisterMenuButton(self:Get("邮件", ViewButton))
+    self:RegisterMenuButton(self:Get("设置", ViewButton))
 
     -- 在这里可以添加初始化逻辑
 end

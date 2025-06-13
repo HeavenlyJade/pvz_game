@@ -26,10 +26,6 @@ function HudMenu:RegisterMenuButton(viewButton)
         gg.log("菜单按钮点击", button.node.Name)
         if button.node.Name == "活动" then
             gg.log("活动按钮点击")
-        elseif button.node.Name == "卡包" then
-            gg.log("卡包按钮点击")
-            ViewBase["CardsGui"]:Open()
-
         end
 
     end
@@ -41,7 +37,6 @@ function HudMenu:OnInit(node, config)
 
     self:RegisterMenuButton(self:Get("活动", ViewButton))
     self:RegisterMenuButton(self:Get("图鉴", ViewButton))
-    self:RegisterMenuButton(self:Get("卡包", ViewButton))
 
     self:Get("菜单/菜单按钮", ViewList, function(n)
         local button = ViewButton.New(n, self)

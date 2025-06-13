@@ -99,9 +99,9 @@ local function ShowDamage(node, amount, isCrit, position)
             -- 显示数字
             local digit = tonumber(string.sub(amountStr, i - startIndex + 1, i - startIndex + 1))
             if digit then
-                local lane = isCrit and CRIT_LANE or NORMAL_LANE
-                damageImg.Icon = string.format("sandboxId://textures/ui/伤害数字/piece_%d_%d.png", lane, digit)
-                damageImg.Visible = true
+            local lane = isCrit and CRIT_LANE or NORMAL_LANE
+            damageImg.Icon = string.format("sandboxId://textures/ui/伤害数字/piece_%d_%d.png", lane, digit)
+            damageImg.Visible = true
             else
                 damageImg.Visible = false
             end

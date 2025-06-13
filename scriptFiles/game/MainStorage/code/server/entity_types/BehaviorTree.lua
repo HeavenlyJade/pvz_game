@@ -249,7 +249,10 @@ function MeleeBehavior:OnInit()
             end
 
             entity:Freeze(entity:GetAttackDuration())
-            ServerScheduler.add(function()
+            if entity.attackResetCb then
+                ServerScheduler.cancel(entity.attackResetCb)
+            end
+            entity.attackResetCb = ServerScheduler.add(function()
                 entity.isAttacking = false
             end, entity:GetAttackDuration())
         else

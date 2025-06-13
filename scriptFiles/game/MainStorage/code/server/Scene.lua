@@ -342,10 +342,30 @@ function _M:initTerrain()
 end
 
 ---玩家离开场景
----@param uin_ number 玩家ID
-function _M:player_leave(uin_)
-    if self.players[uin_] then
-        self.players[uin_] = nil
+---@param player Player 玩家对象
+function _M:player_leave(player)
+    if not player or not player.uin then return end
+    
+    if self.players[player.uin] then
+        -- 从所有NPC中移除玩家
+        for _, npc in pairs(self.npcs) do
+            -- 检查是否是触发区域
+            if npc.playersInZone then
+                npc.playersInZone[player.uuid] = nil
+                -- 执行离开指令
+                if npc.leaveCommands then
+                    player:ExecuteCommands(npc.leaveCommands)
+                end
+            end
+            
+            -- 检查是否是挂机点
+            if npc.occupiedByPlayer == player then
+                npc:OnPlayerExit(player)
+            end
+        end
+        
+        -- 从场景玩家列表中移除
+        self.players[player.uin] = nil
     end
 end
 

@@ -295,7 +295,7 @@ function CardsGui:_setMainCardQualityIcons(cardNode, skillType)
     if not cardNode or not skillType then return end
 
     local quality = skillType.quality or "N"  -- 默认为N品质
-    
+
 
     -- === 增强检查：检查目标节点的当前图标和属性是否已经正确 ===
     local frameNode = cardNode["卡框背景"] and cardNode["卡框背景"]["卡框"]
@@ -355,7 +355,7 @@ function CardsGui:_setMainCardQualityIcons(cardNode, skillType)
             ["图片-悬浮"] = uiConfig.qualityBaseMapDefIcon[quality]   -- 设置悬浮状态底图
         }
     }
-    
+
     self:_setCardIcon(cardNode, frameQualityResources)
     self:_setCardIcon(cardNode, iconQualityResources)
 
@@ -462,7 +462,7 @@ function CardsGui:RegisterCardButtons()
     end
 
     if self.subCardButton then
-        -- self.subCardButton:SetTouchEnable(true)
+        self.subCardButton:SetTouchEnable(true)
         self.subCardButton.clickCb = function(ui, button)
             self:SwitchToCardType("副卡")
         end
@@ -894,8 +894,25 @@ end
 -- 注册主卡功能按钮事件
 function CardsGui:RegisterMainCardFunctionButtons()
     self.confirmPointsButton.clickCb = function (ui, button)
+        gg.log("🔍 研究按钮被点击")
+
+        if not self.currentMCardButtonName then
+            gg.log("❌ 错误：currentMCardButtonName为空")
+            return
+        end
+
+        if not self.currentMCardButtonName.extraParams then
+            gg.log("❌ 错误：currentMCardButtonName.extraParams为空")
+            return
+        end
+
         local skillName = self.currentMCardButtonName.extraParams["skillId"]
-        -- gg.log("主卡_研究发送升级了请求",skillName)
+        if not skillName then
+            gg.log("❌ 错误：skillId为空", self.currentMCardButtonName.extraParams)
+            return
+        end
+
+        gg.log("✅ 主卡_研究发送升级请求:", skillName)
         gg.network_channel:FireServer({
             cmd = SkillEventConfig.REQUEST.UPGRADE,
             skillName = skillName
@@ -1012,6 +1029,7 @@ function CardsGui:HandleSkillSync(data)
     -- 反序列化技能数据
     for skillName, skillData in pairs(skillDataDic) do
         -- 创建技能对象
+        gg.log("skillDataDic",skillName,skillData)
         self.ServerSkills[skillName] = skillData
         -- 记录已装备的技能
         if skillData.slot > 0 then
@@ -1646,11 +1664,18 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
     local prerequisite = curSkillType.prerequisite
 
     -- === 检查前置技能和服务端数据 ===
-    local existsPrerequisite = true
-    for i, preSkillType in ipairs(prerequisite) do
-        if not self.ServerSkills[preSkillType.name] then
-            existsPrerequisite = false
-            break
+    local existsPrerequisite = false
+    -- 如果没有前置技能，则不能通过前置条件研究
+    if #prerequisite == 0 then
+        existsPrerequisite = false
+    else
+        -- 有前置技能时，检查是否都已解锁
+        existsPrerequisite = true
+        for i, preSkillType in ipairs(prerequisite) do
+            if not self.ServerSkills[preSkillType.name] then
+                existsPrerequisite = false
+                break
+            end
         end
     end
 
@@ -1669,7 +1694,8 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
     else
         -- 前置技能不满足：无法研究
     end
-
+    gg.log("当前的技能的研究状态",skillId,canResearchOrEquip)
+    gg.log("curCardSkillData",curCardSkillData,existsPrerequisite,prerequisite)
     -- 设置研究装备按钮状态
     if canResearchOrEquip then
         -- 显示研究按钮
@@ -1730,8 +1756,10 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
         -- 研究按钮：未满级可研究
         if skillLevel < maxLevel then
             self.confirmPointsButton:SetTouchEnable(true)
+            gg.log("✅ 研究按钮已启用:", skillId, "当前等级:", skillLevel, "最大等级:", maxLevel)
         else
             self.confirmPointsButton:SetTouchEnable(false)
+            gg.log("⚠️ 研究按钮已禁用(满级):", skillId, "当前等级:", skillLevel, "最大等级:", maxLevel)
         end
 
         if levelNode then
@@ -1754,6 +1782,7 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
         end
     end
     self.currentMCardButtonName = button
+    gg.log("🎯 设置currentMCardButtonName:", skillId, "按钮:", button, "extraParams:", button.extraParams)
 end
 
 -- === 新增方法：显示指定品质的副卡列表 ===
@@ -1803,7 +1832,7 @@ end
 function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
     -- === 重要：在创建ViewButton之前先设置品质图标 ===
     self:_setMainCardQualityIcons(cardFrame, skill)
-    
+
     -- 设置图标
     if skill.icon and skill.icon ~= "" then
         local iconNode = cardFrame["卡框背景"]["图标"]

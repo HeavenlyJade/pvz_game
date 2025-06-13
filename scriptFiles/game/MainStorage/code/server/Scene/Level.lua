@@ -44,6 +44,7 @@ function Level:OnInit(levelType, scene, index)
     
     -- 运行时状态
     self.players = {} ---@type table<string, Player>
+    self.playerCount = 0 ---@type number
     self.playerOriginalPositions = {} ---@type table<string, {position:Vector3, euler:Vector3}>
     self.isActive = false
     self.startTime = 0
@@ -59,6 +60,7 @@ function Level:OnInit(levelType, scene, index)
     self.timeElapsed = 0
     self.waveCount = 0
     self.mobCount = {} ---@type table<string, number>
+    self.waveSpawnedCounts = {} ---@type table<SpawningWave, number>
     self.updateTask = nil ---@type number
 
     -- 怪物相关
@@ -148,13 +150,18 @@ end
 
 ---开始关卡
 function Level:Start()
-    if self.isActive then return end
+    gg.log("[Level] Starting level", self.levelType.levelId)
+    if self.isActive then 
+        gg.log("[Level] Level is already active, returning", self.levelType.levelId)
+        return 
+    end
     self.isActive = true
     self.startTime = os.time()
     self.currentStars = 0
 
     -- 将关卡添加到活跃关卡列表
     activeLevels[self.scene] = self
+    gg.log("[Level] Added to active levels", self.levelType.levelId, "Total active levels:", #activeLevels)
 
     -- 计算所有波次的怪物数量
     local waveMobCounts = {} ---@type table<number, number>
@@ -164,6 +171,7 @@ function Level:Start()
         table.insert(waveMobCounts, mobCount)
         totalMobCount = totalMobCount + mobCount
     end
+    gg.log("[Level] Wave mob counts calculated", self.levelType.levelId, "Total mobs:", totalMobCount)
 
     -- 将玩家传送到进入点
     local playerIndex = 1
@@ -208,16 +216,26 @@ function Level:Start()
         
         playerIndex = playerIndex + 1
     end
+
+    -- 确保重新初始化波次
+    gg.log("[Level] Initializing waves", self.levelType.levelId)
     self:InitializeWaves()
+    gg.log("[Level] Starting first wave", self.levelType.levelId)
     self:StartWave()
+    gg.log("[Level] Starting update task", self.levelType.levelId)
     self:StartUpdateTask()
 end
 
 ---初始化波次
 function Level:InitializeWaves()
-    self.allWaves = self.levelType.waves
+    gg.log("[Level] InitializeWaves called", self.levelType.levelId, #self.levelType.waves)
+    self.allWaves = {}
+    for _, wave in ipairs(self.levelType.waves) do
+        table.insert(self.allWaves, wave)
+    end
     self.waveCount = 0
     self.mobCount = {}
+    gg.log("[Level] Waves initialized", self.levelType.levelId, "Total waves:", #self.allWaves)
 end
 
 ---计算玩家平均等级
@@ -234,7 +252,9 @@ end
 
 ---开始波次
 function Level:StartWave()
+    gg.log("[Level] StartWave called", self.levelType.levelId)
     if #self.allWaves == 0 then
+        gg.log("[Level] No more waves, completing level", self.levelType.levelId)
         self:OnLevelComplete()
         return
     end
@@ -245,10 +265,11 @@ function Level:StartWave()
     self.waveCount = self.waveCount + 1
 
     -- 计算当前波次的怪物总数，考虑玩家数量倍率
-    local playerCount = #self.players
     local baseMobCount = self.currentWave:CalculateMobCount()
-    self.currentWaveMobCount = math.floor(baseMobCount * self.levelType:GetScaledMultiplier(1, playerCount))
+    self.currentWaveMobCount = math.floor(baseMobCount * self.levelType:GetScaledMultiplier(1, self.playerCount))
     self.remainingMobCount = self.currentWaveMobCount
+
+    gg.log("[Level] Wave started", self.levelType.levelId, "Wave:", self.waveCount, "Mob count:", self.currentWaveMobCount, "Player count:", self.playerCount)
 
     -- 初始化未开始的刷怪波次
     self.notSpawningWaves = {}
@@ -285,6 +306,7 @@ end
 
 ---更新关卡状态
 function Level:Update()
+    gg.log("[Level] Update", self.levelType.levelId, "Player count:", self.playerCount, "Active:", self.isActive, "Current wave:", self.waveCount)
     if not self.isActive or not self.currentWave then return end
     local newTimeElapsed = os.time() - self.waveStartTime
 
@@ -294,6 +316,8 @@ function Level:Update()
         if wave.startTime < newTimeElapsed then
             table.insert(self.spawningWaves, wave)
             table.remove(self.notSpawningWaves, i)
+            -- 初始化新波次的生成计数
+            self.waveSpawnedCounts[wave] = 0
         end
     end
 
@@ -301,19 +325,24 @@ function Level:Update()
     for i = #self.spawningWaves, 1, -1 do
         local wave = self.spawningWaves[i]
         -- 计算基于玩家数量的属性倍率
-        local playerCount = #self.players - 1
         local monsterLevel = self:GetAveragePlayerLevel()
-        local isComplete, spawnedMobs = wave:TrySpawn(
+        local spawnedCount = self.waveSpawnedCounts[wave] or 0
+        local isComplete, spawnedMobs, newSpawnedCount = wave:TrySpawn(
             newTimeElapsed - self.timeElapsed, 
             monsterLevel, 
-            self
+            self,
+            spawnedCount
         )
+        -- 更新生成计数
+        self.waveSpawnedCounts[wave] = newSpawnedCount
+        
+        gg.log("[Level] TrySpawn", self.levelType.levelId, "Player count:", self.playerCount, "Spawned mobs:", #spawnedMobs, "Complete:", isComplete, "Total spawned:", newSpawnedCount)
         -- 处理生成的怪物
         for _, mob in ipairs(spawnedMobs) do
             -- 缓存怪物实例
             self.activeMobs[mob.uuid] = mob
             for attrName, baseMultiplier in pairs(self.levelType.playerAttributeMultiplier) do
-                local mult = baseMultiplier * (playerCount - 1)
+                local mult = baseMultiplier * (self.playerCount - 1)
                 mob:AddStat(attrName, mult * mob:GetStat(attrName), "BASE", true)
             end
             
@@ -330,6 +359,7 @@ function Level:Update()
         
         if isComplete then
             table.remove(self.spawningWaves, i)
+            self.waveSpawnedCounts[wave] = nil
         end
     end
 
@@ -383,15 +413,56 @@ function Level:OnLevelComplete()
     self:End(true)
 end
 
+---清理场景
+function Level:Cleanup()
+    gg.log("[Level] Cleanup called", self.levelType.levelId)
+    
+    -- 清理所有怪物
+    for _, mob in pairs(self.activeMobs) do
+        if mob and mob.isEntity then
+            gg.log("[Level] Destroying mob", mob.uuid)
+            mob:DestroyObject()
+        end
+    end
+    self.activeMobs = {}
+    
+    -- 重置关卡状态
+    self.isActive = false
+    self.startTime = 0
+    self.endTime = 0
+    self.currentStars = 0
+    self.currentWave = nil
+    self.allWaves = {}
+    self.spawningWaves = {}
+    self.notSpawningWaves = {}
+    self.waveStartTime = 0
+    self.timeElapsed = 0
+    self.waveCount = 0
+    self.mobCount = {}
+    self.currentWaveMobCount = 0
+    self.remainingMobCount = 0
+    self.waveSpawnedCounts = {}
+    
+    -- 清理掉落物
+    -- TODO: 实现掉落物清理
+    
+    gg.log("[Level] Cleanup completed", self.levelType.levelId)
+end
+
 ---结束关卡
 ---@param success boolean 是否成功完成
 function Level:End(success)
-    if not self.isActive then return end
+    gg.log("[Level] End called", self.levelType.levelId, "Success:", success)
+    if not self.isActive then 
+        gg.log("[Level] Level is not active, returning", self.levelType.levelId)
+        return 
+    end
     self.isActive = false
     self.endTime = os.time()
     
     -- 从活跃关卡列表中移除
     activeLevels[self.scene] = nil
+    gg.log("[Level] Removed from active levels", self.levelType.levelId, "Remaining active levels:", #activeLevels)
     
     if self.updateTask then
         ServerScheduler.cancel(self.updateTask)
@@ -411,7 +482,10 @@ function Level:End(success)
         end
     end
 
+    -- 清理场景
     self:Cleanup()
+
+    -- 通知玩家
     for _, player in pairs(self.players) do
         player:SendEvent("BattleEndEvent", {
             levelId = self.levelType.levelId,
@@ -421,34 +495,27 @@ function Level:End(success)
         })
         player:SendChatText(success and "Level completed!" or "Level failed!")
     end
-end
-
----清理场景
-function Level:Cleanup()
-    -- 清理所有怪物
-    for _, mob in pairs(self.activeMobs) do
-        mob:DestroyObject()
-    end
-    self.activeMobs = {}
-    
-    -- 清理掉落物
-    -- TODO: 实现掉落物清理
+    gg.log("[Level] End completed", self.levelType.levelId)
 end
 
 ---添加玩家
 ---@param player Player
 function Level:AddPlayer(player)
-    if #self.players >= self.levelType.maxPlayers then
+    if self.playerCount >= self.levelType.maxPlayers then
         return false
     end
     self.players[player.uin] = player
+    self.playerCount = self.playerCount + 1
     return true
 end
 
 ---移除玩家
 ---@param player Player
 function Level:RemovePlayer(player)
-    self.players[player.uin] = nil
+    if self.players[player.uin] then
+        self.players[player.uin] = nil
+        self.playerCount = self.playerCount - 1
+    end
 end
 
 ---检查是否满足进入条件

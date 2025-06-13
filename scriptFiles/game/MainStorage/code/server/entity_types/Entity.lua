@@ -59,7 +59,6 @@ function _M:OnInit(info_)
     -- self.model_weapon = nil -- 武器
 
     self.isDead = false -- 是否已死亡
-    self.deleted = false -- 是否已删除
     self.combatTime = 0 -- 战斗时间计数器
 
     self.bb_title = nil -- 头顶名字和等级 billboard
@@ -709,7 +708,7 @@ function _M:DestroyObject()
     if not self.isDead then
         self:Die()
     end
-    self.deleted = true
+    self.isDestroyed = true
     if self.actor then
         _M.node2Entity[self.actor] = nil
         self.actor:Destroy()
@@ -931,8 +930,8 @@ function _M:ChangeScene(new_scene)
         self.scene.uuid2Entity[self.uuid] = nil
         
         -- 如果是玩家，还需要从玩家列表中移除
-        if self.isPlayer then
-            self.scene.players[self.uin] = nil
+        if self.isPlayer then---@cast self Player
+            self.scene:player_leave(self)
         end
         
         -- 如果是怪物，还需要从怪物列表中移除
@@ -998,7 +997,7 @@ end
 
 -- 无法被攻击状态
 function _M:CanBeTargeted()
-    return not self.isDead and not self.deleted
+    return not self.isDead and not self.isDestroyed
 end
 
 -- tick刷新

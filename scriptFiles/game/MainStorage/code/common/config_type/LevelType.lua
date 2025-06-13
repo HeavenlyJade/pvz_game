@@ -53,7 +53,6 @@ function SpawningWave:OnInit(data)
     
     -- 计算每秒刷新的怪物数量
     self.spawnsPerSecond = self.actualCount / self.duration
-    self.spawnedCount = 0
 end
 
 ---@return MobType
@@ -70,9 +69,11 @@ end
 ---@param deltaTime number 距离上次更新的时间间隔
 ---@param level number 怪物等级
 ---@param levelInst Level 刷怪点列表
+---@param spawnedCount number 已经生成的怪物数量
 ---@return boolean 是否完成生成
 ---@return Monster[] 生成的怪物实例列表
-function SpawningWave:TrySpawn(deltaTime, level, levelInst)
+---@return number 更新后的生成数量
+function SpawningWave:TrySpawn(deltaTime, level, levelInst, spawnedCount)
     -- 计算这次要生成的怪物数量
     local spawnCountF = deltaTime * self.spawnsPerSecond
     local spawnCount = math.floor(spawnCountF)
@@ -81,7 +82,7 @@ function SpawningWave:TrySpawn(deltaTime, level, levelInst)
     end
     
     -- 确保不超过剩余数量
-    spawnCount = math.min(spawnCount, self.actualCount - self.spawnedCount)
+    spawnCount = math.min(spawnCount, self.actualCount - spawnedCount)
     
     -- 生成怪物
     local spawnedMobs = {} ---@type Mob[]
@@ -100,13 +101,13 @@ function SpawningWave:TrySpawn(deltaTime, level, levelInst)
             local mob = mobType:Spawn(spawnLoc, level, levelInst.scene)
             if mob then
                 table.insert(spawnedMobs, mob)
-                self.spawnedCount = self.spawnedCount + 1
+                spawnedCount = spawnedCount + 1
             end
         end
     end
     
-    -- 返回是否完成生成和生成的怪物列表
-    return self.spawnedCount >= self.actualCount, spawnedMobs
+    -- 返回是否完成生成、生成的怪物列表和更新后的生成数量
+    return spawnedCount >= self.actualCount, spawnedMobs, spawnedCount
 end
 
 ---@class Wave:Class
@@ -338,7 +339,19 @@ function LevelType:Queue(player)
         player:AddVariable(varName, -deductValue)
     end
 
-    -- 加入队列
+    -- 首先检查是否有可用的关卡实例
+    for _, level in ipairs(self.levels) do
+        if level.isActive and level.playerCount < level.levelType.maxPlayers then
+            -- 找到有位置的关卡，直接加入
+            if level:AddPlayer(player) then
+                player:SendChatText("已加入进行中的关卡")
+                player:SendEvent("MatchStart")
+                return true
+            end
+        end
+    end
+
+    -- 如果没有可用的关卡实例，加入匹配队列
     self.matchQueue[player.uin] = player
     self.playerCount = self.playerCount + 1
     player:SendChatText("已加入匹配队列")
@@ -379,13 +392,7 @@ function LevelType:StartLevel()
     for _, level in ipairs(self.levels) do
         if not level.isActive then
             -- 检查场景中是否有玩家
-            local hasPlayers = false
-            for _ in pairs(level.scene.players) do
-                hasPlayers = true
-                break
-            end
-            
-            if not hasPlayers then
+            if level.playerCount == 0 then
                 availableLevel = level
                 break
             end
