@@ -550,7 +550,7 @@ function HudCards:OnInit(node, config)
     self.selectSkillCb = nil
     -- 注册技能同步事件监听
     ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SYNC_SKILLS, function(data)
-        self:OnSyncPlayerSkills(data)
+        self:OnSyncPlayerSkills(data) 
     end)
     ClientEventManager.Subscribe("AfkSpotSelectCard", function(data)
         local ui = ViewBase.GetUI("ForceClickHud") ---@cast ui ForceClickHud

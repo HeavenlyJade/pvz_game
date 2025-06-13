@@ -9,6 +9,7 @@ local ClientEventManager = require(MainStorage.code.client.event.ClientEventMana
 local SkillTypeUtils = require(MainStorage.code.common.conf_utils.SkillTypeUtils) ---@type SkillTypeUtils
 local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
 local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
+local CardIcon = require(MainStorage.code.common.ui_icon.card_icon) ---@type CardIcon
 
 
 
@@ -19,33 +20,13 @@ local uiConfig = {
     uiName = "CardsGui",
     layer = 3,
     hideOnInit = true,
-    qualityList = {"UR", "SSR", "SR", "R", "N","ALL"},
-    qualityListMap = {["品质_5"]="N", ["品质_4"]="R", ["品质_3"]="SR", ["品质_2"]="SSR", ["品质_1"]="UR",["品质_6"]="ALL" },
-    qualityPriority = {["UR"] = 5, ["SSR"] = 4, ["SR"] = 3, ["R"] = 2, ["N"] = 1},
-    qualityDefIcon = {["N"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏绿.png",
-                        ["R"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏蓝.png",
-                        ["SR"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏紫.png",
-                        ["SSR"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏橙.png",
-                        ["UR"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏彩.png",
-                    },
-    qualityClickIcon = {["N"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏绿_1.png",
-                        ["R"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏蓝_1.png",
-                        ["SR"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏紫_1.png",
-                        ["SSR"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏橙_1.png",
-                        ["UR"]="sandboxId://textures/ui/主界面UI/主要框体/物品栏彩_1.png",
-                    },
-    qualityBaseMapDefIcon = {["N"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏绿_底图.png",
-                        ["R"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏蓝_底图.png",
-                        ["SR"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏紫_底图.png",
-                        ["SSR"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏橙_底图.png",
-                        ["UR"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏彩_底图.png",
-                    },
-    qualityBaseMapClickIcon = {["N"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏绿_底图1.png",
-                        ["R"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏蓝_底图1.png",
-                        ["SR"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏紫_底图1.png",
-                        ["SSR"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏橙_底图1.png",
-                        ["UR"]="sandboxId://textures/ui/主界面UI/快捷栏/物品栏彩_底图1.png",
-                    },
+    qualityList = CardIcon.qualityList,
+    qualityListMap = CardIcon.qualityListMap,
+    qualityPriority = CardIcon.qualityPriority,
+    qualityDefIcon = CardIcon.qualityDefIcon,
+    qualityClickIcon = CardIcon.qualityClickIcon,
+    qualityBaseMapDefIcon = CardIcon.qualityBaseMapDefIcon,
+    qualityBaseMapClickIcon = CardIcon.qualityBaseMapClickIcon,
     mianCard ="主卡",
     Subcard = "副卡"
 }
@@ -392,22 +373,13 @@ function CardsGui:_setSubCardQualityIcons(cardNode, skillType)
         }
     }
 
-    -- 使用通用函数设置副卡品质图标
     self:_setCardIcon(cardNode, frameQualityResources)
 
-    -- 使用通用函数设置副卡底图
     self:_setCardIcon(cardNode, iconQualityResources)
 
-    -- gg.log("设置副卡品质图标:", skillType.name, "品质:", quality,
-    --        "卡框图标:", frameQualityResources.iconPath,
-    --        "底图图标:", iconQualityResources.iconPath)
 end
 
 
--- === 移除了选择组管理方法 ===
-
--- === 移除了选择组管理的相关方法 ===
--- 现在直接使用简单的按钮状态记录，不再使用SetSelected/IsSelected方法
 
 -- 副卡功能按钮状态更新
 function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
@@ -439,7 +411,6 @@ function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
             -- 不可装备的副卡：隐藏装备相关按钮
             self:_setButtonVisible(self.SubcardEquipButton, false)
             self:_setButtonVisible(self.SubcardUnEquipButton, false)
-            gg.log("副卡不可装备，隐藏装备按钮:", skill.name)
         end
     else
         -- 无服务端数据：隐藏所有功能按钮
@@ -677,12 +648,14 @@ function CardsGui:InitializeFunctionButtonsVisibility()
         self.mainCardUpgradeStarButton:SetVisible(false)
     end
 
-    -- 副卡所有功能按钮默认隐藏
-    self.SubcardEnhancementButton:SetVisible(false)
-
+    -- 副卡所有功能按钮默认隐藏 
+    if self.SubcardEnhancementButton then
+        self.SubcardEnhancementButton:SetVisible(false)
+    end
     if self.SubcardAllEnhancementButton then
         self.SubcardAllEnhancementButton:SetVisible(false)
     end
+
 
     if self.SubcardEquipButton then
         self.SubcardEquipButton:SetVisible(false)
@@ -1198,6 +1171,16 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
             -- 如果装备状态发生变化，重新排序
             if oldEquipped ~= buttonState.isEquipped then
                 self:SortAndUpdateMainCardLayout()
+            end
+        end
+
+        -- 如果当前选中的是这个主卡，更新属性面板
+        if self.currentMCardButtonName and
+           self.currentMCardButtonName.extraParams.skillId == skillName then
+            -- 重新触发点击事件以更新属性面板（显示新等级和下一级数据）
+            local mainCardFrameButton = self.mainCardButtondict[skillName]
+            if mainCardFrameButton then
+                self:OnSkillTreeNodeClick(nil, mainCardFrameButton, mainCardFrameButton.node)
             end
         end
     end
@@ -1781,6 +1764,10 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
             levelNode.Title = string.format("0/%d", skill.maxLevel or 1)
         end
     end
+
+    -- === 新增：更新主卡资源消耗显示 ===
+    self:UpdateMainCardResourceCost(attributeButton, skill, skillLevel)
+
     self.currentMCardButtonName = button
     gg.log("🎯 设置currentMCardButtonName:", skillId, "按钮:", button, "extraParams:", button.extraParams)
 end
@@ -2932,8 +2919,6 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
         descPostTitleNode.Title = "已满级"
         descPostNode.Title = ""
     end
-
-            -- 使用工具函数设置功能按钮状态
         self:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
 end
 
@@ -3656,6 +3641,76 @@ function CardsGui:HideUpgradeConfirmDialog()
 
     -- 清除临时数据
     self.currentUpgradeData = nil
+end
+
+-- === 新增方法：更新主卡资源消耗显示 ===
+function CardsGui:UpdateMainCardResourceCost(mainNode, skill, currentLevel)
+    if not mainNode or not skill then
+        return
+    end
+
+    local maxLevel = skill.maxLevel or 1
+    local nextLevel = currentLevel + 1
+
+    -- 获取货币消耗显示节点（根据你的UI结构调整路径）
+    local costContainer = mainNode["货币消耗"]
+    if not costContainer then
+        return
+    end
+
+    -- 如果已经满级，隐藏消耗显示
+    if currentLevel >= maxLevel then
+        costContainer.Visible = false
+        return
+    end
+
+    -- 获取下一级升级成本
+    local nextLevelCost = skill:GetCostAtLevel(nextLevel)
+    if not nextLevelCost or not next(nextLevelCost) then
+        -- 无升级成本，隐藏显示
+        costContainer.Visible = false
+        return
+    end
+
+    -- 显示消耗容器
+    costContainer.Visible = true
+
+    -- 构建资源消耗文本
+    local costTexts = {}
+    local sortedResources = {}
+
+    -- 整理并排序资源
+    for resourceName, amount in pairs(nextLevelCost) do
+        if amount < 0 then  -- 负数表示消耗
+            local needAmount = math.abs(amount)
+            table.insert(sortedResources, {
+                name = resourceName,
+                need = needAmount,
+                current = self:GetItemAmount(resourceName)
+            })
+        end
+    end
+
+    -- 按资源名称排序
+    table.sort(sortedResources, function(a, b)
+        return a.name < b.name
+    end)
+
+    -- 生成消耗文本
+    for _, resource in ipairs(sortedResources) do
+        local sufficient = resource.current >= resource.need
+        local status = sufficient and "✅" or "❌"
+        local costText = string.format("%s %s: %d/%d",
+            status, resource.name, resource.current, resource.need)
+        table.insert(costTexts, costText)
+
+        gg.log("主卡资源消耗:", skill.name, "升级到", nextLevel,
+            resource.name, "需要", resource.need, "拥有", resource.current, "足够", sufficient)
+    end
+
+    -- 更新UI显示
+    local costText = table.concat(costTexts, "\n")
+    costContainer.Title = string.format("升级到等级%d消耗：\n%s", nextLevel, costText)
 end
 
 -- === 新增方法：更新副卡资源消耗显示 ===
