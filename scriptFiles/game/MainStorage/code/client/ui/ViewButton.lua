@@ -177,6 +177,9 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     if self.soundRelease == "" then
         self.soundRelease = nil
     end
+    if img["pc_hint"] then
+        img["pc_hint"].Visible = game.RunService:IsPC()
+    end
 
     self.isHover = false
 

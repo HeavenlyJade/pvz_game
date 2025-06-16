@@ -148,7 +148,7 @@ function HudCards:SetSubCardQualityIcons(cardNode, skillType)
 
     local quality = skillType.quality or "N"  -- 默认为N品质
     gg.log("HudCards设置副卡品质图标",cardNode,quality)
-    
+
     -- === 通用的节点品质图标设置函数 ===
     ---@param node UIImage 要设置的节点
     ---@param quality string 品质等级（如 "N", "R", "SR", "SSR", "UR"）
@@ -156,7 +156,7 @@ function HudCards:SetSubCardQualityIcons(cardNode, skillType)
     ---@param clickIconTable table 点击图标资源表
     local function setNodeQualityIcon(node, quality, defIconTable, clickIconTable)
         if not node or not quality then return end
-        
+
         local defIcon = defIconTable[quality]
         local clickIcon = clickIconTable[quality]
         gg.log("设置品质图标",node,quality,defIcon,clickIcon)
@@ -165,7 +165,7 @@ function HudCards:SetSubCardQualityIcons(cardNode, skillType)
             node.Icon = defIcon
             node:SetAttribute("图片-默认", defIcon)
         end
-        
+
         -- 设置"图片-点击"属性
         if clickIcon and clickIcon ~= "" then
             local currentClickIcon = node:GetAttribute("图片-点击")
@@ -176,7 +176,7 @@ function HudCards:SetSubCardQualityIcons(cardNode, skillType)
     end
     -- 设置主节点的品质图标
     setNodeQualityIcon(cardNode, quality, CardIcon.qualityBaseMapDefIcon, CardIcon.qualityBaseMapClickIcon)
-    
+
     -- 设置"卡片框"子节点的品质图标
     if cardNode["卡片框"] then
         setNodeQualityIcon(cardNode["卡片框"], quality, CardIcon.qualityBaseMapboxIcon, CardIcon.qualityBaseMapboxClickIcon)
@@ -255,31 +255,6 @@ function HudCards:UpdateMainCardDisplay()
 
         end
 
-        -- self.mainCardButton.clickCb = function(ui, button)
-        --     -- 检查技能是否在冷却中
-        --     local currentTime = gg.GetTimeStamp()
-        --     local lastCastTime = lastCastTimes[mainCardSkill.skillId]
-        --     if lastCastTime and mainCardSkill.cooldownCache > 0 then
-        --         local elapsedTime = currentTime - lastCastTime
-        --         local remainingTime = math.max(0, mainCardSkill.cooldownCache - elapsedTime)
-        --         if remainingTime > 0 then
-        --             return -- 在冷却中，不处理点击事件
-        --         end
-        --     end
-
-        --     -- 释放主卡技能
-        --     local direction = CameraController.GetForward()
-        --     local targetPos, _ = CameraController.RaytraceScene({1})
-        --     lastCastTimes[mainCardSkill.skillId] = gg.GetTimeStamp()
-        --     gg.network_channel:FireServer({
-        --         cmd = "CastSpell",
-        --         skill = mainCardSkill.skillId,
-        --         targetPos = targetPos,
-        --         direction = direction
-        --     })
-        --     gg.log("释放主卡技能:", mainCardSkill.skillName)
-        -- end
-
         if self.mainCardButton.node["Title"] then
             self.mainCardButton.node["Title"].Title = "未装备"
         end
@@ -321,16 +296,13 @@ function HudCards:UpdateSubCardDisplay()
 
         if skill and skill.skillType then
             -- 有技能时显示技能信息
-            card.node.Name = skill.skillType.displayName 
+            card.node.Name = skill.skillType.displayName
             card.node["名字"].Title = skill.skillType.displayName or skill.skillName
             card.node["等级"].Title = tostring(skill.level)
             local icon = skill.skillType.icon
             if icon and icon ~= "" then
                 card.node["图标"].Icon = icon
             end
-
-            -- 使用新的方法设置品质相关的图片资源
-            self:SetSubCardQualityIcons(card.node, skill.skillType)
         end
     end
 
@@ -352,134 +324,24 @@ function HudCards:RebindSubCardEvents()
     -- 为每个副卡按钮重新绑定事件
     for i, slotId in ipairs(subCardSlots) do
         local card = self.cardsList:GetChild(i) ---@cast card ViewButton
+        card.node["pc_hint"].Title = string.format("[ %d ]", i)
         ---@type Skill
         local skill = self.subCardData[slotId]
 
         if skill then
             card.touchBeginCb = function(ui, btn, vector2)
-                if self.selectSkillCb then
-                    return
-                end
-                -- 检查技能是否在冷却中
-                local currentTime = gg.GetTimeStamp()
-                local lastCastTime = lastCastTimes[skill.skillName]
-                if lastCastTime and skill.cooldownCache > 0 then
-                    local elapsedTime = currentTime - lastCastTime
-                    local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
-                    if remainingTime > 0 then
-                        return -- 在冷却中，不处理触摸事件
-                    end
-                end
-
-                local postProcessing = game.WorkSpace["Environment"].PostProcessing
-                postProcessing.ChromaticAberrationIntensity = 0.5
-                postProcessing.ChromaticAberrationStartOffset = 0.9
-                postProcessing.ChromaticAberrationIterationStep = 5
-                postProcessing.ChromaticAberrationIterationSamples = 4
-
-                self:SetFov(58)
-                self.touchBeginPos = vector2
-                self.selectedCardSlot = slotId -- 改为使用slotId
-                self.selectedSkill = skill -- 直接存储技能对象
-                self.pressedSkillId = skill.skillName -- 记录按下时的技能ID
-
-                -- 创建追踪任务
-                if self.trackingTaskId then
-                    ClientScheduler.cancel(self.trackingTaskId)
-                end
-                refreshDecal = true
-                self.trackingTaskId = ClientScheduler.add(function()
-                    local targetPos, targetObj = CameraController.RaytraceScene({1, 2, 3})
-                    if not targetObj then
-                        return
-                    end
-                    if refreshDecal then
-                        refreshDecal = false
-                        if not decal then
-                            decal = SandboxNode.New("Decal", targetObj)
-                            decal.TextureId = "AssetId://394777658842574854"
-                            decal.LocalEuler = Vector3.New(-90, 0, 0)
-                            decal.Width = 100
-                            decal.Height = 400
-                            decal.Length = 100
-                            decal.Cullback = false
-                        else
-                            decal.Visible = true
-                            decal.Parent = targetObj
-                        end
-                        decal.LocalScale = skill.skillType.indicatorScale
-                    end
-                local indicatorRange = skill.skillType.indicatorRange
-                if indicatorRange and indicatorRange > 0 then
-                    local distance = gg.vec.Distance3(targetPos, localPlayer.Position)
-                    if distance > indicatorRange then
-                        local direction = (targetPos - localPlayer.Position) / distance
-                        targetPos = localPlayer.Position + direction * indicatorRange
-                    end
-                end
-                decal.Position = targetPos
-
-                end, 0, 0.067)
+                self:StartSkillTracking(skill, vector2)
             end
 
             card.touchEndCb = function(ui, btn)
-                -- 取消追踪任务
-                if decal then
-                    decal.Visible = false
-                end
-                if self.trackingTaskId then
-                    ClientScheduler.cancel(self.trackingTaskId)
-                    self.trackingTaskId = nil
-                end
-
                 if self.selectSkillCb then
                     self.selectSkillCb(btn.index, skill)
                     self.selectSkillCb = nil
                     self.pressedSkillId = nil
                     return
                 end
-                local currentTime = gg.GetTimeStamp()
-                local lastCastTime = lastCastTimes[skill.skillName]
-                if lastCastTime and skill.cooldownCache > 0 then
-                    local elapsedTime = currentTime - lastCastTime
-                    local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
-                    if remainingTime > 0 then
-                        self.pressedSkillId = nil
-                        return -- 在冷却中，不处理触摸事件
-                    end
-                end
-
-                local postProcessing = game.WorkSpace["Environment"].PostProcessing
-                postProcessing.ChromaticAberrationIntensity = 1
-                postProcessing.ChromaticAberrationStartOffset = 0.4
-                postProcessing.ChromaticAberrationIterationStep = 0.0
-                postProcessing.ChromaticAberrationIterationSamples = 1
-
-                self:SetFov(75)
-
-                -- 只有按下和抬起是同一个技能才释放
                 if self.pressedSkillId == skill.skillName then
-                    -- 发送技能释放事件（使用新的数据结构）
-                    if self.selectedSkill then
-                        local skillName = skill.skillName
-                        local direction = CameraController.GetForward()
-                        local targetPos, targetObj = CameraController.RaytraceScene({1, 2, 3})
-                        local indicatorRange = skill.skillType.indicatorRange
-                        if indicatorRange and indicatorRange > 0 then
-                            local distance = gg.vec.Distance3(targetPos, localPlayer.Position)
-                            if distance > indicatorRange then
-                                local direction = (targetPos - localPlayer.Position) / distance
-                                targetPos = localPlayer.Position + direction * indicatorRange
-                            end
-                        end
-                        lastCastTimes[skillName] = gg.GetTimeStamp()
-                        gg.network_channel:FireServer({
-                            cmd = "CastSpell",
-                            skill = skill.skillType.name,
-                            targetPos = targetPos,
-                            direction = direction
-                        })
-                    end
+                    self:CastSkill(skill)
                 end
                 self.pressedSkillId = nil -- 抬起后清空
             end
@@ -539,10 +401,50 @@ function HudCards:OnInit(node, config)
     self.subCardData = {} ---@type table<number, Skill>
     self.selectedSkill ={} ---@type table<string, Skill>
     self.selectSkillCb = nil
+    self.pressedSkillId = nil
+    self.pressedKey = nil -- 记录当前按下的数字键
+
     -- 注册技能同步事件监听
     ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SYNC_SKILLS, function(data)
         self:OnSyncPlayerSkills(data)
     end)
+
+    -- 监听按键事件
+    ClientEventManager.Subscribe("PressKey", function(data)
+        if ViewBase.topGui then
+            return
+        end
+        if not data.isDown then
+            -- 按键抬起时，检查是否是之前按下的数字键
+            if self.pressedKey and data.key == self.pressedKey then
+                -- 数字键1对应槽位2，数字键2对应槽位3，以此类推
+                local skillIndex = self.pressedKey - Enum.KeyCode.One.Value + 2
+                local skillId = equippedSkills[skillIndex]
+                if skillId then
+                    local skill = skills[skillId]
+                    if skill then
+                        self:CastSkill(skill)
+                    end
+                end
+                self.pressedKey = nil
+            end
+        else
+            -- 按键按下时，记录数字键并执行触摸开始逻辑
+            if data.key >= Enum.KeyCode.One.Value and data.key <= Enum.KeyCode.Four.Value then
+                self.pressedKey = data.key
+                -- 数字键1对应槽位2，数字键2对应槽位3，以此类推
+                local skillIndex = data.key - Enum.KeyCode.One.Value + 2
+                local skillId = equippedSkills[skillIndex]
+                if skillId then
+                    local skill = skills[skillId]
+                    if skill then
+                        self:StartSkillTracking(skill)
+                    end
+                end
+            end
+        end
+    end)
+
     ClientEventManager.Subscribe("AfkSpotSelectCard", function(data)
         local ui = ViewBase.GetUI("ForceClickHud") ---@cast ui ForceClickHud
         ui.focusingChain = nil
@@ -691,7 +593,132 @@ function HudCards:OnUnequipSkillResponse(data)
     self:UpdateCardsDisplay()
 end
 
+---检查技能是否在冷却中
+---@param skill Skill 要检查的技能
+---@return boolean 是否在冷却中
+---@return number 剩余冷却时间
+function HudCards:CheckSkillCooldown(skill)
+    local currentTime = gg.GetTimeStamp()
+    local lastCastTime = lastCastTimes[skill.skillName]
+    if lastCastTime and skill.cooldownCache > 0 then
+        local elapsedTime = currentTime - lastCastTime
+        local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
+        return remainingTime > 0, remainingTime
+    end
+    return false, 0
+end
 
+---释放技能
+---@param skill Skill 要释放的技能
+function HudCards:CastSkill(skill)
+    if decal then
+        decal.Visible = false
+    end
+    self:SetFov(75)
+    if self.trackingTaskId then
+        ClientScheduler.cancel(self.trackingTaskId)
+        self.trackingTaskId = nil
+    end
+    -- 检查冷却
+    local isOnCooldown, remainingTime = self:CheckSkillCooldown(skill)
+    if isOnCooldown then
+        return false
+    end
+
+    -- 获取目标位置和方向
+    local direction = CameraController.GetForward()
+    local targetPos, targetObj = CameraController.RaytraceScene({1, 2, 3})
+
+    -- 检查技能范围
+    local indicatorRange = skill.skillType.indicatorRange
+    if indicatorRange and indicatorRange > 0 then
+        local distance = gg.vec.Distance3(targetPos, localPlayer.Position)
+        if distance > indicatorRange then
+            local direction = (targetPos - localPlayer.Position) / distance
+            targetPos = localPlayer.Position + direction * indicatorRange
+        end
+    end
+
+    -- 更新冷却时间
+    lastCastTimes[skill.skillName] = gg.GetTimeStamp()
+
+    -- 发送释放技能请求
+    gg.network_channel:FireServer({
+        cmd = "CastSpell",
+        skill = skill.skillType.name,
+        targetPos = targetPos,
+        direction = direction
+    })
+
+    return true
+end
+
+---开始技能追踪
+---@param skill Skill 要追踪的技能
+---@param vector2? Vector2 触摸位置（可选）
+function HudCards:StartSkillTracking(skill, vector2)
+    if self.selectSkillCb then
+        return
+    end
+    -- 检查技能是否在冷却中
+    local currentTime = gg.GetTimeStamp()
+    local lastCastTime = lastCastTimes[skill.skillName]
+    if lastCastTime and skill.cooldownCache > 0 then
+        local elapsedTime = currentTime - lastCastTime
+        local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
+        if remainingTime > 0 then
+            return -- 在冷却中，不处理触摸事件
+        end
+    end
+    local postProcessing = game.WorkSpace["Environment"].PostProcessing
+    postProcessing.ChromaticAberrationIntensity = 0.5
+    postProcessing.ChromaticAberrationStartOffset = 0.9
+    postProcessing.ChromaticAberrationIterationStep = 5
+    postProcessing.ChromaticAberrationIterationSamples = 4
+
+    self:SetFov(58)
+    if vector2 then
+        self.touchBeginPos = vector2
+    end
+    self.pressedSkillId = skill.skillName -- 记录按下时的技能ID
+
+    -- 创建追踪任务
+    if self.trackingTaskId then
+        ClientScheduler.cancel(self.trackingTaskId)
+    end
+    refreshDecal = true
+    self.trackingTaskId = ClientScheduler.add(function()
+        local targetPos, targetObj = CameraController.RaytraceScene({1, 2, 3})
+        if not targetObj then
+            return
+        end
+        if refreshDecal then
+            refreshDecal = false
+            if not decal then
+                decal = SandboxNode.New("Decal", targetObj)
+                decal.TextureId = "AssetId://394777658842574854"
+                decal.LocalEuler = Vector3.New(-90, 0, 0)
+                decal.Width = 100
+                decal.Height = 400
+                decal.Length = 100
+                decal.Cullback = false
+            else
+                decal.Visible = true
+                decal.Parent = targetObj
+            end
+            decal.LocalScale = skill.skillType.indicatorScale
+        end
+        local indicatorRange = skill.skillType.indicatorRange
+        if indicatorRange and indicatorRange > 0 then
+            local distance = gg.vec.Distance3(targetPos, localPlayer.Position)
+            if distance > indicatorRange then
+                local direction = (targetPos - localPlayer.Position) / distance
+                targetPos = localPlayer.Position + direction * indicatorRange
+            end
+        end
+        decal.Position = targetPos
+    end, 0, 0.067)
+end
 
 return HudCards.New(script.Parent, uiConfig)
 

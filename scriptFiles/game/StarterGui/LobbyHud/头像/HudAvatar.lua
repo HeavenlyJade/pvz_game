@@ -45,9 +45,15 @@ function HudAvatar:OnInit(node, config)
                 questId = child.name
             }
             if child.count >= child.countMax then
-                ele.node.Icon = "sandboxId://textures/ui/主界面UI/头像信息UI/任务面板_1.png"
+                ele.normalImg = "sandboxId://textures/ui/主界面UI/头像信息UI/任务面板_1.png"
+                ele.hoverImg = ele.normalImg
+                ele.clickImg = ele.normalImg
+                ele.node.Icon = ele.normalImg
             else
-                ele.node.Icon = "sandboxId://textures/ui/主界面UI/头像信息UI/任务面板.png"
+                ele.normalImg = "sandboxId://textures/ui/主界面UI/头像信息UI/任务面板.png"
+                ele.hoverImg = ele.normalImg
+                ele.clickImg = ele.normalImg
+                ele.node.Icon = ele.normalImg
             end
             ele:Get("任务标题").node.Title = child.description
             ele:Get("任务数量").node.Title = string.format("%d/%d", child.count, child.countMax)

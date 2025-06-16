@@ -1,14 +1,33 @@
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
+local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 
 local commandInput = script.Parent ---@type UITextInput
 
 local commandHistory = {}
 local commandHistoryIndex = 1
 
-local UserInputService = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService") ---@type UserInputService
 
 local function inputBegan( inputObj, bGameProcessd )
+	if inputObj.UserInputType == Enum.UserInputType.Keyboard.Value then
+        ClientEventManager.Publish("PressKey", {
+            key = inputObj.KeyCode,
+            isDown = true
+        })
+    elseif inputObj.UserInputType == Enum.UserInputType.MouseButton2.Value then
+            ClientEventManager.Publish("MouseButton", {
+                right = true,
+                isDown = true
+            })
+    elseif inputObj.UserInputType == Enum.UserInputType.MouseButton1.Value then
+            ClientEventManager.Publish("MouseButton", {
+                right = false,
+                isDown = true
+            })
+    end
+end
+local function inputEnded( inputObj, bGameProcessd )
 	if inputObj.UserInputType == Enum.UserInputType.Keyboard.Value then
         if inputObj.KeyCode == Enum.KeyCode.Return.Value then
             gg.network_channel:FireServer({ 
@@ -35,8 +54,37 @@ local function inputBegan( inputObj, bGameProcessd )
                 })
                 commandInput.Title = lastCommand
             end
+        else
+            ClientEventManager.Publish("PressKey", {
+                key = inputObj.KeyCode,
+                isDown = false
+            })
         end
+    elseif inputObj.UserInputType == Enum.UserInputType.MouseButton2.Value then
+            ClientEventManager.Publish("MouseButton", {
+                right = true,
+                isDown = false
+            })
+    elseif inputObj.UserInputType == Enum.UserInputType.MouseButton1.Value then
+            ClientEventManager.Publish("MouseButton", {
+                right = false,
+                isDown = false
+            })
+    end
+end
+local function inputChanged( inputObj, bGameProcessd )
+    if inputObj.UserInputType == Enum.UserInputType.MouseWheel.Value then
+        ClientEventManager.Publish("MouseScroll", {
+            isDown = inputObj.Position.z == 1
+        })
+    elseif inputObj.UserInputType == Enum.UserInputType.MouseMovement.Value then
+        ClientEventManager.Publish("MouseMove", {
+            x = inputObj.Position.X,
+            y = inputObj.Position.Y
+        })
     end
 end
 
 UserInputService.InputBegan:Connect(inputBegan)
+UserInputService.InputEnded:Connect(inputEnded)
+UserInputService.InputChanged:Connect(inputChanged)

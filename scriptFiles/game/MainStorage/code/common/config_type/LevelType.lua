@@ -261,6 +261,17 @@ function LevelType:OnInit(data)
             self:LeaveQueue(player)
         end
     end)
+
+    -- 订阅玩家退出事件
+    ServerEventManager.Subscribe("PlayerLeaveGameEvent", function(event)
+        local player = event.player
+        if player then
+            -- 如果玩家在匹配队列中，将其移除
+            if self.matchQueue[player.uin] then
+                self:LeaveQueue(player)
+            end
+        end
+    end)
 end
 
 --------------------------------------------------
@@ -307,6 +318,13 @@ function LevelType:Queue(player)
     if self.matchQueue[player.uin] then
         player:SendChatText("你已经在匹配队列中")
         return false
+    end
+
+    -- 让玩家退出所有正在进行的匹配
+    for _, levelType in pairs(LevelConfig.GetAll()) do
+        if levelType ~= self and levelType.matchQueue[player.uin] then
+            levelType:LeaveQueue(player)
+        end
     end
 
     local enterParam = self.entryConditions:Check(player, player)

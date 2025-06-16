@@ -40,6 +40,9 @@ function ClientMain.start_client()
             evt.Return(evt.states)
         end
     end)
+    if game.RunService:IsPC() then
+        game.MouseService:SetMode(1)
+    end
     -- ClientEventManager.Subscribe("FetchModelSize", function (evt)
     --     local actor = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast actor Actor
     --     if actor then

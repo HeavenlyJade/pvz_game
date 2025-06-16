@@ -146,6 +146,28 @@ function Level:OnInit(levelType, scene, index)
             end
         end
     end)
+
+    -- 订阅玩家退出事件
+    ServerEventManager.Subscribe("PlayerLeaveGameEvent", function(event)
+        local player = event.player
+        if player then
+            -- 如果玩家在副本中，将其移除
+            if self.players[player.uin] then
+                self:RemovePlayer(player)
+            end
+        end
+    end)
+
+    -- 监听玩家离开场景事件
+    ServerEventManager.Subscribe("PlayerLeaveSceneEvent", function(event)
+        local player = event.player
+        local scene = event.scene
+        if player and scene == self.scene then
+            if self.players[player.uin] then
+                self:RemovePlayer(player)
+            end
+        end
+    end)
 end
 
 ---开始关卡
@@ -512,6 +534,9 @@ function Level:RemovePlayer(player)
     if self.players[player.uin] then
         self.players[player.uin] = nil
         self.playerCount = self.playerCount - 1
+    end
+    if self.playerCount == 0 then
+        self:Cleanup()
     end
 end
 

@@ -69,6 +69,24 @@ ServerEventManager.Subscribe("PostBattleEvent", function(event)
     OnPostBattle(event.battle)
 end)
 
+-- 订阅玩家退出事件
+ServerEventManager.Subscribe("PlayerLeaveGameEvent", function(event)
+    local player = event.player
+    if player then
+        -- 清理玩家的所有召唤物
+        local summons = SummonSpell.summonerSummons[player]
+        if summons then
+            for mob, _ in pairs(summons) do
+                if mob and mob.isEntity then
+                    mob:DestroyObject()
+                end
+                SummonSpell.summoned2Caster[mob] = nil
+            end
+            SummonSpell.summonerSummons[player] = nil
+        end
+    end
+end)
+
 function SummonSpell:OnInit(data)
     self.summonAtTargetPos = data["召唤在目标位置"] ---@type boolean
     self.mobTypeName = data["怪物类型"] or ""

@@ -13,6 +13,7 @@ local Npc = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
 local AfkSpot = require(MainStorage.code.server.entity_types.AfkSpot) ---@type AfkSpot
 local TriggerZone = require(MainStorage.code.server.entity_types.TriggerZone) ---@type TriggerZone
 local Environment = game:GetService("WorkSpace")["Environment"] ---@type Environment
+local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 
 
 local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
@@ -367,6 +368,8 @@ function _M:player_leave(player)
         -- 从场景玩家列表中移除
         self.players[player.uin] = nil
     end
+    -- 发布玩家离开场景事件
+    ServerEventManager.Publish("PlayerLeaveSceneEvent", { player = player, scene = self })
 end
 
 ---玩家进入场景

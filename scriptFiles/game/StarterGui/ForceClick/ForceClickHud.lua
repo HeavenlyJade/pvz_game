@@ -146,7 +146,7 @@ function ForceClickHud:FocusOnNode(node, text, allowClickAnywhere)
     self.right.Size = Vector2.New(self.right.Size.x, size.y)
     self.right.Position = Vector2.New(pos.x + size.x, pos.y)
     self:Open()
-    self.nodePressCb = node.Click:Connect(function ()
+    self.nodePressCb = node.TouchEnd:Connect(function ()
         self:FocusOnNextNode()
         self.nodePressCb:Disconnect()
         self.nodePressCb = nil

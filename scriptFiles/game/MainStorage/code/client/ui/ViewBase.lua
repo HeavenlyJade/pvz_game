@@ -16,7 +16,7 @@ local allUI = {}
 ---@field New fun(node: SandboxNode, config: ViewConfig): ViewBase
 ---@field GetUI fun(name: string): ViewBase
 local ViewBase = ClassMgr.Class("ViewBase")
-
+ViewBase.topGui = nil ---@type ViewBase
 ViewBase.UiBag = nil ---@type UiBag
 ViewBase.UIConfirm = nil ---@type UIConfirm
 
@@ -26,6 +26,42 @@ ViewBase.UIConfirm = nil ---@type UIConfirm
 function ViewBase.GetUI(name)
     return allUI[name]
 end
+
+---@param visible boolean 是否锁定鼠标
+function ViewBase.LockMouseVisible(visible)
+    if game.RunService:IsPC() then
+        if visible then
+            -- 如果已经有锁定任务，先取消
+            if ViewBase.mouseLockTaskId then
+                ClientScheduler.cancel(ViewBase.mouseLockTaskId)
+            end
+            -- 创建新的锁定任务
+            ViewBase.mouseLockTaskId = ClientScheduler.add(function()
+                game.MouseService:SetMode(0)
+            end, 0, 0.1) -- 每帧执行一次
+        else
+            -- 取消锁定任务
+            if ViewBase.mouseLockTaskId then
+                ClientScheduler.cancel(ViewBase.mouseLockTaskId)
+                ViewBase.mouseLockTaskId = nil
+            end
+            -- 恢复鼠标模式
+            game.MouseService:SetMode(1)
+        end
+    end
+end
+
+if game.RunService:IsPC() then
+    ClientEventManager.Subscribe("PressKey", function (evt)
+        if evt.key == Enum.KeyCode.Escape.Value then
+            -- 直接使用 topGui 关闭最上层的 UI
+            if ViewBase.topGui then
+                ViewBase.topGui:Close()
+            end
+        end
+    end)
+end
+
 
 ---@generic T : ViewComponent
 ---@param path string 组件路径
@@ -107,6 +143,9 @@ end
 
 function ViewBase:Close()
     self:SetVisible(false)
+    if self.layer > 0 then
+        ViewBase.LockMouseVisible(false)
+    end
     if displayingUI[self.layer] == self then
         displayingUI[self.layer] = nil
     end
@@ -121,6 +160,9 @@ function ViewBase:Close()
             local topUI = displayingUI[maxLayer]
             topUI:SetVisible(true)
             topUI.isOnTop = true
+            ViewBase.topGui = topUI
+        else
+            ViewBase.topGui = nil
         end
     end
     self.displaying = false
@@ -129,6 +171,9 @@ end
 function ViewBase:Open()
     self.displaying = true
     self:SetVisible(true)
+    if self.layer > 0 then
+        ViewBase.LockMouseVisible(true)
+    end
     if self.layer > 0 then
         if displayingUI[self.layer] then
             local oldUI = displayingUI[self.layer]
@@ -145,6 +190,10 @@ function ViewBase:Open()
             end
         end
         displayingUI[self.layer] = self
+        -- 更新 topGui
+        if not ViewBase.topGui or self.layer > ViewBase.topGui.layer then
+            ViewBase.topGui = self
+        end
     end
 end
 

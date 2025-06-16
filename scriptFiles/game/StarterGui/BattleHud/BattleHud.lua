@@ -7,6 +7,7 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local CameraController = require(MainStorage.code.client.camera.CameraController) ---@type CameraController
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
+local UserInputService = game:GetService("UserInputService") ---@type UserInputService
 -- local ShakeBeh = require(MainStorage.code.client.camera.ShakeBeh) ---@type ShakeBeh
 local tweenInfo = TweenInfo.New(0.2, Enum.EasingStyle.Linear)
 local TweenService = game:GetService('TweenService') ---@type TweenService
@@ -54,6 +55,19 @@ function BattleHud:Close()
     if self.recoilRecoveryConnection then
         self.recoilRecoveryConnection:Disconnect()
         self.recoilRecoveryConnection = nil
+    end
+    -- 断开鼠标事件监听
+    if self.mouseInputConnection then
+        self.mouseInputConnection:Disconnect()
+        self.mouseInputConnection = nil
+    end
+    if self.mouseInputEndConnection then
+        self.mouseInputEndConnection:Disconnect()
+        self.mouseInputEndConnection = nil
+    end
+    if self.mouseInputChangedConnection then
+        self.mouseInputChangedConnection:Disconnect()
+        self.mouseInputChangedConnection = nil
     end
 end
 local recoil = nil
@@ -104,6 +118,17 @@ function BattleHud:Open()
     if not self.recoilRecoveryConnection then
         self.recoilRecoveryConnection = game.RunService.RenderStepped:Connect(self.recoilRecoveryFunc)
     end
+
+    -- 订阅鼠标事件
+    ClientEventManager.Subscribe("MouseButton", function(data)
+        if not data.right and self.displaying then -- 左键
+            if data.isDown then
+                self:onFireBegin(Vector2.new(0, 0))
+            else
+                self:onFireEnd(Vector2.new(0, 0))
+            end
+        end
+    end)
 end
 
 function BattleHud:SetFov(fov)
@@ -224,6 +249,39 @@ function BattleHud:SendCastSpellEvent(skillId)
         self:CalculateRecoil()
     end
     lastShotTime = gg.GetTimeStamp()  -- 更新最后射击时间
+end
+-- 抽离开火相关逻辑为函数
+function BattleHud:onFireBegin(vector2)
+    local postProcessing = game.WorkSpace["Environment"].PostProcessing
+    postProcessing.ChromaticAberrationIntensity = 0.5
+    postProcessing.ChromaticAberrationStartOffset = 0.9
+    postProcessing.ChromaticAberrationIterationStep = 5
+    postProcessing.ChromaticAberrationIterationSamples = 4
+
+    self:SetFov(58)
+    isCasting = true
+    self.fireInputBeginPos = vector2
+end
+
+function BattleHud:onFireEnd(vector2)
+    local postProcessing = game.WorkSpace["Environment"].PostProcessing
+    postProcessing.ChromaticAberrationIntensity = 1
+    postProcessing.ChromaticAberrationStartOffset = 0.4
+    postProcessing.ChromaticAberrationIterationStep = 0.01
+    postProcessing.ChromaticAberrationIterationSamples = 1
+
+    self:SetFov(75)
+    isCasting = false
+end
+
+function BattleHud:onFireMove(vector2)
+    if not self.fireInputBeginPos then return end
+    local moveDistance = vector2 - self.fireInputBeginPos
+    self.fireInputBeginPos = vector2
+    CameraController.InputMove(
+        moveDistance.x,
+        moveDistance.y
+    )
 end
 
 function BattleHud:OnInit(node, config)
@@ -350,43 +408,23 @@ function BattleHud:OnInit(node, config)
     self.progress = self:Get("击杀进度条", ViewList)
     
     self.fireIcon = self:Get("开火", ViewButton)
+    self.fireIcon.node.Visible = not game.RunService:IsPC()
+    -- fireIcon 事件绑定改为调用上述函数
     self.fireIcon.node.TouchBegin:Connect(
         function(node, isTouchMove, vector2, int)
-            local postProcessing = game.WorkSpace["Environment"].PostProcessing
-            postProcessing.ChromaticAberrationIntensity = 0.5
-            postProcessing.ChromaticAberrationStartOffset = 0.9
-            postProcessing.ChromaticAberrationIterationStep = 5
-            postProcessing.ChromaticAberrationIterationSamples = 4
-        
-            self:SetFov(58)
-            isCasting = true
-            self.fireInputBeginPos = vector2
+            self:onFireBegin(vector2)
         end
     )
 
     self.fireIcon.node.TouchEnd:Connect(
         function(node, isTouchMove, vector2, int)
-            local postProcessing = game.WorkSpace["Environment"].PostProcessing
-            postProcessing.ChromaticAberrationIntensity = 1
-            postProcessing.ChromaticAberrationStartOffset = 0.4
-            postProcessing.ChromaticAberrationIterationStep = 0.01
-            postProcessing.ChromaticAberrationIterationSamples = 1
-        
-            self:SetFov(75)
-            isCasting = false
+            self:onFireEnd(vector2)
         end
     )
 
     self.fireIcon.node.TouchMove:Connect(
         function(node, isTouchMove, vector2, int)
-            -- 计算移动的距离
-            local moveDistance = vector2 - self.fireInputBeginPos
-            -- 更新按下的位置
-            self.fireInputBeginPos = vector2
-            CameraController.InputMove(
-                moveDistance.x,
-                moveDistance.y
-            )
+            self:onFireMove(vector2)
         end
     )
 end

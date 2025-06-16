@@ -56,10 +56,10 @@ CardIcon.qualityBaseMapboxClickIcon = {
 }
 -- 品质优先级配置
 CardIcon.qualityPriority = {
-    ["UR"] = 5, 
-    ["SSR"] = 4, 
-    ["SR"] = 3, 
-    ["R"] = 2, 
+    ["UR"] = 5,
+    ["SSR"] = 4,
+    ["SR"] = 3,
+    ["R"] = 2,
     ["N"] = 1
 }
 
@@ -68,10 +68,10 @@ CardIcon.qualityList = {"UR", "SSR", "SR", "R", "N", "ALL"}
 
 -- 品质映射配置
 CardIcon.qualityListMap = {
-    ["品质_5"] = "N", 
-    ["品质_4"] = "R", 
-    ["品质_3"] = "SR", 
-    ["品质_2"] = "SSR", 
+    ["品质_5"] = "N",
+    ["品质_4"] = "R",
+    ["品质_3"] = "SR",
+    ["品质_2"] = "SSR",
     ["品质_1"] = "UR",
     ["品质_6"] = "ALL"
 }
