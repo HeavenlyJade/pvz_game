@@ -8,7 +8,7 @@ local CameraController = require(MainStorage.code.client.camera.CameraController
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
-
+local CardIcon = require(MainStorage.code.common.ui_icon.card_icon) ---@type CardIcon
 
 local tweenInfo = TweenInfo.New(0.2, Enum.EasingStyle.Linear)
 local TweenService = game:GetService('TweenService')
@@ -140,6 +140,55 @@ function HudCards:OnSyncPlayerSkills(data)
     self:UpdateCardsDisplay()
 end
 
+-- === 新增：副卡品质图标设置方法 ===
+---@param cardNode UIImage 卡片节点
+---@param skillType table 技能类型配置
+function HudCards:SetSubCardQualityIcons(cardNode, skillType)
+    if not cardNode or not skillType then return end
+
+    local quality = skillType.quality or "N"  -- 默认为N品质
+    gg.log("HudCards设置副卡品质图标",cardNode,quality)
+    
+    -- === 通用的节点品质图标设置函数 ===
+    ---@param node UIImage 要设置的节点
+    ---@param quality string 品质等级（如 "N", "R", "SR", "SSR", "UR"）
+    ---@param defIconTable table 默认图标资源表
+    ---@param clickIconTable table 点击图标资源表
+    local function setNodeQualityIcon(node, quality, defIconTable, clickIconTable)
+        if not node or not quality then return end
+        
+        local defIcon = defIconTable[quality]
+        local clickIcon = clickIconTable[quality]
+        gg.log("设置品质图标",node,quality,defIcon,clickIcon)
+        -- 设置默认图标和"图片-默认"属性
+        if defIcon and defIcon ~= "" and node.Icon ~= defIcon then
+            node.Icon = defIcon
+            node:SetAttribute("图片-默认", defIcon)
+        end
+        
+        -- 设置"图片-点击"属性
+        if clickIcon and clickIcon ~= "" then
+            local currentClickIcon = node:GetAttribute("图片-点击")
+            if currentClickIcon ~= clickIcon then
+                node:SetAttribute("图片-点击", clickIcon)
+            end
+        end
+    end
+    -- 设置主节点的品质图标
+    setNodeQualityIcon(cardNode, quality, CardIcon.qualityBaseMapDefIcon, CardIcon.qualityBaseMapClickIcon)
+    
+    -- 设置"卡片框"子节点的品质图标
+    if cardNode["卡片框"] then
+        setNodeQualityIcon(cardNode["卡片框"], quality, CardIcon.qualityBaseMapboxIcon, CardIcon.qualityBaseMapboxClickIcon)
+    end
+
+    -- 如果有其他子节点需要设置品质图标，可以在这里添加
+    -- 例如：
+    -- if cardNode["背景"] then
+    --     self:setNodeQualityIcon(cardNode["背景"], quality, CardIcon.someOtherDefIcon, CardIcon.someOtherClickIcon)
+    -- end
+end
+
 -- 处理技能冷却更新事件
 ---@param data {cmd: string, skillId: string, cooldown: number}
 function HudCards:OnEquipSkillCooldownUpdate(data)
@@ -154,46 +203,6 @@ function HudCards:OnEquipSkillCooldownUpdate(data)
 
     skill.cooldownCache = data.cooldown
 end
-
--- -- 处理技能可释放状态更新事件
--- ---@param data {cmd: string, castabilityData: table<string, boolean>}
--- function HudCards:OnUpdateSkillCastability(data)
---     if not data or not data.castabilityData then return end
-
---     -- 更新主卡可释放状态
---     if self.mainCardButton then
---         for slotId, skill in pairs(self.mainCardData) do
---             local canCast = data.castabilityData[skill.skillId]
---             if canCast ~= nil then
---                 self.mainCardButton:SetTouchEnable(canCast)
---             end
---             break -- 只有一个主卡
---         end
---     end
-
---     -- 更新副卡可释放状态
---     if not self.cardsList then return end
-
---     -- 获取排序后的槽位列表
---     local subCardSlots = {}
---     for slotId, skill in pairs(self.subCardData) do
---         table.insert(subCardSlots, slotId)
---     end
---     table.sort(subCardSlots)
-
---     -- 遍历所有副卡
---     for i, slotId in ipairs(subCardSlots) do
---         local card = self.cardsList:GetChild(i) ---@cast card ViewButton
---         local skill = self.subCardData[slotId]
-
---         if skill then
---             local canCast = data.castabilityData[skill.skillId]
---             if canCast ~= nil then
---                 card:SetTouchEnable(canCast)
---             end
---         end
---     end
--- end
 
 -- 处理技能可释放状态更新事件
 ---@param data {cmd: string, castabilityData: table<string, boolean>}
@@ -312,12 +321,16 @@ function HudCards:UpdateSubCardDisplay()
 
         if skill and skill.skillType then
             -- 有技能时显示技能信息
+            card.node.Name = skill.skillType.displayName 
             card.node["名字"].Title = skill.skillType.displayName or skill.skillName
             card.node["等级"].Title = tostring(skill.level)
             local icon = skill.skillType.icon
             if icon and icon ~= "" then
                 card.node["图标"].Icon = icon
             end
+
+            -- 使用新的方法设置品质相关的图片资源
+            self:SetSubCardQualityIcons(card.node, skill.skillType)
         end
     end
 

@@ -38,6 +38,22 @@ CardIcon.qualityBaseMapClickIcon = {
     ["UR"] = "sandboxId://textures/ui/主界面UI/快捷栏/物品栏彩_底图1.png",
 }
 
+
+CardIcon.qualityBaseMapboxIcon = {
+    ["N"] = "sandboxId://textures/ui/主界面UI/快捷栏/绿卡.png",
+    ["R"] = "sandboxId://textures/ui/主界面UI/快捷栏/蓝卡.png",
+    ["SR"] = "sandboxId://textures/ui/主界面UI/快捷栏/紫卡.png",
+    ["SSR"] = "sandboxId://textures/ui/主界面UI/快捷栏/橙卡.png",
+    ["UR"] = "sandboxId://textures/ui/主界面UI/快捷栏/彩卡.png",
+}
+
+CardIcon.qualityBaseMapboxClickIcon = {
+    ["N"] = "sandboxId://textures/ui/主界面UI/快捷栏/蓝卡_1.png",
+    ["R"] = "sandboxId://textures/ui/主界面UI/快捷栏/绿卡_1.png",
+    ["SR"] = "sandboxId://textures/ui/主界面UI/快捷栏/紫卡_1.png",
+    ["SSR"] = "sandboxId://textures/ui/主界面UI/快捷栏/橙卡_1.png",
+    ["UR"] = "sandboxId://textures/ui/主界面UI/快捷栏/彩卡_1.png",
+}
 -- 品质优先级配置
 CardIcon.qualityPriority = {
     ["UR"] = 5, 
