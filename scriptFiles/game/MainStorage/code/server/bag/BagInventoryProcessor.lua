@@ -70,22 +70,22 @@ function BagInventoryProcessor.HandleSyncInventoryItems(evt)
     -- 保存到玩家库存数据中
     BagInventoryProcessor.playerInventories[uin] = inventory
 
-    -- 打印整合后的库存数据
-    gg.log("=== 玩家 " .. uin .. " 的库存数据 ===")
-    local sortedItems = {}
-    for itemName, amount in pairs(inventory) do
-        table.insert(sortedItems, {name = itemName, amount = amount})
-    end
+    -- -- 打印整合后的库存数据
+    -- gg.log("=== 玩家 " .. uin .. " 的库存数据 ===")
+    -- local sortedItems = {}
+    -- for itemName, amount in pairs(inventory) do
+    --     table.insert(sortedItems, {name = itemName, amount = amount})
+    -- end
     
-    -- 按物品名称排序
-    table.sort(sortedItems, function(a, b)
-        return a.name < b.name
-    end)
+    -- -- 按物品名称排序
+    -- table.sort(sortedItems, function(a, b)
+    --     return a.name < b.name
+    -- end)
     
-    for _, item in ipairs(sortedItems) do
-        gg.log(string.format("%s: %d", item.name, item.amount))
-    end
-    gg.log("=== 库存数据结束 ===")
+    -- for _, item in ipairs(sortedItems) do
+    --     gg.log(string.format("%s: %d", item.name, item.amount))
+    -- end
+    -- gg.log("=== 库存数据结束 ===")
 
     -- 可选：触发自定义事件通知其他系统
     ServerEventManager.Publish("PlayerInventoryUpdated", {

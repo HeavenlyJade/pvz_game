@@ -135,21 +135,17 @@ function ViewButton:OnHoverIn()
 end
 
 function ViewButton:OnClick()
+    print("OnClick", self.path, self.clickCb)
     if not self.enabled then return end
     if self.clickCb then
         self.clickCb(self.ui, self)
     end
 end
 
-function ViewButton:OnInit(node, ui, path, realButtonPath)
-    self.childClickImgs = {    }
-    self.enabled = true
-    self.img = node ---@type UIImage
-    if realButtonPath then
-        self.img = self.img[realButtonPath]
-    end
-    local img = self.img
-    self.img.ClickPass = false
+-- 初始化按钮基本属性
+---@param img UIImage 按钮图片组件
+function ViewButton:InitButtonProperties(img)
+    img.ClickPass = false
     self.clickCb = nil ---@type fun(ui:ViewBase, button:ViewButton)
     self.touchBeginCb = nil
     self.touchMoveCb = nil
@@ -177,71 +173,70 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     if self.soundRelease == "" then
         self.soundRelease = nil
     end
+    self:_BindNodeAndChild(img)
+end
+
+function ViewButton:_BindNodeAndChild(child)
+    local clickImg = child:GetAttribute("图片-点击")---@type string|nil
+    local hoverImg = child:GetAttribute("图片-悬浮") ---@type string|nil
+    if clickImg == "" then
+        clickImg = nil
+    end
+    if hoverImg == "" then
+        hoverImg = clickImg
+    end
+    self.childClickImgs[child] = {
+        normalImg = child.Icon,---@type string
+        clickImg = clickImg,
+        hoverImg = hoverImg,
+
+        hoverColor = child:GetAttribute("悬浮颜色"), ---@type ColorQuad
+        clickColor = child:GetAttribute("点击颜色"), ---@type ColorQuad
+        normalColor = child.FillColor,
+    }
+    child.RollOver:Connect(function(node, isOver, vector2)
+        self:OnHoverIn()
+    end)
+
+    child.RollOut:Connect(function(node, isOver, vector2)
+        self:OnHoverOut()
+    end)
+    child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
+        self:OnTouchIn(vector2)
+    end)
+    child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
+        self:OnTouchOut()
+    end)
+    child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
+        self:OnTouchMove(node, isTouchMove, vector2, number)
+    end)
+    child.Click:Connect(function(node, isClick, vector2, number)
+        self:OnClick()
+    end)
+    for _, c in ipairs(child.Children) do ---@type UIComponent
+        if child:GetAttribute("继承按钮") then
+        self:_BindNodeAndChild(c)
+        end
+    end
+end
+
+function ViewButton:OnInit(node, ui, path, realButtonPath)
+    self.childClickImgs = {}
+    self.enabled = true
+    self.img = node ---@type UIImage
+    if realButtonPath then
+        self.img = self.img[realButtonPath]
+    end
+    local img = self.img
+    
+    self:InitButtonProperties(img)
+
     if img["pc_hint"] then
         img["pc_hint"].Visible = game.RunService:IsPC()
     end
 
     self.isHover = false
-
-    img.RollOver:Connect(function(node, isOver, vector2)
-        self:OnHoverIn()
-    end)
-
-    img.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-        self:OnTouchIn(vector2)
-    end)
-
-    img.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
-        self:OnTouchOut()
-    end)
-
-    img.TouchMove:Connect(function(node, isTouchMove, vector2, number)
-        self:OnTouchMove(node, isTouchMove, vector2, number)
-    end)
-
-    img.RollOut:Connect(function(node, isOver, vector2)
-        self:OnHoverOut()
-    end)
-
-    img.Click:Connect(function(node, isClick, vector2, number)
-        self:OnClick()
-    end)
-
-    for _, child in ipairs(img.Children) do ---@type UIComponent
-        if child:IsA("UIImage") and child:GetAttribute("继承按钮") then
-            local clickImg = child:GetAttribute("图片-点击")---@type string|nil
-            local hoverImg = child:GetAttribute("图片-悬浮") ---@type string|nil
-            if clickImg == "" then
-                clickImg = nil
-            end
-            if hoverImg == "" then
-                hoverImg = clickImg
-            end
-            self.childClickImgs[child] = {
-                normalImg = child.Icon,---@type string
-                clickImg = clickImg,
-                hoverImg = hoverImg,
-
-                hoverColor = child:GetAttribute("悬浮颜色"), ---@type ColorQuad
-                clickColor = child:GetAttribute("点击颜色"), ---@type ColorQuad
-                normalColor = child.FillColor,
-            }
-            child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-                self:OnTouchIn(vector2)
-            end)
-            child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
-                self:OnTouchOut()
-            end)
-            child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
-                self:OnTouchMove(node, isTouchMove, vector2, number)
-            end)
-            child.Click:Connect(function(node, isClick, vector2, number)
-                self:OnClick()
-            end)
-        end
-    end
 end
-
 
 -- === 新增：重新绑定到新的UI节点 ===
 -- 用于在按钮复用时重新绑定到新的UI节点，重新设置所有事件监听器和属性
@@ -266,101 +261,7 @@ function ViewButton:RebindToNewNode(newNode, realButtonPath)
         return
     end
 
-    -- 重新设置基本属性
-    img.ClickPass = false
-
-    -- 重新绑定所有事件监听器
-    img.RollOver:Connect(function(node, isOver, vector2)
-        self:OnHoverIn()
-    end)
-
-    img.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-        self:OnTouchIn(vector2)
-    end)
-
-    img.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
-        self:OnTouchOut()
-    end)
-
-    img.TouchMove:Connect(function(node, isTouchMove, vector2, number)
-        self:OnTouchMove(node, isTouchMove, vector2, number)
-    end)
-
-    img.RollOut:Connect(function(node, isOver, vector2)
-        self:OnHoverOut()
-    end)
-
-    img.Click:Connect(function(node, isClick, vector2, number)
-        self:OnClick()
-    end)
-
-    -- 重新获取图片属性
-    self.clickImg = img:GetAttribute("图片-点击")
-    self.hoverImg = img:GetAttribute("图片-悬浮")
-    self.defaultImg = img:GetAttribute("图片-默认")
-    if self.hoverImg == "" then
-        self.hoverImg = self.clickImg
-    end
-    self.normalImg = img.Icon
-
-    -- 重新获取颜色属性
-    self.hoverColor = img:GetAttribute("悬浮颜色")
-    self.clickColor = img:GetAttribute("点击颜色")
-    self.normalColor = img.FillColor
-
-    -- === 移除了选中状态相关属性 ===
-
-    -- 重新获取音效属性
-    self.soundPress = img:GetAttribute("音效-点击")
-    if self.soundPress == "" then
-        self.soundPress = nil
-    end
-    self.soundHover = img:GetAttribute("音效-悬浮")
-    if self.soundHover == "" then
-        self.soundHover = nil
-    end
-    self.soundRelease = img:GetAttribute("音效-抬起")
-    if self.soundRelease == "" then
-        self.soundRelease = nil
-    end
-
-    -- 重新处理子节点的继承按钮
-    for _, child in ipairs(img.Children) do
-        if child:IsA("UIImage") and child:GetAttribute("继承按钮") then
-            local clickImg = child:GetAttribute("图片-点击")
-            local hoverImg = child:GetAttribute("图片-悬浮")
-            if clickImg == "" then
-                clickImg = nil
-            end
-            if hoverImg == "" then
-                hoverImg = clickImg
-            end
-            self.childClickImgs[child] = {
-                normalImg = child.Icon,
-                clickImg = clickImg,
-                hoverImg = hoverImg,
-                hoverColor = child:GetAttribute("悬浮颜色"),
-                clickColor = child:GetAttribute("点击颜色"),
-                normalColor = child.FillColor,
-            }
-
-            -- 为子节点重新绑定事件
-            child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-                self:OnTouchIn(vector2)
-            end)
-            child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
-                self:OnTouchOut()
-            end)
-            child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
-                self:OnTouchMove(node, isTouchMove, vector2, number)
-            end)
-            child.Click:Connect(function(node, isClick, vector2, number)
-                self:OnClick()
-            end)
-        end
-    end
-
+    self:InitButtonProperties(img)
 end
-
 
 return ViewButton

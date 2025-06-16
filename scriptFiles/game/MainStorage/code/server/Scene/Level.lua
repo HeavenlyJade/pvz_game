@@ -218,7 +218,7 @@ function Level:Start()
         if player.actor and entryPoint then
             player.actor.Position = entryPoint.Position
             player.actor.Euler = Vector3.New(0, entryPoint.Euler.y, 0)
-            player:SetCameraView(entryPoint.Euler)
+            player:SetCameraView(player.actor.Euler)
             local oldGrav = player.actor.Gravity
             player.actor.Gravity = 0
             ServerScheduler.add(function ()
@@ -462,9 +462,6 @@ function Level:Cleanup()
     self.remainingMobCount = 0
     self.waveSpawnedCounts = {}
     
-    -- 清理掉落物
-    -- TODO: 实现掉落物清理
-    
     gg.log("[Level] Cleanup completed", self.levelType.levelId)
 end
 
@@ -496,9 +493,9 @@ function Level:End(success)
             player.actor.Position = originalPos.position
             player.actor.Euler = originalPos.euler
             player:SetCameraView(originalPos.euler)
-            player:ExitBattle()
             player:SendChatText("已传送回原位置")
         end
+        player:ExitBattle()
     end
 
     -- 清理场景
@@ -534,6 +531,19 @@ function Level:RemovePlayer(player)
     if self.players[player.uin] then
         self.players[player.uin] = nil
         self.playerCount = self.playerCount - 1
+        local originalPos = self.playerOriginalPositions[player.uin]
+        if player.actor and originalPos then
+            player.actor.Position = originalPos.position
+            player.actor.Euler = originalPos.euler
+            player:SetCameraView(originalPos.euler)
+        end
+        player:SendEvent("BattleEndEvent", {
+            levelId = self.levelType.levelId,
+            success = false,
+            stars = self.currentStars,
+            duration = self.endTime - self.startTime
+        })
+        player:ExitBattle()
     end
     if self.playerCount == 0 then
         self:Cleanup()

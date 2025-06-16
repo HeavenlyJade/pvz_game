@@ -635,12 +635,7 @@ end
 ---@param health number 治疗量
 ---@param source string|nil 治疗来源
 function _M:Heal(health, source)
-    self:SetHealth(self.health + health)
-    local maxHealth = self:GetStat("Health")
-
-    if self.health > maxHealth then
-        self.health = maxHealth
-    end
+    self:SetHealth(math.min(self.maxHealth, self.health + health))
 end
 
 function _M:SetHealth(health)
@@ -653,11 +648,6 @@ end
 ---@param source string|nil 护盾来源
 function _M:AddShield(amount, source)
     self.shield = self.shield + amount
-    local maxHealth = self:GetStat("Health")
-
-    if self.shield > maxHealth then
-        self.shield = maxHealth
-    end
 end
 
 --- 开始处理死亡逻辑, 如果要移除对象, 请调用 DestroyObject

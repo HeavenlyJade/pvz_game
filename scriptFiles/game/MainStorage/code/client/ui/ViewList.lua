@@ -103,4 +103,32 @@ function ViewList:SetElementSize(size)
     end
 end
 
+---@param visible boolean
+function ViewList:SetGray(visible)
+    self.node.Grayed = visible
+end
+
+---@param visible boolean
+function ViewList:SetVisible(visible)
+    self.node.Visible = visible
+    self.node.Enabled = visible
+end
+
+---@param childNode SandboxNode 要添加的子节点
+function ViewList:AppendChild(childNode)
+    childNode:SetParent(self.node)
+    local viewComponent = self.onAddElementCb(childNode)
+    if viewComponent then
+        -- 设置ViewComponent的path和index
+        viewComponent.path = self.path .. "/" .. childNode.Name
+        viewComponent.index = #self.childrens + 1
+        table.insert(self.childrens, viewComponent)
+    end
+end
+
+---清空所有子元素
+function ViewList:ClearChildren()
+    self.childrens = {}
+end
+
 return ViewList

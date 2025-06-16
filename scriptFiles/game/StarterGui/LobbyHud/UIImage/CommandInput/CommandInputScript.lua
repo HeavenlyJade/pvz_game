@@ -3,6 +3,7 @@ local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 
 local commandInput = script.Parent ---@type UITextInput
+commandInput.Visible = gg.opUin[game.Players.LocalPlayer.UserId]
 
 local commandHistory = {}
 local commandHistoryIndex = 1

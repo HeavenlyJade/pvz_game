@@ -68,6 +68,10 @@ CommandManager.handlers = {
 }
 
 ServerEventManager.Subscribe("ClientExecuteCommand", function(evt)
+    if not gg.opUin[evt.player.uin] then
+        evt.player:SendChatText("你没有执行指令的权限")
+        return
+    end
     CommandManager.ExecuteCommand(evt.command, evt.player)
 end)
 

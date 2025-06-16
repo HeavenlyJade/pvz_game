@@ -708,6 +708,14 @@ function _M:SetHealth(health)
     })
 end
 
+function _M:SetMaxHealth(health)
+    Entity.SetMaxHealth(self, health)
+    self:SendEvent("UpdateHealth", {
+        h = self.health,
+        mh = self.maxHealth
+    })
+end
+
 function _M:SendHoverText( text, ... )
     if ... then
         text = string.format(text, ...)

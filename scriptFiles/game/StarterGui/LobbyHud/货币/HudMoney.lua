@@ -11,9 +11,42 @@ local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) --
 local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local CoreUI = game:GetService("CoreUI")
+
+-- 数字格式化函数
+local function formatLargeNumber(num)
+    if num < 10000 then
+        return tostring(num)
+    end
+    
+    local units = {"", "万", "亿", "兆", "京"}
+    local unitIndex = 1
+    local result = num
+    
+    while result >= 10000 and unitIndex < #units do
+        result = result / 10000
+        unitIndex = unitIndex + 1
+    end
+    
+    -- 保留一位小数
+    result = math.floor(result * 10) / 10
+    
+    -- 如果是整数，去掉小数点
+    if result == math.floor(result) then
+        return tostring(math.floor(result)) .. units[unitIndex]
+    else
+        -- 检查小数点前的数字位数
+        local wholePart = math.floor(result)
+        if wholePart >= 1000 and wholePart < 10000 then
+            -- 如果是4位数，去掉小数部分
+            return tostring(wholePart) .. units[unitIndex]
+        else
+            return tostring(result) .. units[unitIndex]
+        end
+    end
+end
+
 ---@class HudMoney:ViewBase
 local HudMoney = ClassMgr.Class("HudMoney", ViewBase)
-
 
 local uiConfig = {
     uiName = "HudMoney",
@@ -78,7 +111,8 @@ function HudMoney:OnInit(node, config)
                         -- 从对象池获取文本标签
                         local moneyAdd = MoneyAddPool:Get()
                         -- 设置增加值的显示
-                        moneyAdd.Title = "+" .. tostring(money.a - self.lastMoneyValues[idx])
+                        local diff = money.a - self.lastMoneyValues[idx]
+                        moneyAdd.Title = "+" .. formatLargeNumber(diff)
                         moneyAdd["UIImage"].Icon = ItemTypeConfig.Get(money.it).icon
                         moneyAdd.Scale = Vector2.New(2, 2)
                         local screenSize = self:GetScreenSize()
@@ -102,7 +136,7 @@ function HudMoney:OnInit(node, config)
                             MoneyAddPool:Return(moneyAdd)
                         end)
                     end
-                    node.Title = tostring(money.a)
+                    node.Title = formatLargeNumber(money.a)
                 end
             end
             -- 保存当前货币值用于下次比较

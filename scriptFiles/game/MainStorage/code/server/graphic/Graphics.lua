@@ -315,7 +315,6 @@ function AnimationGraphic:OnInit( data )
 end
 
 function AnimationGraphic:PlayAtReal(caster, target, param)
-    gg.log("Play AnimationGraphic", target, self.animationName)
     if target.modelPlayer then
         target.modelPlayer:SwitchState(self.animationName, self.playbackSpeed)
     end

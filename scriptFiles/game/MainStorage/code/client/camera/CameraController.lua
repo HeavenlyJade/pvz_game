@@ -589,7 +589,7 @@ function CameraController.OnTouchMoved(x, y, touchId)
 
         if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
             local deltaY = delta.y
-            if not game.MouseService:IsSight() then
+            if not game.MouseService:IsSight() or not game.RunService:IsPC() then
                 deltaY = -deltaY
             end
             if _alignWhenMoving and _lockedOnTarget then

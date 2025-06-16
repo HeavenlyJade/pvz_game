@@ -351,6 +351,7 @@ end
 ---@field server_players_name_list table<string, Player> 服务器玩家名称列表
 ---@field equipSlot table<number, table<number, boolean>> 各个装备槽位对应的装备类型
 local gg = {
+    opUin = {[1995296726]= true, [1999522565]= true, [1997748985] = true, [1831921352] = true, [1995494850] = true, [1997807412] = true, [1972857840] = true},
     math = Math,
     vec = vec,
     Vec2 = Vec2, ---@type Vec2
@@ -1290,9 +1291,7 @@ end
 function gg.eval(expr)
     expr = expr:gsub("%s+", "")  -- 移除空格
     local pos = 1
-
-    -- 先声明所有函数（避免未定义错误）
-    local parseExpr, parseMulDiv, parsePower, parseAtom, parseNumber
+    local parseExpr, parseMulDiv, parsePower, parseAtom, parseNumber, parseFunction
 
     parseNumber = function()
         local start = pos
@@ -1303,13 +1302,107 @@ function gg.eval(expr)
         return tonumber(expr:sub(start, pos - 1))
     end
 
+    parseFunction = function()
+        local start = pos
+        -- First check if we have a valid function name
+        if not expr:sub(pos, pos):match("%w") then
+            error("Invalid function name")
+        end
+        
+        -- Parse the function name
+        while pos <= #expr and expr:sub(pos, pos):match("[%w_]") do
+            pos = pos + 1
+        end
+        local funcName = expr:sub(start, pos - 1)
+        
+        -- Skip any whitespace before the opening parenthesis
+        while pos <= #expr and expr:sub(pos, pos):match("%s") do
+            pos = pos + 1
+        end
+        
+        if pos > #expr or expr:sub(pos, pos) ~= "(" then
+            error("Expected '(' after function name '" .. funcName .. "'")
+        end
+        pos = pos + 1
+        
+        local args = {}
+        -- Handle empty argument list
+        if expr:sub(pos, pos) == ")" then
+            pos = pos + 1
+            if funcName == "max" or funcName == "min" then
+                error("Function '" .. funcName .. "' requires at least one argument")
+            end
+            return 0
+        end
+        
+        -- Parse arguments
+        while true do
+            -- Skip any whitespace before the argument
+            while pos <= #expr and expr:sub(pos, pos):match("%s") do
+                pos = pos + 1
+            end
+            
+            table.insert(args, parseExpr())
+            
+            -- Skip any whitespace after the argument
+            while pos <= #expr and expr:sub(pos, pos):match("%s") do
+                pos = pos + 1
+            end
+            
+            if pos > #expr then
+                error("Unexpected end of expression in function arguments")
+            end
+            
+            if expr:sub(pos, pos) == ")" then
+                pos = pos + 1
+                break
+            elseif expr:sub(pos, pos) == "," then
+                pos = pos + 1
+            else
+                error("Expected ',' or ')' in function arguments")
+            end
+        end
+        
+        if funcName == "max" then
+            if #args == 0 then
+                error("Function 'max' requires at least one argument")
+            end
+            return math.max(unpack(args))
+        elseif funcName == "min" then
+            if #args == 0 then
+                error("Function 'min' requires at least one argument")
+            end
+            return math.min(unpack(args))
+        else
+            error("Unknown function: " .. funcName)
+        end
+    end
+
     parseAtom = function()
         if expr:sub(pos, pos) == "(" then
             pos = pos + 1
-            local val = parseExpr()  -- 调用 parseExpr（此时已定义）
+            local val = parseExpr()
             if expr:sub(pos, pos) ~= ")" then error("Missing closing parenthesis") end
             pos = pos + 1
             return val
+        elseif expr:sub(pos, pos):match("%w") then
+            -- Check if it's a function name (letters only) or a number
+            local start = pos
+            local isNumber = false
+            if expr:sub(pos, pos) == "-" then
+                pos = pos + 1
+            end
+            while pos <= #expr and (expr:sub(pos, pos):match("%d") or expr:sub(pos, pos) == ".") do
+                pos = pos + 1
+                isNumber = true
+            end
+            if isNumber then
+                pos = start
+                return parseNumber()
+            else
+                pos = start
+                return parseFunction()
+            end
         else
             return parseNumber()
         end
@@ -1319,7 +1412,7 @@ function gg.eval(expr)
         local left = parseAtom()
         while pos <= #expr and expr:sub(pos, pos) == "^" do
             pos = pos + 1
-            left = left ^ parseAtom()  -- 右结合（如 2^3^2 = 2^(3^2)）
+            left = left ^ parseAtom()
         end
         return left
     end

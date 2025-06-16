@@ -288,8 +288,8 @@ function BattleHud:OnInit(node, config)
     self.healthBar = self:Get("血条/进度条").node
     self.healthText = self:Get("血条/生命值").node
     ClientEventManager.Subscribe("UpdateHealth", function(data)
-        self.healthBar.FillAmount = data.h / data.mh
-        self.healthText.Title = string.format("%d/%d", math.ceil(data.h), math.ceil(data.mh))
+        self.healthBar.FillAmount = math.max(0, math.min(1, data.h / data.mh))
+        self.healthText.Title = string.format("%d/%d", math.max(0, math.ceil(data.h)), math.ceil(data.mh))
     end)
 
     local approaching = self:Get("大波僵尸").node

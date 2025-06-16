@@ -69,6 +69,10 @@ function ForceClickHud:OnInit(node, config)
             end
         )
     end
+
+    ClientEventManager.Subscribe("PressKey", function(data)
+        self:OnClickAnywhere()
+    end)
 end
 
 function ForceClickHud:OnClickAnywhere()
@@ -98,6 +102,9 @@ function ForceClickHud:FocusOnNextNode()
         return
     end
     local focus = self.focusingChain["聚焦UI"][self.index]
+    if game.RunService:IsPC() and focus["若是PC端则改为"] and focus["若是PC端则改为"]["UI名"] then
+        focus = focus["若是PC端则改为"]
+    end
     local ui = ViewBase.GetUI(focus["UI名"])
     if not ui then
         print(string.format("配置错误: 路径 %s 需求的UI %s 不存在!", focus["控件路径"], focus["UI名"]))

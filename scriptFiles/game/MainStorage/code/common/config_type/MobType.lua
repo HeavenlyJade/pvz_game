@@ -126,11 +126,6 @@ function MobType:GetStatAtLevel(statType, level)
     end
 
     local expr = self.data["属性公式"][statType]:gsub("LVL", tostring(level))
-    if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
-        print(string.format("怪物%s的属性%s包含非法字符: %s", self["名字"], statType, expr))
-        return 0
-    end
-
     local result = gg.eval(expr)
     -- print("calc result:", expr, result)
 
