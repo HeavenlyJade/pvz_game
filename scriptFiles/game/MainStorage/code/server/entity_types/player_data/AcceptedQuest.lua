@@ -111,7 +111,7 @@ function AcceptedQuest:Finish()
             sender_type = "system",
             sender_id = 0
         }
-        local CloudMailData = require(MainStorage.code.server.cloundData.CloudMailData)  ---@type CloudMailData
+        local CloudMailData = require(MainStorage.code.server.Mail.CloudMailData)  ---@type CloudMailData
         CloudMailData:AddPlayerMail(self.player.uin, mailData)
     end
     

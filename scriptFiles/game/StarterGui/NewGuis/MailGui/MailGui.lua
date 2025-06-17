@@ -264,17 +264,17 @@ function MailGui:HandleMailListResponse(data)
 
     -- 处理个人邮件
     if data.personal_mails then
-        for _, mail in ipairs(data.personal_mails) do
+        for mailId, mail in pairs(data.personal_mails) do
             mail.mail_type = "personal"
-            allMails[mail.id] = mail
+            allMails[mailId] = mail
         end
     end
 
     -- 处理全服邮件
     if data.global_mails then
-        for _, mail in ipairs(data.global_mails) do
+        for mailId, mail in pairs(data.global_mails) do
             mail.mail_type = "global"
-            allMails[mail.id] = mail
+            allMails[mailId] = mail
         end
     end
 

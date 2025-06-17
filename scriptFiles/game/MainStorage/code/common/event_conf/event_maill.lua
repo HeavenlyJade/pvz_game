@@ -7,26 +7,26 @@ local MailEventConfig = {}
 
 --[[
 ===================================
-事件定义部分
+网络事件定义
 ===================================
 ]]
 
 -- 客户端请求事件
 MailEventConfig.REQUEST = {
-    GET_LIST = "MailRequest_GetList",           -- 获取邮件列表
-    CLAIM_MAIL = "MailRequest_ClaimMail",       -- 领取指定邮件
-    BATCH_CLAIM = "MailRequest_BatchClaim",     -- 一键领取邮件
-    DELETE_MAIL = "MailRequest_DeleteMail",     -- 删除邮件
-    READ_MAIL = "MailRequest_ReadMail",         -- 阅读邮件
+    GET_LIST = "mail_get_list",           -- 获取邮件列表
+    CLAIM_MAIL = "mail_claim_attachment",       -- 领取指定邮件
+    BATCH_CLAIM = "mail_batch_claim",     -- 一键领取邮件
+    DELETE_MAIL = "mail_delete",     -- 删除邮件
+    READ_MAIL = "mail_read",         -- 阅读邮件
 }
 
 -- 服务器响应事件
 MailEventConfig.RESPONSE = {
-    MAIL_LIST = "MailResponse_List",            -- 邮件列表响应
-    CLAIM_SUCCESS = "MailResponse_ClaimSuccess", -- 领取成功响应
-    BATCH_CLAIM_SUCCESS = "MailResponse_BatchClaimSuccess", -- 批量领取成功响应
-    DELETE_SUCCESS = "MailResponse_DeleteSuccess", -- 删除成功响应
-    READ_SUCCESS = "MailResponse_ReadSuccess",   -- 阅读成功响应
+    LIST_RESPONSE = "mail_list_response",      -- 邮件列表响应
+    READ_RESPONSE = "mail_read_response",      -- 读取邮件响应
+    CLAIM_RESPONSE = "mail_claim_attachment_response", -- 领取附件响应
+    DELETE_RESPONSE = "mail_delete_response",  -- 删除邮件响应
+    NEW_NOTIFICATION = "mail_new_notification", -- 新邮件通知
     ERROR = "MailResponse_Error",               -- 错误响应
 }
 
@@ -34,6 +34,54 @@ MailEventConfig.RESPONSE = {
 MailEventConfig.NOTIFY = {
     NEW_MAIL = "MailNotify_NewMail",           -- 新邮件通知
     MAIL_SYNC = "MailNotify_Sync",             -- 邮件同步通知
+}
+
+--[[
+===================================
+通用配置定义
+===================================
+]]
+MailEventConfig.DEFAULT_EXPIRE_DAYS = 30    -- 邮件默认过期天数
+
+--[[
+===================================
+枚举定义
+===================================
+]]
+
+--- 邮件类型枚举
+MailEventConfig.MAIL_TYPE = {
+    SYSTEM = 1,   -- 系统邮件 (系统公告、活动奖励等)
+    PLAYER = 2,   -- 玩家邮件 (玩家之间的邮件)
+    ADMIN = 3,    -- 管理员邮件 (GM发送的邮件)
+    EVENT = 4     -- 事件邮件 (游戏事件触发的邮件)
+}
+
+--- 邮件状态枚举
+MailEventConfig.STATUS = {
+    UNREAD = 0,          -- 未读
+    READ = 1,            -- 已读未领取
+    CLAIMED = 2,         -- 已领取附件
+    DELETED = 3          -- 已删除
+}
+
+--- 邮件操作类型枚举
+MailEventConfig.MAIL_OPERATION = {
+    READ = 1,            -- 读取邮件
+    CLAIM_ATTACHMENT = 2, -- 领取附件
+    DELETE = 3           -- 删除邮件
+}
+
+--- 邮件来源枚举
+MailEventConfig.MAIL_SOURCE = {
+    SYSTEM = 1,         -- 系统
+    QUEST = 2,          -- 任务
+    ACHIEVEMENT = 3,    -- 成就
+    EVENT = 4,          -- 活动
+    PURCHASE = 5,       -- 购买
+    ADMIN = 6,          -- 管理员
+    COMPENSATION = 7,   -- 补偿
+    FRIEND = 8          -- 好友
 }
 
 --[[
@@ -57,6 +105,7 @@ MailEventConfig.ERROR_CODES = {
     MAIL_ALREADY_DELETED = 10,
     BATCH_CLAIM_FAILED = 11,
     SYSTEM_ERROR = 12,
+    UNCLAIMED_ATTACHMENT = 13, -- 有未领取的附件
 }
 
 -- 错误消息映射
@@ -74,7 +123,48 @@ MailEventConfig.ERROR_MESSAGES = {
     [MailEventConfig.ERROR_CODES.MAIL_ALREADY_DELETED] = "邮件已删除",
     [MailEventConfig.ERROR_CODES.BATCH_CLAIM_FAILED] = "批量领取失败",
     [MailEventConfig.ERROR_CODES.SYSTEM_ERROR] = "系统错误",
+    [MailEventConfig.ERROR_CODES.UNCLAIMED_ATTACHMENT] = "请先领取附件",
 }
+
+--[[
+===================================
+邮件模板定义
+===================================
+]]
+MailEventConfig.MAIL_TEMPLATES = {
+    WELCOME = {
+        title = "欢迎来到游戏",
+        content = "亲爱的玩家，欢迎来到我们的游戏世界！这里有一些初始道具帮助你开始冒险。祝你游戏愉快！",
+        sender = "系统",
+        sender_type = MailEventConfig.MAIL_TYPE.SYSTEM,
+        expire_days = 30
+    },
+    
+    DAILY_REWARD = {
+        title = "每日奖励",
+        content = "这是您今日登录的奖励，请查收！",
+        sender = "系统",
+        sender_type = MailEventConfig.MAIL_TYPE.SYSTEM,
+        expire_days = 30
+    },
+    
+    ACHIEVEMENT = {
+        title = "成就达成",
+        content = "恭喜您完成了成就【%s】，这是您的奖励！",
+        sender = "成就系统",
+        sender_type = MailEventConfig.MAIL_TYPE.SYSTEM,
+        expire_days = 30
+    },
+    
+    COMPENSATION = {
+        title = "系统补偿",
+        content = "亲爱的玩家，由于%s，我们向您发放补偿，请查收。",
+        sender = "系统管理员",
+        sender_type = MailEventConfig.MAIL_TYPE.ADMIN,
+        expire_days = 30
+    }
+}
+
 
 --[[
 ===================================
@@ -88,6 +178,40 @@ MailEventConfig.ERROR_MESSAGES = {
 function MailEventConfig.GetErrorMessage(errorCode)
     return MailEventConfig.ERROR_MESSAGES[errorCode] or "未知错误"
 end
+
+--- 创建邮件模板
+---@param templateKey string 模板键名
+---@param params table 替换参数
+---@return table 邮件数据
+function MailEventConfig.CreateFromTemplate(templateKey, params)
+    local template = MailEventConfig.MAIL_TEMPLATES[templateKey]
+    if not template then
+        return nil
+    end
+    
+    -- 创建邮件数据副本
+    local mailData = {}
+    for k, v in pairs(template) do
+        mailData[k] = v
+    end
+    
+    -- 处理内容中的格式化字符串
+    if params then
+        if type(mailData.content) == "string" and mailData.content:find("%%") then
+            mailData.content = string.format(mailData.content, table.unpack(params))
+        end
+        
+        -- 合并其他参数
+        for k, v in pairs(params) do
+            if k ~= 1 and k ~= 2 and k ~= 3 then -- 忽略数字索引(用于格式化)
+                mailData[k] = v
+            end
+        end
+    end
+    
+    return mailData
+end
+
 
 --- 检查请求事件名称是否有效
 ---@param eventName string 事件名称
