@@ -491,7 +491,7 @@ function HudCards:OnInit(node, config)
 
     self.cardsList = self:Get("副卡列表", ViewList, function(n)
         local button = ViewButton.New(n, self)
-        -- 注意：具体的事件绑定由RebindSubCardEvents方法在数据同步后动态绑定
+        -- 注意：具体的事件绑定由 RebindSubCardEvents 方法在数据同步后动态绑定
         return button
     end) ---@type ViewList<ViewButton>
     self:RegisterEventFunction()

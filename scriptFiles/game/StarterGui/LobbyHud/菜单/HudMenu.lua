@@ -4,6 +4,7 @@ local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 ---@class HudMenu:ViewBase
 local HudMenu = ClassMgr.Class("HudMenu", ViewBase)
 
@@ -13,9 +14,6 @@ local uiConfig = {
     hideOnInit = false,
 }
 
-function OnMoneyClick(ui, viewButton)
-end
-
 ---@param viewButton ViewButton
 function HudMenu:RegisterMenuButton(viewButton)
     if not viewButton then return end
@@ -24,10 +22,7 @@ function HudMenu:RegisterMenuButton(viewButton)
     -- 设置新的点击回调
     viewButton.clickCb = function(ui, button)
         gg.log("菜单按钮点击", button.node.Name)
-        if button.node.Name == "活动" then
-            gg.log("活动按钮点击")
-        end
-
+        ClientEventManager.Publish("SendHoverText", { txt="尚未开放，敬请期待！" })
     end
 end
 
@@ -43,13 +38,6 @@ function HudMenu:OnInit(node, config)
         self:RegisterMenuButton(button)
         return button
     end) ---@type ViewList<ViewButton>
-
-    self.moneyButtonList = self:Get("货币/货币", ViewList, function(n)
-        local button = ViewButton.New(n, self)
-        button.clickCb = OnMoneyClick
-        return button
-    end) ---@type ViewList<ViewButton>
-
 end
 
 return HudMenu.New(script.Parent, uiConfig)

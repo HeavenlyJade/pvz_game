@@ -108,7 +108,7 @@ function ViewButton:OnHoverOut()
     end
 end
 
-function ViewButton:OnHoverIn()
+function ViewButton:OnHoverIn(vector2)
     if not self.enabled then return end
     self.isHover = true
     if self.hoverImg then
@@ -135,7 +135,6 @@ function ViewButton:OnHoverIn()
 end
 
 function ViewButton:OnClick()
-    print("OnClick", self.path, self.clickCb)
     if not self.enabled then return end
     if self.clickCb then
         self.clickCb(self.ui, self)
@@ -147,9 +146,9 @@ end
 function ViewButton:InitButtonProperties(img)
     img.ClickPass = false
     self.clickCb = nil ---@type fun(ui:ViewBase, button:ViewButton)
-    self.touchBeginCb = nil
-    self.touchMoveCb = nil
-    self.touchEndCb = nil
+    self.touchBeginCb = nil ---@type fun(ui:ViewBase, button:ViewButton, pos:Vector2)
+    self.touchMoveCb = nil ---@type fun(ui:ViewBase, button:ViewButton, pos:Vector2)
+    self.touchEndCb = nil ---@type fun(ui:ViewBase, button:ViewButton, pos:Vector2)
     self.clickImg = img:GetAttribute("图片-点击") ---@type string
     self.hoverImg = img:GetAttribute("图片-悬浮") ---@type string
     if self.hoverImg == "" then
@@ -173,49 +172,53 @@ function ViewButton:InitButtonProperties(img)
     if self.soundRelease == "" then
         self.soundRelease = nil
     end
-    self:_BindNodeAndChild(img)
-end
-
-function ViewButton:_BindNodeAndChild(child)
-    local clickImg = child:GetAttribute("图片-点击")---@type string|nil
-    local hoverImg = child:GetAttribute("图片-悬浮") ---@type string|nil
-    if clickImg == "" then
-        clickImg = nil
-    end
-    if hoverImg == "" then
-        hoverImg = clickImg
-    end
-    self.childClickImgs[child] = {
-        normalImg = child.Icon,---@type string
-        clickImg = clickImg,
-        hoverImg = hoverImg,
-
-        hoverColor = child:GetAttribute("悬浮颜色"), ---@type ColorQuad
-        clickColor = child:GetAttribute("点击颜色"), ---@type ColorQuad
-        normalColor = child.FillColor,
-    }
-    child.RollOver:Connect(function(node, isOver, vector2)
-        self:OnHoverIn()
+    img.RollOver:Connect(function(node, isOver, vector2)
+        self:OnHoverIn(vector2)
     end)
 
-    child.RollOut:Connect(function(node, isOver, vector2)
+    img.RollOut:Connect(function(node, isOver, vector2)
         self:OnHoverOut()
     end)
-    child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-        self:OnTouchIn(vector2)
-    end)
-    child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
-        self:OnTouchOut()
-    end)
-    child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
-        self:OnTouchMove(node, isTouchMove, vector2, number)
-    end)
-    child.Click:Connect(function(node, isClick, vector2, number)
-        self:OnClick()
-    end)
+    self:_BindNodeAndChild(img, false)
+end
+
+function ViewButton:_BindNodeAndChild(child, isDeep)
+    if child:IsA("UIImage") then
+        if isDeep then
+            local clickImg = child:GetAttribute("图片-点击")---@type string|nil
+            local hoverImg = child:GetAttribute("图片-悬浮") ---@type string|nil
+            if clickImg == "" then
+                clickImg = nil
+            end
+            if hoverImg == "" then
+                hoverImg = clickImg
+            end
+            self.childClickImgs[child] = {
+                normalImg = child.Icon,---@type string
+                clickImg = clickImg,
+                hoverImg = hoverImg,
+
+                hoverColor = child:GetAttribute("悬浮颜色"), ---@type ColorQuad
+                clickColor = child:GetAttribute("点击颜色"), ---@type ColorQuad
+                normalColor = child.FillColor,
+            }
+        end
+        child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
+            self:OnTouchIn(vector2)
+        end)
+        child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
+            self:OnTouchOut()
+        end)
+        child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
+            self:OnTouchMove(node, isTouchMove, vector2, number)
+        end)
+        child.Click:Connect(function(node, isClick, vector2, number)
+            self:OnClick()
+        end)
+    end
     for _, c in ipairs(child.Children) do ---@type UIComponent
-        if child:GetAttribute("继承按钮") then
-        self:_BindNodeAndChild(c)
+        if c:GetAttribute("继承按钮") then
+            self:_BindNodeAndChild(c, true)
         end
     end
 end
@@ -240,7 +243,7 @@ end
 
 -- === 新增：重新绑定到新的UI节点 ===
 -- 用于在按钮复用时重新绑定到新的UI节点，重新设置所有事件监听器和属性
----@param newNode SandboxNode 新的UI节点
+---@param newNode UIComponent 新的UI节点
 ---@param realButtonPath? string 真实按钮路径（与初始化时相同）
 function ViewButton:RebindToNewNode(newNode, realButtonPath)
     if not newNode then return end

@@ -604,6 +604,38 @@ function gg.get_ui_size()
     end
     return gg.ui_size
 end
+-- 数字格式化函数
+function gg.FormatLargeNumber(num)
+    if num < 10000 then
+        return tostring(num)
+    end
+    
+    local units = {"", "万", "亿", "兆", "京"}
+    local unitIndex = 1
+    local result = num
+    
+    while result >= 10000 and unitIndex < #units do
+        result = result / 10000
+        unitIndex = unitIndex + 1
+    end
+    
+    -- 保留一位小数
+    result = math.floor(result * 10) / 10
+    
+    -- 如果是整数，去掉小数点
+    if result == math.floor(result) then
+        return tostring(math.floor(result)) .. units[unitIndex]
+    else
+        -- 检查小数点前的数字位数
+        local wholePart = math.floor(result)
+        if wholePart >= 1000 and wholePart < 10000 then
+            -- 如果是4位数，去掉小数部分
+            return tostring(wholePart) .. units[unitIndex]
+        else
+            return tostring(result) .. units[unitIndex]
+        end
+    end
+end
 
 -- 屏幕视角大小
 ---@return number, number 视角宽度和高度

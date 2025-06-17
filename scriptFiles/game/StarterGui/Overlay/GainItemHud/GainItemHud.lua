@@ -137,7 +137,6 @@ function GainItemHud:ShowGainedItem(itemData)
     itemInfo.node["Item"]["ItemIcon"].Icon = item.itemType.icon
     itemInfo.node["Item"]["Amount"].Title = tostring(item.amount)
     itemInfo.node["物品描述"].Title = string.format("%s\n%s", item.itemType.name, item.itemType.description)
-    print("name", itemInfo.node["物品描述"].Title)
     -- 显示UI
     self:Open()
 end
