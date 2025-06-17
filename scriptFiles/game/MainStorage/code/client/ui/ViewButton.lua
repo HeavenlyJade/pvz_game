@@ -232,7 +232,9 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     end
     local img = self.img
     
-    self:InitButtonProperties(img)
+
+    
+self:InitButtonProperties(img)
 
     if img["pc_hint"] then
         img["pc_hint"].Visible = game.RunService:IsPC()
@@ -265,6 +267,47 @@ function ViewButton:RebindToNewNode(newNode, realButtonPath)
     end
 
     self:InitButtonProperties(img)
+end
+
+-- === 新增：销毁按钮，清理所有引用和事件绑定 ===
+function ViewButton:Destroy()
+    -- === 关键：销毁UI节点，自动清理所有事件绑定和子节点 ===
+    if self.node then
+        self.node:Destroy()
+    end
+    
+    -- 清理回调函数引用
+    self.clickCb = nil
+    self.touchBeginCb = nil
+    self.touchMoveCb = nil
+    self.touchEndCb = nil
+    
+    -- 清理图像引用
+    self.img = nil
+    self.normalImg = nil
+    self.hoverImg = nil
+    self.clickImg = nil
+    
+    -- 清理颜色引用
+    self.normalColor = nil
+    self.hoverColor = nil
+    self.clickColor = nil
+    
+    -- 清理子图像字典
+    if self.childClickImgs then
+        for child, _ in pairs(self.childClickImgs) do
+            self.childClickImgs[child] = nil
+        end
+        self.childClickImgs = {}
+    end
+    
+    -- 清理ViewComponent的基础属性
+    self.node = nil
+    self.ui = nil
+    self.path = nil
+    self.extraParams = nil
+    self.enabled = nil
+    self.isHover = nil
 end
 
 return ViewButton
