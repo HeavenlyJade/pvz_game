@@ -25,8 +25,9 @@ function ViewComponent:OnInit(node, ui, path)
     self.extraParams = {} -- 可在此存储任意与该按钮相关的数据
 end
 
+---@return Vector2
 function ViewComponent:GetGlobalPos()
-
+    return self.node:GetGlobalPos()
 end
 
 function ViewComponent:SetGray(isGray)

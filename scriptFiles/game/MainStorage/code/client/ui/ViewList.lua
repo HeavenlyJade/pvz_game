@@ -18,8 +18,8 @@ local ViewList = ClassMgr.Class("ViewList", ViewComponent)
 function ViewList:OnInit(node, ui, path, onAddElementCb)
     self.childrens = {} ---@type ViewComponent[]
     self.childNameTemplate = nil
-    self.onAddElementCb = onAddElementCb or function(child)
-        return ViewComponent.New(child, ui)
+    self.onAddElementCb = onAddElementCb or function(child, childPath)
+        return ViewComponent.New(child, ui, childPath)
     end
     for _, child in pairs(self.node.Children) do
         local childName = child.Name
@@ -30,9 +30,10 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
                 local pos = childName:find("_") -- 找到 _ 的位置
                 self.childNameTemplate = childName:sub(1, pos)
             end
-            local button = self.onAddElementCb(child)
+            local childPath = self.path .. "/" .. child.Name
+            local button = self.onAddElementCb(child, childPath)
             if button then
-                button.path = self.path .. "/" .. child.Name
+                button.path = childPath
                 local idx = tonumber(num)
                 if idx then
                     self.childrens[idx] = button

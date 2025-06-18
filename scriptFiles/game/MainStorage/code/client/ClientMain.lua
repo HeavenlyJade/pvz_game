@@ -13,12 +13,13 @@ local CameraController = require(MainStorage.code.client.camera.CameraController
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
 function ClientMain.start_client()
+    print("start_client", gg.isServer)
+    gg.isServer = false
     ClientMain.tick = 0
     gg.uuid_start = gg.rand_int_between(100000, 999999);
     ClientMain.createNetworkChannel()
     ClientMain.handleCoreUISettings()
     ClientInit.init()
-    -- Controller.init()
     ClientMain.initButton()
 
     Controller.init()

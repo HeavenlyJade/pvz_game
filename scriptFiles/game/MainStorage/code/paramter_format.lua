@@ -29,6 +29,7 @@
 ---@field has_attachment boolean @ 是否有附件
 ---@field mail_type string @ 邮件类型 ("系统" 或 "玩家")
 ---@field is_claimed boolean @ (客户端) 附件是否已领取
+---@field is_global_mail boolean @ (客户端) 是否是全局邮件
 
 ---@class MailListResponse
 ---@field cmd string

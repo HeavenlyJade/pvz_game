@@ -13,6 +13,7 @@ local cloudService      = game:GetService("CloudService")     --- @type CloudSer
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
+local MiscConfig = require(MainStorage.code.common.config.MiscConfig) ---@type MiscConfig
 
 
 
@@ -56,6 +57,9 @@ function _M:OnInit(info_)
     self._moveMethod = nil
     self.focusOnCommandsCb = nil
     self.afkingCount = 0 --副卡挂机数
+    self.lastDailyRefresh = 0 -- 上次每日刷新时间
+    self.lastWeeklyRefresh = 0 -- 上次每周刷新时间
+    self.lastMonthlyRefresh = 0 -- 上次每月刷新时间
 
     self:SubscribeEvent("FinishFocusUI", function (evt)
         if self.focusOnCommandsCb then
@@ -122,15 +126,67 @@ function _M:OnInit(info_)
 
     -- 启动技能可释放状态检查任务
     self:StartSkillCastabilityCheck()
+    self.loginTime = os.time()
 end
 
 _M.GenerateUUID = function(self)
     self.uuid = gg.create_uuid('u_Pl')
 end
 
+function _M:RefreshNewDay()
+    local currentTime = os.time()
+    local currentDate = os.date("*t", currentTime)
+    
+    -- 获取上次刷新的时间
+    local lastDailyRefresh = self:GetVariable("day_refresh", 0)
+    local lastWeeklyRefresh = self:GetVariable("week_refresh", 0)
+    local lastMonthlyRefresh = self:GetVariable("month_refresh", 0)
+    
+    -- 检查是否需要每日刷新
+    local lastDailyDate = os.date("*t", lastDailyRefresh)
+    if lastDailyDate.year ~= currentDate.year or 
+       lastDailyDate.month ~= currentDate.month or 
+       lastDailyDate.day ~= currentDate.day then
+        self:RemoveVariable("daily_")
+        local dailyCommands = MiscConfig.Get("总控")["每日刷新指令"]
+        if dailyCommands then
+            self:ExecuteCommands(dailyCommands)
+        end
+        self:SetVariable("day_refresh", currentTime)
+        
+        -- 检查是否需要每周刷新
+        local lastWeeklyDate = os.date("*t", lastWeeklyRefresh)
+        local daysSinceLastWeekly = math.floor((currentTime - lastWeeklyRefresh) / (24 * 3600))
+        if daysSinceLastWeekly >= 7 then
+            self:RemoveVariable("weekly_")
+            local weeklyCommands = MiscConfig.Get("总控")["每周刷新指令"]
+            if weeklyCommands then
+                self:ExecuteCommands(weeklyCommands)
+            end
+            self:SetVariable("week_refresh", currentTime)
+        end
+        
+        -- 检查是否需要每月刷新
+        local lastMonthlyDate = os.date("*t", lastMonthlyRefresh)
+        if lastMonthlyDate.year ~= currentDate.year or 
+           lastMonthlyDate.month ~= currentDate.month then
+            self:RemoveVariable("monthly_")
+            local monthlyCommands = MiscConfig.Get("总控")["每月刷新指令"]
+            if monthlyCommands then
+                self:ExecuteCommands(monthlyCommands)
+            end
+            self:SetVariable("month_refresh", currentTime)
+        end
+    end
+end
+
 ---标记红点
 function _M:MarkNew(path)
 
+end
+
+function _M:GetOnlineTime()
+    return self:GetVariable("daily_onlinetime") + os.time() - self.loginTime
 end
 
 function _M:NavigateTo(position, stopRange, cb)
@@ -333,6 +389,7 @@ end
 function _M:OnLeaveGame()
     -- 发布玩家退出游戏事件
     ServerEventManager.Publish("PlayerLeaveGameEvent", { player = self })
+    self:SetVariable("daily_onlinetime", os.time() - self.loginTime)
     Entity.DestroyObject(self)
 end
 
@@ -796,7 +853,6 @@ function _M:UpdateNearbyNpcsToClient()
 end
 
 function _M:ProcessQuestEvent(event, amount)
-    print("ProcessQuestEvent", event, amount)
     for _, quest in pairs(self.quests) do
         if quest.quest.questType == "事件" and string.find(quest.quest.eventName, event) then
             quest:AddProgress(amount)
@@ -805,6 +861,7 @@ function _M:ProcessQuestEvent(event, amount)
 end
 
 function _M:UpdateHud()
+    self:RefreshNewDay()
     self:UpdateQuestsData()
     self:syncSkillData()
     self.bag:SyncToClient()

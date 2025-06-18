@@ -114,6 +114,8 @@ end
 ---@param node SandboxNode
 ---@param config ViewConfig
 function ViewBase:OnInit(node, config)
+    self.openCb = nil
+    self.closeCb = nil
     self.componentCache = {}
     self.node = node ---@type SandboxNode
     self.hideOnInit = config.hideOnInit == nil and true or config.hideOnInit
@@ -166,6 +168,9 @@ function ViewBase:Close()
         end
     end
     self.displaying = false
+    if self.closeCb then
+        self.closeCb()
+    end
 end
 
 function ViewBase:Open()
@@ -194,6 +199,9 @@ function ViewBase:Open()
         if not ViewBase.topGui or self.layer > ViewBase.topGui.layer then
             ViewBase.topGui = self
         end
+    end
+    if self.openCb then
+        self.openCb()
     end
 end
 

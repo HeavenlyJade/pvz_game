@@ -622,6 +622,9 @@ function ItemTypeConfig.Get(itemType)
     if not loaded then
         LoadConfig()
     end
+    if not itemType then
+        return nil
+    end
     return ItemTypeConfig.config[itemType]
 end
 

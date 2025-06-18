@@ -16,6 +16,7 @@ local os   = os
 
 local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
+gg.isServer = true
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 local Player       = require(MainStorage.code.server.entity_types.Player)          ---@type Player
 local Scene      = require(MainStorage.code.server.Scene)         ---@type Scene
@@ -32,21 +33,44 @@ local MainServer = {};
 local initFinished = false;
 local waitingPlayers = {} -- 存储等待初始化的玩家
 
+-- 处理午夜刷新
+function MainServer.handleMidnightRefresh()
+    local now = os.date("*t")
+    local nextMidnight = os.time({
+        year = now.year,
+        month = now.month,
+        day = now.day + 1,
+        hour = 0,
+        min = 0,
+        sec = 0
+    })
+    local secondsUntilMidnight = nextMidnight - os.time()
+    
+    ServerScheduler.add(function()
+        -- 对所有在线玩家执行刷新
+        for _, player in pairs(gg.server_players_list) do
+            if player and player.inited then
+                player:RefreshNewDay()
+            end
+        end
+        -- 重新设置下一个午夜的定时任务
+        MainServer.handleMidnightRefresh()
+    end, secondsUntilMidnight, 0, "midnight_refresh")
+end
 
 function MainServer.start_server()
     math.randomseed(os.time() + gg.GetTimeStamp())
     gg.uuid_start = gg.rand_int_between(100000, 999999)
     MainServer.register_player_in_out()   --玩家进出游戏
 
-    gg.log('主服务器开始初始化');
     MainServer.initModule()
     for _, node in  pairs(game.WorkSpace.Ground.Children) do
-        print("node", node.Name)
         Scene.New( node )
     end
     MainServer.createNetworkChannel()     --建立网络通道
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
+    MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     initFinished = true
 
     -- 处理等待中的玩家
@@ -54,6 +78,9 @@ function MainServer.start_server()
         MainServer.player_enter_game(player)
     end
     waitingPlayers = {} -- 清空等待列表
+    for _, child in pairs(MainStorage.code.common.config.Children) do
+        require(child)
+    end
 end
 
 

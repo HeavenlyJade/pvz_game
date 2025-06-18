@@ -157,6 +157,8 @@ function GlobalMailManager:GetGlobalMailListForPlayer(uin, playerGlobalData)
                 local clientMailData = mailObject:ToClientData()
                 -- 使用玩家的特定状态覆盖通用状态
                 clientMailData.status = playerMailStatus and playerMailStatus.status or MailEventConfig.STATUS.UNREAD
+                clientMailData.is_claimed = playerMailStatus and playerMailStatus.is_claimed or false
+                clientMailData.is_global_mail = true -- 明确这是全局邮件
                 result[mailId] = clientMailData
             end
         end
@@ -169,11 +171,10 @@ end
 ---@param uin number 玩家ID
 ---@param mailId string 邮件ID
 ---@param playerGlobalData PlayerGlobalMailContainer 玩家全服邮件状态数据
----@param distributeAttachmentsFn function 分发附件的回调函数
 ---@return boolean 是否成功
 ---@return string 消息
 ---@return table 附件列表
-function GlobalMailManager:ClaimGlobalMailAttachment(uin, mailId, playerGlobalData, distributeAttachmentsFn)
+function GlobalMailManager:ClaimGlobalMailAttachment(uin, mailId, playerGlobalData)
     if not self.global_mail_cache or not self.global_mail_cache.mails[mailId] then
         return false, "邮件不存在", nil
     end
@@ -192,12 +193,6 @@ function GlobalMailManager:ClaimGlobalMailAttachment(uin, mailId, playerGlobalDa
 
     -- 检查是否可以领取
     if not mailStatus or mailStatus.status < MailEventConfig.STATUS.CLAIMED then
-        -- 分发附件给玩家
-        local success, reason = distributeAttachmentsFn(uin, mailObject:GetAttachments())
-        if not success then
-            return false, reason or "背包空间不足", nil
-        end
-
         -- 更新状态
         if not mailStatus then
             playerGlobalData.statuses[mailId] = {
@@ -208,7 +203,7 @@ function GlobalMailManager:ClaimGlobalMailAttachment(uin, mailId, playerGlobalDa
             mailStatus.status = MailEventConfig.STATUS.CLAIMED
             mailStatus.is_claimed = true
         end
-
+        -- 直接返回附件列表，由调用者处理分发
         return true, "领取成功", mailObject:GetAttachments()
     end
 

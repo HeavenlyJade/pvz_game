@@ -5,7 +5,7 @@ local gg                = require(MainStorage.code.common.MGlobal)    ---@type g
 ---@field New fun( data:table ):ItemQuality
 local ItemQuality= ClassMgr.Class("ItemQuality")
 
-function ItemQuality:onInit(data)
+function ItemQuality:OnInit(data)
     self.name = data["名字"]
     self.multiplier = data["倍率"] ---@type number
     self.weight = data["比重"] ---@type number

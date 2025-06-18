@@ -41,6 +41,7 @@ CommandManager.handlers = {
     ["afk"] = SkillCommands.afk,
     ["graphic"] = SpellCommand.graphic,
     ["lottery"] = ItemCommands.lottery,
+    ["viewUI"] = MiscCommands.viewUI,
        -- 邮件相关命令
     ["mail"] = MailCommand.main,
         -- 玩家技能相关命令

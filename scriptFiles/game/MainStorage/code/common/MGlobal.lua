@@ -351,6 +351,7 @@ end
 ---@field server_players_name_list table<string, Player> 服务器玩家名称列表
 ---@field equipSlot table<number, table<number, boolean>> 各个装备槽位对应的装备类型
 local gg = {
+    isServer = nil,
     opUin = {[1995296726]= true, [1999522565]= true, [1997748985] = true, [1831921352] = true, [1995494850] = true, [1997807412] = true, [1972857840] = true},
     math = Math,
     vec = vec,
@@ -604,6 +605,52 @@ function gg.get_ui_size()
     end
     return gg.ui_size
 end
+
+function gg.FormatTime(time, isShort)
+    if isShort == nil then
+        isShort = true
+    end
+    local s = ""
+    local c = 0
+    
+    -- Handle days
+    if time > 86400 then
+        local days = math.floor(time / 86400)
+        s = s .. days .. "天"
+        time = time - days * 86400
+        c = c + 1
+        if c > 0 and isShort then
+            return s
+        end
+    end
+    
+    -- Handle hours
+    if time > 3600 then
+        local hours = math.floor(time / 3600)
+        s = s .. hours .. "小时"
+        time = time - hours * 3600
+        c = c + 1
+        if c > 0 and isShort then
+            return s
+        end
+    end
+    
+    -- Handle minutes
+    if time > 60 then
+        local minutes = math.floor(time / 60)
+        s = s .. minutes .. "分"
+        time = time - minutes * 60
+        c = c + 1
+        if c > 0 and isShort then
+            return s
+        end
+    end
+    
+    -- Add seconds
+    s = s .. math.floor(time) .. "秒"
+    return s
+end
+
 -- 数字格式化函数
 function gg.FormatLargeNumber(num)
     if num < 10000 then

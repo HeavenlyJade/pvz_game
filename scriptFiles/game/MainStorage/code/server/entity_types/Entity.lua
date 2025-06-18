@@ -445,7 +445,7 @@ end
 ---@param key string 变量名
 ---@return number 变量值
 function _M:GetVariable(key, defaultValue)
-    defaultValue = defaultValue or 1
+    defaultValue = defaultValue or 0
     -- 检查是否是特殊格式的变量名（category#variable）
     if string.find(key, "#") then
         local parts = {}

@@ -126,7 +126,7 @@ end
 ---@param eventData table 事件数据
 ---@param callback? fun(data: table) 回调函数
 function ClientEventManager.SendToServer(eventType, eventData, callback)
-    eventData.__class = eventType
+    eventData.cmd = eventType
     if callback then
         local callbackId = GenerateCallbackId()
         eventData.__cb = callbackId
@@ -141,7 +141,7 @@ function ClientEventManager.SendToServer(eventType, eventData, callback)
             end
         end, 0, callbackId)
     end
-    game:GetService("NetworkChannel"):FireServer(eventData)
+    gg.network_channel:FireServer(eventData)
 end
 
 --- 处理来自服务器的事件

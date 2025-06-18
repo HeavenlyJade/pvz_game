@@ -20,6 +20,7 @@ local ServerEventManager = require(MainStorage.code.server.event.ServerEventMana
 local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) ---@type MailEventConfig
 local MailBase = require(MainStorage.code.server.Mail.MailBase) ---@type MailBase
 local GlobalMailManager = require(MainStorage.code.server.Mail.GlobalMailManager) ---@type GlobalMailManager
+local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
 
 ---@class MailManager
 local MailManager = {
@@ -254,7 +255,9 @@ end
 --- 处理获取邮件列表请求
 ---@param event table 事件数据
 function MailManager:HandleGetMailList(event)
-    self:SendMailListToClient(event.uin)
+    if not event or not event.player then return end
+    local uin = event.player.uin
+    self:SendMailListToClient(uin)
 end
 
 --- 发送完整的邮件列表到客户端
@@ -284,56 +287,59 @@ function MailManager:SendMailListToClient(uin)
 end
 
 --- 处理领取附件请求
----@param event table 事件数据
+---@param event table {uin, mail_id, is_global}
 function MailManager:HandleClaimAttachment(event)
-    local uin = event.uin
+    if not event or not event.player then return end
+    local player = event.player
+    local uin = player.uin
+    gg.log("领取附件的请求数据",event)
+
+    gg.log("领取附件的请求数据",player,uin)
+    if not player then return end
+
     local mailId = event.mail_id
     local isGlobal = event.is_global
-    local success, message, attachments
+
+
+    local success, message, attachments, errorCode
 
     if isGlobal then
-        local player = gg.server_players_list[uin]
-        if player and player.mail then
-            success, message, attachments = GlobalMailManager:ClaimGlobalMailAttachment(
-                uin, mailId, player.mail.globalMailStatus,
-                function(playerUin, attachmentList) return self:DistributeAttachments(playerUin, attachmentList) end
-            )
-        else
-            success, message, attachments = false, "玩家不存在", nil
-        end
+        -- 全局邮件领取
+        success, message, attachments, errorCode = GlobalMailManager:ClaimGlobalMailAttachment(player.uin, mailId, player.mail.globalMailStatus)
     else
-        success, message, attachments = self:ClaimPersonalMailAttachment(uin, mailId)
+        -- 个人邮件领取
+        success, message, attachments, errorCode = self:ClaimPersonalMail(player, mailId)
     end
 
-    -- 发送结果到客户端
-    gg.network_channel:fireClient(uin, {
-        cmd = MailEventConfig.RESPONSE.CLAIM_RESPONSE,
-        success = success,
-        message = message,
-        mail_id = mailId,
-        is_global = isGlobal
-    })
+    if success then
+        gg.log("附件领取成功，开始分发物品", player.name, mailId)
+        -- 分发附件
+        local distributed, distMessage = self:DistributeAttachments(uin, attachments)
 
-    -- 如果成功，显示获得的物品
-    if success and attachments and #attachments > 0 then
-        local itemNames = {}
-        for _, attachment in ipairs(attachments) do
-            table.insert(itemNames, attachment.type .. " x" .. attachment.amount)
+        if distributed then
+            -- 立即保存玩家的邮件数据
+            if player.mail then
+                CloudMailDataAccessor:SavePlayerMailBundle(player.uin, player.mail)
+                gg.log("玩家邮件数据已保存", player.uin)
+            end
+
+            -- 发送成功响应
+            self:SendClaimResponse(uin, true, mailId, distMessage)
+        else
+            -- 物品分发失败，理论上需要回滚邮件状态，但目前简化处理
+            self:SendClaimResponse(uin, false, mailId, distMessage, self.ERROR_CODE.INSUFFICIENT_BAG_SPACE)
         end
-
-        -- 发送飘字消息
-        gg.network_channel:fireClient(uin, {
-            cmd = "cmd_client_show_msg",
-            txt = "获得物品：" .. table.concat(itemNames, ", "),
-            color = {r = 0, g = 255, b = 0, a = 255}
-        })
+    else
+        -- 领取失败
+        self:SendClaimResponse(uin, false, mailId, message, errorCode)
     end
 end
 
 --- 处理删除邮件请求
 ---@param event table 事件数据
 function MailManager:HandleDeleteMail(event)
-    local uin = event.uin
+    if not event or not event.player then return end
+    local uin = event.player.uin
     local mailId = event.mail_id
     local isGlobal = event.is_global
 
@@ -386,9 +392,12 @@ function MailManager:GetPersonalMailList(uin)
             send_time = mail.send_time,
             expire_time = mail.expire_time,
             status = mail.status,
+            mail_type = mail.mail_type,
             has_attachment = mail.attachments and #mail.attachments > 0,
             sender = mail.sender,
-            attachments = mail.attachments
+            attachments = mail.attachments,
+            is_claimed = (mail.status == self.MAIL_STATUS.CLAIMED),
+            is_global_mail = false -- 明确这是个人邮件
         }
         result[mailId] = mailCopy
     end
@@ -397,42 +406,43 @@ function MailManager:GetPersonalMailList(uin)
 end
 
 --- 领取个人邮件附件
----@param uin number 玩家ID
+---@param player Player 玩家对象
 ---@param mailId string 邮件ID
----@return boolean 是否成功
----@return string 消息
----@return table 附件列表
-function MailManager:ClaimPersonalMailAttachment(uin, mailId)
-    ---@type Player
-    local player = gg.server_players_list[uin]
+---@return boolean, string, table, number
+function MailManager:ClaimPersonalMail(player, mailId)
     if not player then
-        return false, "玩家不存在", nil
+        return false, "玩家不存在", nil, self.ERROR_CODE.PLAYER_NOT_FOUND
     end
 
     local mailData = player.mail.playerMail.mails[mailId]
     if not mailData then
-        return false, "邮件不存在", nil
+        return false, "邮件不存在", nil, self.ERROR_CODE.MAIL_NOT_FOUND
     end
 
     local mailObject = MailBase.New(mailData)
 
+    -- 使用MailBase中的方法统一检查
     if not mailObject:CanClaimAttachment() then
-        if mailObject:IsExpired() then return false, "邮件已过期", nil end
-        if not mailObject.has_attachment then return false, "邮件没有附件", nil end
-        if mailObject:IsClaimed() then return false, "附件已领取", nil end
-        return false, "无法领取附件", nil
-    end
-
-    -- 分发附件给玩家
-    local success, reason = self:DistributeAttachments(uin, mailObject:GetAttachments())
-    if not success then
-        return false, reason or "背包空间不足", nil
+        if mailObject:IsExpired() then
+            return false, "邮件已过期", nil, self.ERROR_CODE.MAIL_EXPIRED
+        end
+        if not mailObject.has_attachment then
+            return false, "邮件没有附件", nil, self.ERROR_CODE.MAIL_NO_ATTACHMENT
+        end
+        if mailObject:IsClaimed() then
+            return false, "附件已领取", nil, self.ERROR_CODE.MAIL_ALREADY_CLAIMED
+        end
+        return false, "无法领取附件", nil, self.ERROR_CODE.SYSTEM_ERROR
     end
 
     -- 更新邮件状态
     mailObject:MarkAsClaimed()
+    -- mailData现在是mailObject的引用，所以mailData也更新了
 
-    return true, "附件已领取", mailObject:GetAttachments()
+    gg.log("个人邮件状态已更新为已领取", mailId)
+
+    -- 直接返回附件列表，由上层处理分发
+    return true, "领取成功", mailObject:GetAttachments()
 end
 
 --- 删除个人邮件
@@ -477,10 +487,10 @@ end
 --- 分发附件给玩家
 ---@param uin number 玩家ID
 ---@param attachments table 附件列表
----@return boolean, string 是否成功, 失败原因
+---@return boolean, string // 是否成功, 失败原因
 function MailManager:DistributeAttachments(uin, attachments)
     if not attachments or #attachments == 0 then
-        return true -- 没有附件也算成功
+        return true, "没有附件"
     end
 
     local player = gg.server_players_list[uin]
@@ -488,17 +498,25 @@ function MailManager:DistributeAttachments(uin, attachments)
         return false, "玩家不存在"
     end
 
-    -- 示例：直接调用背包管理器添加物品
-    -- 注意：这里的实现需要根据您的背包系统进行调整
+    if not player.bag then
+        gg.log("附件分发失败: 玩家背包未初始化 uin:", uin)
+        return false, "玩家背包未初始化"
+    end
+
+    -- 统一分发
     for _, attachment in ipairs(attachments) do
-        local success, reason = BagMgr:AddItem(uin, attachment.type, attachment.amount)
-        if not success then
-            -- (需要考虑事务回滚)
-            return false, reason or "背包空间不足"
+        ---@class ItemType
+        local itemType = ItemTypeConfig.Get(attachment.type)
+        if itemType then
+            local item = itemType:ToItem(attachment.amount)
+            -- 使用玩家自己的背包实例来分发物品
+            player.bag:GiveItem(item)
+        else
+            gg.log("附件分发警告: 找不到物品配置 ->", attachment.type, " for uin:", uin)
         end
     end
 
-    return true
+    return true, "分发成功"
 end
 
 --- 检查玩家是否有未读邮件
@@ -523,6 +541,26 @@ function MailManager:HasUnreadMail(uin)
     end
 
     return false
+end
+
+--- 检查并清理过期的邮件
+--- (此函数可以由定时任务周期性调用)
+
+--- 发送领取附件操作的响应
+---@param uin number 玩家ID
+---@param success boolean 是否成功
+---@param mailId string 邮件ID
+---@param message string 消息
+---@param errorCode number|nil 错误码
+function MailManager:SendClaimResponse(uin, success, mailId, message, errorCode)
+    gg.log("发送领取附件响应到", uin, "结果:", success)
+    gg.network_channel:fireClient(uin, {
+        cmd = MailEventConfig.RESPONSE.CLAIM_RESPONSE,
+        success = success,
+        mail_id = mailId,
+        error = message,
+        error_code = errorCode or self.ERROR_CODE.SUCCESS
+    })
 end
 
 return MailManager

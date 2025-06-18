@@ -26,7 +26,7 @@ function ItemTooltipHud:OnInit(node, config)
     if game.RunService:IsPC() then
         ClientEventManager.Subscribe("MouseMove", function (evt)
             if self.displaying then
-                self.frame.node.Position = Vector2.New(evt.x, evt.y)
+                self.frame.node.Position = Vector2.New(evt.x*game.WorldService:GetUIScale().x+10, evt.y*game.WorldService:GetUIScale().y+19)
             end
         end)
     else

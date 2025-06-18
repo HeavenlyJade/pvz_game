@@ -14,7 +14,14 @@ local  ViewButton = ClassMgr.Class("ViewButton", ViewComponent)
 function ViewButton:SetTouchEnable(enable, updateGray)
     self.enabled = enable
     if updateGray == nil then
-        self.img.Grayed = not enable
+        self:SetGray(not enable)
+    end
+end
+
+function ViewButton:SetGray(isGray)
+    self.img.Grayed = isGray
+    for child, _ in pairs(self.childClickImgs) do
+        child.Grayed= isGray
     end
 end
 

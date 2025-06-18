@@ -5,6 +5,7 @@ local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
+local MiscConfig = require(MainStorage.code.common.config.MiscConfig) ---@type MiscConfig
 ---@class HudMenu:ViewBase
 local HudMenu = ClassMgr.Class("HudMenu", ViewBase)
 
@@ -22,7 +23,9 @@ function HudMenu:RegisterMenuButton(viewButton)
     -- 设置新的点击回调
     viewButton.clickCb = function(ui, button)
         gg.log("菜单按钮点击", button.node.Name)
-        ClientEventManager.Publish("SendHoverText", { txt="尚未开放，敬请期待！" })
+        ClientEventManager.SendToServer("ClickMenu", {
+            menu = button.node.Name
+        })
     end
 end
 
@@ -38,6 +41,21 @@ function HudMenu:OnInit(node, config)
         self:RegisterMenuButton(button)
         return button
     end) ---@type ViewList<ViewButton>
+    
+    self.key2Event = {}
+    for name, menuConfig in pairs(MiscConfig.Get("总控")["菜单指令"]) do
+        self.key2Event[Enum.KeyCode[menuConfig["按键"]].Value] = name
+    end
+    ClientEventManager.Subscribe("PressKey", function (evt)
+        if evt.isDown and not ViewBase.topGui then
+            local menuName = self.key2Event[evt.key]
+            if menuName then
+                ClientEventManager.SendToServer("ClickMenu", {
+                    menu = menuName
+                })
+            end
+        end
+    end)
 end
 
 return HudMenu.New(script.Parent, uiConfig)

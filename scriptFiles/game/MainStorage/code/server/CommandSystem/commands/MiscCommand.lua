@@ -10,4 +10,11 @@ function MiscCommand.title(params, player)
     return true
 end
 
+function MiscCommand.viewUI(params, player)
+    local CustomUIConfig = require(MainStorage.code.common.config.CustomUIConfig) ---@type CustomUIConfig
+    local customUI = CustomUIConfig.Get(params["界面ID"])
+    customUI:S_Open(player)
+    return true
+end
+
 return MiscCommand

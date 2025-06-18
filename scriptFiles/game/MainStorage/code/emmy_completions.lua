@@ -2217,7 +2217,7 @@
 ---@field SetEqualWidth Button
 ---@field SetEqualHeight Button
 ---@field Grayed boolean 置灰
----@field GetGlobalPos fun(self: UIComponent) Vector2 获取UI的全局位置
+---@field GetGlobalPos fun(self: UIComponent):Vector2 获取UI的全局位置
 ---@field RollOver Event<fun(self: UIComponent, node: SandboxNode, isOver: boolean, vector2: Vector2)> 鼠标进入UI范围
 ---@field RollOut Event<fun(self: UIComponent, node: SandboxNode, isOut: boolean, vector2: Vector2)> 鼠标超出UI范围
 ---@field TouchBegin Event<fun(self: UIComponent, node: SandboxNode, isTouchBegin: boolean, vector2: Vector2, number: number)> 触摸事件开始

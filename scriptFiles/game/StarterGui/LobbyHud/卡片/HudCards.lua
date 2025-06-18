@@ -296,7 +296,7 @@ function HudCards:UpdateSubCardDisplay()
 
         if skill and skill.skillType then
             -- 有技能时显示技能信息
-            card.node.Name = skill.skillType.displayName
+            -- card.node.Name = skill.skillType.displayName
             card.node["名字"].Title = skill.skillType.displayName or skill.skillName
             card.node["等级"].Title = tostring(skill.level)
             local icon = skill.skillType.icon
@@ -449,13 +449,16 @@ function HudCards:OnInit(node, config)
         local ui = ViewBase.GetUI("ForceClickHud") ---@cast ui ForceClickHud
         ui.focusingChain = nil
         ui:FocusOnNode(self.cardsList.node, "选择一枚要成长的副卡")
-        for _, child in ipairs(self.cardsList.childrens) do ---@cast child ViewButton
-            child:SetTouchEnable(false)
-        end
-        for _, index in ipairs(data.skills) do
-            self.cardsList:GetChild(index - 1):SetTouchEnable(true)
-        end
+        -- for _, child in ipairs(self.cardsList.childrens) do ---@cast child ViewButton
+        --     child:SetTouchEnable(false)
+        -- end
+        -- for _, index in ipairs(data.skills) do
+        --     self.cardsList:GetChild(index - 1):SetTouchEnable(true)
+        -- end
         self.selectSkillCb = function (index, skill) ---@cast skill Skill
+            -- for _, child in ipairs(self.cardsList.childrens) do ---@cast child ViewButton
+            --     child:SetTouchEnable(true)
+            -- end
             gg.network_channel:FireServer({
                 cmd = "AfkSelectSkill",
                 npcId = data.npcId,

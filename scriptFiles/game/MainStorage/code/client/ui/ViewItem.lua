@@ -39,6 +39,19 @@ end
 function ViewItem:SetItem(item)
     self._itemCache = item
     self.node["ItemIcon"].Icon = item.itemType.icon
+    local child = self.node["Frame"]
+    if child then
+        child.Icon = item.itemType.rank.normalImgFrame
+        if self.childClickImgs[child] then
+            self.childClickImgs[child].hoverImg = item.itemType.rank.hoverImgFrame
+            self.childClickImgs[child].clickImg = item.itemType.rank.hoverImgFrame
+        end
+    end
+    self.node.Icon = item.itemType.rank.normalImgBg
+    self.normalImg = item.itemType.rank.normalImgBg
+    self.hoverImg = item.itemType.rank.hoverImgBg
+    self.clickImg = item.itemType.rank.hoverImgBg
+    -- gg.log("childClickImgs", self, self.childClickImgs, child, self.childClickImgs[child])
     self.node["Amount"].Title = gg.FormatLargeNumber(item.amount)
 end
 
