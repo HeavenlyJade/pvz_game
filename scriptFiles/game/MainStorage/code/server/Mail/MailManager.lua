@@ -19,30 +19,28 @@ local BagMgr = require(MainStorage.code.server.bag.BagMgr)  ---@type BagMgr
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) ---@type MailEventConfig
 local MailBase = require(MainStorage.code.server.Mail.MailBase) ---@type MailBase
+local GlobalMailManager = require(MainStorage.code.server.Mail.GlobalMailManager) ---@type GlobalMailManager
 
 ---@class MailManager
 local MailManager = {
     -- 邮件类型
     MAIL_TYPE = MailEventConfig.MAIL_TYPE,
-    
+
     -- 邮件状态
     MAIL_STATUS = MailEventConfig.STATUS,
 
     -- 错误码
     ERROR_CODE = MailEventConfig.ERROR_CODES,
-    
-    -- 全服邮件缓存
-    global_mail_cache = nil, ---@type GlobalMailCache
 }
 
 --- 初始化邮件管理器
 function MailManager:Init()
-    -- 加载全服邮件到缓存
-    self.global_mail_cache = CloudMailDataAccessor:LoadGlobalMail()
-    
+    -- 初始化全局邮件管理器
+    GlobalMailManager:Init()
+
     -- 注册网络消息处理函数
     self:RegisterNetworkHandlers()
-    
+
     -- 注册玩家生命周期事件
     self:RegisterLifecycleHandlers()
 
@@ -78,7 +76,7 @@ function MailManager:RegisterLifecycleHandlers()
     ServerEventManager.Subscribe("PlayerLogin", function(event)
         self:OnPlayerLogin(event.uin)
     end)
-    
+
     -- 监听玩家登出事件，为其保存邮件数据
     ServerEventManager.Subscribe("PlayerLogout", function(event)
         local player = gg.server_players_list[event.uin]
@@ -86,7 +84,7 @@ function MailManager:RegisterLifecycleHandlers()
             self:OnPlayerLogout(event.uin, player.mail)
         end
     end)
-    
+
     gg.log("邮件生命周期事件处理函数注册完成")
 end
 
@@ -95,12 +93,12 @@ end
 function MailManager:OnPlayerLogin(uin)
     local playerMailData = CloudMailDataAccessor:LoadPlayerMail(uin)
     local playerGlobalMailData = CloudMailDataAccessor:LoadPlayerGlobalMailData(uin)
-    
+
     local mailDataStruct = {
         player_mail_data_ = playerMailData,
         player_global_mail_data_ = playerGlobalMailData
     }
-    
+
     -- 将完整的邮件数据结构附加到玩家对象上
     local player = gg.server_players_list[uin]
     if player then
@@ -144,13 +142,13 @@ function MailManager:AddPlayerMail(uin, mailData)
         gg.log("添加个人邮件失败：找不到玩家或玩家邮件数据未初始化", uin)
         return nil
     end
-    
+
     local playerMailContainer = player.mail.player_mail_data_
 
     -- 为邮件数据补充ID和类型
     mailData.id = self:GenerateMailId("mail_p_")
     mailData.mail_type = self.MAIL_TYPE.PERSONAL
-    
+
     -- 使用MailBase来创建和初始化邮件对象
     local mailObject = MailBase.New(mailData)
     local storageData = mailObject:ToStorageData()
@@ -158,7 +156,7 @@ function MailManager:AddPlayerMail(uin, mailData)
     -- 添加新邮件并保存
     playerMailContainer.mails[storageData.id] = storageData
     playerMailContainer.last_update = os.time()
-    
+
     -- 注意：这里直接修改了player对象上的table，登出时会自动保存
     -- 如果需要立即保存，可以取消下一行注释
     -- CloudMailDataAccessor:SavePlayerMail(uin, playerMailContainer)
@@ -167,25 +165,62 @@ function MailManager:AddPlayerMail(uin, mailData)
     return storageData.id
 end
 
---- 添加全服邮件
+--- 1. 新增全局邮件
 ---@param mailData MailData 邮件数据
 ---@return string 邮件ID
 function MailManager:AddGlobalMail(mailData)
-    -- 为邮件数据补充ID和类型
-    mailData.id = self:GenerateMailId("mail_g_")
-    mailData.mail_type = self.MAIL_TYPE.GLOBAL
+    return GlobalMailManager:AddGlobalMail(mailData)
+end
 
-    -- 使用MailBase来创建和初始化邮件对象
-    local mailObject = MailBase.New(mailData)
-    local storageData = mailObject:ToStorageData()
+--- 2. 获取所有的全局邮件
+---@return table 全局邮件列表
+function MailManager:GetAllGlobalMails()
+    return GlobalMailManager:GetAllGlobalMails()
+end
 
-    -- 添加新邮件到缓存并立即保存到云端
-    self.global_mail_cache.mails[storageData.id] = storageData
-    self.global_mail_cache.last_update = os.time()
-    CloudMailDataAccessor:SaveGlobalMail(self.global_mail_cache)
+--- 3. 删除所有的全局邮件
+---@return boolean 是否成功
+function MailManager:DeleteAllGlobalMails()
+    return GlobalMailManager:DeleteAllGlobalMails()
+end
 
-    gg.log("成功添加全服邮件", storageData.id)
-    return storageData.id
+--- 4. 删除指定ID的全局邮件
+---@param mailId string 邮件ID
+---@return boolean 是否成功
+---@return string 消息
+function MailManager:DeleteGlobalMailById(mailId)
+    return GlobalMailManager:DeleteGlobalMailById(mailId)
+end
+
+--- 5. 获取指定ID的全局邮件
+---@param mailId string 邮件ID
+---@return table|nil 邮件数据，nil表示不存在
+function MailManager:GetGlobalMailById(mailId)
+    return GlobalMailManager:GetGlobalMailById(mailId)
+end
+
+--- 发送全服邮件（便利函数）
+---@param title string 标题
+---@param content string 内容
+---@param attachments table 附件列表
+---@param expireDays number 过期天数
+---@return string 邮件ID
+function MailManager:SendGlobalMail(title, content, attachments, expireDays)
+    local now = os.time()
+    local mailData = {
+        title = title,
+        content = content,
+        sender = "系统",
+        sender_type = self.MAIL_TYPE.SYSTEM,
+        send_time = now,
+        expire_time = now + (expireDays or MailEventConfig.DEFAULT_EXPIRE_DAYS) * 86400,
+        expire_days = expireDays or MailEventConfig.DEFAULT_EXPIRE_DAYS,
+        status = self.MAIL_STATUS.UNREAD,
+        attachments = attachments or {},
+        has_attachment = attachments and #attachments > 0 or false
+    }
+
+    return self:AddGlobalMail(mailData)
 end
 
 ---------------------------
@@ -196,12 +231,18 @@ end
 ---@param event table 事件数据
 function MailManager:HandleGetMailList(event)
     local uin = event.uin
+    local player = gg.server_players_list[uin]
+    
+    if not player or not player.mail then
+        gg.log("获取邮件列表失败：玩家不存在或邮件数据未初始化", uin)
+        return
+    end
 
     -- 获取个人邮件列表
     local personalMails = self:GetPersonalMailList(uin)
 
     -- 获取全服邮件列表（包含玩家状态）
-    local globalMails = self:GetGlobalMailList(uin)
+    local globalMails = GlobalMailManager:GetGlobalMailListForPlayer(uin, player.mail.player_global_mail_data_)
 
     -- 发送邮件列表到客户端
     gg.network_channel:fireClient(uin, {
@@ -246,7 +287,15 @@ function MailManager:HandleClaimAttachment(event)
     local success, message, attachments
 
     if isGlobal then
-        success, message, attachments = self:ClaimGlobalMailAttachment(uin, mailId)
+        local player = gg.server_players_list[uin]
+        if player and player.mail then
+            success, message, attachments = GlobalMailManager:ClaimGlobalMailAttachment(
+                uin, mailId, player.mail.player_global_mail_data_, 
+                function(playerUin, attachmentList) return self:DistributeAttachments(playerUin, attachmentList) end
+            )
+        else
+            success, message, attachments = false, "玩家不存在", nil
+        end
     else
         success, message, attachments = self:ClaimPersonalMailAttachment(uin, mailId)
     end
@@ -286,7 +335,12 @@ function MailManager:HandleDeleteMail(event)
     local success, message
 
     if isGlobal then
-        success, message = self:DeleteGlobalMail(uin, mailId)
+        local player = gg.server_players_list[uin]
+        if player and player.mail then
+            success, message = GlobalMailManager:DeleteGlobalMailForPlayer(uin, mailId, player.mail.player_global_mail_data_)
+        else
+            success, message = false, "玩家不存在"
+        end
     else
         success, message = self:DeletePersonalMail(uin, mailId)
     end
@@ -349,16 +403,16 @@ function MailManager:ReadPersonalMail(uin, mailId)
     if not player then
         return false, "玩家不存在", nil
     end
-    
+
     local mailData = player.mail.player_mail_data_.mails[mailId]
     if not mailData then
         return false, "邮件不存在", nil
     end
-    
+
     local mailObject = MailBase.New(mailData)
-    
+
     if mailObject:IsExpired() then return false, "邮件已过期", nil end
-    
+
     if mailObject:MarkAsRead() then
         -- 登出时会自动保存
         return true, "阅读成功", mailObject:ToClientData()
@@ -374,16 +428,17 @@ end
 ---@return string 消息
 ---@return table 附件列表
 function MailManager:ClaimPersonalMailAttachment(uin, mailId)
+    ---@type Player
     local player = gg.server_players_list[uin]
     if not player then
         return false, "玩家不存在", nil
     end
-    
+
     local mailData = player.mail.player_mail_data_.mails[mailId]
     if not mailData then
         return false, "邮件不存在", nil
     end
-    
+
     local mailObject = MailBase.New(mailData)
 
     if not mailObject:CanClaimAttachment() then
@@ -392,16 +447,16 @@ function MailManager:ClaimPersonalMailAttachment(uin, mailId)
         if mailObject:IsClaimed() then return false, "附件已领取", nil end
         return false, "无法领取附件", nil
     end
-    
+
     -- 分发附件给玩家
     local success, reason = self:DistributeAttachments(uin, mailObject:GetAttachments())
     if not success then
         return false, reason or "背包空间不足", nil
     end
-    
+
     -- 更新邮件状态
     mailObject:MarkAsClaimed()
-    
+
     return true, "附件已领取", mailObject:GetAttachments()
 end
 
@@ -415,176 +470,27 @@ function MailManager:DeletePersonalMail(uin, mailId)
     if not player then
         return false, "玩家不存在"
     end
-    
+
     local mailData = player.mail.player_mail_data_.mails[mailId]
     if not mailData then
         return false, "邮件不存在"
     end
-    
+
     local mailObject = MailBase.New(mailData)
 
     -- 已删除或无法删除
     if mailObject:IsDeleted() then return false, "邮件已删除" end
-    
+
     -- 有未领取的附件时不能删除
     if mailObject:CanClaimAttachment() then
         return false, "请先领取附件"
     end
-    
+
     mailObject:MarkAsDeleted()
     return true, "邮件已删除"
 end
 
----------------------------
--- 全服邮件相关函数
----------------------------
 
---- 获取全服邮件列表（包含玩家状态）
----@param uin number 玩家ID
----@return table 邮件列表
-function MailManager:GetGlobalMailList(uin)
-    local player = gg.server_players_list[uin]
-    if not player then
-        return {}
-    end
-    
-    local globalMails = self.global_mail_cache
-    local playerGlobalData = player.mail.player_global_mail_data_
-    local result = {}
-
-    -- 遍历全服邮件
-    for mailId, mailData in pairs(globalMails.mails) do
-        local mailObject = MailBase.New(mailData)
-        
-        -- 跳过过期的全服邮件
-        if mailObject:IsExpired() then
-            -- (可以加一个逻辑，定期清理全局邮件缓存中的过期邮件)
-        else
-            local playerMailStatus = playerGlobalData.statuses[mailId]
-            
-            -- 如果玩家没有这封邮件的状态记录，或者状态不是已删除，则显示
-            if not playerMailStatus or playerMailStatus.status < self.MAIL_STATUS.DELETED then
-                local clientMailData = mailObject:ToClientData()
-                -- 使用玩家的特定状态覆盖通用状态
-                clientMailData.status = playerMailStatus and playerMailStatus.status or self.MAIL_STATUS.UNREAD
-                result[mailId] = clientMailData
-            end
-        end
-    end
-
-    return result
-end
-
---- 阅读全服邮件
----@param uin number 玩家ID
----@param mailId string 邮件ID
----@return boolean 是否成功
----@return string 消息
----@return table 邮件数据
-function MailManager:ReadGlobalMail(uin, mailId)
-    local player = gg.server_players_list[uin]
-    if not player then return false, "玩家不存在", nil end
-
-    local globalMailData = self.global_mail_cache.mails[mailId]
-    if not globalMailData then return false, "邮件不存在", nil end
-    
-    local mailObject = MailBase.New(globalMailData)
-    if mailObject:IsExpired() then return false, "邮件已过期", nil end
-
-    local playerGlobalData = player.mail.player_global_mail_data_
-    local mailStatus = playerGlobalData.statuses[mailId]
-
-    -- 如果没有状态记录，或者状态是未读，则更新为已读
-    if not mailStatus or mailStatus.status < self.MAIL_STATUS.READ then
-        if not mailStatus then
-            playerGlobalData.statuses[mailId] = { status = self.MAIL_STATUS.READ, is_claimed = false }
-        else
-            mailStatus.status = self.MAIL_STATUS.READ
-        end
-        return true, "阅读成功", mailObject:ToClientData()
-    end
-
-    return false, "邮件已阅读", mailObject:ToClientData()
-end
-
---- 领取全服邮件附件
----@param uin number 玩家ID
----@param mailId string 邮件ID
----@return boolean 是否成功
----@return string 消息
----@return table 附件列表
-function MailManager:ClaimGlobalMailAttachment(uin, mailId)
-    local player = gg.server_players_list[uin]
-    if not player then return false, "玩家不存在", nil end
-    
-    local globalMailData = self.global_mail_cache.mails[mailId]
-    if not globalMailData then return false, "邮件不存在", nil end
-    
-    local mailObject = MailBase.New(globalMailData)
-    if not mailObject.has_attachment then return false, "该邮件没有附件", nil end
-    if mailObject:IsExpired() then return false, "邮件已过期", nil end
-
-    local playerGlobalData = player.mail.player_global_mail_data_
-    local mailStatus = playerGlobalData.statuses[mailId]
-
-    -- 检查是否可以领取
-    if not mailStatus or mailStatus.status < self.MAIL_STATUS.CLAIMED then
-        -- 分发附件给玩家
-        local success, reason = self:DistributeAttachments(uin, mailObject:GetAttachments())
-        if not success then
-            return false, reason or "背包空间不足", nil
-        end
-        
-        -- 更新状态
-        if not mailStatus then
-            playerGlobalData.statuses[mailId] = { status = self.MAIL_STATUS.CLAIMED, is_claimed = true }
-        else
-            mailStatus.status = self.MAIL_STATUS.CLAIMED
-            mailStatus.is_claimed = true
-        end
-
-        return true, "领取成功", mailObject:GetAttachments()
-    end
-
-    return false, "附件已领取", nil
-end
-
---- 删除全服邮件
----@param uin number 玩家ID
----@param mailId string 邮件ID
----@return boolean 是否成功
----@return string 消息
-function MailManager:DeleteGlobalMail(uin, mailId)
-    local player = gg.server_players_list[uin]
-    if not player then return false, "玩家不存在" end
-    
-    local globalMailData = self.global_mail_cache.mails[mailId]
-    if not globalMailData then return true, "删除成功" end -- 全服邮件不存在，相当于对该玩家已经"删除"
-    
-    local playerGlobalData = player.mail.player_global_mail_data_
-    local mailStatus = playerGlobalData.statuses[mailId]
-
-    if not mailStatus or mailStatus.status < self.MAIL_STATUS.DELETED then
-        local mailObject = MailBase.New(globalMailData)
-        
-        -- 有未领取的附件时不能删除
-        if mailObject.has_attachment and (not mailStatus or not mailStatus.is_claimed) then
-             return false, "请先领取附件"
-        end
-
-        if not mailStatus then
-            playerGlobalData.statuses[mailId] = { 
-                status = self.MAIL_STATUS.DELETED, 
-                is_claimed = mailStatus and mailStatus.is_claimed or false 
-            }
-        else
-            mailStatus.status = self.MAIL_STATUS.DELETED
-        end
-        return true, "删除成功"
-    end
-
-    return false, "邮件已删除"
-end
 
 ---------------------------
 -- 邮件查询与辅助函数
@@ -598,12 +504,12 @@ function MailManager:DistributeAttachments(uin, attachments)
     if not attachments or #attachments == 0 then
         return true -- 没有附件也算成功
     end
-    
+
     local player = gg.server_players_list[uin]
     if not player then
         return false, "玩家不存在"
     end
-    
+
     -- 示例：直接调用背包管理器添加物品
     -- 注意：这里的实现需要根据您的背包系统进行调整
     for _, attachment in ipairs(attachments) do
@@ -625,7 +531,7 @@ function MailManager:HasUnreadMail(uin)
     if not player or not player.mail then
         return false
     end
-    
+
     -- 检查个人邮件
     for _, mailData in pairs(player.mail.player_mail_data_.mails) do
         if mailData.status == self.MAIL_STATUS.UNREAD then
@@ -634,18 +540,10 @@ function MailManager:HasUnreadMail(uin)
     end
 
     -- 检查全服邮件
-    local globalMails = self.global_mail_cache.mails
-    local playerStatuses = player.mail.player_global_mail_data_.statuses
-    for mailId, _ in pairs(globalMails) do
-        local status = playerStatuses[mailId]
-        if not status or status.status == self.MAIL_STATUS.UNREAD then
-            -- 还需检查邮件是否过期
-            if not globalMails[mailId].expire_time or globalMails[mailId].expire_time > os.time() then
-                return true
-            end
-        end
+    if GlobalMailManager:HasUnreadGlobalMail(uin, player.mail.player_global_mail_data_) then
+        return true
     end
-    
+
     return false
 end
 

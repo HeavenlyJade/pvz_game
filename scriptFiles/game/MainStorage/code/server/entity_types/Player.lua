@@ -39,7 +39,7 @@ function _M:OnInit(info_)
     self.name = info_.nickname
     self.isPlayer = true
     self.bag = nil ---@type Bag
-    self.mail = nil ---@type MailDataStruct
+    self.mail = nil ---@type PlayerMailBundle
     self.auto_attack      = 0                                   -- 自动攻击技能ID
     self.auto_attack_tick = 10                                  -- 攻击间隔
     self.auto_wait_tick   = 0                                   -- 等待计时
@@ -548,11 +548,11 @@ function _M:UpgradeSkill(skillType)
     if not foundSkill then
         -- 创建新技能
         local skillSlot = 0
-        
+
         -- 根据技能类型从配置获取槽位范围
         local common_config = require(MainStorage.code.common.MConfig)
         local slotsToCheck = {}
-        
+
         if skillType.category == 0 then
             -- 主卡技能：从主卡配置获取槽位
             local mainCardConfig = common_config.EquipmentSlot["主卡"]
@@ -570,10 +570,10 @@ function _M:UpgradeSkill(skillType)
                 end
             end
         end
-        
+
         -- 按槽位ID排序（优先使用较小的槽位）
         table.sort(slotsToCheck)
-        
+
         -- 查找第一个空的槽位
         for _, slotId in ipairs(slotsToCheck) do
             if not self.equippedSkills[slotId] then
@@ -581,7 +581,7 @@ function _M:UpgradeSkill(skillType)
                 break
             end
         end
-        
+
         local skillId = skillType.name
         self.skills[skillId] = Skill.New(self, {
             skill = skillType.name,

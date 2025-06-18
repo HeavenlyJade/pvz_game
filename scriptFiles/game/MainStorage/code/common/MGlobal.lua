@@ -195,12 +195,12 @@ function vec.ToDirection(v1)
     -- Convert angles to radians
     local pitch = v1.x * vec.M_DEGTORAD
     local yaw = v1.y * vec.M_DEGTORAD
-    
+
     -- Calculate direction vector components
     local x = math.sin(yaw) * math.cos(pitch)
     local y = -math.sin(pitch)
     local z = math.cos(yaw) * math.cos(pitch)
-    
+
     -- Return normalized direction vector
     return Vector3.New(x, y, z)
 end
@@ -364,7 +364,7 @@ local gg = {
 
     CommandManager = nil, ---@type CommandManager
     network_channel = nil, ---@type NetworkChannel
-    cloudMailData = nil, ---@type CloudMailData
+    cloudMailData = nil, ---@type CloudMailDataAccessor
     tick = 0, -- server_main的tick
     game_stat = 0, -- 0=正常 1=完结
 
@@ -380,7 +380,7 @@ local gg = {
             [3] = {[3] = true},
             [4] = {[4] = true},
             [5] = {[5] = true},
-            [6] = {[6] = true}, 
+            [6] = {[6] = true},
             [7] = {[7] = true},
             [8] = {[8] = true},
             [9] = {[9] = true},
@@ -421,15 +421,15 @@ local gg = {
 function gg.GetFullPath(node)
     local path = node.Name
     local parent = node.Parent
-    
+
     while parent do
         path = parent.Name .. "/" .. path
         parent = parent.Parent
         if parent.Name == "WorkSpace" then
-           break 
+           break
         end
     end
-    
+
     return path
 end
 
@@ -439,7 +439,7 @@ function gg.ProcessFormula(formula, caster, target)
         local value = target:GetVariable(varName)
         return tostring(value)
     end)
-    
+
     return gg.eval(processedFormula)
 end
 
@@ -609,19 +609,19 @@ function gg.FormatLargeNumber(num)
     if num < 10000 then
         return tostring(num)
     end
-    
+
     local units = {"", "万", "亿", "兆", "京"}
     local unitIndex = 1
     local result = num
-    
+
     while result >= 10000 and unitIndex < #units do
         result = result / 10000
         unitIndex = unitIndex + 1
     end
-    
+
     -- 保留一位小数
     result = math.floor(result * 10) / 10
-    
+
     -- 如果是整数，去掉小数点
     if result == math.floor(result) then
         return tostring(math.floor(result)) .. units[unitIndex]
@@ -922,15 +922,15 @@ end
 
 function gg.GetSceneNode(path)
     if not path then return nil end
-    
+
     -- Split the path by first '/'
     local sceneName, remainingPath = string.match(path, "([^/]+)/(.+)")
     if not sceneName then return nil end
-    
+
     -- Get the scene using the first part
     local scene = gg.server_scene_list[sceneName]
     if not scene then return nil end
-    
+
     -- Pass the remaining path to scene:Get()
     return scene:Get(remainingPath)
 end
@@ -1057,7 +1057,7 @@ end
 -- 选择一个目标（客户端侧）(debug使用)
 ---@return SandboxNode|nil 选中的目标
 function gg.clientPickObjectMiddle()
-    local obj_list = {} -- 表示只在哪些obj里面查找    
+    local obj_list = {} -- 表示只在哪些obj里面查找
     if not gg.camera_mid_x then
         local win_size = game.WorkSpace.CurrentCamera.WindowSize
         gg.camera_mid_x = win_size.x * 0.5
@@ -1323,7 +1323,9 @@ end
 function gg.eval(expr)
     expr = expr:gsub("%s+", "")  -- 移除空格
     local pos = 1
-    local parseExpr, parseMulDiv, parsePower, parseAtom, parseNumber, parseFunction
+
+    -- 先声明所有函数（避免未定义错误）
+    local parseExpr, parseMulDiv, parsePower, parseAtom, parseNumber
 
     parseNumber = function()
         local start = pos
@@ -1334,107 +1336,13 @@ function gg.eval(expr)
         return tonumber(expr:sub(start, pos - 1))
     end
 
-    parseFunction = function()
-        local start = pos
-        -- First check if we have a valid function name
-        if not expr:sub(pos, pos):match("%w") then
-            error("Invalid function name")
-        end
-        
-        -- Parse the function name
-        while pos <= #expr and expr:sub(pos, pos):match("[%w_]") do
-            pos = pos + 1
-        end
-        local funcName = expr:sub(start, pos - 1)
-        
-        -- Skip any whitespace before the opening parenthesis
-        while pos <= #expr and expr:sub(pos, pos):match("%s") do
-            pos = pos + 1
-        end
-        
-        if pos > #expr or expr:sub(pos, pos) ~= "(" then
-            error("Expected '(' after function name '" .. funcName .. "'")
-        end
-        pos = pos + 1
-        
-        local args = {}
-        -- Handle empty argument list
-        if expr:sub(pos, pos) == ")" then
-            pos = pos + 1
-            if funcName == "max" or funcName == "min" then
-                error("Function '" .. funcName .. "' requires at least one argument")
-            end
-            return 0
-        end
-        
-        -- Parse arguments
-        while true do
-            -- Skip any whitespace before the argument
-            while pos <= #expr and expr:sub(pos, pos):match("%s") do
-                pos = pos + 1
-            end
-            
-            table.insert(args, parseExpr())
-            
-            -- Skip any whitespace after the argument
-            while pos <= #expr and expr:sub(pos, pos):match("%s") do
-                pos = pos + 1
-            end
-            
-            if pos > #expr then
-                error("Unexpected end of expression in function arguments")
-            end
-            
-            if expr:sub(pos, pos) == ")" then
-                pos = pos + 1
-                break
-            elseif expr:sub(pos, pos) == "," then
-                pos = pos + 1
-            else
-                error("Expected ',' or ')' in function arguments")
-            end
-        end
-        
-        if funcName == "max" then
-            if #args == 0 then
-                error("Function 'max' requires at least one argument")
-            end
-            return math.max(unpack(args))
-        elseif funcName == "min" then
-            if #args == 0 then
-                error("Function 'min' requires at least one argument")
-            end
-            return math.min(unpack(args))
-        else
-            error("Unknown function: " .. funcName)
-        end
-    end
-
     parseAtom = function()
         if expr:sub(pos, pos) == "(" then
             pos = pos + 1
-            local val = parseExpr()
+            local val = parseExpr()  -- 调用 parseExpr（此时已定义）
             if expr:sub(pos, pos) ~= ")" then error("Missing closing parenthesis") end
             pos = pos + 1
             return val
-        elseif expr:sub(pos, pos):match("%w") then
-            -- Check if it's a function name (letters only) or a number
-            local start = pos
-            local isNumber = false
-            if expr:sub(pos, pos) == "-" then
-                pos = pos + 1
-            end
-            while pos <= #expr and (expr:sub(pos, pos):match("%d") or expr:sub(pos, pos) == ".") do
-                pos = pos + 1
-                isNumber = true
-            end
-            if isNumber then
-                pos = start
-                return parseNumber()
-            else
-                pos = start
-                return parseFunction()
-            end
         else
             return parseNumber()
         end
@@ -1444,7 +1352,7 @@ function gg.eval(expr)
         local left = parseAtom()
         while pos <= #expr and expr:sub(pos, pos) == "^" do
             pos = pos + 1
-            left = left ^ parseAtom()
+            left = left ^ parseAtom()  -- 右结合（如 2^3^2 = 2^(3^2)）
         end
         return left
     end

@@ -27,7 +27,7 @@
 ---@field status number @ 邮件状态 (0: 未读, 1: 已读, 2: 已领取附件)
 ---@field attachments table<number, MailAttachment> @ 附件列表
 ---@field has_attachment boolean @ 是否有附件
----@field mail_type string @ 邮件类型 ("personal" 或 "global")
+---@field mail_type string @ 邮件类型 ("系统" 或 "玩家")
 ---@field is_claimed boolean @ (客户端) 附件是否已领取
 
 ---@class MailListResponse
@@ -51,3 +51,7 @@
 ---@class PlayerGlobalMailContainer
 ---@field statuses table<string, PlayerGlobalMailStatus> @ key是全服邮件ID
 ---@field last_update number @ 最后更新时间戳
+
+---@class PlayerMailBundle
+---@field playerMail PlayerMailData @ 玩家个人邮件数据
+---@field globalMailStatus PlayerGlobalMailContainer @ 玩家全服邮件状态数据

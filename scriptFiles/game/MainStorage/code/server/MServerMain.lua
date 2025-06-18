@@ -21,6 +21,9 @@ local Player       = require(MainStorage.code.server.entity_types.Player)       
 local Scene      = require(MainStorage.code.server.Scene)         ---@type Scene
 local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@type BagMgr
 local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
+local cloudMailData = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailDataAccessor
+local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
+
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 -- 总入口
@@ -56,12 +59,12 @@ end
 
 function MainServer.initModule()
     local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
-    local cloudMailData = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailData
     local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
 
     gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
-    gg.cloudMailData = cloudMailData:Init()
+    -- gg.cloudMailData = cloudMailData:Init()
     SkillEventManager.Init()
+    MailManager:Init()
 
 end
 
@@ -157,7 +160,7 @@ function MainServer.player_enter_game(player)
     end
 
     cloudDataMgr.ReadGameTaskData(player_)
-    local mail_player_data_ = gg.cloudMailData:OnPlayerLogin(uin_)
+    local mail_player_data_ = cloudMailData:LoadPlayerMailBundle(uin_)
     gg.log("cloud_player_bag_",bag_ins)
     player_.mail = mail_player_data_
     player_.bag = bag_ins

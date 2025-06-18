@@ -1,1 +1,0 @@
-script.Parent.Visible = not game.RunService:IsPC()

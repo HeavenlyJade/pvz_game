@@ -36,23 +36,23 @@ function _MailBase:OnInit(data)
     self.title = data.title or "无标题"
     self.content = data.content or ""
     self.sender = data.sender or "系统"
-    
+
     -- 时间相关
     self.send_time = data.send_time or os.time()
     self.expire_days = data.expire_days or self.DEFAULT_EXPIRE_DAYS
     self.expire_time = data.expire_time or (self.send_time + (self.expire_days * 86400))
-    
+
     -- 状态相关
     self.status = data.status or _MailBase.STATUS.UNREAD
-    
+
     -- 附件相关
     self.attachments = data.attachments or {}
     self.has_attachment = self:CalculateHasAttachment()
-    
+
     -- 扩展字段
     self.sender_type = data.sender_type or "system"
     self.mail_type = data.mail_type or "personal"
-    
+
     gg.log("邮件对象初始化完成", self.id, self.title)
 end
 
@@ -112,10 +112,10 @@ function _MailBase:AddAttachment(attachment)
     if not self.attachments then
         self.attachments = {}
     end
-    
+
     table.insert(self.attachments, attachment)
     self.has_attachment = self:CalculateHasAttachment()
-    
+
     gg.log("添加邮件附件", self.id, attachment.name, attachment.amount)
 end
 
@@ -125,7 +125,7 @@ function _MailBase:RemoveAttachment(index)
     if self.attachments and self.attachments[index] then
         local removed = table.remove(self.attachments, index)
         self.has_attachment = self:CalculateHasAttachment()
-        
+
         gg.log("移除邮件附件", self.id, removed.name)
         return removed
     end
@@ -237,9 +237,9 @@ function _MailBase:GetSummary()
     else
         statusText = "未读"
     end
-    
+
     local attachmentText = self.has_attachment and "有附件" or "无附件"
-    
+
     return string.format("[%s] %s - %s (%s)", statusText, self.title, self.sender, attachmentText)
 end
 
@@ -267,30 +267,30 @@ function _MailBase:Validate()
     if not self.id or self.id == "" then
         return false, "邮件ID不能为空"
     end
-    
+
     if not self.title or self.title == "" then
         return false, "邮件标题不能为空"
     end
-    
+
     if not self.send_time or self.send_time <= 0 then
         return false, "发送时间无效"
     end
-    
+
     if not self.expire_time or self.expire_time <= 0 then
         return false, "过期时间无效"
     end
-    
+
     if self.expire_time <= self.send_time then
         return false, "过期时间不能早于发送时间"
     end
-    
+
     return true, ""
 end
 
 --- 获取用于调试的字符串表示
 ---@return string 调试信息
 function _MailBase:ToString()
-    return string.format("MailBase{id=%s, title=%s, sender=%s, status=%d, hasAttachment=%s}", 
+    return string.format("MailBase{id=%s, title=%s, sender=%s, status=%d, hasAttachment=%s}",
         self.id, self.title, self.sender, self.status, tostring(self.has_attachment))
 end
 

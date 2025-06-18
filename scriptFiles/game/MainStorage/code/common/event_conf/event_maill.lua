@@ -51,10 +51,10 @@ MailEventConfig.DEFAULT_EXPIRE_DAYS = 30    -- 邮件默认过期天数
 
 --- 邮件类型枚举
 MailEventConfig.MAIL_TYPE = {
-    SYSTEM = 1,   -- 系统邮件 (系统公告、活动奖励等)
-    PLAYER = 2,   -- 玩家邮件 (玩家之间的邮件)
-    ADMIN = 3,    -- 管理员邮件 (GM发送的邮件)
-    EVENT = 4     -- 事件邮件 (游戏事件触发的邮件)
+    SYSTEM = "系统",   -- 系统邮件 (系统公告、活动奖励等)
+    PLAYER = "玩家",   -- 玩家邮件 (玩家之间的邮件)
+    ADMIN = "管理员",    -- 管理员邮件 (GM发送的邮件)
+    EVENT = "事件",     -- 事件邮件 (游戏事件触发的邮件)
 }
 
 --- 邮件状态枚举
@@ -139,7 +139,7 @@ MailEventConfig.MAIL_TEMPLATES = {
         sender_type = MailEventConfig.MAIL_TYPE.SYSTEM,
         expire_days = 30
     },
-    
+
     DAILY_REWARD = {
         title = "每日奖励",
         content = "这是您今日登录的奖励，请查收！",
@@ -147,7 +147,7 @@ MailEventConfig.MAIL_TEMPLATES = {
         sender_type = MailEventConfig.MAIL_TYPE.SYSTEM,
         expire_days = 30
     },
-    
+
     ACHIEVEMENT = {
         title = "成就达成",
         content = "恭喜您完成了成就【%s】，这是您的奖励！",
@@ -155,7 +155,7 @@ MailEventConfig.MAIL_TEMPLATES = {
         sender_type = MailEventConfig.MAIL_TYPE.SYSTEM,
         expire_days = 30
     },
-    
+
     COMPENSATION = {
         title = "系统补偿",
         content = "亲爱的玩家，由于%s，我们向您发放补偿，请查收。",
@@ -188,19 +188,19 @@ function MailEventConfig.CreateFromTemplate(templateKey, params)
     if not template then
         return nil
     end
-    
+
     -- 创建邮件数据副本
     local mailData = {}
     for k, v in pairs(template) do
         mailData[k] = v
     end
-    
+
     -- 处理内容中的格式化字符串
     if params then
         if type(mailData.content) == "string" and mailData.content:find("%%") then
             mailData.content = string.format(mailData.content, table.unpack(params))
         end
-        
+
         -- 合并其他参数
         for k, v in pairs(params) do
             if k ~= 1 and k ~= 2 and k ~= 3 then -- 忽略数字索引(用于格式化)
@@ -208,7 +208,7 @@ function MailEventConfig.CreateFromTemplate(templateKey, params)
             end
         end
     end
-    
+
     return mailData
 end
 

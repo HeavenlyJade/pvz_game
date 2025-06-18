@@ -234,12 +234,12 @@ function SkillEventManager.HandleUpgradeSkill(evt)
     end
 
     -- TODO: 检查升级条件（资源、前置技能等级等）
-    local cost =nil
+    local cost = nil
     if existingSkill then
-        local cost = skillType:GetCostAtLevel(existingSkill.level+1)
+        cost = skillType:GetCostAtLevel(existingSkill.level+1)
         gg.log("升级成本", cost)
     else
-        local cost = skillType:GetCostAtLevel(1)
+        cost = skillType:GetCostAtLevel(1)
         gg.log("升级成本", cost)
     end
 

@@ -87,11 +87,6 @@ function SkillType:GetMaxGrowthAtLevel(level)
     end
 
     local expr = self.maxGrowthFormula:gsub("LVL", tostring(level))
-    if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
-        print(string.format("技能%s的成长上限包含非法字符: %s", self.name, expr))
-        return 100000000  -- 返回默认值而不是0
-    end
-
     local result = gg.eval(expr)
     return result or 100000000  -- 如果计算失败，返回默认值
 end
@@ -103,12 +98,8 @@ function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
     local costs = {}
     for resourceType, costExpr in pairs(self.oneKeyUpgradeCosts) do
         local expr = costExpr:gsub("LVL", tostring(level))
-        if not expr:match("^[%d%+%-%*%/%%%^%(%).%s]+$") then
-            print(string.format("技能%s的一键强化消耗%s包含非法字符: %s", self.name, resourceType, expr))
-        else
-            local result = gg.eval(expr)
-            costs[resourceType] = result
-        end
+        local result = gg.eval(expr)
+        costs[resourceType] = result
     end
     return costs
 end
@@ -122,12 +113,8 @@ function SkillType:GetCostAtLevel(level)
     local costs = {}
     for resourceType, costExpr in pairs(self.upgradeCosts) do
         local expr = costExpr:gsub("LVL", tostring(level))
-        if not expr:match("^[%d%+%-%*%/%%%^%(%)(%.)%s]+$") then
-            print(string.format("技能%s的升级消耗%s包含非法字符: %s", self.name, resourceType, expr))
-        else
-            local result = gg.eval(expr)
-            costs[resourceType] = result
-        end
+        local result = gg.eval(expr)
+        costs[resourceType] = result
     end
     return costs
 end

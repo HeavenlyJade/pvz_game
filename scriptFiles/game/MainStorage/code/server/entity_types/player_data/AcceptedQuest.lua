@@ -32,7 +32,7 @@ function AcceptedQuest:AddProgress(amount)
     end
     self.progress = math.min(self.progress + amount, self.quest.completionCount)
     self.player:UpdateQuestsData()
-    
+
     -- 检查是否达到完成条件且设置了自动提交
     if self:IsCompleted() then
         if self.quest.finishCommands then
@@ -51,7 +51,7 @@ function AcceptedQuest:SetProgress(amount)
     end
     self.progress = math.min(amount, self.quest.completionCount)
     self.player:UpdateQuestsData()
-    
+
     -- 检查是否达到完成条件且设置了自动提交
     if self:IsCompleted() then
         if self.quest.finishCommands then
@@ -88,7 +88,7 @@ function AcceptedQuest:Finish()
     if not self:IsCompleted() then
         return false
     end
-    
+
     -- 发放完成奖励
     if self.quest.completionRewards then
         for itemId, amount in pairs(self.quest.completionRewards) do
@@ -100,7 +100,7 @@ function AcceptedQuest:Finish()
     if self.quest.completionCommands then
         self.player:ExecuteCommands(self.quest.completionCommands)
     end
-    
+
     -- 发放邮件奖励
     if self.quest.mailRewards then
         local mailData = {
@@ -111,10 +111,10 @@ function AcceptedQuest:Finish()
             sender_type = "system",
             sender_id = 0
         }
-        local CloudMailData = require(MainStorage.code.server.Mail.CloudMailData)  ---@type CloudMailData
-        CloudMailData:AddPlayerMail(self.player.uin, mailData)
+        local CloudMailData = require(MainStorage.code.server.Mail.CloudMailData)  ---@type CloudMailDataAccessor
+        -- CloudMailData:AddPlayerMail(self.player.uin, mailData)
     end
-    
+
     -- 自动领取下一任务
     if self.quest.nextQuest then
         local nextQuest = require(MainStorage.code.common.config.QuestConfig).Get(self.quest.nextQuest)
@@ -122,11 +122,11 @@ function AcceptedQuest:Finish()
             nextQuest:Accept(self.player)
         end
     end
-    
+
     -- 从玩家任务列表中移除
     self.player.quests[self.quest.name] = nil
     self.player.acceptedQuestIds[self.quest.name] = 1 -- 标记为已完成
-    
+
     -- 同步到客户端
     self.player:UpdateQuestsData()
     return true

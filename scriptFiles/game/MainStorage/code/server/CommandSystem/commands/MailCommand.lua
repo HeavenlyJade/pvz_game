@@ -3,7 +3,7 @@
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) ---@type MailEventConfig
-
+local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
 --[[
 邮件命令参数格式说明：
 
@@ -50,10 +50,10 @@ local MailCommand = {}
 ---@param sender Player 发送邮件的玩家
 ---@return boolean 是否成功
 function MailCommand.sendPersonal(params, sender)
-    local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
+
 
     -- 解析收件人
-    local recipientUin = params["收件人"]
+    local recipientUin = params["玩家ID"]
 
     -- 检查收件人是否存在
     if not recipientUin then
@@ -106,12 +106,6 @@ end
 ---@return boolean 是否成功
 function MailCommand.sendSystem(params, sender)
     -- 检查权限
-    if not sender.isAdmin and not params["忽略权限"] then
-        sender:SendHoverText("没有权限发送系统邮件")
-        return false
-    end
-
-    local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
 
     -- 获取邮件内容
     local title = params["标题"] or "系统通知"
@@ -184,12 +178,12 @@ function MailCommand.main(params, player)
     -- 根据类型调用相应的处理函数
     local mailType = params["类型"]
 
-    if mailType == "个人" then
+    if mailType == "玩家" then
         return MailCommand.sendPersonal(params, player)
     elseif mailType == "系统" then
         return MailCommand.sendSystem(params, player)
     else
-        player:SendHoverText("未知的邮件类型: " .. (mailType or "nil") .. "。有效类型: '个人', '系统'")
+        player:SendHoverText("未知的邮件类型: " .. (mailType or "nil") .. "。有效类型: '玩家', '系统'")
         return false
     end
 end
