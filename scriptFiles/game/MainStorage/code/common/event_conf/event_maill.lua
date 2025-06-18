@@ -17,13 +17,11 @@ MailEventConfig.REQUEST = {
     CLAIM_MAIL = "mail_claim_attachment",       -- 领取指定邮件
     BATCH_CLAIM = "mail_batch_claim",     -- 一键领取邮件
     DELETE_MAIL = "mail_delete",     -- 删除邮件
-    READ_MAIL = "mail_read",         -- 阅读邮件
 }
 
 -- 服务器响应事件
 MailEventConfig.RESPONSE = {
     LIST_RESPONSE = "mail_list_response",      -- 邮件列表响应
-    READ_RESPONSE = "mail_read_response",      -- 读取邮件响应
     CLAIM_RESPONSE = "mail_claim_attachment_response", -- 领取附件响应
     DELETE_RESPONSE = "mail_delete_response",  -- 删除邮件响应
     NEW_NOTIFICATION = "mail_new_notification", -- 新邮件通知
@@ -59,15 +57,13 @@ MailEventConfig.MAIL_TYPE = {
 
 --- 邮件状态枚举
 MailEventConfig.STATUS = {
-    UNREAD = 0,          -- 未读
-    READ = 1,            -- 已读未领取
-    CLAIMED = 2,         -- 已领取附件
-    DELETED = 3          -- 已删除
+    UNREAD = 0,          -- 未读 (附件未领取)
+    CLAIMED = 1,         -- 已领取附件
+    DELETED = 2          -- 已删除
 }
 
 --- 邮件操作类型枚举
 MailEventConfig.MAIL_OPERATION = {
-    READ = 1,            -- 读取邮件
     CLAIM_ATTACHMENT = 2, -- 领取附件
     DELETE = 3           -- 删除邮件
 }
@@ -101,7 +97,6 @@ MailEventConfig.ERROR_CODES = {
     INSUFFICIENT_BAG_SPACE = 6,
     INVALID_PARAMETERS = 7,
     PERMISSION_DENIED = 8,
-    MAIL_ALREADY_READ = 9,
     MAIL_ALREADY_DELETED = 10,
     BATCH_CLAIM_FAILED = 11,
     SYSTEM_ERROR = 12,
@@ -119,7 +114,6 @@ MailEventConfig.ERROR_MESSAGES = {
     [MailEventConfig.ERROR_CODES.INSUFFICIENT_BAG_SPACE] = "背包空间不足",
     [MailEventConfig.ERROR_CODES.INVALID_PARAMETERS] = "参数无效",
     [MailEventConfig.ERROR_CODES.PERMISSION_DENIED] = "权限不足",
-    [MailEventConfig.ERROR_CODES.MAIL_ALREADY_READ] = "邮件已阅读",
     [MailEventConfig.ERROR_CODES.MAIL_ALREADY_DELETED] = "邮件已删除",
     [MailEventConfig.ERROR_CODES.BATCH_CLAIM_FAILED] = "批量领取失败",
     [MailEventConfig.ERROR_CODES.SYSTEM_ERROR] = "系统错误",

@@ -167,6 +167,9 @@ function MainServer.player_enter_game(player)
     gg.server_players_list[uin_] = player_
     gg.server_players_name_list[player.Nickname] = player_
 
+    -- 同步玩家的全服邮件数据
+    MailManager:SyncGlobalMailsForPlayer(uin_)
+
     actor_.Size = Vector3.New(120, 160, 120)      --碰撞盒子的大小
     actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置
 
@@ -187,6 +190,8 @@ function MainServer.player_enter_game(player)
     ServerEventManager.Publish("PlayerInited", {player = player_})
     gg.network_channel:fireClient(player.UserId, {cmd = "cmd_update_player_ui",{}})
 
+    -- 主动推送邮件列表到客户端
+    MailManager:SendMailListToClient(uin_)
 end
 
 --玩家离开游戏

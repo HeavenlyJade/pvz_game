@@ -46,7 +46,8 @@ function MailGui:OnInit(node, config)
     self.mailList = self:Get("邮箱背景/邮件列表框/邮件列表", ViewList) ---@type ViewList
 
     -- 数据存储
-    self.mailData = {} ---@type table<string, table> -- 邮件数据
+    self.personalMails = {} ---@type table<string, MailData> -- 个人邮件数据
+    self.globalMails = {} ---@type table<string, MailData> -- 全服邮件数据
     self.currentSelectedMail = nil ---@type table -- 当前选中的邮件
     self.currentCategory = "全部" ---@type string -- 当前选中的分类
     self.mailButtons = {} ---@type table<string, ViewButton> -- 邮件按钮缓存
@@ -187,28 +188,23 @@ end
 -- 注册服务端事件
 function MailGui:RegisterEvents()
     -- 监听邮件列表响应
-    ClientEventManager.Subscribe(MailEventConfig.RESPONSE.MAIL_LIST, function(data)
+    ClientEventManager.Subscribe(MailEventConfig.RESPONSE.LIST_RESPONSE, function(data)
         self:HandleMailListResponse(data)
     end)
 
     -- 监听邮件删除响应
-    ClientEventManager.Subscribe(MailEventConfig.RESPONSE.DELETE_SUCCESS, function(data)
+    ClientEventManager.Subscribe(MailEventConfig.RESPONSE.DELETE_RESPONSE, function(data)
         self:HandleDeleteResponse(data)
     end)
 
     -- 监听邮件领取响应
-    ClientEventManager.Subscribe(MailEventConfig.RESPONSE.CLAIM_SUCCESS, function(data)
+    ClientEventManager.Subscribe(MailEventConfig.RESPONSE.CLAIM_RESPONSE, function(data)
         self:HandleClaimResponse(data)
     end)
 
     -- 监听批量领取响应
     ClientEventManager.Subscribe(MailEventConfig.RESPONSE.BATCH_CLAIM_SUCCESS, function(data)
         self:HandleBatchClaimResponse(data)
-    end)
-
-    -- 监听邮件阅读响应
-    ClientEventManager.Subscribe(MailEventConfig.RESPONSE.READ_SUCCESS, function(data)
-        self:HandleReadResponse(data)
     end)
 
     -- 监听新邮件通知
@@ -259,32 +255,14 @@ function MailGui:HandleMailListResponse(data)
         return
     end
 
-    -- 合并个人邮件和全服邮件
-    local allMails = {}
-
-    -- 处理个人邮件
-    if data.personal_mails then
-        for mailId, mail in pairs(data.personal_mails) do
-            mail.mail_type = "personal"
-            allMails[mailId] = mail
-        end
-    end
-
-    -- 处理全服邮件
-    if data.global_mails then
-        for mailId, mail in pairs(data.global_mails) do
-            mail.mail_type = "global"
-            allMails[mailId] = mail
-        end
-    end
-
-    -- 更新本地邮件数据
-    self.mailData = allMails
+    -- 分别存储个人邮件和全服邮件
+    self.personalMails = data.personal_mails or {}
+    self.globalMails = data.global_mails or {}
 
     -- 刷新邮件列表显示
     self:UpdateMailList()
 
-    gg.log("邮件列表响应处理完成，邮件总数:", self:GetMailCount())
+    gg.log("邮件列表响应处理完成，个人邮件:", self:GetMailCount(self.personalMails), "全服邮件:", self:GetMailCount(self.globalMails))
 end
 
 -- 处理新邮件通知
@@ -297,30 +275,13 @@ function MailGui:HandleNewMailNotification(data)
     end
 end
 
--- 处理阅读邮件响应
-function MailGui:HandleReadResponse(data)
-    gg.log("收到阅读邮件响应", data)
-
-    if data.success and data.mail_data then
-        -- 更新本地邮件状态
-        if self.mailData[data.mail_id] then
-            self.mailData[data.mail_id].is_read = true
-            self.mailData[data.mail_id].status = 1 -- 已读状态
-        end
-
-        -- 如果当前显示的是这封邮件，更新详情显示
-        if self.currentSelectedMail and self.currentSelectedMail.id == data.mail_id then
-            self.currentSelectedMail.data = data.mail_data
-            self:ShowMailDetail(data.mail_data)
-        end
-    end
-end
-
 -- 获取邮件总数
-function MailGui:GetMailCount()
+function MailGui:GetMailCount(mailTable)
     local count = 0
-    for _ in pairs(self.mailData) do
-        count = count + 1
+    if mailTable then
+        for _ in pairs(mailTable) do
+            count = count + 1
+        end
     end
     return count
 end
@@ -335,7 +296,8 @@ function MailGui:HandleMailSync(data)
     end
 
     -- 更新本地邮件数据
-    self.mailData = data.mails
+    self.personalMails = data.mails.personal_mails or {}
+    self.globalMails = data.mails.global_mails or {}
 
     -- 刷新邮件列表显示
     self:UpdateMailList()
@@ -372,7 +334,18 @@ end
 function MailGui:FilterMailsByCategory(category)
     local filtered = {}
 
-    for mailId, mailInfo in pairs(self.mailData) do
+    -- 合并两种邮件用于显示
+    local allMails = {}
+    for mailId, mailInfo in pairs(self.personalMails) do
+        mailInfo.mail_type = "personal"
+        allMails[mailId] = mailInfo
+    end
+    for mailId, mailInfo in pairs(self.globalMails) do
+        mailInfo.mail_type = "global"
+        allMails[mailId] = mailInfo
+    end
+
+    for mailId, mailInfo in pairs(allMails) do
         if category == "全部" or mailInfo.category == category then
             table.insert(filtered, {id = mailId, data = mailInfo})
         end
@@ -436,12 +409,6 @@ function MailGui:SetupMailItemDisplay(itemNode, mailInfo)
         timeNode.Title = mailInfo.sendTime or ""
     end
 
-    -- 设置未读标识
-    local unreadNode = itemNode["未读标记"] or itemNode["Unread"]
-    if unreadNode then
-        unreadNode.Visible = not mailInfo.isRead
-    end
-
     -- 设置附件标识
     local attachmentNode = itemNode["附件标记"] or itemNode["Attachment"]
     if attachmentNode then
@@ -454,7 +421,7 @@ function MailGui:SetupMailItemDisplay(itemNode, mailInfo)
         claimedNode.Visible = mailInfo.hasAttachment and mailInfo.isClaimed
     end
 
-    gg.log("📧 设置邮件项显示:", mailInfo.title, "未读:", not mailInfo.isRead, "有附件:", mailInfo.hasAttachment)
+    gg.log("📧 设置邮件项显示:", mailInfo.title, "有附件:", mailInfo.hasAttachment)
 end
 
 -- 创建单个邮件列表项
@@ -502,11 +469,6 @@ function MailGui:OnMailItemClick(mailId, mailInfo)
 
     -- 显示邮件详情
     self:ShowMailDetail(mailInfo)
-
-    -- 如果是未读邮件，自动标记为已读
-    if not mailInfo.isRead then
-        self:SendMarkAsReadRequest(mailId)
-    end
 end
 
 -- 显示邮件详情
@@ -712,8 +674,13 @@ end
 
 -- 检查是否有未领取的邮件
 function MailGui:HasUnclaimedMails()
-    for _, mailInfo in pairs(self.mailData) do
-        if mailInfo.hasAttachment and not mailInfo.isClaimed then
+    for _, mailInfo in pairs(self.personalMails) do
+        if mailInfo.has_attachment and not mailInfo.is_claimed then
+            return true
+        end
+    end
+    for _, mailInfo in pairs(self.globalMails) do
+        if mailInfo.has_attachment and not mailInfo.is_claimed then
             return true
         end
     end
@@ -782,21 +749,17 @@ function MailGui:SendClaimRequest(mailId)
     })
 end
 
--- 发送标记已读请求
-function MailGui:SendMarkAsReadRequest(mailId)
-    gg.network_channel:FireServer({
-        cmd = MailEventConfig.REQUEST.READ_MAIL,
-        mailId = mailId
-    })
-end
-
 -- 处理删除响应
 function MailGui:HandleDeleteResponse(data)
     gg.log("收到删除响应", data)
 
     if data.success and data.mailId then
         -- 从本地数据中移除
-        self.mailData[data.mailId] = nil
+        if self.personalMails[data.mailId] then
+            self.personalMails[data.mailId] = nil
+        elseif self.globalMails[data.mailId] then
+            self.globalMails[data.mailId] = nil
+        end
 
         -- 清空当前选中
         self.currentSelectedMail = nil
@@ -817,8 +780,10 @@ function MailGui:HandleClaimResponse(data)
 
     if data.success and data.mailId then
         -- 更新本地数据
-        if self.mailData[data.mailId] then
-            self.mailData[data.mailId].isClaimed = true
+        if self.personalMails[data.mailId] then
+            self.personalMails[data.mailId].is_claimed = true
+        elseif self.globalMails[data.mailId] then
+            self.globalMails[data.mailId].is_claimed = true
         end
 
         -- 更新当前选中邮件数据
@@ -844,8 +809,10 @@ function MailGui:HandleBatchClaimResponse(data)
         -- 更新所有相关邮件的状态
         if data.claimedMailIds then
             for _, mailId in ipairs(data.claimedMailIds) do
-                if self.mailData[mailId] then
-                    self.mailData[mailId].isClaimed = true
+                if self.personalMails[mailId] then
+                    self.personalMails[mailId].is_claimed = true
+                elseif self.globalMails[mailId] then
+                    self.globalMails[mailId].is_claimed = true
                 end
             end
         end

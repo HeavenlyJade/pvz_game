@@ -53,11 +53,11 @@ function MailCommand.sendPersonal(params, sender)
 
 
     -- 解析收件人
-    local recipientUin = params["玩家ID"]
+    local recipientUin = tonumber(params["玩家ID"])
 
     -- 检查收件人是否存在
     if not recipientUin then
-        sender:SendHoverText("找不到收件人，请指定'收件人'字段")
+        sender:SendHoverText("找不到收件人，请指定'玩家ID'字段")
         return false
     end
 
@@ -86,7 +86,6 @@ function MailCommand.sendPersonal(params, sender)
         attachments,
         {
             name = sender.name,
-            type = MailEventConfig.MAIL_TYPE.PLAYER,
             id = sender.uin
         }
     )
@@ -155,7 +154,6 @@ function MailCommand.sendSystem(params, sender)
             attachments,
             {
                 name = "系统",
-                type = MailEventConfig.MAIL_TYPE.SYSTEM,
                 id = 0
             }
         )

@@ -49,6 +49,7 @@
 ---@field is_claimed boolean @ 附件是否已领取
 
 ---@class PlayerGlobalMailContainer
+---@field uin number @ 玩家ID
 ---@field statuses table<string, PlayerGlobalMailStatus> @ key是全服邮件ID
 ---@field last_update number @ 最后更新时间戳
 

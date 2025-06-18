@@ -67,7 +67,7 @@ function GlobalMailManager:GetAllGlobalMails()
     local result = {}
     for mailId, mailData in pairs(self.global_mail_cache.mails) do
         local mailObject = MailBase.New(mailData)
-        
+
         -- 跳过过期的全服邮件
         if not mailObject:IsExpired() then
             result[mailId] = mailObject:ToClientData()
@@ -87,7 +87,7 @@ function GlobalMailManager:DeleteAllGlobalMails()
     -- 清空全服邮件缓存
     self.global_mail_cache.mails = {}
     self.global_mail_cache.last_update = os.time()
-    
+
     -- 保存到云端
     CloudMailDataAccessor:SaveGlobalMail(self.global_mail_cache)
 
@@ -107,7 +107,7 @@ function GlobalMailManager:DeleteGlobalMailById(mailId)
     -- 从缓存中删除
     self.global_mail_cache.mails[mailId] = nil
     self.global_mail_cache.last_update = os.time()
-    
+
     -- 保存到云端
     CloudMailDataAccessor:SaveGlobalMail(self.global_mail_cache)
 
@@ -125,7 +125,7 @@ function GlobalMailManager:GetGlobalMailById(mailId)
 
     local mailData = self.global_mail_cache.mails[mailId]
     local mailObject = MailBase.New(mailData)
-    
+
     -- 检查是否过期
     if mailObject:IsExpired() then
         return nil
@@ -152,7 +152,6 @@ function GlobalMailManager:GetGlobalMailListForPlayer(uin, playerGlobalData)
         -- 跳过过期的全服邮件
         if not mailObject:IsExpired() then
             local playerMailStatus = playerGlobalData.statuses[mailId]
-
             -- 如果玩家没有这封邮件的状态记录，或者状态不是已删除，则显示
             if not playerMailStatus or playerMailStatus.status < MailEventConfig.STATUS.DELETED then
                 local clientMailData = mailObject:ToClientData()
@@ -181,12 +180,12 @@ function GlobalMailManager:ClaimGlobalMailAttachment(uin, mailId, playerGlobalDa
 
     local globalMailData = self.global_mail_cache.mails[mailId]
     local mailObject = MailBase.New(globalMailData)
-    
-    if not mailObject.has_attachment then 
-        return false, "该邮件没有附件", nil 
+
+    if not mailObject.has_attachment then
+        return false, "该邮件没有附件", nil
     end
-    if mailObject:IsExpired() then 
-        return false, "邮件已过期", nil 
+    if mailObject:IsExpired() then
+        return false, "邮件已过期", nil
     end
 
     local mailStatus = playerGlobalData.statuses[mailId]
@@ -201,9 +200,9 @@ function GlobalMailManager:ClaimGlobalMailAttachment(uin, mailId, playerGlobalDa
 
         -- 更新状态
         if not mailStatus then
-            playerGlobalData.statuses[mailId] = { 
-                status = MailEventConfig.STATUS.CLAIMED, 
-                is_claimed = true 
+            playerGlobalData.statuses[mailId] = {
+                status = MailEventConfig.STATUS.CLAIMED,
+                is_claimed = true
             }
         else
             mailStatus.status = MailEventConfig.STATUS.CLAIMED
@@ -263,7 +262,7 @@ function GlobalMailManager:HasUnreadGlobalMail(uin, playerGlobalData)
 
     local globalMails = self.global_mail_cache.mails
     local playerStatuses = playerGlobalData.statuses
-    
+
     for mailId, mailData in pairs(globalMails) do
         local status = playerStatuses[mailId]
         if not status or status.status == MailEventConfig.STATUS.UNREAD then
@@ -277,4 +276,4 @@ function GlobalMailManager:HasUnreadGlobalMail(uin, playerGlobalData)
     return false
 end
 
-return GlobalMailManager 
+return GlobalMailManager

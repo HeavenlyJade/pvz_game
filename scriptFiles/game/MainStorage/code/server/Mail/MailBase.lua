@@ -11,7 +11,7 @@ local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) 
 ---@field sender string 发件人
 ---@field send_time number 发送时间戳
 ---@field expire_time number 过期时间戳
----@field status number 邮件状态 (0: 未读, 1: 已读, 2: 已领取附件, 3: 已删除)
+---@field status number 邮件状态 (0: 未读, 1: 已领取附件, 2: 已删除)
 ---@field attachments table<number, MailAttachment> 附件列表
 ---@field has_attachment boolean 是否有附件
 ---@field expire_days number 有效期天数
@@ -50,7 +50,6 @@ function _MailBase:OnInit(data)
     self.has_attachment = self:CalculateHasAttachment()
 
     -- 扩展字段
-    self.sender_type = data.sender_type or "system"
     self.mail_type = data.mail_type or "personal"
 
     gg.log("邮件对象初始化完成", self.id, self.title)
@@ -64,12 +63,6 @@ end
 ---@return boolean 是否已过期
 function _MailBase:IsExpired()
     return self.expire_time and self.expire_time < os.time()
-end
-
---- 检查邮件是否已读
----@return boolean 是否已读
-function _MailBase:IsRead()
-    return self.status >= _MailBase.STATUS.READ
 end
 
 --- 检查邮件是否已领取附件
@@ -149,16 +142,6 @@ end
 -- 状态管理方法
 --------------------------------------------------
 
---- 标记为已读
-function _MailBase:MarkAsRead()
-    if self.status < _MailBase.STATUS.READ then
-        self.status = _MailBase.STATUS.READ
-        gg.log("邮件标记为已读", self.id)
-        return true
-    end
-    return false
-end
-
 --- 标记为已领取附件
 function _MailBase:MarkAsClaimed()
     if self.has_attachment and self.status < _MailBase.STATUS.CLAIMED then
@@ -197,7 +180,6 @@ function _MailBase:ToClientData()
         has_attachment = self.has_attachment,
         attachments = self.attachments,
         mail_type = self.mail_type,
-        is_read = self:IsRead(),
         is_claimed = self:IsClaimed()
     }
 end
@@ -210,7 +192,6 @@ function _MailBase:ToStorageData()
         title = self.title,
         content = self.content,
         sender = self.sender,
-        sender_type = self.sender_type,
         send_time = self.send_time,
         expire_time = self.expire_time,
         expire_days = self.expire_days,
@@ -232,10 +213,8 @@ function _MailBase:GetSummary()
         statusText = "已删除"
     elseif self:IsClaimed() then
         statusText = "已领取"
-    elseif self:IsRead() then
-        statusText = "已读"
     else
-        statusText = "未读"
+        statusText = "未领取"
     end
 
     local attachmentText = self.has_attachment and "有附件" or "无附件"
