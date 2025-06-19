@@ -13,18 +13,21 @@ local MailEventConfig = {}
 
 -- 客户端请求事件
 MailEventConfig.REQUEST = {
-    GET_LIST = "mail_get_list",           -- 获取邮件列表
-    CLAIM_MAIL = "mail_claim_attachment",       -- 领取指定邮件
-    BATCH_CLAIM = "mail_batch_claim",     -- 一键领取邮件
-    DELETE_MAIL = "mail_delete",     -- 删除邮件
+    GET_LIST = "MailRequest_GetList",           -- 获取邮件列表
+    CLAIM_MAIL = "MailRequest_ClaimMail",       -- 领取指定邮件
+    BATCH_CLAIM = "MailRequest_BatchClaim",     -- 一键领取邮件
+    DELETE_MAIL = "MailRequest_DeleteMail",     -- 删除邮件
+    DELETE_READ_MAILS = "MailRequest_DeleteRead", -- 删除已读邮件
 }
 
 -- 服务器响应事件
 MailEventConfig.RESPONSE = {
-    LIST_RESPONSE = "mail_list_response",      -- 邮件列表响应
-    CLAIM_RESPONSE = "mail_claim_attachment_response", -- 领取附件响应
-    DELETE_RESPONSE = "mail_delete_response",  -- 删除邮件响应
+    LIST_RESPONSE = "MailResponse_List",      -- 邮件列表响应
+    CLAIM_RESPONSE = "MailResponse_Claim", -- 领取附件响应
+    DELETE_RESPONSE = "MailResponse_Delete",  -- 删除邮件响应
     NEW_NOTIFICATION = "mail_new_notification", -- 新邮件通知
+    BATCH_CLAIM_SUCCESS = "MailResponse_BatchClaimSuccess",
+    DELETE_READ_SUCCESS = "MailResponse_DeleteReadSuccess",
     ERROR = "MailResponse_Error",               -- 错误响应
 }
 

@@ -54,6 +54,7 @@ function GlobalMailManager:AddGlobalMail(mailData)
     CloudMailDataAccessor:SaveGlobalMail(self.global_mail_cache)
 
     gg.log("成功添加全服邮件", storageData.id)
+
     return storageData.id
 end
 
@@ -152,8 +153,9 @@ function GlobalMailManager:GetGlobalMailListForPlayer(uin, playerGlobalData)
         -- 跳过过期的全服邮件
         if not mailObject:IsExpired() then
             local playerMailStatus = playerGlobalData.statuses[mailId]
+
             -- 如果玩家没有这封邮件的状态记录，或者状态不是已删除，则显示
-            if not playerMailStatus or playerMailStatus.status < MailEventConfig.STATUS.DELETED then
+            if not playerMailStatus or playerMailStatus.status ~= MailEventConfig.STATUS.DELETED then
                 local clientMailData = mailObject:ToClientData()
                 -- 使用玩家的特定状态覆盖通用状态
                 clientMailData.status = playerMailStatus and playerMailStatus.status or MailEventConfig.STATUS.UNREAD
@@ -224,26 +226,30 @@ function GlobalMailManager:DeleteGlobalMailForPlayer(uin, mailId, playerGlobalDa
     local globalMailData = self.global_mail_cache.mails[mailId]
     local mailStatus = playerGlobalData.statuses[mailId]
 
-    if not mailStatus or mailStatus.status < MailEventConfig.STATUS.DELETED then
-        local mailObject = MailBase.New(globalMailData)
+    -- 如果邮件已经是删除状态，直接返回成功
+    if mailStatus and mailStatus.status == MailEventConfig.STATUS.DELETED then
+        return true, "邮件已删除"
+    end
 
-        -- 有未领取的附件时不能删除
-        if mailObject.has_attachment and (not mailStatus or not mailStatus.is_claimed) then
+        local mailObject = MailBase.New(globalMailData)
+    -- 检查是否有未领取的附件
+    local hasUnclaimedAttachment = mailObject.has_attachment and (not mailStatus or not mailStatus.is_claimed)
+    if hasUnclaimedAttachment then
              return false, "请先领取附件"
         end
 
+    -- 更新或创建状态记录为已删除
         if not mailStatus then
             playerGlobalData.statuses[mailId] = {
                 status = MailEventConfig.STATUS.DELETED,
-                is_claimed = mailStatus and mailStatus.is_claimed or false
+            is_claimed = false -- 如果之前没有记录，那肯定没领取过
             }
         else
             mailStatus.status = MailEventConfig.STATUS.DELETED
         end
-        return true, "删除成功"
-    end
+    playerGlobalData.last_update = os.time()
 
-    return false, "邮件已删除"
+        return true, "删除成功"
 end
 
 --- 检查玩家是否有未读的全服邮件

@@ -115,20 +115,93 @@ function ViewList:SetVisible(visible)
     self.node.Enabled = visible
 end
 
+---私有方法：根据childrens数组刷新UI布局
+function ViewList:_refreshLayout()
+    -- 步骤 1: 完全卸载 (Detach)
+    -- 创建一个临时表来持有子节点，避免在迭代时修改集合
+    local childrenToDetach = {}
+    for _, child in pairs(self.node.Children) do
+        table.insert(childrenToDetach, child)
+    end
+    for _, child in ipairs(childrenToDetach) do
+        child:SetParent(nil)
+    end
+
+    -- 步骤 2: 重新装载 (Re-attach) 并更新元数据
+    for i, comp in ipairs(self.childrens) do
+        -- 重新设置父节点，按新顺序装载
+        comp.node:SetParent(self.node)
+        -- 更新元数据
+        comp.index = i
+        comp.path = self.path .. "/" .. comp.node.Name
+    end
+end
+
+---在指定位置插入子节点
+---@param childNode SandboxNode 要添加的子节点
+---@param index number 要插入的位置
+---@param shouldRefresh boolean|nil 是否在插入后立即刷新UI布局，默认为false
+function ViewList:InsertChild(childNode, index, shouldRefresh)
+    -- 步骤 1: 创建逻辑包装器
+    local viewComponent = self.onAddElementCb(childNode)
+    if not viewComponent then
+        return -- 如果创建失败，则直接返回
+    end
+
+    -- 步骤 2: 安全地插入到 self.childrens 数组
+    local targetIndex = index
+    if targetIndex > #self.childrens + 1 or targetIndex < 1 then
+        targetIndex = #self.childrens + 1 -- 如果index无效，则插入到末尾
+    end
+    table.insert(self.childrens, targetIndex, viewComponent)
+
+    -- 步骤 3: 如果需要，则刷新布局
+    if shouldRefresh then
+        self:_refreshLayout()
+    end
+end
+
 ---@param childNode SandboxNode 要添加的子节点
 function ViewList:AppendChild(childNode)
-    childNode:SetParent(self.node)
-    local viewComponent = self.onAddElementCb(childNode)
-    if viewComponent then
-        -- 设置ViewComponent的path和index
-        viewComponent.path = self.path .. "/" .. childNode.Name
-        viewComponent.index = #self.childrens + 1
-        table.insert(self.childrens, viewComponent)
+    -- AppendChild 默认立即刷新UI
+    self:InsertChild(childNode, #self.childrens + 1, true)
+end
+
+--- 通过名称移除子节点
+---@param childName string 要移除的子节点的名称
+---@return boolean true|false
+function ViewList:RemoveChildByName(childName)
+    local indexToRemove
+    for i, child in ipairs(self.childrens) do
+        if child.node and child.node.Name == childName then
+            indexToRemove = i
+            break
+        end
     end
+
+    if indexToRemove then
+        local removedComponent = table.remove(self.childrens, indexToRemove)
+        if removedComponent and removedComponent.node  then
+            removedComponent.node:Destroy()
+        end
+
+        -- 更新后续元素的索引以保持一致性
+        for i = indexToRemove, #self.childrens do
+            self.childrens[i].index = i
+        end
+        return true
+    end
+
+    return false
 end
 
 ---清空所有子元素
 function ViewList:ClearChildren()
+    for _, child in ipairs(self.childrens) do
+        if child.node and child.node.IsValid then
+            child.node:Destroy()
+        end
+    end
     self.childrens = {}
 end
 

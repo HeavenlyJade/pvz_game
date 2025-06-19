@@ -9,6 +9,10 @@ local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) 
 local TimeUtils = require(MainStorage.code.common.func_utils.time_utils) ---@type TimeUtils
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 
+---@class NewMailNotificationPayload
+---@field cmd string 事件命令
+---@field mail_info MailData 新邮件的详细数据
+
 local uiConfig = {
     uiName = "MailGui",
     layer = 3,
@@ -64,7 +68,7 @@ function MailGui:OnInit(node, config)
     self.systemMails = {} ---@type table<string, MailData> -- 系统邮件数据（mail_type非"玩家"的邮件）
     self.currentSelectedMail = nil ---@type table -- 当前选中的邮件
     self.currentCategory = "系统邮件" ---@type string -- 当前选中的分类：系统邮件、玩家邮件
-    self.mailButtons = {} ---@type table<string, ViewButton> -- 邮件按钮缓存
+    self.mailButtons = {} ---@type table<string, ViewComponent> -- 邮件按钮缓存
     self.attachmentLists = {} ---@type table<string, ViewComponent>
 
     -- 为列表设置 onAddElementCb
@@ -97,9 +101,6 @@ function MailGui:InitializeUI()
     if self.mailContentPanel then self.mailContentPanel:SetVisible(false) end
     if self.rewardDisplay then self.rewardDisplay:SetVisible(false) end
     gg.log("MailGui UI初始化完成")
-
-    -- 刷新邮件列表
-    self:UpdateMailList()
 end
 
 -- 切换邮件分类
@@ -120,71 +121,20 @@ function MailGui:SwitchCategory(categoryName)
 
     -- 清空当前选中的邮件并隐藏详情
     self.currentSelectedMail = nil
-    -- self:HideMailDetail()
-
-    -- 刷新邮件列表
-    self:UpdateMailList()
-end
-
--- 清空邮件列表的UI节点
-function MailGui:ClearMailList(targetList)
-    if not targetList or not targetList.node then return end
-
-    -- 创建一个临时表来持有子节点，以避免在迭代时修改集合
-    local childrenToDestroy = {}
-    for _, child in pairs(targetList.node.Children) do
-        table.insert(childrenToDestroy, child)
-    end
-
-    for _, child in ipairs(childrenToDestroy) do
-        child:Destroy()
-    end
+    self:HideMailDetail()
 end
 
 -- 注册按钮事件
 function MailGui:RegisterButtonEvents()
     -- 关闭按钮
-    if self.closeButton then
-        self.closeButton.clickCb = function()
-            self:Close()
-        end
-    end
 
-    -- 删除邮件按钮
-    if self.deleteButton then
-        self.deleteButton.clickCb = function()
-            self:OnDeleteMail()
-        end
-    end
-
-    -- 领取附件按钮
-    if self.claimButton then
-        self.claimButton.clickCb = function()
-            self:OnClaimReward()
-        end
-    end
-
-    -- 一键领取按钮
-    if self.batchClaimButton then
-        self.batchClaimButton.clickCb = function()
-            self:OnBatchClaim()
-        end
-    end
-
-    -- 分类切换按钮
-    if self.mailSystemButtom then
-        self.mailSystemButtom.clickCb = function()
-            self:SwitchCategory("系统邮件")
-        end
-    end
-    if self.mailPlayerButtom then
-        self.mailPlayerButtom.clickCb = function()
-            self:SwitchCategory("玩家邮件")
-        end
-    end
-
-    -- 刷新邮件列表显示
-    self:UpdateMailList()
+    self.closeButton.clickCb = function()self:Close()end
+    self.claimButton.clickCb = function()self:OnClaimReward()end
+    self.batchClaimButton.clickCb = function() self:OnBatchClaim()end
+    self.mailSystemButtom.clickCb = function()self:SwitchCategory("系统邮件")end
+    self.mailPlayerButtom.clickCb = function()self:SwitchCategory("玩家邮件")end
+    self.deleteButton.clickCb = function()self:OnDeleteReadMails()  end
+    
 end
 
 -- 注册服务端事件
@@ -209,17 +159,17 @@ function MailGui:RegisterEvents()
         self:HandleBatchClaimResponse(data)
     end)
 
+    -- 新增：监听删除已读响应
+    ClientEventManager.Subscribe(MailEventConfig.RESPONSE.DELETE_READ_SUCCESS, function(data)
+        self:HandleDeleteReadResponse(data)
+    end)
+
     -- 监听新邮件通知
     ClientEventManager.Subscribe(MailEventConfig.NOTIFY.NEW_MAIL, function(data)
         self:HandleNewMailNotification(data)
     end)
 
-    -- 监听邮件同步通知
-    ClientEventManager.Subscribe(MailEventConfig.NOTIFY.MAIL_SYNC, function(data)
-        self:HandleMailSync(data)
-    end)
-
-    gg.log("MailGui事件注册完成，共注册", 7, "个事件处理器")
+    gg.log("MailGui事件注册完成，共注册", 6, "个事件处理器")
 end
 
 -- 处理邮件列表响应
@@ -231,61 +181,78 @@ function MailGui:HandleMailListResponse(data)
         return
     end
 
-    -- 清空现有邮件数据
+    -- 内部辅助函数：处理一批邮件并将其分类到 self.playerMails 或 self.systemMails
+    local function processAndCategorizeMails(mailBatch)
+        if not mailBatch then return end
+        for mailId, mailInfo in pairs(mailBatch) do
+            if mailInfo.mail_type == MAIL_TYPE.PLAYER then
+                self.playerMails[tostring(mailId)] = mailInfo
+            else
+                self.systemMails[tostring(mailId)] = mailInfo
+            end
+        end
+    end
+
+    -- 内部辅助函数：为分类好的一批邮件创建附件列表
+    local function createAttachmentListsForMails(mailBatch)
+        if not mailBatch then return end
+        for mailId, mailInfo in pairs(mailBatch) do
+            if mailInfo.has_attachment and mailInfo.attachments then
+                self:CreateAttachmentListForMail(mailId, mailInfo)
+            end
+        end
+    end
+
+    -- 步骤1: 清空现有数据
     self:ClearAllAttachmentLists()
     self.playerMails = {}
     self.systemMails = {}
 
-    -- 处理个人邮件，根据mail_type分类
-    if data.personal_mails then
-        for mailId, mailInfo in pairs(data.personal_mails) do
-            if mailInfo.mail_type == MAIL_TYPE.PLAYER then
-                self.playerMails[mailId] = mailInfo
-            else
-                self.systemMails[mailId] = mailInfo
-            end
-        end
-    end
+    -- 步骤2: 处理和分类个人邮件和全服邮件
+    processAndCategorizeMails(data.personal_mails)
+    processAndCategorizeMails(data.global_mails)
 
-    -- 处理全服邮件，根据mail_type分类
-    if data.global_mails then
-        for mailId, mailInfo in pairs(data.global_mails) do
-            if mailInfo.mail_type == MAIL_TYPE.PLAYER then
-                self.playerMails[mailId] = mailInfo
-            else
-                self.systemMails[mailId] = mailInfo
-            end
-        end
-    end
+    -- 步骤3: 为所有已分类的邮件创建附件列表
+    createAttachmentListsForMails(self.playerMails)
+    createAttachmentListsForMails(self.systemMails)
 
-    -- 为所有带附件的邮件创建附件列表
-
-    for mailId, mailInfo in pairs(self.playerMails) do
-        if mailInfo.has_attachment and mailInfo.attachments then
-            self:CreateAttachmentListForMail(mailId, mailInfo)
-        end
-    end
-    for mailId, mailInfo in pairs(self.systemMails) do
-        gg.log("系统邮件",mailId,mailInfo)
-        if mailInfo.has_attachment and mailInfo.attachments then
-            self:CreateAttachmentListForMail(mailId, mailInfo)
-        end
-    end
-
-    -- 刷新邮件列表显示
-    self:UpdateMailList()
+    -- 步骤4: 刷新整个UI列表
+    self:InitMailList()
 
     gg.log("邮件列表响应处理完成，玩家邮件:", self:GetMailCount(self.playerMails), "系统邮件:", self:GetMailCount(self.systemMails))
 end
 
 -- 处理新邮件通知
+---@param data NewMailNotificationPayload
 function MailGui:HandleNewMailNotification(data)
     gg.log("收到新邮件通知", data)
 
-    -- 如果界面是打开状态，自动刷新邮件列表
-    if self:IsVisible() then
-        self:OnOpen()
+    local mailInfo = data and data.mail_info
+  
+    gg.log("收到新邮件数据:", mailInfo.title, mailInfo.id)
+
+    -- 1. 根据邮件类型，将新邮件添加到对应的本地数据表中
+    local targetDataList
+    local targetViewList
+    if mailInfo.mail_type == MAIL_TYPE.PLAYER then
+        targetDataList = self.playerMails
+        targetViewList = self.mailPlayerList
+    else
+        targetDataList = self.systemMails
+        targetViewList = self.mailSystemList
     end
+    targetDataList[mailInfo.id] = mailInfo
+
+    -- 构造正确格式的 mailItemData
+    local mailItemData = { id = mailInfo.id, data = mailInfo }
+    self:_createMailListItem(targetViewList, mailItemData, 1)
+
+    -- 2. 如果邮件有附件，为其创建附件UI列表
+    if mailInfo.has_attachment and mailInfo.attachments then
+        self:CreateAttachmentListForMail(mailInfo.id, mailInfo)
+    end
+    targetViewList:_refreshLayout()
+    
 end
 
 -- 获取邮件总数
@@ -299,62 +266,10 @@ function MailGui:GetMailCount(mailTable)
     return count
 end
 
--- 处理邮件同步通知
-function MailGui:HandleMailSync(data)
-    gg.log("收到邮件同步通知", data)
-
-    if not data or not data.mails then
-        gg.log("邮件数据为空")
-        return
-    end
-
-    -- 清空现有邮件数据
-    self:ClearAllAttachmentLists()
-    self.playerMails = {}
-    self.systemMails = {}
-
-    -- 处理个人邮件，根据mail_type分类
-    if data.mails.personal_mails then
-        for mailId, mailInfo in pairs(data.mails.personal_mails) do
-            if mailInfo.mail_type == MAIL_TYPE.PLAYER then
-                self.playerMails[mailId] = mailInfo
-            else
-                self.systemMails[mailId] = mailInfo
-            end
-        end
-    end
-
-    -- 处理全服邮件，根据mail_type分类
-    if data.mails.global_mails then
-        for mailId, mailInfo in pairs(data.mails.global_mails) do
-            if mailInfo.mail_type == MAIL_TYPE.PLAYER then
-                self.playerMails[mailId] = mailInfo
-            else
-                self.systemMails[mailId] = mailInfo
-            end
-        end
-    end
-
-    -- 为所有带附件的邮件创建附件列表
-    for mailId, mailInfo in pairs(self.playerMails) do
-        if mailInfo.has_attachment and mailInfo.rewards then
-            self:CreateAttachmentListForMail(mailId, mailInfo)
-        end
-    end
-    for mailId, mailInfo in pairs(self.systemMails) do
-        if mailInfo.has_attachment and mailInfo.rewards then
-            self:CreateAttachmentListForMail(mailId, mailInfo)
-        end
-    end
-
-    -- 刷新邮件列表显示
-    self:UpdateMailList()
-end
-
--- 更新邮件列表显示
-function MailGui:UpdateMailList()
+-- 初始化邮件列表显示
+function MailGui:InitMailList()
     if not self.mailItemTemplate then
-        gg.log("❌ 邮件列表模板未找到，无法更新列表")
+        gg.log("❌ 邮件列表模板未找到，无法初始化邮件")
         return
     end
 
@@ -362,17 +277,11 @@ function MailGui:UpdateMailList()
     self.currentSelectedMail = nil
     self:HideMailDetail()
 
-    -- 清空UI列表和按钮缓存
-    self:ClearMailList(self.mailSystemList)
-    self.mailSystemList:ClearChildren()
-    self:ClearMailList(self.mailPlayerList)
-    self.mailPlayerList:ClearChildren()
     self.mailButtons = {}
-
     -- 排序邮件
     local sortedSystemMails = self:SortMails(self.systemMails)
     local sortedPlayerMails = self:SortMails(self.playerMails)
-    -- 填充邮件列表
+    -- 将服务器的邮件数据安装玩家还是系统分发给给类的uilist
     self:PopulateMailList(self.mailSystemList, sortedSystemMails)
     self:PopulateMailList(self.mailPlayerList, sortedPlayerMails)
     -- 更新一键领取按钮状态
@@ -385,6 +294,27 @@ function MailGui:UpdateMailList()
     gg.log("📧 所有邮件列表更新完成")
 end
 
+---邮件排序的比较函数
+---@param a table
+---@param b table
+---@return boolean
+function MailGui:_sortMailComparator(a, b)
+    local aClaimed = a.data.is_claimed or false
+    local bClaimed = b.data.is_claimed or false
+    
+    -- 优先级1: 未领取的在前面
+    if not aClaimed and bClaimed then
+        return true
+    elseif aClaimed and not bClaimed then
+        return false
+    end
+
+    -- 优先级2: 在同一个领取状态下，按时间倒序
+    local timeA = a.data.send_time or a.data.timestamp or 0
+    local timeB = b.data.send_time or a.data.timestamp or 0
+    return timeA > timeB
+end
+
 -- 对邮件进行排序
 function MailGui:SortMails(mailTable)
     local sorted = {}
@@ -393,39 +323,39 @@ function MailGui:SortMails(mailTable)
     for mailId, mailInfo in pairs(mailTable) do
         table.insert(sorted, {id = mailId, data = mailInfo})
     end
-    -- 按时间倒序排序 (最新的在前)
-    table.sort(sorted, function(a, b)
-        -- 使用send_time字段进行排序，如果没有则使用timestamp
-        local timeA = a.data.send_time or a.data.timestamp or 0
-        local timeB = b.data.send_time or b.data.timestamp or 0
-        return timeA > timeB
-    end)
+    -- 使用独立的比较函数进行排序
+    table.sort(sorted, function(a, b) return self:_sortMailComparator(a, b) end)
 
     return sorted
 end
 
 -- 填充邮件列表
 function MailGui:PopulateMailList(targetList, mailArray)
-    for _, mailItemData in ipairs(mailArray) do
-        local itemNode = self.mailItemTemplate.node:Clone()
-        itemNode.Visible = true
-        itemNode.Name = tostring(mailItemData.id)
-
-        targetList:AppendChild(itemNode)
-
-        ---@type ViewButton
-        local mailItemButton = targetList.childrens[#targetList.childrens]
-
-        if mailItemButton then
-            self:SetupMailItemDisplay(mailItemButton.node, mailItemData.data)
-            mailItemButton.extraParams = {
-                mailId = mailItemData.id,
-                mailInfo = mailItemData.data,
-            }
-            self.mailButtons[mailItemData.id] = mailItemButton
-        end
+    for i, mailItemData in ipairs(mailArray) do
+        self:_createMailListItem(targetList, mailItemData, i)
     end
-    gg.log("📧 邮件列表填充完成, 列表: ", targetList.node.Name, "数量:", #mailArray)
+    -- 批量添加后，手动刷新一次UI布局
+    targetList:_refreshLayout()
+end
+
+---创建单个邮件列表项并添加到列表中
+---@param targetList ViewList 目标列表
+---@param mailItemData table 邮件数据
+---@param index number 要插入的位置
+function MailGui:_createMailListItem(targetList, mailItemData, index)
+    local itemNode = self.mailItemTemplate.node:Clone()
+    itemNode.Visible = true
+    itemNode.Name = tostring(mailItemData.id)
+    -- 注意：这里使用InsertChild并设置shouldRefresh为false，以避免每次添加都刷新UI
+    targetList:InsertChild(itemNode, index, false)
+    -- 因为我们是按顺序插入的，所以新组件就是childrens[index]
+    local mailItemComponent = targetList.childrens[index]
+
+    if mailItemComponent then
+        self:SetupMailItemDisplay(mailItemComponent.node, mailItemData.data)
+        mailItemComponent.extraParams = {mailId = mailItemData.id, mailInfo = mailItemData.data}
+        self.mailButtons[mailItemData.id] = mailItemComponent
+    end
 end
 
 -- 设置邮件项显示信息
@@ -462,32 +392,12 @@ function MailGui:ShowMailDetail(mailInfo)
     gg.log("mailInfo邮件的切换数据",mailInfo)
     if self.mailContentPanel then self.mailContentPanel:SetVisible(true) end
     local mailContentPanelNode = self.mailContentPanel.node
-    local titleNode = mailContentPanelNode["Title"]
-    if titleNode then
-        -- 直接设置文本控件的Title属性
-        titleNode.Title = mailInfo.title or "无标题"
-    end
+    mailContentPanelNode["Title"].Title = mailInfo.title or "无标题"
+    mailContentPanelNode["发送时间"].Title = "发送时间: " .. TimeUtils.FormatTimestamp(mailInfo.send_time)
+    mailContentPanelNode["截止时间"].Title = "截止时间: " .. TimeUtils.FormatTimestamp(mailInfo.expire_time)
+    mailContentPanelNode["正文内容"].Title = mailInfo.content or "无内容"
 
-    local sendTimeTitleNode = mailContentPanelNode["发送时间"]
-    if sendTimeTitleNode then
-        sendTimeTitleNode.Title = "发送时间: " .. TimeUtils.FormatTimestamp(mailInfo.send_time)
-    end
-
-    local deadlineTitleNode = mailContentPanelNode["截止时间"]
-    if deadlineTitleNode then
-        deadlineTitleNode.Title = "截止时间: " .. TimeUtils.FormatTimestamp(mailInfo.expire_time)
-    end
-
-    local contentTextNode = mailContentPanelNode["正文内容"]
-    if contentTextNode then
-        contentTextNode.Title = mailInfo.content or "无内容"
-    end
-
-    local senderInfoNode = mailContentPanelNode["发送人"]
-    if senderInfoNode then
-        senderInfoNode.Title = "发送人: " .. (mailInfo.sender or "系统")
-    end
-
+    mailContentPanelNode["发送人"].Title = "发送人: " .. (mailInfo.sender or "系统")
     -- 更新按钮状态
     self:UpdateDetailButtons(mailInfo)
 
@@ -529,10 +439,8 @@ end
 --- 更新附件列表外观（是否置灰）
 function MailGui:UpdateAttachmentListAppearance(mailId, isClaimed)
     local attachmentList = self.attachmentLists[tostring(mailId)]
-    if not attachmentList or not attachmentList.node or not attachmentList.node.IsValid then
-        return
-    end
-    attachmentList.node.Grayed = isClaimed
+    gg.log("节点置为灰色",mailId,isClaimed)
+    attachmentList:SetGray(isClaimed)
 end
 
 -- 新增：清空所有已生成的附件列表
@@ -561,10 +469,8 @@ function MailGui:CreateAttachmentListForMail(mailId, mailInfo)
 
     -- 2. 处理奖励数据
     local rewardItems = self:ProcessRewardData(mailInfo.attachments)
-    -- gg.log("创建附件列表",mailId,mailInfo.attachments,rewardItems )
     -- 3. 循环创建附件项并填充
     for _, rewardData in ipairs(rewardItems) do
-        gg.log("rewardData",rewardData)
         local newItemNode = self.rewardItemTemplate.node:Clone()
         newItemNode.Parent = newListContainerNode
         newItemNode.Visible = true
@@ -737,6 +643,46 @@ function MailGui:OnBatchClaim()
     })
 end
 
+-- 新增：删除已读邮件
+function MailGui:OnDeleteReadMails()
+    gg.log("请求删除当前分类下的已读邮件:", self.currentCategory)
+
+    local mailListToScan = {}
+    local isGlobalCategory = false
+    if self.currentCategory == "系统邮件" then
+        mailListToScan = self.systemMails
+        isGlobalCategory = true
+    else
+        mailListToScan = self.playerMails
+    end
+
+    local personalMailIdsToDelete = {}
+    local globalMailIdsToDelete = {}
+
+    for mailId, mailInfo in pairs(mailListToScan) do
+        -- 已读条件：没有附件，或者有附件但已领取
+        if not mailInfo.has_attachment or mailInfo.is_claimed then
+            if isGlobalCategory then
+                table.insert(globalMailIdsToDelete, mailId)
+            else
+                table.insert(personalMailIdsToDelete, mailId)
+            end
+        end
+    end
+
+    if #personalMailIdsToDelete == 0 and #globalMailIdsToDelete == 0 then
+        gg.log("没有可删除的已读邮件")
+        -- 可以在这里给玩家一个提示
+        return
+    end
+
+    gg.network_channel:FireServer({
+        cmd = MailEventConfig.REQUEST.DELETE_READ_MAILS,
+        personalMailIds = personalMailIdsToDelete,
+        globalMailIds = globalMailIdsToDelete
+    })
+end
+
 -- 发送删除请求
 function MailGui:SendDeleteRequest(mailId, isGlobal)
     gg.network_channel:FireServer({
@@ -760,21 +706,33 @@ function MailGui:HandleDeleteResponse(data)
     gg.log("收到删除响应", data)
 
     if data.success and data.mail_id then
-        -- 从本地数据中移除
-        if self.playerMails[data.mail_id] then
-            self.playerMails[data.mail_id] = nil
-        elseif self.systemMails[data.mail_id] then
-            self.systemMails[data.mail_id] = nil
+        local mailIdStr = tostring(data.mail_id)
+        local targetList
+
+        -- 从本地数据中移除，并确定在哪个UI列表中操作
+        if self.playerMails[mailIdStr] then
+            self.playerMails[mailIdStr] = nil
+            targetList = self.mailPlayerList
+        elseif self.systemMails[mailIdStr] then
+            self.systemMails[mailIdStr] = nil
+            targetList = self.mailSystemList
         end
 
-        -- 清空当前选中
-        self.currentSelectedMail = nil
-        self:HideMailDetail()
+        -- 如果找到了对应的UI列表，则从中移除节点
+        if targetList then
+            targetList:RemoveChildByName(mailIdStr)
+        end
 
-        -- 刷新列表
-        self:UpdateMailList()
+        -- 从按钮缓存中移除
+        self.mailButtons[mailIdStr] = nil
 
-        gg.log("邮件删除成功", data.mail_id)
+        -- 如果删除的是当前选中的邮件，则清空详情面板
+        if self.currentSelectedMail and self.currentSelectedMail.id == data.mail_id then
+            self.currentSelectedMail = nil
+            self:HideMailDetail()
+        end
+
+        gg.log("邮件删除成功（增量更新）", data.mail_id)
     else
         gg.log("邮件删除失败", data.error or "未知错误")
     end
@@ -801,7 +759,7 @@ function MailGui:HandleClaimResponse(data)
         end
 
         -- 刷新列表
-        self:UpdateMailList()
+        self:InitMailList()
 
         gg.log("附件领取成功", data.mail_id)
     else
@@ -831,11 +789,45 @@ function MailGui:HandleBatchClaimResponse(data)
         end
 
         -- 刷新列表
-        self:UpdateMailList()
+        self:InitMailList()
 
         gg.log("批量领取成功", data.claimedCount or 0, "封邮件")
     else
         gg.log("批量领取失败", data.error or "未知错误")
+    end
+end
+
+-- 新增：处理删除已读响应
+function MailGui:HandleDeleteReadResponse(data)
+    gg.log("收到删除已读邮件响应", data)
+    if data.success and data.deletedMailIds then
+        -- 遍历返回的ID列表，从UI和数据中移除
+        for _, mailId in ipairs(data.deletedMailIds) do
+            local mailIdStr = tostring(mailId)
+            local targetList
+            if self.playerMails[mailIdStr] then
+                self.playerMails[mailIdStr] = nil
+                targetList = self.mailPlayerList
+            elseif self.systemMails[mailIdStr] then
+                -- 对于系统邮件，我们实际上是在删除玩家的状态，而不是邮件本身
+                self.systemMails[mailIdStr] = nil
+                targetList = self.mailSystemList
+            end
+
+            if targetList then
+                targetList:RemoveChildByName(mailIdStr)
+            end
+            self.mailButtons[mailIdStr] = nil
+        end
+
+        -- 如果当前选中的邮件被删除了，则隐藏详情
+        if self.currentSelectedMail and data.deletedMailIds and table.indexOf(data.deletedMailIds, self.currentSelectedMail.id) then
+            self.currentSelectedMail = nil
+            self:HideMailDetail()
+        end
+        gg.log("成功删除", #data.deletedMailIds, "封已读邮件")
+    else
+        gg.log("删除已读邮件失败", data.error or "未知错误")
     end
 end
 

@@ -787,8 +787,6 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
             end
         end
     end
-
-
     -- === 修复：重用现有按钮，只清理事件绑定，不销毁节点 ===
     -- 临时存储现有按钮，稍后重新分配位置
     local existingButtons = {}
@@ -797,12 +795,10 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
             -- 清理旧的事件绑定，但保留按钮实例和UI节点
             button.clickCb = nil
             existingButtons[skillName] = button
-            gg.log("♻️ 重用现有按钮:", skillName)
         end
     end
     -- 暂时清空按钮存储，稍后重新分配
     self.skillButtons = {}
-    
         -- === 确保ViewList有足够的位置容纳所有主卡 ===
     if ListTemplate and ListTemplate.node then
         -- 只需要确保ViewList有足够的元素位置
@@ -812,7 +808,7 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
         end
     end
 
-    -- 按新顺序重新创建按钮
+    -- 按新顺序重新排序按钮
     for newIndex, skillName in ipairs(sortedCards) do
         local data = buttonData[skillName]
         if data and data.skillType then
