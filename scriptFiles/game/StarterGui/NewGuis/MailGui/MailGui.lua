@@ -634,12 +634,32 @@ end
 
 -- 一键领取
 function MailGui:OnBatchClaim()
-    gg.log("一键领取所有邮件附件")
+
+    local mailListToScan
+    if self.currentCategory == "系统邮件" then
+        mailListToScan = self.systemMails
+    else
+        mailListToScan = self.playerMails
+    end
+
+    local mailIdsToClaim = {}
+    for mailId, mailInfo in pairs(mailListToScan) do
+        if mailInfo.has_attachment and not mailInfo.is_claimed then
+            table.insert(mailIdsToClaim, mailId)
+        end
+    end
+
+    if #mailIdsToClaim == 0 then
+        gg.log("没有可领取的邮件")
+        -- 可以在这里给玩家一个提示
+        return
+    end
 
     -- 发送批量领取请求
     gg.network_channel:FireServer({
         cmd = MailEventConfig.REQUEST.BATCH_CLAIM,
-        category = self.currentCategory
+        category = self.currentCategory,
+        mail_ids = mailIdsToClaim
     })
 end
 
@@ -771,25 +791,39 @@ end
 function MailGui:HandleBatchClaimResponse(data)
     gg.log("收到批量领取响应", data)
 
-    if data.success then
+    if data.success and data.claimedMails then
         -- 更新所有相关邮件的状态
-        if data.claimedMailIds then
-            for _, mailId in ipairs(data.claimedMailIds) do
-                if self.playerMails[mailId] then
-                    self.playerMails[mailId].is_claimed = true
-                elseif self.systemMails[mailId] then
-                    self.systemMails[mailId].is_claimed = true
+        for _, claimedMail in ipairs(data.claimedMails) do
+            local mailIdStr = tostring(claimedMail.id)
+            ---@type MailData
+            local mailInfo
+            
+            if self.playerMails[mailIdStr] then
+                mailInfo = self.playerMails[mailIdStr]
+            elseif self.systemMails[mailIdStr] then
+                mailInfo = self.systemMails[mailIdStr]
+            end
+
+            if mailInfo then
+                mailInfo.is_claimed = true
+                
+                -- 更新UI项
+                local mailItemComponent = self.mailButtons[mailIdStr]
+                if mailItemComponent then
+                    self:SetupMailItemDisplay(mailItemComponent.node, mailInfo)
+                end
+                
+                -- 如果是当前选中的邮件，也更新详情面板
+                if self.currentSelectedMail and tostring(self.currentSelectedMail.id) == mailIdStr then
+                    self.currentSelectedMail.data.is_claimed = true
+                    self:UpdateDetailButtons(self.currentSelectedMail.data)
+                    self:UpdateAttachmentListAppearance(mailIdStr, true)
                 end
             end
         end
-
-        -- 更新当前选中邮件数据
-        if self.currentSelectedMail then
-            self:UpdateDetailButtons(self.currentSelectedMail.data)
-        end
-
-        -- 刷新列表
-        self:InitMailList()
+        
+        -- 更新一键领取按钮状态
+        self:UpdateDetailButtons(self.currentSelectedMail and self.currentSelectedMail.data or {})
 
         gg.log("批量领取成功", data.claimedCount or 0, "封邮件")
     else
@@ -821,9 +855,18 @@ function MailGui:HandleDeleteReadResponse(data)
         end
 
         -- 如果当前选中的邮件被删除了，则隐藏详情
-        if self.currentSelectedMail and data.deletedMailIds and table.indexOf(data.deletedMailIds, self.currentSelectedMail.id) then
-            self.currentSelectedMail = nil
-            self:HideMailDetail()
+        if self.currentSelectedMail and data.deletedMailIds then
+            local currentMailDeleted = false
+            for _, deletedMailId in ipairs(data.deletedMailIds) do
+                if tostring(deletedMailId) == tostring(self.currentSelectedMail.id) then
+                    currentMailDeleted = true
+                    break
+                end
+            end
+            if currentMailDeleted then
+                self.currentSelectedMail = nil
+                self:HideMailDetail()
+            end
         end
         gg.log("成功删除", #data.deletedMailIds, "封已读邮件")
     else

@@ -58,7 +58,7 @@ function MailManager:RegisterNetworkHandlers()
     end)
 
     ServerEventManager.Subscribe(MailEventConfig.REQUEST.CLAIM_MAIL, function(event)
-        self:HandleClaimAttachment(event)
+        self:_handleClaimMail( event)
     end)
 
     ServerEventManager.Subscribe(MailEventConfig.REQUEST.DELETE_MAIL, function(event)
@@ -139,7 +139,7 @@ end
 ---@param mailData MailData 邮件数据
 ---@return string 邮件ID
 function MailManager:AddPlayerMail(uin, mailData)
-    local player = gg.server_players_list[uin]
+    local player = gg.getPlayerByUin(uin)
     if not player or not player.mail then
         gg.log("添加个人邮件失败：找不到玩家或玩家邮件数据未初始化", uin)
         return nil
@@ -163,11 +163,11 @@ function MailManager:AddPlayerMail(uin, mailData)
     -- 如果需要立即保存，可以取消下一行注释
     -- CloudMailDataAccessor:SavePlayerMail(uin, playerMailContainer)
 
-    if player and player.player and player.player.IsValid then
+    if player and player.uin then
         local mailObject = MailBase.New(storageData)
         local clientMailData = mailObject:ToClientData()
         clientMailData.is_global_mail = false -- 明确这不是全局邮件
-        gg.network_channel:FireClient(player.player, {
+        gg.network_channel:FireClient(player.uin, {
             cmd = MailEventConfig.NOTIFY.NEW_MAIL,
             mail_info = clientMailData
         })
@@ -319,11 +319,14 @@ function MailManager:SendMailListToClient(uin)
 end
 
 --- 处理领取附件请求
+---@param uin number
 ---@param event table {uin, mail_id, is_global}
-function MailManager:HandleClaimAttachment(event)
-    if not event or not event.player then return end
-    local player = event.player
-    local uin = player.uin
+function MailManager:_handleClaimMail( event)
+    local uin = event.player.uin
+    local player = gg.getPlayerByUin(uin)
+    if not player then
+        return 
+    end
     local mailId = event.mail_id
     local isGlobal = event.is_global
 
@@ -346,7 +349,7 @@ function MailManager:HandleClaimAttachment(event)
     if success then
         gg.log("附件领取成功，开始分发物品", player.name, mailId)
         -- 分发附件
-        local distributed, distMessage = self:DistributeAttachments(uin, attachments)
+        local distributed = self:_grantAttachmentsToPlayer(player, attachments)
 
         if distributed then
             -- 立即保存玩家的邮件数据
@@ -354,12 +357,12 @@ function MailManager:HandleClaimAttachment(event)
                 gg.log("玩家邮件数据已保存", player.uin)
 
             -- 发送成功响应
-            self:SendClaimResponse(uin, true, mailId, distMessage)
+            self:SendClaimResponse(uin, true, mailId, "分发成功")
         else
             -- 物品分发失败，理论上需要回滚邮件状态，但目前简化处理
             gg.log("附件分发失败，回滚状态（暂未实现）", player.uin, mailId)
             -- 注意：这里的错误处理可能需要更复杂的逻辑，例如事务回滚
-            self:SendClaimResponse(uin, false, mailId, distMessage, self.ERROR_CODE.INSUFFICIENT_BAG_SPACE)
+            self:SendClaimResponse(uin, false, mailId, "分发失败", self.ERROR_CODE.INSUFFICIENT_BAG_SPACE)
         end
     else
         -- 领取失败
@@ -401,79 +404,104 @@ end
 
 --- 新增：处理一键领取请求
 function MailManager:HandleBatchClaim(event)
-    local player = event.player
-    if not player or not player.mail then
-        gg.log("一键领取失败: 找不到玩家或玩家邮件数据", event.uin)
+    gg.log("HandleBatchClaim", event)
+    local player = gg.getPlayerByUin(event.player.uin)
+    local category = event.category
+    local mailIds = event.mail_ids
+
+    if not player or not category or not mailIds or #mailIds == 0 then
+        gg.log("BatchClaim: 无效的参数", player and player.uin, category, mailIds and #mailIds)
         return
     end
 
-    local category = event.category or "系统邮件" -- 默认为系统邮件
-    local claimedMailIds = {}
-    local totalAttachments = {}
+    local uin = player.uin
+    if not player.mail then
+        gg.log("BatchClaim: 找不到玩家邮件数据", uin)
+        return
+    end
 
-    -- 1. 收集所有可领取的附件并标记邮件
-    -- 处理个人邮件
+    local successfullyClaimedMails = {} -- 用于存放成功领取的邮件数据以返回给客户端
+
     if category == "玩家邮件" then
-        for mailId, mailData in pairs(player.mail.playerMail.mails) do
-            local mailObject = MailBase.New(mailData)
-            if mailObject:CanClaimAttachment() then
-                table.insert(claimedMailIds, mailId)
-                local attachments = mailObject:GetAttachments()
-                for _, item in ipairs(attachments) do
-                    table.insert(totalAttachments, item)
+        -- 批量领取个人邮件
+        for _, mailId in ipairs(mailIds) do
+            local mailInfo = player.mail.playerMail.mails[mailId]
+
+            -- 验证: 邮件存在, 有附件, 未领取
+            if mailInfo and mailInfo.has_attachment and not mailInfo.is_claimed then
+                if self:_grantAttachmentsToPlayer(player, mailInfo.attachments) then
+                    mailInfo.is_claimed = true
+                    table.insert(successfullyClaimedMails, mailInfo)
                 end
-                -- 标记为已领取
-                mailObject:MarkAsClaimed()
-                player.mail.playerMail.mails[mailId] = mailObject:ToStorageData()
+            else
+                gg.log("BatchClaim: 个人邮件验证失败或已领取", uin, mailId)
             end
         end
-    else -- 处理系统邮件
-        for mailId, statusData in pairs(player.mail.globalMailStatus.statuses) do
-            local globalMailData = self:GetGlobalMailById(mailId)
-            if globalMailData then
-                local mailObject = MailBase.New(globalMailData)
-                -- 结合全局邮件数据和玩家个人状态来判断
-                if mailObject:CanClaimAttachment(statusData) then
-                    table.insert(claimedMailIds, mailId)
-                    local attachments = mailObject:GetAttachments()
-                    for _, item in ipairs(attachments) do
-                        table.insert(totalAttachments, item)
+
+    elseif category == "系统邮件" then
+        -- 批量领取全服邮件
+        for _, mailId in ipairs(mailIds) do
+            -- 验证1: 全服邮件是否存在
+            local globalMail = GlobalMailManager:GetGlobalMailById(mailId)
+            if globalMail then
+                -- 验证2: 玩家是否已领取过该邮件
+                if not player.mail.globalMailStatus.statuses[mailId] or not player.mail.globalMailStatus.statuses[mailId].is_claimed then
+                    if self:_grantAttachmentsToPlayer(player, globalMail.attachments) then
+                        -- 更新玩家的全服邮件状态
+                        if not player.mail.globalMailStatus.statuses[mailId] then
+                            player.mail.globalMailStatus.statuses[mailId] = {
+                                status = self.MAIL_STATUS.UNREAD,
+                                is_claimed = false
+                            }
+                        end
+                        player.mail.globalMailStatus.statuses[mailId].is_claimed = true
+                        player.mail.globalMailStatus.statuses[mailId].status = self.MAIL_STATUS.CLAIMED
+                        
+                        -- 构造包含玩家状态的邮件数据返回给客户端
+                        local mailInfoForClient = {
+                            id = globalMail.id,
+                            title = globalMail.title,
+                            content = globalMail.content,
+                            sender = globalMail.sender,
+                            send_time = globalMail.send_time,
+                            expire_time = globalMail.expire_time,
+                            mail_type = globalMail.mail_type,
+                            has_attachment = globalMail.has_attachment,
+                            attachments = globalMail.attachments,
+                            -- 玩家个人状态
+                            is_claimed = true,
+                            is_global_mail = true,
+                            status = self.MAIL_STATUS.CLAIMED
+                        }
+                        table.insert(successfullyClaimedMails, mailInfoForClient)
                     end
-                    -- 更新玩家的状态
-                    statusData.status = self.MAIL_STATUS.CLAIMED
-                    statusData.is_claimed = true
+                else
+                    gg.log("BatchClaim: 玩家已领取过该全服邮件", uin, mailId)
                 end
+            else
+                gg.log("BatchClaim: 全服邮件不存在", mailId)
             end
         end
     end
 
-    -- 如果没有可领取的邮件，直接返回
-    if #claimedMailIds == 0 then
-        gg.log("没有可一键领取的邮件", player.uin, category)
-        -- 可以选择性地向客户端发送一个空回包或提示
-        return
-    end
-
-    -- 2. 统一分发所有附件
-    local distributed, distMessage = self:DistributeAttachments(player.uin, totalAttachments)
-    if not distributed then
-        gg.log("一键领取分发附件失败", player.uin, distMessage)
-        -- 注意：这里的逻辑是，即使背包满了，已经标记为领取的邮件状态也不会回滚
-        -- 这是一个简化的处理，实际项目中可能需要更复杂的事务逻辑
-    end
-
-    -- 3. 保存数据
+    -- 保存玩家数据
     self:SavePlayerMails(player)
-    
-    -- 4. 向客户端发送成功响应
-    gg.network_channel:FireClient(player.uin, {
-        cmd = MailEventConfig.RESPONSE.BATCH_CLAIM_SUCCESS,
-        success = true,
-        claimedMailIds = claimedMailIds,
-        claimedCount = #claimedMailIds
-    })
 
-    gg.log("玩家", player.uin, "一键领取了", #claimedMailIds, "封邮件")
+    -- 回调给客户端
+    if #successfullyClaimedMails > 0 then
+        gg.log("BatchClaim: 成功领取", #successfullyClaimedMails, "封邮件 for player", uin)
+        player:SendEvent(MailEventConfig.RESPONSE.BATCH_CLAIM_SUCCESS, {
+            success = true,
+            claimedMails = successfullyClaimedMails,
+            claimedCount = #successfullyClaimedMails
+        })
+    else
+        gg.log("BatchClaim: 没有成功领取的邮件 for player", uin)
+        player:SendEvent(MailEventConfig.RESPONSE.BATCH_CLAIM_SUCCESS, {
+            success = false,
+            error = "没有可领取的邮件"
+        })
+    end
 end
 
 --- 处理删除已读邮件请求
@@ -481,7 +509,7 @@ end
 function MailManager:HandleDeleteReadMails(event)
     local player = event.player
     if not player or not player.mail then
-        gg.log("删除已读邮件失败: 找不到玩家或玩家邮件数据", event.uin)
+        gg.log("删除已读邮件失败: 找不到玩家或玩家邮件数据", player and player.uin or "unknown")
         return
     end
 
@@ -529,7 +557,10 @@ function MailManager:HandleDeleteReadMails(event)
     end
 
     gg.log("为玩家", player.uin, "删除了", #allDeletedIds, "封已读邮件")
-    -- player:
+    
+    -- 保存玩家邮件数据
+    self:SavePlayerMails(player)
+    
     -- 向客户端发送成功响应
     gg.network_channel:FireClient(player.uin, {
         cmd = MailEventConfig.RESPONSE.DELETE_READ_SUCCESS,
@@ -657,41 +688,6 @@ end
 -- 邮件查询与辅助函数
 ---------------------------
 
---- 分发附件给玩家
----@param uin number 玩家ID
----@param attachments table 附件列表
----@return boolean, string // 是否成功, 失败原因
-function MailManager:DistributeAttachments(uin, attachments)
-    if not attachments or #attachments == 0 then
-        return true, "没有附件"
-    end
-
-    local player = gg.server_players_list[uin]
-    if not player then
-        return false, "玩家不存在"
-    end
-
-    if not player.bag then
-        gg.log("附件分发失败: 玩家背包未初始化 uin:", uin)
-        return false, "玩家背包未初始化"
-    end
-
-    -- 统一分发
-    for _, attachment in ipairs(attachments) do
-        ---@class ItemType
-        local itemType = ItemTypeConfig.Get(attachment.type)
-        if itemType then
-            local item = itemType:ToItem(attachment.amount)
-            -- 使用玩家自己的背包实例来分发物品
-            player.bag:GiveItem(item)
-        else
-            gg.log("附件分发警告: 找不到物品配置 ->", attachment.type, " for uin:", uin)
-        end
-    end
-
-    return true, "分发成功"
-end
-
 --- 检查玩家是否有未读邮件
 ---@param uin number 玩家ID
 ---@return boolean
@@ -731,6 +727,39 @@ function MailManager:SendClaimResponse(uin, success, mailId, message, errorCode)
         error = message,
         error_code = errorCode or self.ERROR_CODE.SUCCESS
     })
+end
+
+---@private
+--- 将附件授予玩家
+---@param player Player
+---@param attachments table
+---@return boolean 是否成功授予所有附件
+function MailManager:_grantAttachmentsToPlayer(player, attachments)
+    if not attachments or #attachments == 0 then
+        return true -- 没有附件也算成功
+    end
+
+    if not player.bag then
+        gg.log("Error: 玩家没有背包，无法添加附件。", player.uin)
+        return false
+    end
+
+    -- 实际项目中可能需要检查背包空间等
+
+    for _, itemData in ipairs(attachments) do
+        if itemData and itemData.type and itemData.amount and itemData.amount > 0 then
+            local itemType = ItemTypeConfig.Get(itemData.type)
+            if itemType then
+                local item = itemType:ToItem(itemData.amount)
+                player.bag:GiveItem(item)
+                gg.log(string.format("授予玩家 %s 物品: %s, 数量: %d", player.uin, itemData.type, itemData.amount))
+            else
+                gg.log("Error: 找不到物品配置:", itemData.type, " for player:", player.uin)
+            end
+        end
+    end
+
+    return true
 end
 
 return MailManager
