@@ -67,6 +67,19 @@ function MailGui:OnInit(node, config)
     self.mailButtons = {} ---@type table<string, ViewButton> -- 邮件按钮缓存
     self.attachmentLists = {} ---@type table<string, ViewComponent>
 
+    -- 为列表设置 onAddElementCb
+    local function createMailItem(itemNode)
+        local button = ViewButton.New(itemNode, self)
+        button.clickCb = function(ui, btn)
+            if btn.extraParams then
+                self:OnMailItemClick(btn.extraParams.mailId, btn.extraParams.mailInfo)
+            end
+        end
+        return button
+    end
+    self.mailSystemList.onAddElementCb = createMailItem
+    self.mailPlayerList.onAddElementCb = createMailItem
+
     -- 初始化UI状态
     self:InitializeUI()
 
@@ -351,17 +364,17 @@ function MailGui:UpdateMailList()
 
     -- 清空UI列表和按钮缓存
     self:ClearMailList(self.mailSystemList)
+    self.mailSystemList:ClearChildren()
     self:ClearMailList(self.mailPlayerList)
+    self.mailPlayerList:ClearChildren()
     self.mailButtons = {}
 
     -- 排序邮件
     local sortedSystemMails = self:SortMails(self.systemMails)
     local sortedPlayerMails = self:SortMails(self.playerMails)
-
-    -- 填充列表
+    -- 填充邮件列表
     self:PopulateMailList(self.mailSystemList, sortedSystemMails)
     self:PopulateMailList(self.mailPlayerList, sortedPlayerMails)
-
     -- 更新一键领取按钮状态
     if self.batchClaimButton then
         local hasUnclaimedMails = self:HasUnclaimedMails()
@@ -380,7 +393,6 @@ function MailGui:SortMails(mailTable)
     for mailId, mailInfo in pairs(mailTable) do
         table.insert(sorted, {id = mailId, data = mailInfo})
     end
-
     -- 按时间倒序排序 (最新的在前)
     table.sort(sorted, function(a, b)
         -- 使用send_time字段进行排序，如果没有则使用timestamp
@@ -394,85 +406,40 @@ end
 
 -- 填充邮件列表
 function MailGui:PopulateMailList(targetList, mailArray)
-    if not targetList then
-        gg.log("❌ 邮件列表ViewList未找到")
-        return
-    end
+    for _, mailItemData in ipairs(mailArray) do
+        local itemNode = self.mailItemTemplate.node:Clone()
+        itemNode.Visible = true
+        itemNode.Name = tostring(mailItemData.id)
 
-    for _, mailItem in ipairs(mailArray) do
-        -- 创建或更新邮件项
-        self:CreateMailListItem(targetList, mailItem.id, mailItem.data)
-    end
+        targetList:AppendChild(itemNode)
 
+        ---@type ViewButton
+        local mailItemButton = targetList.childrens[#targetList.childrens]
+
+        if mailItemButton then
+            self:SetupMailItemDisplay(mailItemButton.node, mailItemData.data)
+            mailItemButton.extraParams = {
+                mailId = mailItemData.id,
+                mailInfo = mailItemData.data,
+            }
+            self.mailButtons[mailItemData.id] = mailItemButton
+        end
+    end
     gg.log("📧 邮件列表填充完成, 列表: ", targetList.node.Name, "数量:", #mailArray)
 end
 
 -- 设置邮件项显示信息
 function MailGui:SetupMailItemDisplay(itemNode, mailInfo)
-    if not itemNode then return end
-
-    -- 主标题显示邮件的title
-    local titleNode = itemNode["主标题"]
-    if titleNode and titleNode.Title then
-        titleNode.Title = mailInfo.title or "无标题"
-    end
-
-    -- 来自谁显示sender这个字段
-    local senderNode = itemNode["来自谁"]
-    if senderNode and senderNode.Title then
-        senderNode.Title = "来自: " .. (mailInfo.sender or "系统")
-    end
-
-    -- new: 根据是否有附件且未领取来判断
+    itemNode["主标题"].Title = mailInfo.title
+    itemNode["来自谁"].Title = "来自: " .. (mailInfo.sender or "系统")
+    itemNode["是否有物品"].Visible = mailInfo.has_attachment
+    -- new: 邮件是否领取
     local newNode = itemNode["new"]
-    if newNode then
-        -- 只对有附件的邮件显示"新"标记，直到附件被领取
-        if mailInfo.has_attachment then
-            newNode.Visible = not mailInfo.is_claimed
-        else
-            newNode.Visible = false
-        end
+    if mailInfo.has_attachment then
+        newNode.Visible = not mailInfo.is_claimed
+    else
+        newNode.Visible = false
     end
-
-    -- 是否有物品: 根据是否有附件来判断
-    local attachmentNode = itemNode["是否有物品"]
-    if attachmentNode then
-        attachmentNode.Visible = mailInfo.has_attachment
-    end
-
-    gg.log("📧 设置邮件项显示:", mailInfo.title, "有附件:", mailInfo.has_attachment)
-end
-
--- 创建单个邮件列表项
-function MailGui:CreateMailListItem(targetList, mailId, mailInfo)
-    if not targetList or not self.mailItemTemplate then return end
-
-    -- 从模板克隆新节点
-    local itemNode = self.mailItemTemplate.node:Clone()
-    itemNode:SetParent(targetList.node)
-    itemNode.Visible = true -- 确保克隆出来的节点是可见的
-
-    -- 将列表项节点的名字设置为邮件ID，方便调试
-    itemNode.Name = mailId
-
-    -- 设置邮件基本信息
-    self:SetupMailItemDisplay(itemNode, mailInfo)
-
-    -- 创建按钮并绑定点击事件
-    local button = ViewButton.New(itemNode, self)
-    button.extraParams = {
-        mailId = mailId,
-        mailInfo = mailInfo
-    }
-
-    button.clickCb = function(ui, btn)
-        self:OnMailItemClick(btn.extraParams.mailId, btn.extraParams.mailInfo)
-    end
-
-    -- 缓存按钮引用
-    self.mailButtons[mailId] = button
-
-    gg.log("✅ 创建邮件项成功:", mailId, mailInfo.title or "无标题")
 end
 
 -- 邮件项点击事件
@@ -565,8 +532,6 @@ function MailGui:UpdateAttachmentListAppearance(mailId, isClaimed)
     if not attachmentList or not attachmentList.node or not attachmentList.node.IsValid then
         return
     end
-
-    -- 使用引擎内置的Grayed属性来置灰/取消置灰整个附件列表节点
     attachmentList.node.Grayed = isClaimed
 end
 
@@ -590,10 +555,7 @@ function MailGui:CreateAttachmentListForMail(mailId, mailInfo)
     end
     -- 1. 克隆列表容器节点
     local newListContainerNode = self.rewardListTemplate.node:Clone()
-    for _, child in ipairs(newListContainerNode.Children) do
-        child:Destroy()
 
-    end
     newListContainerNode.Parent =self.rewardDisplay.node
     newListContainerNode.Name = tostring(mailId) -- 使用邮件ID命名
 
@@ -693,10 +655,6 @@ function MailGui:UpdateDetailButtons(mailInfo)
         if hasAttachment then
             local canClaim = not mailInfo.is_claimed
             self.claimButton:SetTouchEnable(canClaim)
-            -- 使用Grayed属性来置灰/恢复按钮
-            -- if self.claimButton.node then
-            --     self.claimButton.node.Grayed = not canClaim -- 如果不能领取，则置灰
-            -- end
         end
     end
 

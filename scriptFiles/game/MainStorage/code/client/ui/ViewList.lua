@@ -132,4 +132,24 @@ function ViewList:ClearChildren()
     self.childrens = {}
 end
 
+---设置子元素名称模板
+---@param template string
+function ViewList:SetChildNameTemplate(template)
+    self.childNameTemplate = template
+end
+
+---重新检索子节点
+function ViewList:RescanChildren()
+    self:ClearChildren()
+    for i, child in ipairs(self.node.Children) do
+        local viewComponent = self.onAddElementCb(child)
+        if viewComponent then
+            local childPath = self.path .. "/" .. child.Name
+            viewComponent.path = childPath
+            viewComponent.index = i
+            self.childrens[i] = viewComponent
+        end
+    end
+end
+
 return ViewList
