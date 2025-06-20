@@ -209,4 +209,20 @@ function ViewBase:OnHide()
 
 end
 
+---@param component ViewComponent
+function ViewBase:DestroyComponent(component)
+    -- Find and remove the component from the cache
+    for path, cachedComponent in pairs(self.componentCache) do
+        if cachedComponent == component then
+            self.componentCache[path] = nil
+            break
+        end
+    end
+    
+    -- Destroy the component's node
+    if component.node then
+        component.node:Destroy()
+    end
+end
+
 return ViewBase

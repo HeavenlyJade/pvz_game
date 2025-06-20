@@ -434,14 +434,22 @@ function gg.GetFullPath(node)
     return path
 end
 
-function gg.ProcessFormula(formula, caster, target)
-    -- 替换所有[变量名]为对应的变量值
+function gg.ProcessVariables(formula, caster, target)
+    if not formula then
+        return nil
+    end
     local processedFormula = formula:gsub("%[(.-)%]", function(varName)
         local value = target:GetVariable(varName)
         return tostring(value)
     end)
-
-    return gg.eval(processedFormula)
+    return processedFormula
+end
+function gg.ProcessFormula(formula, caster, target)
+    formula = gg.ProcessVariables(formula, caster, target)
+    if not formula then
+        return 0
+    end
+    return gg.eval(formula)
 end
 
 -- 将table以json格式打印
@@ -1368,81 +1376,108 @@ function gg.getQualityColor(quality_)
 end
 
 function gg.eval(expr)
-    expr = expr:gsub("%s+", "")  -- 移除空格
-    local pos = 1
+    local ok, result = pcall(function()
+        expr = expr:gsub("%s+", "")  -- 移除空格
+        local pos = 1
 
-    -- 先声明所有函数（避免未定义错误）
-    local parseExpr, parseMulDiv, parsePower, parseAtom, parseNumber
+        -- 先声明所有函数（避免未定义错误）
+        local parseExpr, parseMulDiv, parsePower, parseAtom, parseNumber
 
-    parseNumber = function()
-        local start = pos
-        if expr:sub(pos, pos) == "-" then pos = pos + 1 end
-        while pos <= #expr and (expr:sub(pos, pos):match("%d") or expr:sub(pos, pos) == ".") do
-            pos = pos + 1
-        end
-        return tonumber(expr:sub(start, pos - 1))
-    end
-
-    parseAtom = function()
-        if expr:sub(pos, pos) == "(" then
-            pos = pos + 1
-            local val = parseExpr()  -- 调用 parseExpr（此时已定义）
-            if expr:sub(pos, pos) ~= ")" then error("Missing closing parenthesis") end
-            pos = pos + 1
-            return val
-        else
-            return parseNumber()
-        end
-    end
-
-    parsePower = function()
-        local left = parseAtom()
-        while pos <= #expr and expr:sub(pos, pos) == "^" do
-            pos = pos + 1
-            left = left ^ parseAtom()  -- 右结合（如 2^3^2 = 2^(3^2)）
-        end
-        return left
-    end
-
-    parseMulDiv = function()
-        local left = parsePower()
-        while pos <= #expr do
-            local op = expr:sub(pos, pos)
-            if op == "*" or op == "/" then
+        parseNumber = function()
+            local start = pos
+            if expr:sub(pos, pos) == "-" then pos = pos + 1 end
+            while pos <= #expr and (expr:sub(pos, pos):match("%d") or expr:sub(pos, pos) == ".") do
                 pos = pos + 1
-                local right = parsePower()
-                if op == "*" then
-                    left = left * right
-                else
-                    left = left / right
+            end
+            return tonumber(expr:sub(start, pos - 1))
+        end
+
+        parseAtom = function()
+            -- 支持 max/min 函数
+            local func3 = expr:sub(pos, pos+2)
+            if func3 == "max" or func3 == "min" then
+                pos = pos + 3
+                assert(expr:sub(pos, pos) == "(", "Missing '(' after function name")
+                pos = pos + 1
+                local args = {}
+                args[1] = parseExpr()
+                while expr:sub(pos, pos) == "," do
+                    pos = pos + 1
+                    args[#args+1] = parseExpr()
                 end
+                assert(expr:sub(pos, pos) == ")", "Missing ')' after function arguments")
+                pos = pos + 1
+                if func3 == "max" then
+                    return math.max(table.unpack(args))
+                else
+                    return math.min(table.unpack(args))
+                end
+            elseif expr:sub(pos, pos) == "(" then
+                pos = pos + 1
+                local val = parseExpr()
+                if expr:sub(pos, pos) ~= ")" then error("Missing closing parenthesis") end
+                pos = pos + 1
+                return val
             else
-                break
+                return parseNumber()
             end
         end
-        return left
-    end
 
-    parseExpr = function()
-        local left = parseMulDiv()
-        while pos <= #expr do
-            local op = expr:sub(pos, pos)
-            if op == "+" or op == "-" then
+        parsePower = function()
+            local left = parseAtom()
+            while pos <= #expr and expr:sub(pos, pos) == "^" do
                 pos = pos + 1
-                local right = parseMulDiv()
-                if op == "+" then
-                    left = left + right
-                else
-                    left = left - right
-                end
-            else
-                break
+                left = left ^ parseAtom()  -- 右结合（如 2^3^2 = 2^(3^2)）
             end
+            return left
         end
-        return left
-    end
 
-    return parseExpr()
+        parseMulDiv = function()
+            local left = parsePower()
+            while pos <= #expr do
+                local op = expr:sub(pos, pos)
+                if op == "*" or op == "/" then
+                    pos = pos + 1
+                    local right = parsePower()
+                    if op == "*" then
+                        left = left * right
+                    else
+                        left = left / right
+                    end
+                else
+                    break
+                end
+            end
+            return left
+        end
+
+        parseExpr = function()
+            local left = parseMulDiv()
+            while pos <= #expr do
+                local op = expr:sub(pos, pos)
+                if op == "+" or op == "-" then
+                    pos = pos + 1
+                    local right = parseMulDiv()
+                    if op == "+" then
+                        left = left + right
+                    else
+                        left = left - right
+                    end
+                else
+                    break
+                end
+            end
+            return left
+        end
+
+        return parseExpr()
+    end)
+    if ok then
+        return result
+    else
+        gg.log("[gg.eval] 公式计算失败: " .. tostring(result) .. "，表达式: " .. tostring(expr))
+        return 0
+    end
 end
 
 -- 添加table.contains函数

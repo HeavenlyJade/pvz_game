@@ -26,8 +26,6 @@ local function OnMobDead(mob)
     local summoner = SummonSpell.summoned2Caster[mob]
     if not summoner then return end
 
-    gg.log("MobDead", summoner, SummonSpell.summonerSummons[summoner])
-    -- 从召唤者列表中移除
     local summons = SummonSpell.summonerSummons[summoner]
     if summons then
         summons[mob] = nil

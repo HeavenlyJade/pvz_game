@@ -115,7 +115,7 @@ function ViewList:SetVisible(visible)
     self.node.Enabled = visible
 end
 
----私有方法：根据childrens数组刷新UI布局
+---刷新子节点的布局
 function ViewList:_refreshLayout()
     -- 步骤 1: 完全卸载 (Detach)
     -- 创建一个临时表来持有子节点，避免在迭代时修改集合
@@ -211,18 +211,5 @@ function ViewList:SetChildNameTemplate(template)
     self.childNameTemplate = template
 end
 
----重新检索子节点
-function ViewList:RescanChildren()
-    self:ClearChildren()
-    for i, child in ipairs(self.node.Children) do
-        local viewComponent = self.onAddElementCb(child)
-        if viewComponent then
-            local childPath = self.path .. "/" .. child.Name
-            viewComponent.path = childPath
-            viewComponent.index = i
-            self.childrens[i] = viewComponent
-        end
-    end
-end
 
 return ViewList

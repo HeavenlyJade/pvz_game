@@ -68,9 +68,12 @@ function Level:OnInit(levelType, scene, index)
     self.currentWaveMobCount = 0 ---@type number
     self.remainingMobCount = 0 ---@type number
     
+    -- 新增
+    self.playerStats = {} ---@type table<string, {kills: table<string, number>, rewards: table<string, number>}>
+
     -- 监听怪物死亡事件
     ServerEventManager.Subscribe("MobDeadEvent", function(data)
-        if data.mob and self.activeMobs[data.mob.uuid] then
+        if self.isActive and data.mob and self.activeMobs[data.mob.uuid] then
             -- 减少剩余怪物数量
             self.remainingMobCount = math.max(0, self.remainingMobCount - 1)
             
@@ -87,10 +90,7 @@ function Level:OnInit(levelType, scene, index)
             if data.damageRecords then
                 local topDamager = nil
                 local maxDamage = 0
-                
-                -- 找出造成伤害最高的玩家
                 for entityUuid, damage in pairs(data.damageRecords) do
-                    -- 检查是否是玩家造成的伤害
                     local player = self.players[entityUuid]
                     if player and damage > maxDamage then
                         topDamager = player
@@ -98,10 +98,18 @@ function Level:OnInit(levelType, scene, index)
                     end
                 end
                 if topDamager then
-                    if self.levelType.dropItems and #self.levelType.dropItems > 0 then
+                    -- 记录击杀
+                    local uin = topDamager.uin
+                    self.playerStats[uin] = self.playerStats[uin] or {kills = {}, rewards = {}}
+                    local mobName = data.mob.name or tostring(data.mob.uuid)
+                    self.playerStats[uin].kills[mobName] = (self.playerStats[uin].kills[mobName] or 0) + 1
+                    
+                    -- 优先使用波次级别的掉落物配置，如果没有则使用关卡级别的配置
+                    local dropItems = self.currentWave and self.currentWave.dropItems or self.levelType.dropItems
+                    if dropItems and #dropItems > 0 then
                         -- 计算总比重
                         local totalWeight = 0
-                        for _, item in ipairs(self.levelType.dropItems) do
+                        for _, item in ipairs(dropItems) do
                             totalWeight = totalWeight + (tonumber(item["比重"]) or 1)
                         end
                         
@@ -110,7 +118,7 @@ function Level:OnInit(levelType, scene, index)
                         local currentWeight = 0
                         local selectedItem = nil
                         
-                        for _, item in ipairs(self.levelType.dropItems) do
+                        for _, item in ipairs(dropItems) do
                             currentWeight = currentWeight + (tonumber(item["比重"]) or 1)
                             if randomWeight <= currentWeight then
                                 selectedItem = item
@@ -130,8 +138,10 @@ function Level:OnInit(levelType, scene, index)
                                 end
                             end
                             if baseCount > 0 then
-                                -- 如果没有修改器，直接发放基础数量
-                                topDamager.bag:GiveItem(ItemTypeConfig.Get(selectedItem["物品"]):ToItem(baseCount))
+                                -- 记录奖励
+                                local itemName = selectedItem["物品"]
+                                self.playerStats[uin].rewards[itemName] = (self.playerStats[uin].rewards[itemName] or 0) + baseCount
+                                topDamager.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(baseCount))
                             end
                         end
                     end
@@ -331,6 +341,19 @@ function Level:Update()
     if not self.isActive or not self.currentWave then return end
     local newTimeElapsed = os.time() - self.waveStartTime
 
+    -- 计算波次进度（0-1）
+    local waveProgress = 0
+    if self.currentWave then
+        -- 计算波次的总持续时间
+        local totalDuration = 0
+        for _, wave in ipairs(self.currentWave.spawningWaves) do
+            totalDuration = math.max(totalDuration, wave.startTime + wave.duration)
+        end
+        if totalDuration > 0 then
+            waveProgress = math.min(1.0, newTimeElapsed / totalDuration)
+        end
+    end
+
     -- 检查是否需要开始新的刷怪波次
     for i = #self.notSpawningWaves, 1, -1 do
         local wave = self.notSpawningWaves[i]
@@ -345,8 +368,8 @@ function Level:Update()
     -- 更新所有正在进行的刷怪波次
     for i = #self.spawningWaves, 1, -1 do
         local wave = self.spawningWaves[i]
-        -- 计算基于玩家数量的属性倍率
-        local monsterLevel = self:GetAveragePlayerLevel()
+        -- 根据波次进度动态计算怪物等级
+        local monsterLevel = self.currentWave:GetCurrentMonsterLevel(waveProgress)
         local spawnedCount = self.waveSpawnedCounts[wave] or 0
         local isComplete, spawnedMobs, newSpawnedCount = wave:TrySpawn(
             newTimeElapsed - self.timeElapsed, 
@@ -434,18 +457,6 @@ end
 
 ---清理场景
 function Level:Cleanup()
-    gg.log("[Level] Cleanup called", self.levelType.levelId)
-    
-    -- 清理所有怪物
-    for _, mob in pairs(self.activeMobs) do
-        if mob and mob.isEntity then
-            gg.log("[Level] Destroying mob", mob.uuid)
-            mob:DestroyObject()
-        end
-    end
-    self.activeMobs = {}
-    
-    -- 重置关卡状态
     self.isActive = false
     self.startTime = 0
     self.endTime = 0
@@ -461,16 +472,18 @@ function Level:Cleanup()
     self.currentWaveMobCount = 0
     self.remainingMobCount = 0
     self.waveSpawnedCounts = {}
-    
-    gg.log("[Level] Cleanup completed", self.levelType.levelId)
+    for _, mob in pairs(self.activeMobs) do
+        if mob and mob.isEntity then
+            mob:DestroyObject()
+        end
+    end
+    self.activeMobs = {}
 end
 
 ---结束关卡
 ---@param success boolean 是否成功完成
 function Level:End(success)
-    gg.log("[Level] End called", self.levelType.levelId, "Success:", success)
     if not self.isActive then 
-        gg.log("[Level] Level is not active, returning", self.levelType.levelId)
         return 
     end
     self.isActive = false
@@ -478,14 +491,61 @@ function Level:End(success)
     
     -- 从活跃关卡列表中移除
     activeLevels[self.scene] = nil
-    gg.log("[Level] Removed from active levels", self.levelType.levelId, "Remaining active levels:", #activeLevels)
     
     if self.updateTask then
         ServerScheduler.cancel(self.updateTask)
         self.updateTask = nil
     end
 
-    -- 传送玩家回原始位置
+    -- 处理排名掉落物
+    if success and self.levelType.rankRewards and #self.levelType.rankRewards > 0 then
+        -- 计算玩家排名（基于击杀数量）
+        local playerRankings = {}
+        for uin, stats in pairs(self.playerStats) do
+            local totalKills = 0
+            for _, killCount in pairs(stats.kills) do
+                totalKills = totalKills + killCount
+            end
+            table.insert(playerRankings, {
+                uin = uin,
+                kills = totalKills,
+                player = self.players[uin]
+            })
+        end
+        
+        -- 按击杀数量排序
+        table.sort(playerRankings, function(a, b) return a.kills > b.kills end)
+        
+        -- 发放排名奖励
+        for rankIndex, ranking in ipairs(playerRankings) do
+            for _, rankReward in ipairs(self.levelType.rankRewards) do
+                local rankNumber = rankReward["名次"]
+                -- 处理名次字段可能是数组格式的情况
+                if type(rankNumber) == "table" then
+                    if rankNumber.y then
+                        -- 如果是Vector3对象，使用y值
+                        rankNumber = rankNumber.y
+                    elseif #rankNumber > 0 then
+                        -- 如果是数组，使用第一个值
+                        rankNumber = rankNumber[1]
+                    end
+                end
+                if rankIndex == rankNumber then
+                    local player = ranking.player
+                    if player then
+                        for itemName, count in pairs(rankReward["物品"]) do
+                            player.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(count))
+                            -- 记录排名奖励
+                            self.playerStats[player.uin] = self.playerStats[player.uin] or {kills = {}, rewards = {}}
+                            self.playerStats[player.uin].rewards[itemName] = (self.playerStats[player.uin].rewards[itemName] or 0) + count
+                        end
+                    end
+                    break
+                end
+            end
+        end
+    end
+
     for _, player in pairs(self.players) do
         local originalPos = self.playerOriginalPositions[player.uin]
         if player.actor and originalPos then
@@ -495,14 +555,12 @@ function Level:End(success)
             player:SetCameraView(originalPos.euler)
             player:SendChatText("已传送回原位置")
         end
-        player:ExitBattle()
-    end
-
-    -- 清理场景
-    self:Cleanup()
-
-    -- 通知玩家
-    for _, player in pairs(self.players) do
+        local stats = self.playerStats[player.uin] or {kills = {}, rewards = {}}
+        player:SendEvent("DungeonClearedStats", {
+            text = "关卡完成！",
+            kills = stats.kills,
+            rewards = stats.rewards
+        })
         player:SendEvent("BattleEndEvent", {
             levelId = self.levelType.levelId,
             success = success,
@@ -510,8 +568,11 @@ function Level:End(success)
             duration = self.endTime - self.startTime
         })
         player:SendChatText(success and "Level completed!" or "Level failed!")
+        player:ExitBattle()
     end
-    gg.log("[Level] End completed", self.levelType.levelId)
+
+    -- 清理场景
+    self:Cleanup()
 end
 
 ---添加玩家
@@ -537,6 +598,12 @@ function Level:RemovePlayer(player)
             player.actor.Euler = originalPos.euler
             player:SetCameraView(originalPos.euler)
         end
+        local stats = self.playerStats[player.uin] or {kills = {}, rewards = {}}
+        player:SendEvent("DungeonClearedStats", {
+            text = string.format("成功完成第%d波", self.waveCount),
+            kills = stats.kills,
+            rewards = stats.rewards
+        })
         player:SendEvent("BattleEndEvent", {
             levelId = self.levelType.levelId,
             success = false,

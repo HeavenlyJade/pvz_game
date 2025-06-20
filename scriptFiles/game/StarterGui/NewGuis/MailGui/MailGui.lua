@@ -769,7 +769,6 @@ function MailGui:HandleClaimResponse(data)
         elseif self.systemMails[data.mail_id] then
             self.systemMails[data.mail_id].is_claimed = true
         end
-
         -- 更新当前选中邮件数据
         if self.currentSelectedMail and self.currentSelectedMail.id == data.mail_id then
             self.currentSelectedMail.data.is_claimed = true
@@ -777,7 +776,6 @@ function MailGui:HandleClaimResponse(data)
             -- 领取成功后，更新附件列表外观
             self:UpdateAttachmentListAppearance(data.mail_id, true)
         end
-
         -- 刷新列表
         self:InitMailList()
 
@@ -806,13 +804,10 @@ function MailGui:HandleBatchClaimResponse(data)
 
             if mailInfo then
                 mailInfo.is_claimed = true
-                
-                -- 更新UI项
                 local mailItemComponent = self.mailButtons[mailIdStr]
                 if mailItemComponent then
                     self:SetupMailItemDisplay(mailItemComponent.node, mailInfo)
                 end
-                
                 -- 如果是当前选中的邮件，也更新详情面板
                 if self.currentSelectedMail and tostring(self.currentSelectedMail.id) == mailIdStr then
                     self.currentSelectedMail.data.is_claimed = true

@@ -53,6 +53,14 @@ function LevelCommand.enter(params, player)
         end
         currentLevel:Resume()
         player:SendChatText("关卡已继续")
+    elseif action == "完成并退出" then
+        local currentLevel = Level.GetCurrentLevel(player)
+        if not currentLevel then
+            player:SendChatText("你当前不在任何关卡中")
+            return false
+        end
+        currentLevel:End(true)
+        player:SendChatText("关卡已强制完成并退出")
     else
         player:SendChatText("不支持的操作类型")
         return false

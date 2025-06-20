@@ -14,6 +14,10 @@ local ServerEventManager = require(MainStorage.code.server.event.ServerEventMana
 ---@field 数量 string
 ---@field 比重 string
 
+---@class RankRewardInfo
+---@field 名次 number
+---@field 物品 table<string, number>
+
 ---@class SpawningMob:Class
 ---@field mobType MobType
 ---@field weight number
@@ -120,6 +124,9 @@ end
 ---@field healthSum number
 ---@field waveHealths table<number, number> 每个波次的血量
 ---@field startCommands string[] 开始时执行的指令
+---@field monsterLevelStart number 波次开始时怪物等级
+---@field monsterLevelEnd number 波次结束时怪物等级
+---@field dropItems DropItemInfo[] 掉落物配置
 local Wave = ClassMgr.Class("Wave")
 
 function Wave:OnInit(data)
@@ -132,6 +139,19 @@ function Wave:OnInit(data)
     self.startCommands = data["开始时执行指令"]
     self.healthSum = 0
     self.waveHealths = {} ---@type table<number, number>
+    
+    -- 加载怪物等级配置（数组格式：开始等级，结束等级）
+    local monsterLevelData = data["怪物等级"] or {1, 1}
+    if type(monsterLevelData) == "table" then
+        self.monsterLevelStart = monsterLevelData[1] or 1
+        self.monsterLevelEnd = monsterLevelData[2] or self.monsterLevelStart
+    else
+        self.monsterLevelStart = monsterLevelData
+        self.monsterLevelEnd = monsterLevelData
+    end
+    
+    -- 加载掉落物配置
+    self.dropItems = data["掉落物"] or {}
 end
 
 ---执行波次开始时的指令
@@ -196,6 +216,14 @@ function Wave:GetWaveHealth(waveIndex)
     return self.waveHealths[waveIndex]
 end
 
+---获取当前时间点的怪物等级
+---@param waveProgress number 波次进度（0-1）
+---@return number 当前怪物等级
+function Wave:GetCurrentMonsterLevel(waveProgress)
+    -- 使用线性插值计算当前等级
+    return self.monsterLevelStart + (self.monsterLevelEnd - self.monsterLevelStart) * waveProgress
+end
+
 ---@class LevelType:Class
 ---@field New fun( data:table ):LevelType
 local LevelType = ClassMgr.Class("LevelType")
@@ -220,6 +248,9 @@ function LevelType:OnInit(data)
     self.level = data["等级"] or 1 ---@type number
     self.dropItems = data["掉落物"] ---@type DropItemInfo[]
     self.dropModifier = Modifiers.New(data["掉落物数量修改"]) ---@type Modifiers
+    
+    -- 加载排名掉落物配置
+    self.rankRewards = data["排名掉落物"] or {} ---@type RankRewardInfo[]
 
     -- 玩家数量倍率配置
     self.playerCountMultiplier = data["每个玩家增加数量倍率"] or 0 ---@type number

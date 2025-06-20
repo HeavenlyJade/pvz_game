@@ -28,6 +28,7 @@ function _M:OnInit(data)
     self.invert = data["反转"] or false
     self.action = data["动作"] or "必须"
     self.amount = data["数量"] or nil
+    self.message = data["拒绝时提示"]
     self.subSpell = data["魔法"]
     if self.subSpell then
         self.subSpell = SubSpell.New(self.subSpell)
@@ -64,6 +65,9 @@ function _M:Check(caster, target, param)
     local t = self:GetTarget(caster, target, self.targeter, self.targeterPath)
     if self.condition ~= nil then
         success = self.condition:Check(self, c, t)
+    end
+    if not success and self.message then
+        caster:SendHoverText(gg.ProcessVariables(self.message, caster, target))
     end
     local stop = false
     if self.invert then success = not success end

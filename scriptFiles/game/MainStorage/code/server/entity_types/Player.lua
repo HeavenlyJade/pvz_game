@@ -181,8 +181,73 @@ function _M:RefreshNewDay()
 end
 
 ---标记红点
-function _M:MarkNew(path)
+---@param path string 以/分割的路径
+---@param mark boolean true=标记, false=取消标记
+function _M:MarkNew(path, mark)
+    if not path then return end
+    
+    -- 初始化news表（如果不存在）
+    if not self.news then
+        self.news = {}
+    end
+    
+    -- 分割路径
+    local current = self.news
+    local parts = {}
+    local parentTables = {} -- 存储所有父级表
+    for part in path:gmatch("[^/]+") do
+        table.insert(parts, part)
+    end
+    
+    -- 创建或删除嵌套表结构
+    for i, part in ipairs(parts) do
+        if i == #parts then
+            -- 最后一个部分
+            if mark then
+                current[part] = true
+            else
+                current[part] = nil
+            end
+        else
+            -- 中间部分
+            if mark then
+                current[part] = current[part] or {}
+            elseif not current[part] then
+                return -- 如果是要取消标记但路径不存在，直接返回
+            end
+            table.insert(parentTables, {table = current, key = part})
+            current = current[part]
+        end
+    end
+    
+    -- 递归清理空表
+    if not mark then
+        for i = #parentTables, 1, -1 do
+            local parent = parentTables[i]
+            if next(parent.table[parent.key]) == nil then
+                parent.table[parent.key] = nil
+            else
+                break -- 如果遇到非空表，停止清理
+            end
+        end
+    end
+end
 
+---检查路径是否被标记为新
+---@param path string 以/分割的路径
+---@return boolean
+function _M:IsNew(path)
+    if not path or not self.news then return false end
+    
+    local current = self.news
+    for part in path:gmatch("[^/]+") do
+        if not current[part] then
+            return false
+        end
+        current = current[part]
+    end
+    
+    return true
 end
 
 function _M:GetOnlineTime()
@@ -325,10 +390,8 @@ function _M:ExitBattle()
 
     -- 清理所有召唤物
     local SummonSpell = require(MainStorage.code.server.spells.spell_types.SummonSpell) ---@type SummonSpell
-    gg.log("SummonSpell", SummonSpell.summonerSummons[self])
     if SummonSpell.summonerSummons[self] then
         for summoned, spell in pairs(SummonSpell.summonerSummons[self]) do
-            gg.log("SummonSpell summoned", summoned, summoned.isEntity)
             if summoned and summoned.isEntity then
                 summoned:DestroyObject()
             end

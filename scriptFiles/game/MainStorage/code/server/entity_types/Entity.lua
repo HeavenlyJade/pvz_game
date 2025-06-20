@@ -652,7 +652,6 @@ end
 
 --- 开始处理死亡逻辑, 如果要移除对象, 请调用 DestroyObject
 function _M:Die()
-    print("Die Entity", self.isDead, self.name)
     if self.isDead then return end
     self.isDead = true
 

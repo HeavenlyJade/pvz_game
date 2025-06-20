@@ -425,6 +425,9 @@ local function LoadConfig()
             }
         },
         ["offset"] = nil,
+        ["掉落倍率"] = {
+            ["阳光"] = 0
+        },
         ["闲置音效"] = "sandboxId://soundeffect/lowgroan僵尸咆哮.ogg",
         ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
         ["受击音效"] = "sandboxId://soundeffect/groan4_僵尸呻吟.ogg",

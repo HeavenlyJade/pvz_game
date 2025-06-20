@@ -128,7 +128,7 @@ function HudInteract:ShowInteract(interactOptions)
         end
         button.index = i
     end
-    self.pcInteract.node.Visible = game.RunService:IsPC() and game.MouseService:IsSight() and self.interactList:GetChildCount() > 0
+    self.pcInteract.node.Visible = game.RunService:IsPC() and self.interactList:GetChildCount() > 0
 
     self:UpdatePcInteractPosition()
 end

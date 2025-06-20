@@ -44,7 +44,6 @@ function MonthlyRewards:onPurchase(player, evt)
         self:S_Open(player)
     end
 end
-
 -----------------------客户端---------------------------
 ---@param node ViewComponent
 ---@param shopGood ShopGood
@@ -94,7 +93,6 @@ function MonthlyRewards:C_BuildUI(packet)
     self.packet = packet
     local ui = self.view
     for privilegeType, shopGood in pairs(self.privilegeTypes) do
-        gg.log("privilegeType", privilegeType, packet.privilegeTypes[privilegeType])
         self:_UpdateCard(ui:Get(privilegeType), shopGood, packet.privilegeTypes[privilegeType])
     end
 end

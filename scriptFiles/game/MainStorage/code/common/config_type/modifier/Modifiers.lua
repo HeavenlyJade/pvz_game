@@ -1,7 +1,7 @@
 
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
-local Modifier = require(MainStorage.code.common.config_type.modifier.Modifier)
+local Modifier = require(MainStorage.code.common.config_type.modifier.Modifier) ---@type Modifier
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 
