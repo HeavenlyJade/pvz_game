@@ -1,11 +1,12 @@
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
+local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 
 ---@class ViewList : ViewComponent
 ---@field node UIList
----@field childrens ViewComponent[] 子元素列表
+---@field childrens ViewComponent
 ---@field childNameTemplate string|nil 子元素名称模板
 ---@field onAddElementCb fun(child: SandboxNode): ViewComponent 添加元素时的回调函数
 ---@field New fun(node: UIComponent|ViewComponent, ui: ViewBase, path: string, onAddElementCb: fun(child: SandboxNode): ViewComponent): ViewList
@@ -115,7 +116,7 @@ function ViewList:SetVisible(visible)
     self.node.Enabled = visible
 end
 
----刷新子节点的布局
+---私有方法：根据childrens数组刷新UI布局
 function ViewList:_refreshLayout()
     -- 步骤 1: 完全卸载 (Detach)
     -- 创建一个临时表来持有子节点，避免在迭代时修改集合
@@ -137,6 +138,21 @@ function ViewList:_refreshLayout()
     end
 end
 
+
+---私有方法：将一个ViewComponent|ViewButton插入到childrens数组中
+---@param Component ViewComponent|ViewButton 要插入的组件
+---@param index number 目标索引
+function ViewList:insertIntoChildrens(Component, index)
+    -- 安全地插入到 self.childrens 数组
+    local targetIndex = index
+    if not targetIndex or targetIndex > #self.childrens + 1 or targetIndex < 1 then
+        targetIndex = #self.childrens + 1 -- 如果index无效或越界，则插入到末尾
+    end
+    Component.node:SetParent(self.node)
+    table.insert(self.childrens, targetIndex, Component)
+end
+
+
 ---在指定位置插入子节点
 ---@param childNode SandboxNode 要添加的子节点
 ---@param index number 要插入的位置
@@ -147,14 +163,8 @@ function ViewList:InsertChild(childNode, index, shouldRefresh)
     if not viewComponent then
         return -- 如果创建失败，则直接返回
     end
-
-    -- 步骤 2: 安全地插入到 self.childrens 数组
-    local targetIndex = index
-    if targetIndex > #self.childrens + 1 or targetIndex < 1 then
-        targetIndex = #self.childrens + 1 -- 如果index无效，则插入到末尾
-    end
-    table.insert(self.childrens, targetIndex, viewComponent)
-
+    -- 步骤 2: 插入到childrens数组
+    self:insertIntoChildrens(viewComponent, index)
     -- 步骤 3: 如果需要，则刷新布局
     if shouldRefresh then
         self:_refreshLayout()
@@ -164,7 +174,19 @@ end
 ---@param childNode SandboxNode 要添加的子节点
 function ViewList:AppendChild(childNode)
     -- AppendChild 默认立即刷新UI
-    self:InsertChild(childNode, #self.childrens + 1, true)
+    self:InsertChild(childNode, #self.childrens + 1, false)
+end
+
+--- 通过名称获取子节点实例
+---@param childName string 要查找的子节点名称
+---@return ViewComponent|nil
+function ViewList:GetChildByName(childName)
+    for _, child in ipairs(self.childrens) do
+        if child.node and child.node.Name == childName then
+            return child
+        end
+    end
+    return nil
 end
 
 --- 通过名称移除子节点
@@ -198,18 +220,11 @@ end
 ---清空所有子元素
 function ViewList:ClearChildren()
     for _, child in ipairs(self.childrens) do
-        if child.node and child.node.IsValid then
+        if child.node  then
             child.node:Destroy()
         end
     end
     self.childrens = {}
 end
-
----设置子元素名称模板
----@param template string
-function ViewList:SetChildNameTemplate(template)
-    self.childNameTemplate = template
-end
-
 
 return ViewList

@@ -215,9 +215,10 @@ function MainServer.player_enter_game(player)
     end
     player_.inited = true
     ServerEventManager.Publish("PlayerInited", {player = player_})
-    gg.network_channel:fireClient(player.UserId, {cmd = "cmd_update_player_ui",{}})
 
-    -- 主动推送邮件列表到客户端
+    gg.network_channel:fireClient(uin_, {cmd = "cmd_update_player_ui",{}})
+    gg.log("玩家初始化完成", uin_)
+    -- 主动推送邮件列表到客户端 
     MailManager:SendMailListToClient(uin_)
 end
 

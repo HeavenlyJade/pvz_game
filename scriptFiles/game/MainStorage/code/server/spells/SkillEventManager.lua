@@ -228,6 +228,19 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             gg.log("副卡技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
             return
         end
+        -- 新增：检查副卡强化进度是否已满
+        if skillType.GetMaxGrowthAtLevel then
+            local currentLevel = existingSkill.level
+            local currentGrowth = existingSkill.growth or 0
+            local maxGrowthForLevel = skillType:GetMaxGrowthAtLevel(currentLevel)
+
+            if maxGrowthForLevel and currentGrowth < maxGrowthForLevel then
+                local message = "当前等级成长进度未满，无法强化"
+                gg.log(string.format("副卡升级失败: %s. %s. 进度: %d/%d", skillName, message, currentGrowth, maxGrowthForLevel))
+                player:SendHoverText(message)
+                return
+            end
+        end
     else
         gg.log("未知的技能类型: " .. skillName .. " 类型: " .. (skillType.category or "nil"))
         return
@@ -248,23 +261,16 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         local insufficientResources = {}  -- 记录不足的资源
 
         for resourceName, requiredAmount in pairs(cost) do
-            if requiredAmount < 0 then  -- 负数表示消耗
-                local needAmount = math.abs(requiredAmount)  -- 转为正数
-                local itemData = player.bag:GetItemDataByName(resourceName)
+            local needAmount = math.ceil(math.abs(requiredAmount))  -- 对小数成本向上取整
 
-                if not itemData then
+            if needAmount > 0 then
+                local itemData = player.bag:GetItemDataByName(resourceName)
+                if not itemData or itemData.amount < needAmount then
                     table.insert(insufficientResources, {
                         name = resourceName,
                         need = needAmount,
-                        have = 0,
-                        missing = needAmount
-                    })
-                elseif itemData.amount < needAmount then
-                    table.insert(insufficientResources, {
-                        name = resourceName,
-                        need = needAmount,
-                        have = itemData.amount,
-                        missing = needAmount - itemData.amount
+                        have = itemData and itemData.amount or 0,
+                        missing = needAmount - (itemData and itemData.amount or 0)
                     })
                 else
                     gg.log("资源检查通过: " .. resourceName .. " 需要:" .. needAmount .. " 拥有:" .. itemData.amount)
@@ -291,16 +297,18 @@ function SkillEventManager.HandleUpgradeSkill(evt)
 
                 -- 资源充足，扣除资源
         for resourceName, requiredAmount in pairs(cost) do
-            local absAmount = math.abs(requiredAmount)
+            local absAmount = math.ceil(math.abs(requiredAmount)) -- 对小数成本向上取整
 
-            local itemData = player.bag:GetItemDataByName(resourceName)
-            if not itemData then
-                gg.log("资源不存在: " .. resourceName)
-                return
+            if absAmount > 0 then
+                local itemData = player.bag:GetItemDataByName(resourceName)
+                if not itemData then
+                    gg.log("资源不存在: " .. resourceName)
+                    return
+                end
+                -- 扣除对应数量的资源
+                player.bag:SetItemAmount(itemData.position, itemData.amount - absAmount)
+                gg.log("扣除资源: " .. resourceName .. " 数量:" .. absAmount)
             end
-            -- 扣除对应数量的资源
-            player.bag:SetItemAmount(itemData.position, itemData.amount - absAmount)
-            gg.log("扣除资源: " .. resourceName .. " 数量:" .. absAmount)
         end
 
         -- 扣除完成后，打印玩家背包中对应物品的剩余数量
@@ -322,6 +330,11 @@ function SkillEventManager.HandleUpgradeSkill(evt)
     end
 
     local upgradedSkill = player.skills[skillName]
+    -- 新增：如果是副卡，升级后重置强化进度
+    if skillType.category == 1 then
+        upgradedSkill.growth = 0
+        gg.log("副卡升级后，重置强化进度为0: " .. skillName)
+    end
     player:saveSkillConfig()
     player.bag:SyncToClient()
 
@@ -682,10 +695,10 @@ function SkillEventManager.HandleEquipSkill(evt)
     local success = player:EquipSkill(skillName, slot)
     if success then
         gg.log("技能装备成功: " .. skillName .. " 槽位: " .. slot)
-        -- SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
-        --     skillName = skillName,
-        --     slot = slot
-        -- })
+        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
+            skillName = skillName,
+            slot = slot
+        })
     else
         gg.log("技能装备失败: " .. skillName .. " 槽位: " .. slot)
     end
