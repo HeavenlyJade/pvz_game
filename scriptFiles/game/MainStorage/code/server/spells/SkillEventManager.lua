@@ -60,7 +60,9 @@ function SkillEventManager.RegisterEventHandlers()
     -- 销毁技能
     ServerEventManager.Subscribe(SkillEventManager.REQUEST.DESTROY, SkillEventManager.HandleDestroySkill)
 
-    gg.log("已注册 " .. 7 .. " 个技能事件处理器")
+    -- 同步技能数据
+    ServerEventManager.Subscribe(SkillEventManager.REQUEST.SYNC_SKILLS, SkillEventManager.HandleSyncSkills)
+
 end
 
 --- 验证玩家和基础参数
@@ -230,6 +232,9 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             gg.log("副卡技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
             player:SendHoverText("技能升级失败：已达最大等级")
             return
+        elseif existingSkill.growth < existingSkill.skillType:GetMaxGrowthAtLevel(existingSkill.level+1) then
+            player:SendHoverText("技能升级失败：成长值不足，快去花圃挂机培养副卡吧")
+            return
         end
     else
         gg.log("未知的技能类型: " .. skillName .. " 类型: " .. (skillType.category or "nil"))
@@ -237,10 +242,10 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         return
     end
     
-    if existingSkill and existingSkill.growth < existingSkill.skillType:GetMaxGrowthAtLevel(existingSkill.level+1) then
-        player:SendHoverText("技能升级失败：成长值不足，快去花圃挂机培养副卡吧")
-        return
-    end
+    -- if existingSkill and existingSkill.growth < existingSkill.skillType:GetMaxGrowthAtLevel(existingSkill.level+1) then
+    --     player:SendHoverText("技能升级失败：成长值不足，快去花圃挂机培养副卡吧")
+    --     return
+    -- end
     local cost = nil
     if existingSkill then
         cost = skillType:GetCostAtLevel(existingSkill.level+1)
@@ -277,7 +282,8 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         skillName = skillName,
         level = upgradedSkill.level,
         slot = upgradedSkill.equipSlot,
-        maxLevel = skillType.maxLevel
+        maxLevel = skillType.maxLevel,
+        growth = upgradedSkill.growth
     }
     gg.log("发送技能升级响应", responseData)
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, responseData)
@@ -434,7 +440,8 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
         finalLevel = targetLevel,
         level = targetLevel, -- 保持向后兼容
         slot = existingSkill.equipSlot,
-        maxLevel = maxLevel
+        maxLevel = maxLevel,
+        growth = existingSkill.growth
     }
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, responseData)
 end
@@ -542,6 +549,13 @@ function SkillEventManager.HandleEquipSkill(evt)
     local skillType = SkillTypeConfig.Get(skillName)
     if not skillType then
         gg.log("技能配置不存在: " .. skillName)
+        return
+    end
+
+    -- 检查技能是否可装备
+    if not skillType.isEquipable then
+        gg.log("该技能不可装备: " .. skillName)
+        player:SendHoverText("该技能为被动技能，无需装备")
         return
     end
 
@@ -793,6 +807,23 @@ function SkillEventManager.HandleDestroySkill(evt)
     else
         gg.log("技能销毁失败:", skillName, "错误:", destroyResult.errorCode)
     end
+end
+
+--- 处理同步技能数据请求
+---@param evt table 事件数据 {uin}
+function SkillEventManager.HandleSyncSkills(evt)
+    gg.log("处理同步技能数据请求", evt)
+    local player, errorCode = SkillEventManager.ValidatePlayer(evt, "SyncSkills")
+    if not player then
+        return
+    end
+
+    gg.log("开始同步技能数据，玩家:", player.name, "UID:", player.uin)
+
+    -- 直接调用玩家的技能数据同步方法
+    player:syncSkillData()
+
+    gg.log("技能数据同步完成，玩家:", player.name)
 end
 
 return SkillEventManager

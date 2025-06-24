@@ -297,7 +297,7 @@ function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
 
     -- 检查等级是否有效
     local maxLevel = skillType.maxLevel or 1
-    if level < 0 or level > maxLevel then
+    if level and  level > maxLevel then
         return {
             success = false,
             errorCode = SkillEventConfig.ERROR_CODES.INVALID_PARAMETERS,
@@ -305,14 +305,6 @@ function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
         }
     end
 
-    -- 检查经验是否有效
-    if growth < 0 then
-        return {
-            success = false,
-            errorCode = SkillEventConfig.ERROR_CODES.INVALID_PARAMETERS,
-            skillData = nil
-        }
-    end
 
     -- 检查玩家是否拥有该技能
     local existingSkill = player.skills[skillName]
@@ -330,10 +322,10 @@ function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
     local originalLevel = existingSkill.level
     local originalGrowth = existingSkill.growth
     -- 设置新的等级和经验
-    if level then
+    if level and level > 0 then
         existingSkill.level = level
     end
-    if growth then
+    if growth and growth > 0 then
         existingSkill.growth = growth
     end
 
@@ -350,7 +342,6 @@ function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
             growth = existingSkill and existingSkill.growth or 0,
             slot = existingSkill and existingSkill.equipSlot or 0,
             maxLevel = maxLevel,
-            removed = (level == 0),
             originalLevel = originalLevel,
             originalGrowth = originalGrowth
         }

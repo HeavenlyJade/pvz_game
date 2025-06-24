@@ -168,7 +168,7 @@ function MailGui:RegisterEvents()
         self:HandleNewMailNotification(data)
     end)
 
-    gg.log("MailGui事件注册完成，共注册", 6, "个事件处理器")
+    -- gg.log("MailGui客户端事件注册完成，共注册", 6, "个事件处理器")
 end
 
 -- 处理邮件列表响应
@@ -218,7 +218,7 @@ function MailGui:HandleMailListResponse(data)
     -- 步骤4: 刷新整个UI列表
     self:InitMailList()
 
-    gg.log("邮件列表响应处理完成，玩家邮件:", self:GetMailCount(self.playerMails), "系统邮件:", self:GetMailCount(self.systemMails))
+    -- gg.log("邮件列表响应处理完成，玩家邮件:", self:GetMailCount(self.playerMails), "系统邮件:", self:GetMailCount(self.systemMails))
 end
 
 -- 处理新邮件通知
@@ -290,7 +290,7 @@ function MailGui:InitMailList()
         self.batchClaimButton:SetTouchEnable(hasUnclaimedMails)
     end
 
-    gg.log("📧 所有邮件列表更新完成")
+    -- gg.log("📧 所有邮件列表更新完成")
 end
 
 ---邮件排序的比较函数

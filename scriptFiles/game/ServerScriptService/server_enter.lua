@@ -5,7 +5,7 @@
 --- 服务器启动的时候，会自动加载此代码并执行，再加载其他代码模块 (v109)
 --------------------------------------------------
 
-print("Server Side enter begin")
+print("服务端初始化")
 
 local MainStorage = game:GetService("MainStorage")
 local code = MainStorage:WaitForChild('code')

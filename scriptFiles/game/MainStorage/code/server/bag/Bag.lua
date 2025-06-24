@@ -173,6 +173,7 @@ function Bag:SyncToClient()
         items = syncItems,
         moneys = moneys
     }
+    -- gg.log("背包数据同步",ret)
     gg.network_channel:fireClient(self.player.uin, ret)
 end
 

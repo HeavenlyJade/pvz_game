@@ -23,6 +23,7 @@ SkillEventConfig.REQUEST = {
     DESTROY = "SkillRequest_Destroy", -- 销毁技能请求
     GET_DETAIL = "SkillRequest_GetDetail",
     GET_AVAILABLE = "SkillRequest_GetAvailable",
+    SYNC_SKILLS = "SkillRequest_SyncSkills", -- 同步技能数据请求
 
 }
 

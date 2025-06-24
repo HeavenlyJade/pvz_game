@@ -59,6 +59,7 @@ function MainServer.handleMidnightRefresh()
 end
 
 function MainServer.start_server()
+    gg.log("开始服务器")
     math.randomseed(os.time() + gg.GetTimeStamp())
     gg.uuid_start = gg.rand_int_between(100000, 999999)
     MainServer.register_player_in_out()   --玩家进出游戏
@@ -85,13 +86,18 @@ end
 
 
 function MainServer.initModule()
-    local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
+    gg.log("初始化模块")
+    -- local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
     local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
-
-    gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
+    local BagEventManager = require(MainStorage.code.server.bag.BagEventManager) ---@type BagEventManager
+    -- gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
     -- gg.cloudMailData = cloudMailData:Init()
     SkillEventManager.Init()
     MailManager:Init()
+    gg.log("背包事件管理")
+    BagEventManager:Init()
+    gg.log("事件初始化完成")
+
 
 end
 

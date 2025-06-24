@@ -39,7 +39,7 @@ function _M:OnInit(info_)
     self.inited = false
     self.name = info_.nickname
     self.isPlayer = true
-    self.bag = nil ---@type Bag
+    self.bag = nil ---@type Bag 通过获取玩家对象来访问bag
     self.mail = nil ---@type PlayerMailBundle
     self.auto_attack      = 0                                   -- 自动攻击技能ID
     self.auto_attack_tick = 10                                  -- 攻击间隔

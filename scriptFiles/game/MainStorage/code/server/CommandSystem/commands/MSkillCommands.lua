@@ -123,20 +123,13 @@ function SkillCommands.setLevel(params, player)
 
     -- 生成成功消息
     local successMsg
-    if skillData.removed then
-        successMsg = SkillCommon.FormatSuccessMessage(
-            "技能已移除（等级设为0）",
-            player,
-            skillName
-        )
-    else
-        successMsg = SkillCommon.FormatSuccessMessage(
-            string.format("技能等级和经验设置成功：%d级→%d级，经验 %d→%d",
-                skillData.originalLevel, skillData.level, skillData.originalGrowth, skillData.growth),
-            player,
-            skillName
-        )
-    end
+
+    successMsg = SkillCommon.FormatSuccessMessage(
+        string.format("技能等级和经验设置成功：%d级→%d级，经验 %d→%d",
+            skillData.originalLevel, skillData.level, skillData.originalGrowth, skillData.growth),
+        player,
+        skillName
+    )
     SkillCommon.SendMessageAndLog(player, successMsg, false)
 
     -- 发送响应到客户端
@@ -249,7 +242,7 @@ function SkillCommands.main(params, player)
     local player = gg.getPlayerByUin(uin)
     local skillName = params["技能"]
     local level = params["等级"]
-    local growth = params["经验"] or params["成长值"] or 0
+    local growth = params["经验"] 
     local optype = params["类型"]
 
     if not player then

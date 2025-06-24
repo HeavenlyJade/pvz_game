@@ -9,6 +9,7 @@ local ClientEventManager = require(MainStorage.code.client.event.ClientEventMana
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
 local CardIcon = require(MainStorage.code.common.ui_icon.card_icon) ---@type CardIcon
+local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 
 local tweenInfo = TweenInfo.New(0.2, Enum.EasingStyle.Linear)
 local TweenService = game:GetService('TweenService')
@@ -147,7 +148,6 @@ function HudCards:SetSubCardQualityIcons(cardNode, skillType)
     if not cardNode or not skillType then return end
 
     local quality = skillType.quality or "N"  -- 默认为N品质
-    gg.log("HudCards设置副卡品质图标",cardNode,quality)
 
     -- === 通用的节点品质图标设置函数 ===
     ---@param node UIImage 要设置的节点
@@ -390,6 +390,9 @@ end
 function HudCards:RegisterEventFunction()
     if self.CardpackButton then
         self.CardpackButton.clickCb = function (ui, button)
+            gg.log("HudCards:RegisterEventFunction,打开卡包")
+            -- 同时请求同步背包数据和技能数据
+            gg.network_channel:FireServer({ cmd = SkillEventConfig.REQUEST.SYNC_SKILLS})
             ViewBase["CardsGui"]:Open()
         end
     end
@@ -449,16 +452,7 @@ function HudCards:OnInit(node, config)
         local ui = ViewBase.GetUI("ForceClickHud") ---@cast ui ForceClickHud
         ui.focusingChain = nil
         ui:FocusOnNode(self.cardsList.node, "选择一枚要成长的副卡")
-        -- for _, child in ipairs(self.cardsList.childrens) do ---@cast child ViewButton
-        --     child:SetTouchEnable(false)
-        -- end
-        -- for _, index in ipairs(data.skills) do
-        --     self.cardsList:GetChild(index - 1):SetTouchEnable(true)
-        -- end
         self.selectSkillCb = function (index, skill) ---@cast skill Skill
-            -- for _, child in ipairs(self.cardsList.childrens) do ---@cast child ViewButton
-            --     child:SetTouchEnable(true)
-            -- end
             gg.network_channel:FireServer({
                 cmd = "AfkSelectSkill",
                 npcId = data.npcId,
