@@ -471,6 +471,10 @@ function Bag:HasItems(items)
     -- 统计每种物品的数量
     local itemCounts = {}
     for itemType, count in pairs(items) do
+        if type(itemType) == "string" then
+            local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+            itemType = ItemTypeConfig.Get(itemType)
+        end
         local slots = self.bag_index[itemType] or {}
         local total = 0
         for _, slot in ipairs(slots) do

@@ -156,7 +156,7 @@ function Spell:Cast(caster, target, param)
         return false
     end
 
-    caster:TriggerTags("castSpell", target, param, self, param)
+    caster:TriggerTags("释放魔法时", target, param, self, param)
     if param.cancelled then
         if self.printInfo then
             log[#log + 1] = string.format("%s：词条【释放魔法时】被取消", self.spellName)
@@ -166,7 +166,7 @@ function Spell:Cast(caster, target, param)
     end
 
     if target and self:IsEntity(target) then
-        target:TriggerTags("beCastSpell", caster, param, param)
+        target:TriggerTags("被释放魔法时", caster, param, self, param)
     end
     if param.cancelled then
         if self.printInfo then

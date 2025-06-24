@@ -104,44 +104,26 @@ function Level:OnInit(levelType, scene, index)
                     local mobName = data.mob.name or tostring(data.mob.uuid)
                     self.playerStats[uin].kills[mobName] = (self.playerStats[uin].kills[mobName] or 0) + 1
                     
-                    -- 优先使用波次级别的掉落物配置，如果没有则使用关卡级别的配置
-                    local dropItems = self.currentWave and self.currentWave.dropItems or self.levelType.dropItems
+                    -- 优先使用波次级别的掉落物配置
+                    local dropItems = self.currentWave and self.currentWave.dropItems
                     if dropItems and #dropItems > 0 then
-                        -- 计算总比重
-                        local totalWeight = 0
                         for _, item in ipairs(dropItems) do
-                            totalWeight = totalWeight + (tonumber(item["比重"]) or 1)
-                        end
-                        
-                        -- 随机选择掉落物
-                        local randomWeight = math.random() * totalWeight
-                        local currentWeight = 0
-                        local selectedItem = nil
-                        
-                        for _, item in ipairs(dropItems) do
-                            currentWeight = currentWeight + (tonumber(item["比重"]) or 1)
-                            if randomWeight <= currentWeight then
-                                selectedItem = item
-                                break
-                            end
-                        end
-                        
-                        if selectedItem then
-                            -- 计算基础数量
-                            local baseCount = gg.eval(selectedItem["数量"]:gsub("LVL", tostring(data.mob.level)))
-                            if self.levelType.dropModifier then
-                                local castParam = self.levelType.dropModifier:Check(topDamager, topDamager)
-                                if castParam.cancelled then
-                                    baseCount = 0
-                                else
-                                    baseCount = baseCount * castParam.power
+                            local chance = tonumber(item["几率"]) or 0
+                            if math.random(0, 99) < chance then
+                                local baseCount = gg.ProcessFormula(item["数量"]:gsub("LVL", tostring(data.mob.level)), topDamager, topDamager)
+                                if self.levelType.dropModifier then
+                                    local castParam = self.levelType.dropModifier:Check(topDamager, topDamager)
+                                    if castParam.cancelled then
+                                        baseCount = 0
+                                    else
+                                        baseCount = baseCount * castParam.power
+                                    end
                                 end
-                            end
-                            if baseCount > 0 then
-                                -- 记录奖励
-                                local itemName = selectedItem["物品"]
-                                self.playerStats[uin].rewards[itemName] = (self.playerStats[uin].rewards[itemName] or 0) + baseCount
-                                topDamager.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(baseCount))
+                                if baseCount > 0 then
+                                    local itemName = item["物品"]
+                                    self.playerStats[uin].rewards[itemName] = (self.playerStats[uin].rewards[itemName] or 0) + baseCount
+                                    topDamager.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(baseCount))
+                                end
                             end
                         end
                     end

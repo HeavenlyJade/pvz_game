@@ -79,6 +79,72 @@ function SkillType:OnInit(data)
     end
 end
 
+function SkillType:GetDescription(level)
+    if not self.description or self.description == "" then
+        return ""
+    end
+
+    local result = self.description
+
+    -- 处理 [数字:每级增加倍率] 格式
+    result = string.gsub(result, "%[(%d+):([%d%.]+)%]", function(baseValue, perLevel)
+        baseValue = tonumber(baseValue)
+        perLevel = tonumber(perLevel)
+        local finalValue = baseValue * (1 + (level - 1) * perLevel)
+        return string.format("%.1f", finalValue)
+    end)
+
+    -- 处理 [魔法名.属性.数组索引] 格式
+    result = string.gsub(result, "%[([^%.%[%]:]+)%.([^%.]+)%.(%d+)%]", function(spellName, fieldName, arrayIndex)
+        arrayIndex = tonumber(arrayIndex)
+        local spell = SpellConfig.Get(spellName)
+        if spell then
+            if fieldName == "属性增伤" and spell.damageAmplifier and spell.damageAmplifier[arrayIndex] then
+                local element = spell.damageAmplifier[arrayIndex]
+                if element then
+                    local finalRate = element.multiplier
+                    if element.statType then
+                        return string.format("%.0f", finalRate*100) .. "%" .. (element.statType or "")
+                    else
+                        return string.format("%.1f", finalRate)
+                    end
+                end
+            end
+        end
+        return string.format("[%s.%s.%d]", spellName, fieldName, arrayIndex)
+    end)
+
+    -- 处理 [魔法名.属性] 格式
+    result = string.gsub(result, "%[([^%.%[%]:]+)%.([^%.]+)%]", function(spellName, fieldName)
+        local spell = SpellConfig.Get(spellName)
+        if spell then
+            local field = spell[fieldName]
+            if field then
+                if type(field) == "number" then
+                    return string.format("%.1f", field)
+                elseif type(field) == "string" then
+                    return field
+                elseif type(field) == "table" then
+                    -- 如果是数组，尝试获取第一个元素
+                    if #field > 0 and field[1] then
+                        local value = field[1]
+                        if type(value) == "table" and value["倍率"] then
+                            return string.format("%.1f", value["倍率"])
+                        elseif type(value) == "number" then
+                            return string.format("%.1f", value)
+                        else
+                            return tostring(value)
+                        end
+                    end
+                end
+            end
+        end
+        return string.format("[%s.%s]", spellName, fieldName)
+    end)
+
+    return result
+end
+
 function SkillType:GetMaxGrowthAtLevel(level)
     -- 检查是否存在最大经验公式
     if not self.maxGrowthFormula or self.maxGrowthFormula == "" then
@@ -105,7 +171,6 @@ function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
 end
 
 function SkillType:GetCostAtLevel(level)
-    local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
     if not self.upgradeCosts then
         return {}
     end
@@ -114,7 +179,9 @@ function SkillType:GetCostAtLevel(level)
     for resourceType, costExpr in pairs(self.upgradeCosts) do
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = gg.eval(expr)
-        costs[resourceType] = result
+        if result and result > 0 then
+            costs[resourceType] = math.floor(result)
+        end
     end
     return costs
 end

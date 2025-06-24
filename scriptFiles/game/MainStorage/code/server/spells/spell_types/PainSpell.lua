@@ -52,11 +52,9 @@ function PainSpell:CastReal(caster, target, param)
     end
     
     -- 处理释放者属性增伤
-    gg.log("self.damageAmplifier", self.spellName, self.damageAmplifier)
     if self.damageAmplifier then
         for _, amplifier in ipairs(self.damageAmplifier) do
             local modifier = amplifier:GetModifier(caster, damage, multiplier, param)
-            gg.log("属性增伤", modifier)
             if modifier then
                 battle:AddModifier(modifier.source, modifier.modifierType, modifier.amount)
             end

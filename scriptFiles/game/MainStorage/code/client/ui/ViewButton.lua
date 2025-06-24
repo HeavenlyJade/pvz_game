@@ -18,9 +18,26 @@ function ViewButton:SetTouchEnable(enable, updateGray)
     end
 end
 
+---@param path2Child string
+---@param icon string
+---@param hoverIcon? string
+function ViewButton:SetChildIcon(path2Child, icon, hoverIcon)
+    hoverIcon = hoverIcon or icon
+    local c = self:Get(path2Child)
+    if c then
+        local childNode = self:Get(path2Child).node
+        local clickImg = self.childClickImgs[path2Child]
+        clickImg.normalImg = icon
+        clickImg.hoverImg = hoverIcon
+        clickImg.clickImg = hoverIcon
+        childNode.Icon = icon
+    end
+end
+
 function ViewButton:SetGray(isGray)
     self.img.Grayed = isGray
-    for child, _ in pairs(self.childClickImgs) do
+    for _, props in pairs(self.childClickImgs) do
+        local child = props.node
         child.Grayed= isGray
     end
 end
@@ -44,7 +61,8 @@ function ViewButton:OnTouchOut()
     end
 
     -- Handle child images
-    for child, props in pairs(self.childClickImgs) do
+    for _, props in pairs(self.childClickImgs) do
+        local child = props.node
         if self.isHover then
             if props.hoverImg then
                 child.Icon = props.hoverImg
@@ -77,7 +95,8 @@ function ViewButton:OnTouchIn(vector2)
     end
 
     -- Handle child images
-    for child, props in pairs(self.childClickImgs) do
+    for _, props in pairs(self.childClickImgs) do
+        local child = props.node
         if not self.isHover then
             props.normalImg = child.Icon
         end
@@ -109,7 +128,8 @@ function ViewButton:OnHoverOut()
     self.isHover = false
     self.img.Icon = self.normalImg
     self.img.FillColor = self.normalColor
-    for child, props in pairs(self.childClickImgs) do
+    for _, props in pairs(self.childClickImgs) do
+        local child = props.node
         child.Icon = props.normalImg
         child.FillColor = props.normalColor
     end
@@ -130,7 +150,8 @@ function ViewButton:OnHoverIn(vector2)
     end
 
     -- Handle child images
-    for child, props in pairs(self.childClickImgs) do
+    for _, props in pairs(self.childClickImgs) do
+        local child = props.node
         props.normalImg = child.Icon
         if props.hoverImg then
             child.Icon = props.hoverImg
@@ -200,7 +221,8 @@ function ViewButton:_BindNodeAndChild(child, isDeep)
             if hoverImg == "" then
                 hoverImg = clickImg
             end
-            self.childClickImgs[child] = {
+            self.childClickImgs[child.Name] = {
+                node = child,
                 normalImg = child.Icon,---@type string
                 clickImg = clickImg,
                 hoverImg = hoverImg,
@@ -231,7 +253,7 @@ function ViewButton:_BindNodeAndChild(child, isDeep)
 end
 
 function ViewButton:OnInit(node, ui, path, realButtonPath)
-    self.childClickImgs = {}
+    self.childClickImgs = {} ---@type table<string, table>
     self.enabled = true
     self.img = node ---@type UIImage
     if realButtonPath then
@@ -303,7 +325,7 @@ function ViewButton:Destroy()
     -- 清理子图像字典
     if self.childClickImgs then
         for child, _ in pairs(self.childClickImgs) do
-            self.childClickImgs[child] = nil
+            self.childClickImgs[child.Name] = nil
         end
         self.childClickImgs = {}
     end

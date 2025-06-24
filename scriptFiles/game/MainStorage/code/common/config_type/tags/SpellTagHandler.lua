@@ -86,12 +86,9 @@ function SpellTag:TriggerReal(caster, target, castParam, param, log)
         end
     end
     
-    -- 应用威力加成
-    spellParam.power = spellParam.power * castParam.power
-    
     -- 处理威力增加
     if self["威力增加"] ~= 0 then
-        local addPower = self:GetUpgradeValue("威力增加", castParam.power) / 100.0
+        local addPower = self:GetUpgradeValue("威力增加", castParam.power)
         spellParam.power = spellParam.power + addPower
         if self.printMessage then
             table.insert(log, string.format("%s.%s：增加%.2f%%威力", self.m_tagType.id, self.m_tagIndex, addPower * 100))
@@ -104,23 +101,26 @@ function SpellTag:TriggerReal(caster, target, castParam, param, log)
         end
     end
     
-    -- 合并castParam中的extraModifiers到spellParam
-    for key, modifier in pairs(castParam.extraModifiers) do
-        if not spellParam.extraModifiers[key] then
-            spellParam.extraModifiers[key] = Battle.New(caster, caster, key)
-        end
-        spellParam.extraModifiers[key]:AddModifier(self.m_tagType.id, "增加", modifier:GetFinalDamage())
-        
-        if self.printMessage then
-            table.insert(log, string.format("%s.%s：合并修改数值 %s", self.m_tagType.id, self.m_tagIndex, key))
+    if castParam.extraModifiers then
+        for key, modifier in pairs(castParam.extraModifiers) do
+            if not spellParam.extraModifiers[key] then
+                spellParam.extraModifiers[key] = Battle.New(caster, caster, key)
+            end
+            spellParam.extraModifiers[key]:AddModifier(self.m_tagType.id, "增加", modifier:GetFinalDamage())
+            
+            if self.printMessage then
+                table.insert(log, string.format("%s.%s：合并修改数值 %s", self.m_tagType.id, self.m_tagIndex, key))
+            end
         end
     end
     
     -- 合并castParam中的extraParams到spellParam
-    for key, value in pairs(castParam.extraParams) do
-        spellParam.extraParams[key] = value
-        if self.printMessage then
-            table.insert(log, string.format("%s.%s：合并复写参数 %s = %s", self.m_tagType.id, self.m_tagIndex, key, tostring(value)))
+    if castParam.extraParams then
+        for key, value in pairs(castParam.extraParams) do
+            spellParam.extraParams[key] = value
+            if self.printMessage then
+                table.insert(log, string.format("%s.%s：合并复写参数 %s = %s", self.m_tagType.id, self.m_tagIndex, key, tostring(value)))
+            end
         end
     end
     

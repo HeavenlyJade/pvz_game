@@ -445,6 +445,23 @@ function gg.ProcessVariables(formula, caster, target)
     return processedFormula
 end
 function gg.ProcessFormula(formula, caster, target)
+    if not formula then
+        return nil
+    end
+    -- 自动修正常见中文符号为英文
+    formula = formula
+        :gsub("，", ",")
+        :gsub("（", "(")
+        :gsub("）", ")")
+        :gsub("－", "-")
+        :gsub("−", "-")
+        :gsub("—", "-")
+        :gsub("＋", "+")
+        :gsub("×", "*")
+        :gsub("＊", "*")
+        :gsub("÷", "/")
+        :gsub("／", "/")
+        :gsub("．", ".")
     formula = gg.ProcessVariables(formula, caster, target)
     if not formula then
         return 0
@@ -1376,6 +1393,20 @@ function gg.getQualityColor(quality_)
 end
 
 function gg.eval(expr)
+    -- 自动修正常见中文符号为英文
+    expr = expr
+        :gsub("，", ",")
+        :gsub("（", "(")
+        :gsub("）", ")")
+        :gsub("－", "-")
+        :gsub("−", "-")
+        :gsub("—", "-")
+        :gsub("＋", "+")
+        :gsub("×", "*")
+        :gsub("＊", "*")
+        :gsub("÷", "/")
+        :gsub("／", "/")
+        :gsub("．", ".")
     local ok, result = pcall(function()
         expr = expr:gsub("%s+", "")  -- 移除空格
         local pos = 1
@@ -1408,9 +1439,9 @@ function gg.eval(expr)
                 assert(expr:sub(pos, pos) == ")", "Missing ')' after function arguments")
                 pos = pos + 1
                 if func3 == "max" then
-                    return math.max(table.unpack(args))
+                    return math.max(unpack(args))
                 else
-                    return math.min(table.unpack(args))
+                    return math.min(unpack(args))
                 end
             elseif expr:sub(pos, pos) == "(" then
                 pos = pos + 1

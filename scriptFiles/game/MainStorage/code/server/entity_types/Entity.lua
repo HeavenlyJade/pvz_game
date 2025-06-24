@@ -314,10 +314,11 @@ end
 ---@param ... any 额外参数
 function _M:TriggerTags(key, target, castParam, ...)
     -- 处理动态词条
+    local args = {...}
     if castParam and castParam.dynamicTags and castParam.dynamicTags[key] then
         for _, equipingTag in ipairs(castParam.dynamicTags[key]) do
             for _, tag in ipairs(equipingTag.handlers[key]) do
-                tag:Trigger(self, target, equipingTag, ...)
+                tag:Trigger(self, target, equipingTag, args)
             end
         end
     end
@@ -326,7 +327,7 @@ function _M:TriggerTags(key, target, castParam, ...)
     if self.tagHandlers[key] then
         for _, equipingTag in ipairs(self.tagHandlers[key]) do
             for _, tag in ipairs(equipingTag.handlers[key]) do
-                tag:Trigger(self, target, equipingTag, ...)
+                tag:Trigger(self, target, equipingTag, args)
             end
         end
     end

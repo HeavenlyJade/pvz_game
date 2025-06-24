@@ -1,3 +1,4 @@
+
 --- V109 miniw-haima
 --- 客户端输入控制模块
 
@@ -39,13 +40,9 @@ local  Controller = {
 
 
 function Controller.init()
-    gg.log("Controller初始化",inputservice.TouchEnabled,inputservice.ModalEnabled)
-    inputservice.ModalEnabled = true
-    if inputservice.TouchEnabled then
-        gg.log("检测到触摸设备，设置 ModalEnabled = true 以显示移动端控件。")
-        inputservice.ModalEnabled = true
-    end
-    
+    -- local UiSettingBut = require(MainStorage.code.client.UiClient.SysUi.SettingBut) ---@type UiSettingBut
+    -- local NpcClient = require(MainStorage.code.client.UiClient.Npc) ---@type NpcClient
+    gg.log("Controller初始化")
     local ui_size_x = gg.get_ui_size().x
     Controller.press_xy_limit = ui_size_x * 0.01   --屏幕长度的1/100(用来判断是否是点击动作)
 

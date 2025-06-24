@@ -46,6 +46,15 @@ function Price:CanAfford(player, param)
 end
 
 ---@param player Player
+---@param param CastParam
+function Price:GetPlayerHas(player)
+    if self.priceType then
+        return player.bag:GetItemAmount(self.priceType)
+    end
+    return 0
+end
+
+---@param player Player
 function Price:Pay(player, param)
     if self.priceType then
         player.bag:RemoveItems({[self.priceType] = self.priceAmount * param.power})
@@ -62,10 +71,42 @@ function ShopGood:OnInit(data)
     self.price = Price.New(data["价格"]) ---@type Price
     self.dailyResetFreeCount = data["每日重置免费次数"] or false
     self.limitedTime = data["限时"] or false
-    self.rewards = data["获得物品"] or {}
+    self.rewards = data["获得物品"] or {} ---@type table<string, number>
     self.commands = data["执行指令"] or {}
     self.prizePool = data["奖池"]
+    self.icon = data["图标复写"]
+    self.iconAmount = data["图标数量复写"]
+    self.isSale = data["热卖"]
+    self.isLimited = data["限定"]
     self.modifiers = data["购买条件"] ---@type Modifiers
+end
+
+function ShopGood:GetIcon()
+    if self.icon then
+        return self.icon
+    end
+    if self.rewards then
+        for k, _ in pairs(self.rewards) do
+            local itemType = ItemTypeConfig.Get(k)
+            if itemType then
+                return itemType.icon
+            end
+        end
+    end
+    return nil
+end
+
+
+function ShopGood:GetIconAmount()
+    if self.iconAmount and self.iconAmount ~= 0 then
+        return self.iconAmount
+    end
+    if self.rewards then
+        for _, v in pairs(self.rewards) do
+            return v
+        end
+    end
+    return nil
 end
 
 ---@return CastParam

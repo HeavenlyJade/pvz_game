@@ -403,7 +403,6 @@ end
 
 ---@override
 function _M:Die()
-    print("Die", self.isDead, self.name)
     if self.isDead then return end
     self:StopSkillCastabilityCheck()
     -- 发布死亡事件
@@ -858,18 +857,6 @@ function _M:SetMoveable(moveable)
     else
         self.actor.Movespeed = 0
     end
-    -- if not self._moveMethod then
-    --     self._moveMethod = {
-    --         self.actor.TouchMovementMode, self.actor.PCMovementMode
-    --     }
-    -- end
-    -- if moveable then
-    --     self.actor.TouchMovementMode = self._moveMethod[1]
-    --     self.actor.PCMovementMode = self._moveMethod[2]
-    -- else
-    --     self.actor.TouchMovementMode = Enum.DevTouchMovementMode.Scriptable
-    --     self.actor.PCMovementMode = Enum.DevPCMovementMode.Scriptable
-    -- end
 end
 
 -- 移除附近的NPC
@@ -930,7 +917,7 @@ function _M:UpdateHud()
     self.bag:SyncToClient()
 
     self.level = self:GetVariable("level", 1)
-    self:RefreshStats()
+    self:SetMoveable(true)
     self:SendEvent("UpdateHud", {
         level = self.level
     })

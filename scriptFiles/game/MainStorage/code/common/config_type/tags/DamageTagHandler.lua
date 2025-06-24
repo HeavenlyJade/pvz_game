@@ -32,7 +32,7 @@ function DamageTag:OnInit(data)
 end
 
 function DamageTag:CanTriggerReal(caster, target, castParam, param, log)
-    local battle = param ---@type Battle
+    local battle = param[1] ---@type Battle
     
     if battle.skipTags and battle.skipTags[self.m_tagType.id] then
         return false

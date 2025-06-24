@@ -85,4 +85,10 @@ function CastParam:GetParamByName(name, v, def)
     return value
 end
 
+function CastParam:GetToStringParams()
+    return {
+        power = self.power
+    }
+end
+
 return CastParam

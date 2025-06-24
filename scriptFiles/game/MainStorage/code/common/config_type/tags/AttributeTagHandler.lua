@@ -21,7 +21,7 @@ function AttributeTag:OnInit(data)
 end
 
 function AttributeTag:TriggerReal(caster, target, castParam, param, log)
-    local battle = param ---@type Battle
+    local battle = param[1] ---@type Battle
     
     -- 处理基础属性增加
     if self["增加"] ~= 0 then

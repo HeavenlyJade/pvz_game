@@ -1,4 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
+local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 
 ---@class UpgradeValue
@@ -14,7 +15,6 @@ function TagHandler:OnInit( data )
     self.m_trigger = data["m_trigger"] ---@type string
     self["优先级"] = data["优先级"] ---@type number
     self["冷却"] = data["冷却"] ---@type number
-    self["每级增强"] = data["每级增强"] ---@type number
     self["几率"] = data["几率"] ---@type number
     self["条件"] = data["条件"] ---@type Modifiers
     self["升级增加数值"] = {} ---@type table<string, number>
@@ -31,7 +31,7 @@ function TagHandler:GetUpgradeValue(paramName, power, defaultValue)
     
     local adder2 = 0
     if self["升级增加数值"][paramName] then
-        adder2 = adder2 + result * self["升级增加数值"][paramName] * (power - 1)
+        adder2 = result * self["升级增加数值"][paramName] * (power-1)
     end
     return result + adder2
 end
@@ -82,9 +82,9 @@ function TagHandler:CanTrigger(caster, target, param, log)
     return true
 end
 
-function TagHandler:Trigger(caster, target, tag, param)
+function TagHandler:Trigger(caster, target, tag, ...)
     local log = {}
-    local result = self:TriggerIn(caster, target, tag, param, log)
+    local result = self:TriggerIn(caster, target, tag, ..., log)
     if self.printMessage and #log > 0 then
         print(table.concat(log, "\n"))
     end
@@ -114,7 +114,7 @@ function TagHandler:TriggerIn(caster, target, tag, param, log)
     end
     
     table.insert(castParam.skipTags, self.m_tagType.id)
-    castParam.power = castParam.power * (1 + (tag.level - 1) * self["每级增强"])
+    castParam.power = tag.level
     
     if self["冷却"] > 0 then
         caster:SetCooldown(self.m_tagType.id .. "." .. self.m_tagIndex, self["冷却"])

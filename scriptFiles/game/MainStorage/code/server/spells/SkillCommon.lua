@@ -295,44 +295,48 @@ function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
         }
     end
 
-    -- 检查玩家是否拥有该技能
-    local existingSkill = player.skills[skillName]
-    if not existingSkill then
+    -- 检查等级是否有效
+    local maxLevel = skillType.maxLevel or 1
+    if level < 0 or level > maxLevel then
         return {
             success = false,
-            errorCode = SkillEventConfig.ERROR_CODES.SKILL_NOT_OWNED,
+            errorCode = SkillEventConfig.ERROR_CODES.INVALID_PARAMETERS,
             skillData = nil
         }
     end
 
+    -- 检查经验是否有效
+    if growth < 0 then
+        return {
+            success = false,
+            errorCode = SkillEventConfig.ERROR_CODES.INVALID_PARAMETERS,
+            skillData = nil
+        }
+    end
+
+    -- 检查玩家是否拥有该技能
+    local existingSkill = player.skills[skillName]
+
+    if not existingSkill then
+        return {
+                success = false,
+                errorCode = SkillEventConfig.ERROR_CODES.SKILL_NOT_OWNED,
+                skillData = nil
+            }
+
+    end
+
     -- 记录原始数据
     local originalLevel = existingSkill.level
-    local originalGrowth = existingSkill.growth or 0
-
-    -- 验证并修正等级
-    local maxLevel = skillType.maxLevel or 1
-    if level < 1 then
-        level = 1 -- 等级不能低于1
-    elseif level > maxLevel then
-        level = maxLevel -- 等级不能超过最大等级
-    end
-
-    -- 验证并修正经验值
-    if growth < 0 then
-        growth = 0 -- 经验值不能为负
-    end
-
-    -- 根据修正后的等级，获取该等级的最大经验值并修正
-    if skillType.GetMaxGrowthAtLevel then
-        local maxGrowthForLevel = skillType:GetMaxGrowthAtLevel(level)
-        if maxGrowthForLevel and growth > maxGrowthForLevel then
-            growth = maxGrowthForLevel
-        end
-    end
-
+    local originalGrowth = existingSkill.growth
     -- 设置新的等级和经验
-    existingSkill.level = level
-    existingSkill.growth = growth
+    if level then
+        existingSkill.level = level
+    end
+    if growth then
+        existingSkill.growth = growth
+    end
+
 
     -- 保存玩家数据
     player:saveSkillConfig()
@@ -342,11 +346,11 @@ function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
         errorCode = SkillEventConfig.ERROR_CODES.SUCCESS,
         skillData = {
             skillName = skillName,
-            level = existingSkill.level,
-            growth = existingSkill.growth,
-            slot = existingSkill.equipSlot,
+            level = existingSkill and existingSkill.level or 0,
+            growth = existingSkill and existingSkill.growth or 0,
+            slot = existingSkill and existingSkill.equipSlot or 0,
             maxLevel = maxLevel,
-            removed = false,
+            removed = (level == 0),
             originalLevel = originalLevel,
             originalGrowth = originalGrowth
         }

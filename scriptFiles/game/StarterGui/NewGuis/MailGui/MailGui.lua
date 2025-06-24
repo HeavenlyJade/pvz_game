@@ -105,7 +105,6 @@ end
 
 -- 切换邮件分类
 function MailGui:SwitchCategory(categoryName)
-    gg.log("切换邮件分类:", categoryName)
     self.currentCategory = categoryName
 
     -- 根据分类切换列表的可见性

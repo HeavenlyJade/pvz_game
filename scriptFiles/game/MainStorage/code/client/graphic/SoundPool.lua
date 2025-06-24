@@ -4,27 +4,10 @@ local WorkSpace = game:GetService("WorkSpace")
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 
-local SoundNodePool = {
-    soundNodePoolReady = {}
-}
+local  soundNodePoolReady = {}
 
-function SoundNodePool:Init()
-    local SoundPool = SandboxNode.new("Transform", WorkSpace)
-    SoundPool.Name = "SoundPool"
-    for i = 1, 50 do
-        local soundNode = SandboxNode.new("Sound", SoundPool)
-        soundNode.Name = "SoundNode" .. i
-        table.insert(self.soundNodePoolReady, soundNode)
-    end
-
-    -- 监听PlaySound事件
-    ClientEventManager.Subscribe("PlaySound", function(data)
-        self:PlaySound(data)
-    end)
-end
-
-function SoundNodePool:PlaySound(data)
-    local soundNode = self.soundNodePoolReady[1]
+local function PlaySound(data)
+    local soundNode = soundNodePoolReady[1]
     if soundNode == nil then
         print("No available sound nodes")
         return
@@ -34,7 +17,7 @@ function SoundNodePool:PlaySound(data)
     soundNode.SoundPath = data.soundAssetId
     soundNode.Volume = data.volume * 100 -- 转换为0-100范围
     soundNode.Pitch = data.pitch
-    soundNode.Range = data.range
+    soundNode.RollOffMaxDistance = data.range
 
     -- 设置音效位置
     if data.boundTo then
@@ -53,12 +36,12 @@ function SoundNodePool:PlaySound(data)
     -- 播放音效
     soundNode:PlaySound()
 
-    table.remove(self.soundNodePoolReady, 1)
-    table.insert(self.soundNodePoolReady, soundNode)
+    table.remove(soundNodePoolReady, 1)
+    table.insert(soundNodePoolReady, soundNode)
 end
 
-function SoundNodePool:ActivateSoundNode(soundAssetID, parent, localPosition)
-    self:PlaySound({
+local function ActivateSoundNode(soundAssetID, parent, localPosition)
+    PlaySound({
         soundAssetId = soundAssetID,
         boundTo = parent,
         volume = 1.0,
@@ -68,4 +51,13 @@ function SoundNodePool:ActivateSoundNode(soundAssetID, parent, localPosition)
     })
 end
 
-return SoundNodePool
+local SoundPool = SandboxNode.new("Transform", WorkSpace)
+SoundPool.Name = "SoundPool"
+for i = 1, 50 do
+    local soundNode = SandboxNode.new("Sound", SoundPool)
+    soundNode.Name = "SoundNode" .. i
+    table.insert(soundNodePoolReady, soundNode)
+end
+ClientEventManager.Subscribe("PlaySound", function(data)
+    PlaySound(data)
+end)

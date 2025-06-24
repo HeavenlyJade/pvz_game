@@ -51,9 +51,7 @@ function CustomUI:S_Open(player)
     if not self._serverInited then
         self._serverInited = true
         local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-        print("S_Open", "CustomUIEvent_".. self.id)
         ServerEventManager.Subscribe("CustomUIEvent_".. self.id, function (evt)
-            gg.log("CustomUIEvent_".. self.id, evt)
             if evt.__func then
                 self[evt.__func](self, evt.player, evt)
             end

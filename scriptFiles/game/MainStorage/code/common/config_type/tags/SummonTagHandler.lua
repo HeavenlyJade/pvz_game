@@ -59,7 +59,7 @@ function SummonTag:CanTriggerReal(caster, target, castParam, param, log)
 end
 
 function SummonTag:TriggerReal(caster, target, castParam, param, log)
-    local monster = param ---@type Monster
+    local monster = param[1] ---@type Monster
     
     -- 处理额外增加属性
     if self["额外增加属性"] then

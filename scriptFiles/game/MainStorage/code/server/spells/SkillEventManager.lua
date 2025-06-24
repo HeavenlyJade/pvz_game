@@ -175,18 +175,18 @@ function SkillEventManager.HandleUpgradeSkill(evt)
     if not player then
         return
     end
-
     -- 从evt中获取技能名称
     local skillName = evt.skillName
     if not skillName then
         gg.log("技能名称不能为空")
+        player:SendHoverText("技能升级失败：技能名称不能为空")
         return
     end
-
     -- 验证技能是否存在于配置中
     local skillType = SkillTypeConfig.Get(skillName)
     if not skillType then
         gg.log("技能配置文件不存在: " .. skillName .. " 玩家: " .. player.name)
+        player:SendHoverText("技能升级失败：技能配置不存在")
         return
     end
     local existingSkill = player.skills and player.skills[skillName]
@@ -198,6 +198,7 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             -- 入口技能：检查技能本身是否存在
             if not existingSkill then
                 gg.log("入口技能不存在，无法升级: " .. skillName)
+                player:SendHoverText("技能升级失败：未学习该主卡技能")
                 return
             end
         else
@@ -206,47 +207,40 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             for i, preSkillType in ipairs(prerequisite) do
                 if not (player.skills and player.skills[preSkillType.name]) then
                     gg.log("父类技能不存在，无法升级: " .. skillName .. " 缺少前置技能: " .. preSkillType.name)
+                    player:SendHoverText("技能升级失败：缺少前置技能 " .. (preSkillType.displayName or preSkillType.name))
                     return
                 end
             end
         end
-
         -- 检查是否已达到最大等级
         if existingSkill and existingSkill.level >= skillType.maxLevel then
             gg.log("技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
+            player:SendHoverText("技能升级失败：已达最大等级")
             return
         end
     elseif skillType.category == 1 then
         -- 副卡技能：只检查技能是否存在
         if not existingSkill then
             gg.log("副卡技能不存在，无法升级: " .. skillName)
+            player:SendHoverText("技能升级失败：未学习该副卡技能")
             return
         end
-
         -- 检查是否已达到最大等级
         if existingSkill.level >= skillType.maxLevel then
             gg.log("副卡技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
+            player:SendHoverText("技能升级失败：已达最大等级")
             return
-        end
-        -- 新增：检查副卡强化进度是否已满
-        if skillType.GetMaxGrowthAtLevel then
-            local currentLevel = existingSkill.level
-            local currentGrowth = existingSkill.growth or 0
-            local maxGrowthForLevel = skillType:GetMaxGrowthAtLevel(currentLevel)
-
-            if maxGrowthForLevel and currentGrowth < maxGrowthForLevel then
-                local message = "当前等级成长进度未满，无法强化"
-                gg.log(string.format("副卡升级失败: %s. %s. 进度: %d/%d", skillName, message, currentGrowth, maxGrowthForLevel))
-                player:SendHoverText(message)
-                return
-            end
         end
     else
         gg.log("未知的技能类型: " .. skillName .. " 类型: " .. (skillType.category or "nil"))
+        player:SendHoverText("技能升级失败：未知的技能类型")
         return
     end
-
-    -- TODO: 检查升级条件（资源、前置技能等级等）
+    
+    if existingSkill and existingSkill.growth < existingSkill.skillType:GetMaxGrowthAtLevel(existingSkill.level+1) then
+        player:SendHoverText("技能升级失败：成长值不足，快去花圃挂机培养副卡吧")
+        return
+    end
     local cost = nil
     if existingSkill then
         cost = skillType:GetCostAtLevel(existingSkill.level+1)
@@ -255,80 +249,21 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         cost = skillType:GetCostAtLevel(1)
         gg.log("升级成本", cost)
     end
-
     -- 检查玩家资源是否足够
     if cost then
-        local insufficientResources = {}  -- 记录不足的资源
-
-        for resourceName, requiredAmount in pairs(cost) do
-            local needAmount = math.ceil(math.abs(requiredAmount))  -- 对小数成本向上取整
-
-            if needAmount > 0 then
-                local itemData = player.bag:GetItemDataByName(resourceName)
-                if not itemData or itemData.amount < needAmount then
-                    table.insert(insufficientResources, {
-                        name = resourceName,
-                        need = needAmount,
-                        have = itemData and itemData.amount or 0,
-                        missing = needAmount - (itemData and itemData.amount or 0)
-                    })
-                else
-                    gg.log("资源检查通过: " .. resourceName .. " 需要:" .. needAmount .. " 拥有:" .. itemData.amount)
-                end
-            end
-        end
-
-        -- 如果有资源不足，输出完整列表后返回
-        if #insufficientResources > 0 then
-            gg.log("=== 资源不足列表 ===")
-            local messages = {}
-            for i, resource in ipairs(insufficientResources) do
-                gg.log(string.format("%d. %s: 需要 %d, 拥有 %d, 缺少 %d",
-                    i, resource.name, resource.need, resource.have, resource.missing))
-                table.insert(messages, string.format("%s缺少%d个", resource.name, resource.missing))
-            end
-
-            -- 向客户端发送友好提示
-            local message = "技能升级失败，资源不足：" .. table.concat(messages, "，")
-            player:SendHoverText(message)
-            gg.log("技能升级失败，资源不足")
+        if not player.bag:HasItems(cost) then
+            player:SendHoverText("技能升级失败：资源不足")
             return
         end
-
-                -- 资源充足，扣除资源
-        for resourceName, requiredAmount in pairs(cost) do
-            local absAmount = math.ceil(math.abs(requiredAmount)) -- 对小数成本向上取整
-
-            if absAmount > 0 then
-                local itemData = player.bag:GetItemDataByName(resourceName)
-                if not itemData then
-                    gg.log("资源不存在: " .. resourceName)
-                    return
-                end
-                -- 扣除对应数量的资源
-                player.bag:SetItemAmount(itemData.position, itemData.amount - absAmount)
-                gg.log("扣除资源: " .. resourceName .. " 数量:" .. absAmount)
-            end
-        end
-
-        -- 扣除完成后，打印玩家背包中对应物品的剩余数量
-        gg.log("=== 资源扣除后剩余数量 ===")
-        for resourceName, requiredAmount in pairs(cost) do
-            local itemData = player.bag:GetItemDataByName(resourceName)
-            if itemData then
-                gg.log(string.format("%s 剩余数量: %d", resourceName, itemData.amount))
-            else
-                gg.log(string.format("%s 剩余数量: 0 (已完全消耗)", resourceName))
-            end
-        end
+        player.bag:RemoveItems(cost)
     end
     -- 执行技能升级
     local success = player:UpgradeSkill(skillType)
     if not success then
         gg.log("技能升级失败: " .. skillName)
+        player:SendHoverText("技能升级失败：未知原因")
         return
     end
-
     local upgradedSkill = player.skills[skillName]
     -- 新增：如果是副卡，升级后重置强化进度
     if skillType.category == 1 then
@@ -337,16 +272,13 @@ function SkillEventManager.HandleUpgradeSkill(evt)
     end
     player:saveSkillConfig()
     player.bag:SyncToClient()
-
     gg.log("技能升级成功", skillName, "新等级:", upgradedSkill.level, "装备槽:", upgradedSkill.equipSlot)
-
     local responseData = {
         skillName = skillName,
         level = upgradedSkill.level,
         slot = upgradedSkill.equipSlot,
         maxLevel = skillType.maxLevel
     }
-
     gg.log("发送技能升级响应", responseData)
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, responseData)
 end
@@ -354,7 +286,6 @@ end
 --- 处理一键强化技能请求
 ---@param evt table 事件数据 {uin, skillName, targetLevel}
 function SkillEventManager.HandleUpgradeAllSkill(evt)
-    gg.log("处理一键强化技能请求", evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "UpgradeAllSkill")
     if not player then
         return
@@ -695,10 +626,10 @@ function SkillEventManager.HandleEquipSkill(evt)
     local success = player:EquipSkill(skillName, slot)
     if success then
         gg.log("技能装备成功: " .. skillName .. " 槽位: " .. slot)
-        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
-            skillName = skillName,
-            slot = slot
-        })
+        -- SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
+        --     skillName = skillName,
+        --     slot = slot
+        -- })
     else
         gg.log("技能装备失败: " .. skillName .. " 槽位: " .. slot)
     end

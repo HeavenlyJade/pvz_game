@@ -43,12 +43,10 @@ function TagType:GetDescription(level)
         arrayIndex = tonumber(arrayIndex) -- Convert to 0-based index
         if index > 0 and index <= #self.functions then
             local handler = self.functions[index]
-            gg.log("result ", result, handler, fieldName, arrayIndex)
 
             -- 处理修改数值
             if fieldName == "修改数值" and handler["修改数值"] and handler["修改数值"][arrayIndex] then
                 local modifier = handler["修改数值"][arrayIndex]
-                gg.log("修改数值", modifier, modifier.paramValue)
                 if modifier and modifier.paramValue then
                     local finalRate = modifier.paramValue["倍率"] * handler:GetUpgradeValue("修改数值倍率", level, 1)
                     if modifier.paramValue.attributeType and modifier.paramValue.attributeType.name then
@@ -65,9 +63,9 @@ function TagType:GetDescription(level)
                 if element then
                     local finalRate = element.multiplier * handler:GetUpgradeValue("属性增伤倍率", level, 1)
                     if element.statType then
-                        return string.format("%.1f", finalRate) .. (element.statType or "")
+                        return string.format("%d", finalRate*100) .. "%" .. (element.statType or "")
                     else
-                        return string.format("%.1f", finalRate)
+                        return string.format("%d", finalRate)
                     end
                 end
             end
@@ -78,14 +76,16 @@ function TagType:GetDescription(level)
     -- 处理 [词条序号.属性] 格式
     result = string.gsub(result, "%[(%d+)%.([^%]]+)%]", function(index, fieldName)
         index = tonumber(index)
-        gg.log("result ", result, index, fieldName)
         if index > 0 and index <= #self.functions then
             local handler = self.functions[index]
             local value = handler[fieldName]
             if type(value) == "number" then
                 -- 应用升级值增加
                 local finalValue = handler:GetUpgradeValue(fieldName, level)
-                return string.format("%.1f", finalValue)
+                if fieldName == "威力增加" then
+                    finalValue = finalValue * 100
+                end
+                return string.format("%.0f", finalValue)
             end
             if type(value) == "table" then
                 if fieldName == "属性乘以百分比" or fieldName == "额外增加属性" then

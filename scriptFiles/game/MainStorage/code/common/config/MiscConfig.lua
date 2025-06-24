@@ -15,16 +15,23 @@ local function LoadConfig()
         ["菜单指令"] = {
             ["每日奖励_2"] = {
                 ["菜单按钮名"] = "每日奖励_2",
-                ["按键"] = "O",
+                ["按键"] = "P",
                 ["指令"] = {
                     [[viewUI {"界面ID":"在线奖励"}]]
                 }
             },
             ["月卡奖励_3"] = {
                 ["菜单按钮名"] = "月卡奖励_3",
-                ["按键"] = "P",
+                ["按键"] = "I",
                 ["指令"] = {
                     [[viewUI {"界面ID":"月卡"}]]
+                }
+            },
+            ["商城购买_1"] = {
+                ["菜单按钮名"] = "商城购买_1",
+                ["按键"] = "O",
+                ["指令"] = {
+                    [[viewUI {"界面ID":"道具"}]]
                 }
             }
         },
@@ -74,15 +81,22 @@ function MiscConfig.GetAll()
     return MiscConfig.config
 end
 
-gg.log("MiscConfig", gg.isServer)
 if gg.isServer then
     ServerEventManager.Subscribe("ClickMenu", function (evt)
-        local menuConfig = MiscConfig.Get("总控")["菜单指令"][evt.menu]
-        if not menuConfig then
+        local status, menuConfig = pcall(function()
+            return MiscConfig.Get("总控")["菜单指令"][evt.menu]
+        end)
+        if not status or not menuConfig then
             evt.player:SendHoverText("尚未开放，敬请期待！")
             return
         end
-        evt.player:ExecuteCommands(menuConfig["指令"])
+        local ok, err = pcall(function()
+            evt.player:ExecuteCommands(menuConfig["指令"])
+        end)
+        if not ok then
+            evt.player:SendHoverText("尚未开放，敬请期待！")
+            return
+        end
     end)
 end
 return MiscConfig

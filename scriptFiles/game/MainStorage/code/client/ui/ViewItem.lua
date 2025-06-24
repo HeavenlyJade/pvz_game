@@ -39,20 +39,24 @@ end
 function ViewItem:SetItem(item)
     self._itemCache = item
     self.node["ItemIcon"].Icon = item.itemType.icon
-    local child = self.node["Frame"]
-    if child then
-        child.Icon = item.itemType.rank.normalImgFrame
-        if self.childClickImgs[child] then
-            self.childClickImgs[child].hoverImg = item.itemType.rank.hoverImgFrame
-            self.childClickImgs[child].clickImg = item.itemType.rank.hoverImgFrame
-        end
-    end
+    self:SetChildIcon("Frame", item.itemType.rank.normalImgFrame, item.itemType.rank.hoverImgFrame)
     self.node.Icon = item.itemType.rank.normalImgBg
     self.normalImg = item.itemType.rank.normalImgBg
     self.hoverImg = item.itemType.rank.hoverImgBg
     self.clickImg = item.itemType.rank.hoverImgBg
-    -- gg.log("childClickImgs", self, self.childClickImgs, child, self.childClickImgs[child])
     self.node["Amount"].Title = gg.FormatLargeNumber(item.amount)
+end
+
+---@param item ItemType
+function ViewItem:SetItemCost(itemType, amountHas, cost)
+    self._itemCache = itemType:ToItem(cost)
+    self.node["ItemIcon"].Icon = itemType.icon
+    self:SetChildIcon("Frame", itemType.rank.normalImgFrame, itemType.rank.hoverImgFrame)
+    self.node.Icon = itemType.rank.normalImgBg
+    self.normalImg = itemType.rank.normalImgBg
+    self.hoverImg = itemType.rank.hoverImgBg
+    self.clickImg = itemType.rank.hoverImgBg
+    self.node["Amount"].Title = string.format("%s/\n%s", gg.FormatLargeNumber(amountHas), gg.FormatLargeNumber(cost))
 end
 
 return ViewItem

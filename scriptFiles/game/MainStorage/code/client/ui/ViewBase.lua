@@ -195,6 +195,7 @@ function ViewBase:Open()
             end
         end
         displayingUI[self.layer] = self
+        self.isOnTop = true
         -- 更新 topGui
         if not ViewBase.topGui or self.layer > ViewBase.topGui.layer then
             ViewBase.topGui = self

@@ -10,6 +10,7 @@ local ShopGoodConfig = require(MainStorage.code.common.config.ShopGoodConfig) --
 ---@field affordable boolean
 ---@field bought number
 ---@field price number
+---@field priceHas number
 ---@field days number
 
 
@@ -33,7 +34,7 @@ function MonthlyRewards:S_BuildPacket(player, packet)
             affordable = shopGood.price:CanAfford(player, param),
             bought = player:GetVariable(shopGood.price.varKey),
             days = player:GetVariable(privilegeType),
-            price = shopGood.price.priceAmount * param.power
+            price = shopGood.price.priceAmount * param.power,
         }
     end
 end
@@ -71,7 +72,6 @@ function MonthlyRewards:_UpdateCard(node, shopGood, status)
 
     local purchaseButton = node:Get("续费", ViewButton)
     purchaseButton:SetTouchEnable(status.affordable)
-    purchaseButton:Get("价格").node.Title = tostring(status.price)
     if status.days > 0 then
         purchaseButton:Get("价格").node.Title = string.format("续费\n%d", status.days)
     else

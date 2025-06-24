@@ -6,7 +6,7 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 
 ---@class ViewList : ViewComponent
 ---@field node UIList
----@field childrens ViewComponent
+---@field childrens ViewComponent[] 子元素列表
 ---@field childNameTemplate string|nil 子元素名称模板
 ---@field onAddElementCb fun(child: SandboxNode): ViewComponent 添加元素时的回调函数
 ---@field New fun(node: UIComponent|ViewComponent, ui: ViewBase, path: string, onAddElementCb: fun(child: SandboxNode): ViewComponent): ViewList
@@ -59,6 +59,7 @@ function ViewList:GetChild(index)
         self:SetElementSize(index)
         child = self.childrens[index]
     end
+    child.node.Visible = true
     return child
 end
 

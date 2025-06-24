@@ -28,7 +28,7 @@ local function LoadConfig()
         },
         ["定时间隔"] = 1,
         ["定时指令"] = {
-            [[cast {"复杂魔法":{"魔法":"挂机获得阳光","复写参数":[{"objectName":"挂机获得阳光","paramName":"基础数量","value":20}]}}]]
+            [[cast {"复杂魔法":{"魔法":"挂机获得阳光","复写参数":[{"objectName":"挂机获得阳光","paramName":"基础数量","value":5}]}}]]
         },
         ["进入指令"] = {
             "afk {}"

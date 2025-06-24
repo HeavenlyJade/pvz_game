@@ -10,6 +10,31 @@ local loaded = false
 
 local function LoadConfig()
     CustomUIConfig.config ={
+    ["礼包"] = CustomUI.Load({
+        ["UI名"] = "ShopGui",
+        ["优先级"] = 1,
+        ["其它页面"] = {
+            "礼包",
+            "道具"
+        },
+        ["商品"] = {
+            "副卡大礼包"
+        },
+        ["ID"] = "礼包"
+    }),
+    ["道具"] = CustomUI.Load({
+        ["UI名"] = "ShopGui",
+        ["优先级"] = 1,
+        ["其它页面"] = {
+            "礼包",
+            "道具"
+        },
+        ["商品"] = {
+            "昼夜加速卡",
+            "挂机加速卡"
+        },
+        ["ID"] = "道具"
+    }),
     ["在线奖励"] = CustomUI.Load({
         ["UI名"] = "OnlineRewards",
         ["奖励物品"] = {

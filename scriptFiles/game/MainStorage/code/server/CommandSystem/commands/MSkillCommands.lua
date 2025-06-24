@@ -108,7 +108,7 @@ function SkillCommands.setLevel(params, player)
 
     -- 使用SkillCommon的公共方法设置技能等级和经验
     local result = SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
-    gg.log("设置技能等级结果", result)
+
     if not result.success then
         local errorMsg = SkillCommon.FormatErrorMessage(
             "设置技能等级失败: " .. SkillEventConfig.GetErrorMessage(result.errorCode),
@@ -120,7 +120,7 @@ function SkillCommands.setLevel(params, player)
     end
 
     local skillData = result.skillData
-    gg.log("设置技能等级成功", skillData)
+
     -- 生成成功消息
     local successMsg
     if skillData.removed then

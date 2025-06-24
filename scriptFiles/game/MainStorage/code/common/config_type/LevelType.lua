@@ -12,7 +12,7 @@ local ServerEventManager = require(MainStorage.code.server.event.ServerEventMana
 ---@class DropItemInfo
 ---@field 物品 string
 ---@field 数量 string
----@field 比重 string
+---@field 几率 string
 
 ---@class RankRewardInfo
 ---@field 名次 number
@@ -151,7 +151,7 @@ function Wave:OnInit(data)
     end
     
     -- 加载掉落物配置
-    self.dropItems = data["掉落物"] or {}
+    self.dropItems = data["掉落物"] or {} ---@type DropItemInfo[]
 end
 
 ---执行波次开始时的指令
@@ -246,7 +246,6 @@ function LevelType:OnInit(data)
     self.threeStarConditions = data["条件_3星"] or Modifiers.New({}) ---@type Modifiers
     self.monsterLevel = data["怪物等级"] or 1 ---@type number
     self.level = data["等级"] or 1 ---@type number
-    self.dropItems = data["掉落物"] ---@type DropItemInfo[]
     self.dropModifier = Modifiers.New(data["掉落物数量修改"]) ---@type Modifiers
     
     -- 加载排名掉落物配置
