@@ -812,18 +812,13 @@ end
 --- 处理同步技能数据请求
 ---@param evt table 事件数据 {uin}
 function SkillEventManager.HandleSyncSkills(evt)
-    gg.log("处理同步技能数据请求", evt)
     local player, errorCode = SkillEventManager.ValidatePlayer(evt, "SyncSkills")
     if not player then
         return
     end
-
-    gg.log("开始同步技能数据，玩家:", player.name, "UID:", player.uin)
-
     -- 直接调用玩家的技能数据同步方法
     player:syncSkillData()
 
-    gg.log("技能数据同步完成，玩家:", player.name)
 end
 
 return SkillEventManager

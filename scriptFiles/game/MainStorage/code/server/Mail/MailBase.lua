@@ -52,7 +52,7 @@ function _MailBase:OnInit(data)
     -- 扩展字段
     self.mail_type = data.mail_type or "personal"
 
-    gg.log("邮件对象初始化完成", self.id, self.title)
+    -- gg.log("邮件对象初始化完成", self.id, self.title)
 end
 
 --------------------------------------------------

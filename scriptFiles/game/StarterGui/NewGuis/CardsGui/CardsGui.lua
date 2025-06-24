@@ -19,7 +19,6 @@ local ViewItem = require(MainStorage.code.client.ui.ViewItem) ---@type ViewItem
 ---@field serverUnlocked boolean 服务端是否已解锁该技能
 ---@field isEquipped boolean|number 是否已装备（也可能是装备槽位号）
 ---@field equipSlot number 装备槽位号（0表示未装备）
----@field serverData table|nil 服务端技能数据 {level: number, slot: number, growth: number, star_level: number}
 ---@field configData table 技能配置数据（SkillType对象）
 
 ---@class SubCardButtonState 副卡按钮状态数据结构
@@ -58,12 +57,7 @@ ClientEventManager.Subscribe("PressKey", function (evt)
     end
 end)
 
--- 通用按钮状态管理
-function CardsGui:_updateButtonGrayState(button, isUnlocked)
-    if button and button.img then
-        button.img.Grayed = not isUnlocked
-    end
-end
+
 
 -- 通用按钮创建
 function CardsGui:_createButtonWithCallback(node, clickCallback, extraParams, backgroundPath)
@@ -406,7 +400,6 @@ end
 
 -- 副卡功能按钮状态更新
 function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
-    gg.log("更新副卡功能按钮", skill, skillLevel, serverData)
     if serverData then
         local maxLevel = skill.maxLevel or 1
         local isMaxLevel = skillLevel >= maxLevel
@@ -550,7 +543,6 @@ function CardsGui:OnInit(node, config)
 
     self.selectionList = self:Get("框体/主卡/选择列表", ViewList) ---@type ViewList
     self.mainCardFrame = self:Get("框体/主卡/加点框/纵列表/主卡框", ViewButton) ---@type ViewButton
-    self.skillButtons = {} ---@type table<string, ViewButton> -- 主卡按钮框
     self.skillLists = {} ---@type table<string, ViewList>     -- 主卡技能树列表
     self.mainCardButtondict = {} ---@type table<string, ViewButton> -- 主卡技能树的按钮
     self.subCardButtondict = {} ---@type table<string, ViewButton> -- 副卡技能的按钮
@@ -566,6 +558,7 @@ function CardsGui:OnInit(node, config)
     -- === 新增的主卡管理数据结构 ===
     self.mainCardButtonConfig = {} ---@type table<string, table> -- 存储所有配置的主卡信息
     self.mainCardButtonStates = {} ---@type table<string, MainCardButtonState> -- 存储主卡按钮状态和位置信息
+    
     -- 格式: {skillName = {button = ViewButton, position = number, activated = boolean, serverData = table, configData = table}}
     self.configMainCards = {} ---@type string[] -- 配置中的主卡列表（排序用）
 
@@ -592,7 +585,6 @@ function CardsGui:OnInit(node, config)
     self.subCardButtonStates = {} ---@type table<string, table> -- 存储副卡按钮状态
     -- 格式: {skillName = {button = ViewButton, position = number, serverUnlocked = boolean, serverData = table, configData = table}}
     self.configSubCards = {} ---@type string[] -- 配置中的副卡列表（排序用）
-
     -- === 背包库存数据 ===
     self.playerInventory = {} ---@type table<string, number> -- 整合后的库存数据，key为物品名称，value为数量
 
@@ -646,10 +638,9 @@ function CardsGui:LoadMainCardConfig()
         self.mainCardButtonStates[skillName] = {
             button = nil,
             position = #self.configMainCards,
-            serverUnlocked = false,  -- 是否在服务端解锁
-            isEquipped = false,      -- 是否已装备 (新增)
-            equipSlot = 0,          -- 装备槽位 (新增)
-            serverData = nil,
+            serverUnlocked = false,
+            isEquipped = false,
+            equipSlot = 0,
             configData = skillType
         }
     end
@@ -683,45 +674,40 @@ end
 
 -- === 新增方法：更新主卡装备状态 ===
 function CardsGui:UpdateMainCardEquipStatus(skillName, serverData)
-    local buttonState = self.mainCardButtonStates[skillName]
-    if buttonState and serverData then
-        local equipSlot = serverData.slot or 0
-        buttonState.isEquipped = equipSlot > 0
-        buttonState.equipSlot = equipSlot
-    end
+
 end
 
 -- === 修改方法：处理服务端主卡数据（支持装备状态）===
 function CardsGui:ProcessServerMainCardData(serverSkillMainTrees)
-
-    -- 首先确保所有主卡按钮的灰色状态正确
     for _, skillName in ipairs(self.configMainCards) do
         local buttonState = self.mainCardButtonStates[skillName]
-        if buttonState and buttonState.button then
-            -- 检查是否在服务端数据中
+        if buttonState then
             local serverSkillData = serverSkillMainTrees[skillName]
             if serverSkillData then
-                -- 标记为服务端已解锁
+                -- 更新状态数据
                 local serverData = serverSkillData.serverData
                 buttonState.serverUnlocked = true
-                buttonState.serverData = serverData
                 -- 更新装备状态
-                self:UpdateMainCardEquipStatus(skillName, serverData)
-                -- 恢复按钮正常颜色（已解锁）
-                buttonState.button.img.Grayed = false
-                -- 设置装备状态的视觉反馈
+                if serverData and serverData.slot then
+                    buttonState.isEquipped = serverData.slot > 0
+                    buttonState.equipSlot = serverData.slot
+                end
+                -- 更新按钮UI
+                if buttonState.button then
+                    buttonState.button:SetGray(false)
+                end
             else
-                -- 确保未解锁的主卡保持灰色
+                -- 重置状态
                 buttonState.serverUnlocked = false
                 buttonState.isEquipped = false
                 buttonState.equipSlot = 0
-                buttonState.serverData = nil
-                buttonState.button.img.Grayed = true
+                
+                if buttonState.button then
+                    buttonState.button:SetGray(true)
+                end
             end
-        else
         end
     end
-
 end
 
 -- === 优化后的排序和更新主卡布局方法 ===
@@ -760,8 +746,8 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
     for newIndex, skillName in ipairs(sortedCards) do
         local buttonState = self.mainCardButtonStates[skillName]
 
-        if buttonState and buttonState.configData then
-            local skillType = buttonState.configData
+        if buttonState then
+            local skillType = self.mainCardButtonConfig[skillName].skillType
             local mainCardButton
 
             -- 检查节点是否已存在
@@ -784,8 +770,15 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
                 end, {skillId = skillName})
 
                 -- 更新全局存储
-                self.skillButtons[skillName] = mainCardButton
-                self.mainCardButtonStates[skillName].button = mainCardButton
+                self.mainCardButtonStates[skillName] = {
+                    button = mainCardButton,
+                    position = newIndex,
+                    serverUnlocked = false,
+                    isEquipped = false,
+                    equipSlot = 0,
+                    serverData = nil,
+                    configData = skillType
+                }
             end
 
             -- 步骤 3: 更新按钮状态（无论是新是旧）
@@ -795,10 +788,6 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
             local iconResources = {iconPath = skillType.icon, iconNodePath = "卡框背景/图标"}
             self:_setCardIcon(mainCardButton.node, iconResources)
             self:_setMainCardQualityIcons(mainCardButton.node, skillType)
-
-            self:_updateButtonGrayState(mainCardButton, buttonState.serverUnlocked)
-
-            buttonState.position = newIndex
             table.insert(newChildrens, mainCardButton)
         end
     end
@@ -808,9 +797,8 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
         if child and child.node then
             child.node:Destroy()
             -- 从字典中移除，防止内存泄漏
-            self.skillButtons[skillName] = nil
             if self.mainCardButtonStates[skillName] then
-                self.mainCardButtonStates[skillName].button = nil
+                self.mainCardButtonStates[skillName] = nil
             end
         end
     end
@@ -962,7 +950,6 @@ function CardsGui:HandleSkillSync(data)
             end
         else
         end
-
         --- 更新技能树的节点显示
         self:UpdateSkillTreeNodeDisplay(skillName)
     end
@@ -982,21 +969,17 @@ function CardsGui:HandleSkillSync(data)
 end
 
 function CardsGui:UpdateSkillTreeNodeDisplay(skillName)
+    --- 更新对应主卡技能按钮的是否为灰色
     local skillTreeButton = self.mainCardButtondict[skillName]
 
     local skillType = SkillTypeConfig.Get(skillName)
-    if skillTreeButton and skillTreeButton.node then
+    if skillTreeButton  then
         self:SetSkillLevelOnCardFrame(skillTreeButton.node, skillType)
-
-        -- 更新按钮的灰色状态
         local serverSkill = self.ServerSkills[skillName]
         if serverSkill then
-            -- 技能已解锁：恢复正常颜色
-            skillTreeButton.img.Grayed = false
-
+            skillTreeButton:SetGray(false) --- 技能已解锁：恢复正常颜色
         else
-            -- 技能未解锁：设置为灰色
-            skillTreeButton.img.Grayed = true
+            skillTreeButton:SetGray(true) --- 技能未解锁：设置为灰色
         end
     end
 
@@ -1022,27 +1005,19 @@ end
 -- === 优化方法：批量更新主卡按钮状态 ===
 function CardsGui:UpdateMainCardButtonStates()
     -- 优化：使用更简洁的逻辑批量更新主卡按钮状态
-    for skillName, buttonState in pairs(self.mainCardButtonStates) do
+    for skillName, mainCardButton in pairs(self.mainCardButtonStates) do
         local serverSkill = self.ServerSkills[skillName]
         local isUnlocked = serverSkill ~= nil
-        
-        -- 更新解锁状态
-        buttonState.serverUnlocked = isUnlocked
-        
+
         if isUnlocked then
             -- 技能已解锁：更新装备状态和服务端数据
-            buttonState.serverData = serverSkill
             self:UpdateMainCardEquipStatus(skillName, serverSkill)
-        else
-            -- 技能未解锁：重置状态
-            buttonState.serverData = nil
-            buttonState.isEquipped = false
-            buttonState.equipSlot = 0
+        else     
+    
         end
-        
         -- 统一更新按钮的灰色状态
-        if buttonState.button then
-            buttonState.button.img.Grayed = not isUnlocked
+        if mainCardButton.button then
+            mainCardButton.button:SetGray(not isUnlocked)
         end
     end
 end
@@ -1070,7 +1045,6 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
             buttonState.serverUnlocked = true
             -- 更新按钮的extraParams中的serverData
             if buttonState.button then
-                buttonState.button.extraParams.serverData = buttonState.serverData
                 buttonState.button.img.Grayed = false  -- 确保按钮不是灰色状态
             end
         end
@@ -1078,7 +1052,7 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
         -- 如果当前选中的是这个副卡，更新属性面板
         if self.currentSubCardButtonName and
            self.currentSubCardButtonName.extraParams.skillId == skillName then
-            local serverData = buttonState and buttonState.serverData
+            local serverData = self.ServerSkills[skillName]
             local skillLevel = serverData and serverData.level or 0
             local growth = serverData and serverData.growth or 0
             self:UpdateSubCardAttributePanel(skillType, skillLevel, serverData)
@@ -1089,27 +1063,12 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
     elseif skillType.category==0  then
         -- 主卡升级：更新主卡技能树显示和装备状态
         self:UpdateSkillTreeNodeDisplay(skillName)
-
-        -- 检查并更新主卡装备状态
-        local buttonState = self.mainCardButtonStates[skillName]
-        if buttonState then
-            local oldEquipped = buttonState.isEquipped
-            self:UpdateMainCardEquipStatus(skillName, self.ServerSkills[skillName])
-
-            -- 如果装备状态发生变化，重新排序
-            if oldEquipped ~= buttonState.isEquipped then
-                self:SortAndUpdateMainCardLayout()
-            end
-        end
-
         -- === 新增：如果当前选中的是这个主卡，更新货币消耗显示 ===
         if self.currentMCardButtonName and
            self.currentMCardButtonName.extraParams.skillId == skillName then
             local attributeButton = self.attributeButton.node
             local skillData = self.ServerSkills[skillName]
             local newSkillLevel = skillData and skillData.level or 0
-
-            -- 更新货币消耗显示
             self:UpdateMainCardResourceCost(attributeButton, skillType, newSkillLevel)
         end
     end
@@ -1401,9 +1360,9 @@ function CardsGui:AutoSelectFirstMainCard()
 
     -- 1. 首先尝试找到第一个已解锁的主卡
     for _, skillName in ipairs(self.configMainCards) do
-        local buttonState = self.mainCardButtonStates[skillName]
-        if buttonState and buttonState.button and buttonState.serverUnlocked then
-            targetButton = buttonState.button
+        local mainCardButton = self.mainCardButtonStates[skillName]
+        if mainCardButton then
+            targetButton = mainCardButton.button
             targetSkillId = skillName
             break
         end
@@ -1412,9 +1371,9 @@ function CardsGui:AutoSelectFirstMainCard()
     -- 2. 如果没有已解锁的主卡，选择第一个主卡（即使是灰色的）
     if not targetButton then
         for _, skillName in ipairs(self.configMainCards) do
-            local buttonState = self.mainCardButtonStates[skillName]
-            if buttonState and buttonState.button then
-                targetButton = buttonState.button
+            local mainCardButton = self.mainCardButtonStates[skillName]
+            if mainCardButton then
+                targetButton = mainCardButton.button
                 targetSkillId = skillName
                 break
             end
@@ -1744,23 +1703,6 @@ function CardsGui:LoadMainCardsAndClone()
     self:CloneVerticalListsForSkillTrees(skillMainTrees)
 end
 
--- === 新增工具方法：检查主卡是否在服务端解锁 ===
-function CardsGui:IsMainCardServerUnlocked(skillName)
-    local buttonState = self.mainCardButtonStates[skillName]
-    return buttonState and buttonState.serverUnlocked or false
-end
-
--- === 新增工具方法：获取服务端已解锁的主卡列表 ===
-function CardsGui:GetServerUnlockedMainCards()
-    local unlockedCards = {}
-    for _, skillName in ipairs(self.configMainCards) do
-        local buttonState = self.mainCardButtonStates[skillName]
-        if buttonState and buttonState.serverUnlocked then
-            table.insert(unlockedCards, skillName)
-        end
-    end
-    return unlockedCards
-end
 
 -- 注册主卡技能书的卡片的ViewButton
 function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
@@ -1806,19 +1748,13 @@ end
 function CardsGui:SetSkillLevelOnCardFrame(cardFrame, skill)
     local severSkill = self.ServerSkills[skill.name]
     local skillLevel = severSkill and severSkill.level or 0
-    local star_level = severSkill and severSkill.star_level or 0
-
-    -- 使用工具函数设置等级
     self:_setCardLevel(cardFrame, skillLevel, skill.maxLevel or 1, "等级")
 
-    -- === 新增：只有存在星级容器时才更新星级显示（避免主卡无星级警告）===
-    local starContainer = cardFrame["星级"]
-    if starContainer then
-        -- 使用工具函数设置星级
-        self:_updateStarDisplay(cardFrame, star_level)
-    end
 end
 
+--- 设置副卡框架的技能等级显示
+---@param cardFrame SandboxNode 卡片框架节点
+---@param skill SkillType 技能类型配置对象
 function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
     local severSkill = self.ServerSkills[skill.name]
     local skillLevel = severSkill and severSkill.level or 0
@@ -1835,10 +1771,7 @@ function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
     self:_setSubCardQualityIcons(cardFrame, skill)
     -- 设置new识的可见性
     local newnode = cardFrame["new"]
-    if newnode then
-        newnode.Visible = false
-    end
-
+    if newnode then  newnode.Visible = false end
     -- 使用工具函数设置星级
     self:_updateStarDisplay(cardFrame, star_level)
 end
@@ -2287,7 +2220,6 @@ function CardsGui:BindQualityButtonEvents()
                     -- 切换品质时清除当前选中的副卡状态，隐藏属性面板
                     self.currentSubCardButtonName = nil
                     self.subCardAttributeButton:SetVisible(false)
-
                     -- 使用新的显示方法
                     self:ShowSubCardQuality(quality)
                     self:AutoSelectFirstSubCardInQuality(quality)
@@ -2354,35 +2286,22 @@ end
 function CardsGui:AddNewMainCardSkill(skillName, skillType, skillData)
 
     -- 检查按钮状态
-    local buttonState = self.mainCardButtonStates[skillName]
-    if not buttonState then
+    local mainCardButton = self.mainCardButtonStates[skillName].button
+    if not mainCardButton then
         -- 如果是配置中不存在的新技能，需要动态添加
         self:AddDynamicMainCardSkill(skillName, skillType, skillData)
         -- 重新排序
         self:SortAndUpdateMainCardLayout()
         return
     end
-
-    if buttonState.serverUnlocked then
-        return
-    end
-
-    -- 标记为服务端已解锁
-    buttonState.serverUnlocked = true
-    buttonState.serverData = skillData
-
     -- 更新装备状态
     self:UpdateMainCardEquipStatus(skillName, skillData)
-
     -- 恢复按钮正常颜色
-    if buttonState.button then
-        buttonState.button.img.Grayed = false
+    if mainCardButton then
+        mainCardButton:SetGray(false)
     end
-
-
     -- 重新排序主卡按钮
     self:SortAndUpdateMainCardLayout()
-
 end
 
 -- === 新增：动态添加配置中不存在的主卡技能 ===
@@ -2458,18 +2377,13 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
             end
         end
 
-
-        -- 存储按钮状态
-        self.skillButtons[skillName] = button
-        
         self.mainCardButtonStates[skillName] = {
-            button = button,              -- 按钮UI对象引用
-            position = newPosition,       -- 按钮在布局中的位置索引
-            serverUnlocked = true,        -- 服务端解锁状态
-            isEquipped = skillData.slot,  -- 装备状态（槽位号）
-            equipSlot = skillData.slot,   -- 装备槽位号
-            serverData = skillData,       -- 服务端同步的技能数据
-            configData = skillType        -- 技能类型配置数据
+            button = button,
+            position = newPosition,
+            serverUnlocked = true,
+            isEquipped = false,
+            equipSlot = 0,
+            configData = skillType
         }
 
         -- 添加到配置列表
@@ -2784,7 +2698,6 @@ function CardsGui:ProcessServerSubCardData(serverSubskillDic)
 
                 -- 标记为服务端已解锁
                 buttonState.serverUnlocked = true
-                buttonState.serverData = serverData
                 self:UpdateSubCardEquipStatus(skillName, serverData)
                 if buttonState.button then
                     -- 恢复按钮正常颜色（已解锁）
@@ -2902,9 +2815,8 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
                 self.subCardButtondict[skillName] = subCardButton
                 self.subCardButtonStates[skillName].button = subCardButton
             end
-            -- 步骤 3: 更新按钮状态（无论是新是旧）
-            subCardButton.extraParams.serverData = buttonState.serverData
-            subCardButton.node.Visible = true
+
+            subCardButton:SetVisible(true)
             self:SetSkillLevelSubCardFrame(subCardButton.node, skillType)
             subCardButton:SetGray(not buttonState.serverUnlocked)
             buttonState.position = newIndex
@@ -3001,17 +2913,10 @@ end
 -- === 新增方法：处理主卡移除 ===
 function CardsGui:HandleMainCardRemoval(skillName, skillType)
     -- 更新主卡按钮状态
-    local buttonState = self.mainCardButtonStates[skillName]
+    local buttonState = self.mainCardButtonStates[skillName].button
     if buttonState then
-        buttonState.serverUnlocked = false
-        buttonState.isEquipped = false
-        buttonState.equipSlot = 0
-        buttonState.serverData = nil
+        buttonState:SetGray(true)
 
-        -- 更新按钮显示（设为灰色）
-        if buttonState.button then
-            buttonState.button.img.Grayed = true
-        end
     end
 
     -- 更新主卡技能树显示
@@ -3053,16 +2958,10 @@ end
 -- === 新增方法：处理主卡更新 ===
 function CardsGui:HandleMainCardUpdate(skillName, skillType, skillData)
     -- 更新主卡按钮状态
-    local buttonState = self.mainCardButtonStates[skillName]
+    local buttonState = self.mainCardButtonStates[skillName].button
     if buttonState then
-        buttonState.serverUnlocked = true
-        buttonState.serverData = skillData
+        buttonState:SetGray(false)
         self:UpdateMainCardEquipStatus(skillName, skillData)
-
-        -- 更新按钮显示（恢复正常颜色）
-        if buttonState.button then
-            buttonState.button.img.Grayed = false
-        end
     else
         -- 如果是新创建的主卡技能，需要动态添加
         self:AddDynamicMainCardSkill(skillName, skillType, skillData)
