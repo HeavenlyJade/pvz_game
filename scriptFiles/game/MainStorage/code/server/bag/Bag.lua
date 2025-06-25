@@ -506,8 +506,14 @@ function Bag:RemoveItems(items)
 
     -- 移除物品
     for itemType, count in pairs(items) do
+        if type(itemType) == "string" then
+            local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+            itemType = ItemTypeConfig.Get(itemType)
+        end
+        gg.log("移除物品",itemType,count)
         local remaining = count
         local slots = self.bag_index[itemType] or {}
+        gg.log("移除物品",itemType,count,slots, self.bag_index)
         for _, slot in ipairs(slots) do
             if remaining <= 0 then
                 break

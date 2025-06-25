@@ -69,7 +69,7 @@ function MailGui:OnInit(node, config)
     self.currentSelectedMail = nil ---@type table -- 当前选中的邮件
     self.currentCategory = "系统邮件" ---@type string -- 当前选中的分类：系统邮件、玩家邮件
     self.mailButtons = {} ---@type table<string, ViewComponent> -- 邮件按钮缓存
-    self.attachmentLists = {} ---@type table<string, ViewComponent>
+    self.attachmentLists = {} ---@type table<string, ViewList>
 
     -- 为列表设置 onAddElementCb
     local function createMailItem(itemNode)
@@ -240,6 +240,13 @@ function MailGui:HandleNewMailNotification(data)
         targetDataList = self.systemMails
         targetViewList = self.mailSystemList
     end
+    
+    -- 检查邮件是否已存在，避免重复添加
+    if targetDataList[mailInfo.id] then
+        gg.log("⚠️ 邮件已存在，跳过添加:", mailInfo.id)
+        return
+    end
+    
     targetDataList[mailInfo.id] = mailInfo
 
     -- 构造正确格式的 mailItemData
@@ -427,9 +434,9 @@ end
 function MailGui:HideAllAttachmentLists()
     if self.rewardDisplay then self.rewardDisplay:SetVisible(false) end
     if self.attachmentLists then
-        for _, listComponent in pairs(self.attachmentLists) do
-            if listComponent then
-                listComponent:SetVisible(false)
+        for _, attachmentViewList in pairs(self.attachmentLists) do
+            if attachmentViewList then
+                attachmentViewList:SetVisible(false)
             end
         end
     end
@@ -438,16 +445,20 @@ end
 --- 更新附件列表外观（是否置灰）
 function MailGui:UpdateAttachmentListAppearance(mailId, isClaimed)
     local attachmentList = self.attachmentLists[tostring(mailId)]
-    gg.log("节点置为灰色",mailId,isClaimed)
-    attachmentList:SetGray(isClaimed)
+    if attachmentList then
+        gg.log("节点置为灰色", mailId, isClaimed)
+        attachmentList:SetGray(isClaimed)
+    else
+        gg.log("⚠️ 未找到邮件对应的附件列表:", mailId)
+    end
 end
 
 -- 新增：清空所有已生成的附件列表
 function MailGui:ClearAllAttachmentLists()
     if self.attachmentLists then
-        for mailId, listComponent in pairs(self.attachmentLists) do
-            if listComponent and listComponent.node and listComponent.node.IsValid then
-                listComponent.node:Destroy()
+        for mailId, attachmentlist in pairs(self.attachmentLists) do
+            if attachmentlist and attachmentlist.node  then
+                attachmentlist.node:Destroy()
             end
         end
     end
@@ -460,28 +471,37 @@ function MailGui:CreateAttachmentListForMail(mailId, mailInfo)
         gg.log("❌ 奖励列表模板、项目模板或容器未找到，无法为邮件创建附件列表:", mailId)
         return
     end
+    local str_mailid = tostring(mailId) 
     -- 1. 克隆列表容器节点
     local newListContainerNode = self.rewardListTemplate.node:Clone()
-
-    newListContainerNode.Parent =self.rewardDisplay.node
-    newListContainerNode.Name = tostring(mailId) -- 使用邮件ID命名
+    newListContainerNode.Parent = self.rewardDisplay.node
+    newListContainerNode.Name = str_mailid
 
     -- 2. 处理奖励数据
     local rewardItems = self:ProcessRewardData(mailInfo.attachments)
-    -- 3. 循环创建附件项并填充
-    for _, rewardData in ipairs(rewardItems) do
-        local newItemNode = self.rewardItemTemplate.node:Clone()
-        newItemNode.Parent = newListContainerNode
-        newItemNode.Visible = true
-        newItemNode.Name = tostring(rewardData.itemName)
-        self:SetupRewardItemDisplay(newItemNode, rewardData)
+    
+    -- 3. 创建ViewList实例来管理附件列表
+    local rewardDisplayNode = ViewList.New(newListContainerNode, self, "邮箱背景/邮件内容/附件/" .. str_mailid, function(itemNode, childPath)
+        -- 为每个附件项创建ViewComponent
+        local component = ViewComponent.New(itemNode, self, childPath)
+        return component
+    end)
+
+    -- 4. 为ViewList设置元素数量
+    rewardDisplayNode:SetElementSize(#rewardItems)
+
+    -- 5. 填充每个附件项的数据
+    for i, rewardData in ipairs(rewardItems) do
+        local childComponent = rewardDisplayNode:GetChild(i)
+        if childComponent then
+            childComponent.node.Name = tostring(rewardData.itemName)
+            self:SetupRewardItemDisplay(childComponent.node, rewardData)
+        end
     end
 
-    -- 4. 默认隐藏
-    newListContainerNode.Visible = false
-
-    -- 5. 缓存
-    self.attachmentLists[tostring(mailId)] = ViewComponent.New(newListContainerNode, self)
+    -- 6. 默认隐藏并缓存
+    rewardDisplayNode:SetVisible(false)
+    self.attachmentLists[str_mailid] = rewardDisplayNode
     gg.log("✅ 为邮件创建附件列表成功:", mailId)
 end
 
@@ -762,19 +782,21 @@ function MailGui:HandleClaimResponse(data)
     gg.log("收到领取响应", data)
 
     if data.success and data.mail_id then
+        local mailIdStr = tostring(data.mail_id)
+        
         -- 更新本地数据
-        if self.playerMails[data.mail_id] then
-            self.playerMails[data.mail_id].is_claimed = true
-        elseif self.systemMails[data.mail_id] then
-            self.systemMails[data.mail_id].is_claimed = true
+        if self.playerMails[mailIdStr] then
+            self.playerMails[mailIdStr].is_claimed = true
+        elseif self.systemMails[mailIdStr] then
+            self.systemMails[mailIdStr].is_claimed = true
         end
 
         -- 更新当前选中邮件数据
-        if self.currentSelectedMail and self.currentSelectedMail.id == data.mail_id then
+        if self.currentSelectedMail and tostring(self.currentSelectedMail.id) == mailIdStr then
             self.currentSelectedMail.data.is_claimed = true
             self:UpdateDetailButtons(self.currentSelectedMail.data)
             -- 领取成功后，更新附件列表外观
-            self:UpdateAttachmentListAppearance(data.mail_id, true)
+            self:UpdateAttachmentListAppearance(mailIdStr, true)
         end
 
         -- 刷新列表

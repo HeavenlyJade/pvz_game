@@ -103,8 +103,8 @@ end
 ---@param player Player
 function SkillCommands.setLevel(params, player)
     local skillName = params["skillName"]
-    local level = params["level"] or 1
-    local growth = params["growth"] or 0
+    local level = params["level"] or -1
+    local growth = params["growth"] or -1
 
     -- 使用SkillCommon的公共方法设置技能等级和经验
     local result = SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
