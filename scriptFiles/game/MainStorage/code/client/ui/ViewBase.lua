@@ -118,6 +118,8 @@ function ViewBase:OnInit(node, config)
     self.closeCb = nil
     self.componentCache = {}
     self.node = node ---@type SandboxNode
+    self.openSound = self.node:GetAttribute("打开音效")
+    self.closeSound = self.node:GetAttribute("关闭音效")
     self.hideOnInit = config.hideOnInit == nil and true or config.hideOnInit
     self.layer = config.layer == nil and 1 or config.layer
     self.displaying = false
@@ -145,6 +147,10 @@ end
 
 function ViewBase:Close()
     self:SetVisible(false)
+    print("CloseSound", self.closeSound)
+    ClientEventManager.Publish("PlaySound", {
+        soundAssetId = self.closeSound
+    })
     if self.layer > 0 then
         ViewBase.LockMouseVisible(false)
     end
@@ -176,6 +182,9 @@ end
 function ViewBase:Open()
     self.displaying = true
     self:SetVisible(true)
+    ClientEventManager.Publish("PlaySound", {
+        soundAssetId = self.openSound
+    })
     if self.layer > 0 then
         ViewBase.LockMouseVisible(true)
     end

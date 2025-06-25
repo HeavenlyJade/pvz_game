@@ -234,7 +234,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-地刺","操作":"装备"}]]
+            [[skill {"技能名":"副-地刺","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -253,7 +253,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-坚果","操作":"装备"}]]
+            [[skill {"技能名":"副-坚果","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -272,7 +272,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-樱桃炸弹","操作":"装备"}]]
+            [[skill {"技能名":"副-樱桃炸弹","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -291,7 +291,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-豌豆射手","操作":"装备"}]]
+            [[skill {"技能名":"副-豌豆射手","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -310,7 +310,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-仙人掌","操作":"装备"}]]
+            [[skill {"技能名":"副-仙人掌","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -329,7 +329,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-椰子炮","操作":"装备"}]]
+            [[skill {"技能名":"副-椰子炮","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -348,7 +348,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-火爆辣椒","操作":"装备"}]]
+            [[skill {"技能名":"副-火爆辣椒","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -367,7 +367,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-菜问","操作":"装备"}]]
+            [[skill {"技能名":"副-菜问","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -386,7 +386,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-辣椒投手","操作":"装备"}]]
+            [[skill {"技能名":"副-辣椒投手","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -405,7 +405,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-钢铁地刺","操作":"装备"}]]
+            [[skill {"技能名":"副-钢铁地刺","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -424,7 +424,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-星星果","操作":"装备"}]]
+            [[skill {"技能名":"副-星星果","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -443,7 +443,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-魅惑菇","操作":"装备"}]]
+            [[skill {"技能名":"副-魅惑菇","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -462,7 +462,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-魅惑菇","操作":"装备"}]]
+            [[skill {"技能名":"副-魅惑菇","操作":"装备"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -547,6 +547,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = true,
         ["货币序号"] = 4,
+        ["获得音效"] = "sandboxId://soundeffect/prize奖杯.ogg",
         ["取消获得物品"] = false
     }),
     ["能量豆"] = ItemType.New({
@@ -563,6 +564,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = true,
         ["货币序号"] = 3,
+        ["获得音效"] = "sandboxId://soundeffect/chime_宝石金币掉落.ogg",
         ["取消获得物品"] = false
     }),
     ["金币"] = ItemType.New({
@@ -579,6 +581,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = true,
         ["货币序号"] = 2,
+        ["获得音效"] = "sandboxId://soundeffect/moneyfalls.ogg",
         ["取消获得物品"] = false
     }),
     ["阳光"] = ItemType.New({

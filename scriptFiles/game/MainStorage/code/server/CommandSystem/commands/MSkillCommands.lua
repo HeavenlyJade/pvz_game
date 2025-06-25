@@ -242,7 +242,7 @@ function SkillCommands.main(params, player)
     local player = gg.getPlayerByUin(uin)
     local skillName = params["技能"]
     local level = params["等级"]
-    local growth = params["经验"] 
+    local growth = params["经验"]
     local optype = params["类型"]
 
     if not player then

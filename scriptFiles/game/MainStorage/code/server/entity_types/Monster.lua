@@ -83,11 +83,6 @@ function _M:Die()
         mob = self,
         damageRecords = self.damageRecords
     })
-    
-    -- 播放死亡音效
-    if self.mobType.deadSound then
-        self.scene:PlaySound(self.mobType.deadSound, self.actor, 1.0, 1.0)
-    end
 
     Entity.Die(self)
 end
@@ -222,9 +217,6 @@ end
 ---@override
 function _M:Hurt(amount, damager, isCrit)
     -- 播放受击音效
-    if self.mobType.hitSound and amount > self.health * 0.05 then
-        self.scene:PlaySound(self.mobType.hitSound, self.actor, 0.8, 1.0)
-    end
 
     -- 记录玩家造成的伤害
     if damager then
@@ -247,6 +239,16 @@ function _M:Hurt(amount, damager, isCrit)
     end
 
     Entity.Hurt(self, amount, damager, isCrit)
+    if self.health <= 0 then
+        print("PlaySound", self.mobType.deadSound)
+        if self.mobType.deadSound and damager.isPlayer then ---@cast damager Player
+            damager:PlaySound(self.mobType.deadSound, self.actor, 1.0, 1.0)
+        end
+    else
+        if amount > self.health * 0.05 and self.mobType.hitSound and damager.isPlayer then ---@cast damager Player
+            damager:PlaySound(self.mobType.hitSound, self.actor, 1.0, 1.0)
+        end
+    end
     if not self.target then
         self:SetTarget(damager)
     end

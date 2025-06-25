@@ -2749,7 +2749,7 @@
 
 
 
----@class Sound
+---@class Sound:SandboxNode
 ---@field SoundPath string 声音资源路径
 ---@field Play Button 试听
 ---@field Volume number 声音音量大小

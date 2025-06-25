@@ -103,7 +103,9 @@ function _M:initNpcs()
 end
 
 function _M:PlaySound(soundAssetId, boundTo, volume, pitch, range)
-    -- 遍历场景中的所有玩家
+    if soundAssetId == "" then
+        return
+    end
     for _, player in pairs(self.players) do
         player:PlaySound(soundAssetId, boundTo, volume, pitch, range)
     end
@@ -206,6 +208,7 @@ function _M:OnInit(node)
         self:update_npcs()
     end, 0, 0.1) -- 立即开始，每秒执行一次
     self.isSpawnScene = node:GetAttribute("是出生场景") or false
+    self.bgmSound = node:GetAttribute("背景音乐")
     if self.isSpawnScene then
         _M.spawnScene = self
     end

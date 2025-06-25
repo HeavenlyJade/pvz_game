@@ -33,7 +33,7 @@ function AfkSpot:OnInit(data, actor)
     self.subSpells = {}
     if data["定时释放魔法"] then
         for _, subSpellData in ipairs(data["定时释放魔法"]) do
-            local subSpell = SubSpell.New(subSpellData)
+            local subSpell = SubSpell.New(subSpellData, self)
             table.insert(self.subSpells, subSpell)
         end
     end

@@ -22,7 +22,8 @@ local gg                = require(MainStorage.code.common.MGlobal)    ---@type g
 ---@field dynamicTags table<string, EquipingTag[]> 动态词条
 local SubSpell = ClassMgr.Class("SubSpell")
 
-function SubSpell:OnInit( data )
+function SubSpell:OnInit( data, parent )
+    self.parent = parent ---@type Spell|nil
     self.spellCache = nil
     self.spellName = data["魔法"]
 
@@ -62,7 +63,6 @@ function SubSpell:CanCast(caster, target)
     if not self.spellCache then
         local SpellConfig = require(MainStorage.code.common.config.SpellConfig)
         self.spellCache = SpellConfig.Get(self.spellName)
-        gg.log("CanCast", self.spellName, self.spellCache)
     end
     local param = CastParam.New()
     self.spellCache:CanCast(caster, target, param)
@@ -78,6 +78,10 @@ function SubSpell:Cast(caster, target, param)
     if not self.spellCache then
         local SpellConfig = require(MainStorage.code.common.config.SpellConfig)
         self.spellCache = SpellConfig.Get(self.spellName)
+        if not self.spellCache then
+            gg.log(self.parent, "有不存在的子魔法", self.spellName)
+            return false
+        end
     end
     if not param then
         param = CastParam.New()

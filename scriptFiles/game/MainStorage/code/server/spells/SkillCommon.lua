@@ -283,6 +283,7 @@ end
 ---@param growth number|nil 目标经验值（可选，默认为0）
 ---@return table 操作结果 {success, errorCode, skillData}
 function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
+    growth = growth or 0
 
     -- 验证技能配置
     local skillType, configError = SkillCommon.ValidateSkillConfig(skillName)

@@ -12,10 +12,11 @@ local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSp
 ---@field New fun(data:table):MobSkill
 local MobSkill = ClassMgr.Class("MobSkill")
 
-function MobSkill:OnInit(data)
+function MobSkill:OnInit(data, mobType)
+    self.mobType = mobType
     self.timing = data["时机"] or "周期"
     self.defaultTarget = data["默认目标"] or "目标"
-    self.spell = SubSpell.New(data["魔法"])
+    self.spell = SubSpell.New(data["魔法"], mobType)
     -- self.power = data["power"] or 0
     self.range = data["距离"] or 0
     

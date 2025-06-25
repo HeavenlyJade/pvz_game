@@ -2,7 +2,6 @@ local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
-local soundPlayer = game:GetService("StarterGui")["UISound"] ---@type Sound
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@class ViewButton:ViewComponent
 ---@field New fun(node: SandboxNode, ui: ViewBase, path?: string, realButtonPath?: string): ViewButton
@@ -55,9 +54,10 @@ function ViewButton:OnTouchOut()
         self.img.FillColor = self.normalColor
     end
     if not self.enabled then return end
-    if self.soundRelease and soundPlayer then
-        soundPlayer.SoundPath = self.soundRelease
-        soundPlayer:PlaySound()
+    if self.soundRelease then
+        ClientEventManager.Publish("PlaySound", {
+            soundAssetId = self.soundRelease
+        })
     end
 
     -- Handle child images
@@ -89,9 +89,10 @@ function ViewButton:OnTouchIn(vector2)
     if self.clickColor then
         self.img.FillColor = self.clickColor
     end
-    if self.soundPress and soundPlayer then
-        soundPlayer.SoundPath = self.soundPress
-        soundPlayer:PlaySound()
+    if self.soundPress then
+        ClientEventManager.Publish("PlaySound", {
+            soundAssetId = self.soundPress
+        })
     end
 
     -- Handle child images
@@ -144,9 +145,10 @@ function ViewButton:OnHoverIn(vector2)
     if self.hoverColor then
         self.img.FillColor = self.hoverColor
     end
-    if self.soundHover and soundPlayer then
-        soundPlayer.SoundPath = self.soundHover
-        soundPlayer:PlaySound()
+    if self.soundHover then
+        ClientEventManager.Publish("PlaySound", {
+            soundAssetId = self.soundPress
+        })
     end
 
     -- Handle child images

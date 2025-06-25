@@ -139,6 +139,38 @@ function Level:OnInit(levelType, scene, index)
         end
     end)
 
+    -- 监听玩家死亡事件
+    ServerEventManager.Subscribe("PlayerDeadEvent", function(data)
+        if self.isActive and data.player and self.players[data.player.uin] then
+            -- 播放失败音效
+            if self.levelType.loseSound then
+                data.player:PlaySound(self.levelType.loseSound)
+            end
+            
+            -- 减少玩家数量
+            self.playerCount = math.max(0, self.playerCount - 1)
+            
+            -- 通知其他玩家
+            for _, player in pairs(self.players) do
+                if player.uin ~= data.player.uin then
+                    player:SendChatText(string.format("玩家 %s 已阵亡", data.player.name))
+                end
+            end
+            -- 检查是否所有玩家都死亡
+            local alivePlayerCount = 0
+            for _, player in pairs(self.players) do
+                if not player.isDead then
+                    alivePlayerCount = alivePlayerCount + 1
+                end
+            end
+            
+            if alivePlayerCount == 0 then
+                -- 所有玩家都死亡，结束关卡
+                self:End(false)
+            end
+        end
+    end)
+
     -- 订阅玩家退出事件
     ServerEventManager.Subscribe("PlayerLeaveGameEvent", function(event)
         local player = event.player
@@ -302,8 +334,10 @@ function Level:StartWave()
     for _, player in pairs(self.players) do
         player:SendEvent("WaveHealthUpdate", {
             waveIndex = self.waveCount,
-            healthPercent = 1.0
+            healthPercent = 1.0,
+            waveImg = self.currentWave.waveImg
         })
+        player:PlaySound(self.currentWave.waveSound)
     end
 end
 
@@ -370,13 +404,15 @@ function Level:Update()
                 mob:AddStat(attrName, mult * mob:GetStat(attrName), "BASE", true)
             end
             
-            -- 随机选择一个玩家作为目标
-            local players = {}
+            -- 随机选择一个活着的玩家作为目标
+            local alivePlayers = {}
             for _, player in pairs(self.players) do
-                table.insert(players, player)
+                if not player.isDead then
+                    table.insert(alivePlayers, player)
+                end
             end
-            if #players > 0 then
-                local randomPlayer = players[math.random(1, #players)]
+            if #alivePlayers > 0 then
+                local randomPlayer = alivePlayers[math.random(1, #alivePlayers)]
                 mob:SetTarget(randomPlayer)
             end
         end
@@ -529,6 +565,14 @@ function Level:End(success)
     end
 
     for _, player in pairs(self.players) do
+        -- 复活死亡的玩家
+        if player.isDead then
+            player:CompleteRespawn()
+        end
+        
+        if success then
+            player:PlaySound(self.levelType.winSound)
+        end
         local originalPos = self.playerOriginalPositions[player.uin]
         if player.actor and originalPos then
             player:ProcessQuestEvent("level_".. self.levelType.levelId, 1)
@@ -539,7 +583,7 @@ function Level:End(success)
         end
         local stats = self.playerStats[player.uin] or {kills = {}, rewards = {}}
         player:SendEvent("DungeonClearedStats", {
-            text = "关卡完成！",
+            text = success and "关卡完成！" or "关卡失败！",
             kills = stats.kills,
             rewards = stats.rewards
         })
@@ -570,7 +614,7 @@ end
 
 ---移除玩家
 ---@param player Player
-function Level:RemovePlayer(player)
+function Level:RemovePlayer(player, success)
     if self.players[player.uin] then
         self.players[player.uin] = nil
         self.playerCount = self.playerCount - 1

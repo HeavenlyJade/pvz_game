@@ -9,6 +9,7 @@ local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
 local SkillCommon = require(MainStorage.code.server.spells.SkillCommon) ---@type SkillCommon
 local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
+local MiscConfig = require(MainStorage.code.common.config.MiscConfig) ---@type MiscConfig
 
 
 ---@class SkillEventManager
@@ -285,6 +286,17 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         maxLevel = skillType.maxLevel,
         growth = upgradedSkill.growth
     }
+    -- 播放升级音效
+    local misc = MiscConfig.Get("总控")
+    if skillType.category == 0 then
+        if skillType.activeSpell then
+            player:PlaySound(misc["主动技能升级音效"])
+        else
+            player:PlaySound(misc["被动技能升级音效"])
+        end
+    else
+        player:PlaySound(misc["次要技能升级音效"])
+    end
     gg.log("发送技能升级响应", responseData)
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, responseData)
 end
@@ -432,7 +444,17 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
     player.bag:SyncToClient()
 
     gg.log("一键强化成功", skillName, "原等级:", currentLevel, "最终等级:", targetLevel)
-
+    -- 播放升级音效
+    local misc = MiscConfig.Get("总控")
+    if skillType.category == 0 then
+        if skillType.activeSpell then
+            player:PlaySound(misc["主动技能升级音效"])
+        else
+            player:PlaySound(misc["被动技能升级音效"])
+        end
+    else
+        player:PlaySound(misc["次要技能升级音效"])
+    end
     -- 发送响应
     local responseData = {
         skillName = skillName,
@@ -640,6 +662,9 @@ function SkillEventManager.HandleEquipSkill(evt)
     local success = player:EquipSkill(skillName, slot)
     if success then
         gg.log("技能装备成功: " .. skillName .. " 槽位: " .. slot)
+        -- 播放装备音效
+        local misc = MiscConfig.Get("总控")
+        player:PlaySound(misc["技能装备音效"])
         -- SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
         --     skillName = skillName,
         --     slot = slot
@@ -700,6 +725,8 @@ function SkillEventManager.HandleUnequipSkill(evt)
         player:saveSkillConfig()
 
         gg.log("技能卸下成功:", skillName, "槽位:", slot)
+        local misc = MiscConfig.Get("总控")
+        player:PlaySound(misc["技能卸下音效"])
 
         local responseData = {
             skillName = skillName,
@@ -767,6 +794,17 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
         slot = existingSkill.equipSlot or 0
     }
 
+    -- 播放升级音效
+    local misc = MiscConfig.Get("总控")
+    if skillType.category == 0 then
+        if skillType.activeSpell then
+            player:PlaySound(misc["主动技能升级音效"])
+        else
+            player:PlaySound(misc["被动技能升级音效"])
+        end
+    else
+        player:PlaySound(misc["次要技能升级音效"])
+    end
     gg.log("发送技能升星响应", responseData)
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE_STAR, responseData)
 end

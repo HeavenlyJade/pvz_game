@@ -23,7 +23,7 @@ function DamageTag:OnInit(data)
     self["释放魔法"] = {}
     if data["释放魔法"] then
         for _, subSpellData in ipairs(data["释放魔法"]) do
-            local subSpell = SubSpell.New(subSpellData)
+            local subSpell = SubSpell.New(subSpellData, self.m_tagType)
             table.insert(self["释放魔法"], subSpell)
         end
     end

@@ -71,6 +71,7 @@ function ItemType:OnInit(data)
     -- 售出
     self.sellableTo = data["可售出为"]
     self.sellPrice = data["售出价格"] or 0
+    self.gainSound = data["获得音效"]
     -- 货币
     self.showInBag = data["在背包里显示"] or true
     self.isMoney = data["是货币"]

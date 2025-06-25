@@ -432,6 +432,7 @@ function Bag:GiveItem(item)
             item = item:Save()
         })
     end
+    self.player:PlaySound(item.itemType.gainSound)
     return true
 end
 

@@ -133,7 +133,7 @@ function MailGui:RegisterButtonEvents()
     self.mailSystemButtom.clickCb = function()self:SwitchCategory("系统邮件")end
     self.mailPlayerButtom.clickCb = function()self:SwitchCategory("玩家邮件")end
     self.deleteButton.clickCb = function()self:OnDeleteReadMails()  end
-    
+
 end
 
 -- 注册服务端事件
@@ -227,7 +227,7 @@ function MailGui:HandleNewMailNotification(data)
     gg.log("收到新邮件通知", data)
 
     local mailInfo = data and data.mail_info
-  
+
     gg.log("收到新邮件数据:", mailInfo.title, mailInfo.id)
 
     -- 1. 根据邮件类型，将新邮件添加到对应的本地数据表中
@@ -240,13 +240,13 @@ function MailGui:HandleNewMailNotification(data)
         targetDataList = self.systemMails
         targetViewList = self.mailSystemList
     end
-    
+
     -- 检查邮件是否已存在，避免重复添加
     if targetDataList[mailInfo.id] then
         gg.log("⚠️ 邮件已存在，跳过添加:", mailInfo.id)
         return
     end
-    
+
     targetDataList[mailInfo.id] = mailInfo
 
     -- 构造正确格式的 mailItemData
@@ -258,7 +258,7 @@ function MailGui:HandleNewMailNotification(data)
         self:CreateAttachmentListForMail(mailInfo.id, mailInfo)
     end
     targetViewList:_refreshLayout()
-    
+
 end
 
 -- 获取邮件总数
@@ -307,7 +307,7 @@ end
 function MailGui:_sortMailComparator(a, b)
     local aClaimed = a.data.is_claimed or false
     local bClaimed = b.data.is_claimed or false
-    
+
     -- 优先级1: 未领取的在前面
     if not aClaimed and bClaimed then
         return true
@@ -471,7 +471,7 @@ function MailGui:CreateAttachmentListForMail(mailId, mailInfo)
         gg.log("❌ 奖励列表模板、项目模板或容器未找到，无法为邮件创建附件列表:", mailId)
         return
     end
-    local str_mailid = tostring(mailId) 
+    local str_mailid = tostring(mailId)
     -- 1. 克隆列表容器节点
     local newListContainerNode = self.rewardListTemplate.node:Clone()
     newListContainerNode.Parent = self.rewardDisplay.node
@@ -479,7 +479,7 @@ function MailGui:CreateAttachmentListForMail(mailId, mailInfo)
 
     -- 2. 处理奖励数据
     local rewardItems = self:ProcessRewardData(mailInfo.attachments)
-    
+
     -- 3. 创建ViewList实例来管理附件列表
     local rewardDisplayNode = ViewList.New(newListContainerNode, self, "邮箱背景/邮件内容/附件/" .. str_mailid, function(itemNode, childPath)
         -- 为每个附件项创建ViewComponent
@@ -783,7 +783,7 @@ function MailGui:HandleClaimResponse(data)
 
     if data.success and data.mail_id then
         local mailIdStr = tostring(data.mail_id)
-        
+
         -- 更新本地数据
         if self.playerMails[mailIdStr] then
             self.playerMails[mailIdStr].is_claimed = true
@@ -818,7 +818,7 @@ function MailGui:HandleBatchClaimResponse(data)
             local mailIdStr = tostring(claimedMail.id)
             ---@type MailData
             local mailInfo
-            
+
             if self.playerMails[mailIdStr] then
                 mailInfo = self.playerMails[mailIdStr]
             elseif self.systemMails[mailIdStr] then
@@ -827,13 +827,13 @@ function MailGui:HandleBatchClaimResponse(data)
 
             if mailInfo then
                 mailInfo.is_claimed = true
-                
+
                 -- 更新UI项
                 local mailItemComponent = self.mailButtons[mailIdStr]
                 if mailItemComponent then
                     self:SetupMailItemDisplay(mailItemComponent.node, mailInfo)
                 end
-                
+
                 -- 如果是当前选中的邮件，也更新详情面板
                 if self.currentSelectedMail and tostring(self.currentSelectedMail.id) == mailIdStr then
                     self.currentSelectedMail.data.is_claimed = true
@@ -842,7 +842,7 @@ function MailGui:HandleBatchClaimResponse(data)
                 end
             end
         end
-        
+
         -- 更新一键领取按钮状态
         self:UpdateDetailButtons(self.currentSelectedMail and self.currentSelectedMail.data or {})
 

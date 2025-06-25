@@ -136,16 +136,16 @@ end
 function _M:RefreshNewDay()
     local currentTime = os.time()
     local currentDate = os.date("*t", currentTime)
-    
+
     -- 获取上次刷新的时间
     local lastDailyRefresh = self:GetVariable("day_refresh", 0)
     local lastWeeklyRefresh = self:GetVariable("week_refresh", 0)
     local lastMonthlyRefresh = self:GetVariable("month_refresh", 0)
-    
+
     -- 检查是否需要每日刷新
     local lastDailyDate = os.date("*t", lastDailyRefresh)
-    if lastDailyDate.year ~= currentDate.year or 
-       lastDailyDate.month ~= currentDate.month or 
+    if lastDailyDate.year ~= currentDate.year or
+       lastDailyDate.month ~= currentDate.month or
        lastDailyDate.day ~= currentDate.day then
         self:RemoveVariable("daily_")
         local dailyCommands = MiscConfig.Get("总控")["每日刷新指令"]
@@ -153,7 +153,7 @@ function _M:RefreshNewDay()
             self:ExecuteCommands(dailyCommands)
         end
         self:SetVariable("day_refresh", currentTime)
-        
+
         -- 检查是否需要每周刷新
         local lastWeeklyDate = os.date("*t", lastWeeklyRefresh)
         local daysSinceLastWeekly = math.floor((currentTime - lastWeeklyRefresh) / (24 * 3600))
@@ -165,10 +165,10 @@ function _M:RefreshNewDay()
             end
             self:SetVariable("week_refresh", currentTime)
         end
-        
+
         -- 检查是否需要每月刷新
         local lastMonthlyDate = os.date("*t", lastMonthlyRefresh)
-        if lastMonthlyDate.year ~= currentDate.year or 
+        if lastMonthlyDate.year ~= currentDate.year or
            lastMonthlyDate.month ~= currentDate.month then
             self:RemoveVariable("monthly_")
             local monthlyCommands = MiscConfig.Get("总控")["每月刷新指令"]
@@ -185,12 +185,12 @@ end
 ---@param mark boolean true=标记, false=取消标记
 function _M:MarkNew(path, mark)
     if not path then return end
-    
+
     -- 初始化news表（如果不存在）
     if not self.news then
         self.news = {}
     end
-    
+
     -- 分割路径
     local current = self.news
     local parts = {}
@@ -198,7 +198,7 @@ function _M:MarkNew(path, mark)
     for part in path:gmatch("[^/]+") do
         table.insert(parts, part)
     end
-    
+
     -- 创建或删除嵌套表结构
     for i, part in ipairs(parts) do
         if i == #parts then
@@ -219,7 +219,7 @@ function _M:MarkNew(path, mark)
             current = current[part]
         end
     end
-    
+
     -- 递归清理空表
     if not mark then
         for i = #parentTables, 1, -1 do
@@ -238,7 +238,7 @@ end
 ---@return boolean
 function _M:IsNew(path)
     if not path or not self.news then return false end
-    
+
     local current = self.news
     for part in path:gmatch("[^/]+") do
         if not current[part] then
@@ -246,7 +246,7 @@ function _M:IsNew(path)
         end
         current = current[part]
     end
-    
+
     return true
 end
 
@@ -299,7 +299,6 @@ function _M:RefreshQuest(key)
             local questConfig = require(MainStorage.code.common.config.QuestConfig).Get(questId)
             shouldRefresh = questConfig and questConfig.refreshType == key
         else
-            gg.log("refresh", questId, key, string.find(questId, key) )
             shouldRefresh = string.find(questId, key) ~= nil
         end
 
@@ -595,6 +594,15 @@ function _M:syncSkillData()
         skillData = skillData
     })
 end
+
+
+function _M:ChangeScene(new_scene)
+    if new_scene.bgmSound then
+        self:PlaySound(new_scene.bgmSound, nil, 0.2, nil, nil, "bgm")
+    end
+    Entity.ChangeScene(self, new_scene)
+end
+
 
 -- 修改装备技能函数，添加词条更新
 function _M:EquipSkill(skillId, slot)
@@ -983,21 +991,31 @@ end
 
 ---播放音效
 ---@param soundAssetId string 音效资源ID
----@param boundTo SandboxNode|Vec3 音效绑定目标(实体或位置)
----@param volume number 音量大小(0-1)
----@param pitch number 音调大小(0-2)
----@param range number 音效范围
-function _M:PlaySound(soundAssetId, boundTo, volume, pitch, range)
+---@param boundTo? SandboxNode|Vec3 音效绑定目标(实体或位置)
+---@param volume? number 音量大小(0-1)
+---@param pitch? number 音调大小(0-2)
+---@param range? number 音效范围
+---@param key? string
+function _M:PlaySound(soundAssetId, boundTo, volume, pitch, range, key)
     local data = {
         soundAssetId = soundAssetId,
         volume = volume or 1.0,
         pitch = pitch or 1.0,
-        range = range or 6000
+        range = range or 6000,
+        key = key
     }
 
-    -- 根据绑定目标类型设置位置
-    if type(boundTo) == "userdata" then ---@cast boundTo SandboxNode
-        data.boundTo = gg.GetFullPath(boundTo)
+    if not boundTo then
+        local pos = self:GetPosition()
+        data.position = {pos.x, pos.y, pos.z}
+    elseif type(boundTo) == "userdata" then
+        if boundTo.IsA then
+            ---@cast boundTo SandboxNode
+            data.boundTo = gg.GetFullPath(boundTo)
+        else
+            ---@cast boundTo Vector3
+            data.position = {boundTo.x, boundTo.y, boundTo.z}
+        end
     elseif type(boundTo) == "table" and boundTo.x then
         -- 如果是Vec3，直接使用位置
         data.position = {boundTo.x, boundTo.y, boundTo.z}

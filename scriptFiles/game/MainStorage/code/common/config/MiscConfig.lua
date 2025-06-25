@@ -1,4 +1,3 @@
-
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
@@ -17,21 +16,21 @@ local function LoadConfig()
                 ["菜单按钮名"] = "每日奖励_2",
                 ["按键"] = "P",
                 ["指令"] = {
-                    [[viewUI {"界面ID":"在线奖励"}]]
+                    [[viewUI {"界面ID":"在线奖励"} ]]
                 }
             },
             ["月卡奖励_3"] = {
                 ["菜单按钮名"] = "月卡奖励_3",
                 ["按键"] = "I",
                 ["指令"] = {
-                    [[viewUI {"界面ID":"月卡"}]]
+                    [[viewUI {"界面ID":"月卡"} ]]
                 }
             },
             ["商城购买_1"] = {
                 ["菜单按钮名"] = "商城购买_1",
                 ["按键"] = "O",
                 ["指令"] = {
-                    [[viewUI {"界面ID":"道具"}]]
+                    [[viewUI {"界面ID":"道具"} ]]
                 }
             }
         },
@@ -53,14 +52,20 @@ local function LoadConfig()
             }
         },
         ["每日刷新指令"] = {
-            [[title {"信息":"每日刷新"}]]
+            [[title {"信息":"每日刷新"} ]]
         },
         ["每周刷新指令"] = {
-            [[title {"信息":"每周刷新"}]]
+            [[title {"信息":"每周刷新"} ]]
         },
         ["每月刷新指令"] = {
-            [[title {"信息":"每月刷新"}]]
-        }
+            [[title {"信息":"每月刷新"} ]]
+        },
+        ["主动技能升级音效"] = "sandboxId://soundeffect/wakeup唤醒.ogg",
+        ["被动技能升级音效"] = "sandboxId://soundeffect/points点.ogg",
+        ["次要技能升级音效"] = "sandboxId://soundeffect/points点.ogg",
+        ["技能装备音效"] = "sandboxId://soundeffect/plant_lift.ogg",
+        ["技能卸下音效"] = "sandboxId://soundeffect/shovel铲子.ogg",
+        ["任务完成音效"] = "sandboxId://soundeffect/quest_cleared.mp3"
     }
 }loaded = true
 end

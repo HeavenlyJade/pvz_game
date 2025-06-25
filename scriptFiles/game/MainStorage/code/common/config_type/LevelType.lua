@@ -152,6 +152,8 @@ function Wave:OnInit(data)
     
     -- 加载掉落物配置
     self.dropItems = data["掉落物"] or {} ---@type DropItemInfo[]
+    self.waveImg = data["转波次文字"]
+    self.waveSound = data["转波次音效"]
 end
 
 ---执行波次开始时的指令
@@ -254,6 +256,8 @@ function LevelType:OnInit(data)
     -- 玩家数量倍率配置
     self.playerCountMultiplier = data["每个玩家增加数量倍率"] or 0 ---@type number
     self.playerAttributeMultiplier = data["每个玩家增加属性倍率"] or {} ---@type table<string, number>
+    self.winSound = data["胜利音效"]
+    self.loseSound = data["失败音效"]
 
     -- 初始化匹配相关属性
     self.matchQueue = {} ---@type table<string, Player>

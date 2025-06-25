@@ -70,7 +70,7 @@ function ProjectileSpell:OnInit(data)
     self.subSpellsOnEnd = {} ---@type SubSpell[]
     if data["结束子魔法"] then
         for _, subSpellData in ipairs(data["结束子魔法"]) do
-            local subSpell = SubSpell.New(subSpellData)
+            local subSpell = SubSpell.New(subSpellData, self)
             table.insert(self.subSpellsOnEnd, subSpell)
         end
     end

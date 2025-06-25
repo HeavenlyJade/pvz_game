@@ -384,7 +384,7 @@ function BattleHud:OnInit(node, config)
         -- 检查波次是否发生变化
         if data.waveIndex ~= self.currentWaveIndex then
             self.currentWaveIndex = data.waveIndex
-            self:PlayWaveApproaching()
+            self:PlayWaveApproaching(data.waveImg)
         end
         
         local previousWavesMobCount = 0
@@ -430,8 +430,11 @@ function BattleHud:OnInit(node, config)
 end
 
 ---播放波次接近动画
-function BattleHud:PlayWaveApproaching()
+function BattleHud:PlayWaveApproaching(waveImg)
     local approaching = self:Get("大波僵尸").node
+    if waveImg then
+        approaching.Icon = waveImg
+    end
     approaching.Visible = true
     approaching.Scale = Vector2.New(3,3)
     approaching.FillColor = ColorQuad.New(255, 255, 255, 0)

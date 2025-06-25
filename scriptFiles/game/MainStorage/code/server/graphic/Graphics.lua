@@ -424,7 +424,7 @@ function SoundGraphic:PlayAtReal(caster, target, param)
     if self.boundToEntity and target.isEntity then
         boundTo = target.actor
     else
-        boundTo = target:GetPosition()
+        boundTo = gg.Vec3.new(target:GetPosition())
     end
     caster.scene:PlaySound(self.soundAssetId, boundTo, self.volume, self.pitch)
 end

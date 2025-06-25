@@ -68,7 +68,7 @@ function Spell:OnInit( data )
     self.subSpells = {}
     if data["子魔法"] then
         for _, subSpellData in ipairs(data["子魔法"]) do
-            local subSpell = SubSpell.New(subSpellData)
+            local subSpell = SubSpell.New(subSpellData, self)
             table.insert(self.subSpells, subSpell)
         end
     end
