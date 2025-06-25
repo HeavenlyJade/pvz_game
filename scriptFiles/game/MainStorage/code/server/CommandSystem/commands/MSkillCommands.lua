@@ -41,17 +41,8 @@ function SkillCommands.unlock(params, player)
     -- 成功消息
     local successMsg = SkillCommon.FormatSuccessMessage("技能解锁成功", player, skillName)
     SkillCommon.SendMessageAndLog(player, successMsg, false)
-
-    -- 发送响应到客户端
-    local responseData = {
-        skillName = skillName,
-        level = skill.level,
-        slot = skill.equipSlot
-    }
-    gg.network_channel:fireClient(player.uin, {
-        cmd = SkillEventConfig.RESPONSE.LEARN,
-        data = responseData
-    })
+    -- 同步最新的技能数据到客户端，确保UI正确更新
+    player:syncSkillData()
 end
 
 ---@param params table
@@ -242,7 +233,7 @@ function SkillCommands.main(params, player)
     local player = gg.getPlayerByUin(uin)
     local skillName = params["技能"]
     local level = params["等级"]
-    local growth = params["经验"]
+    local growth = params["经验"] 
     local optype = params["类型"]
 
     if not player then

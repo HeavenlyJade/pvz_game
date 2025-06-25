@@ -18,7 +18,7 @@ local SkillCommon = {}
 
 --- 验证技能配置是否存在
 ---@param skillName string 技能名称
----@return SkillType|nil, number 技能配置和错误码
+---@return SkillType|nil, SkillType 技能配置和错误码
 function SkillCommon.ValidateSkillConfig(skillName)
     if not skillName or skillName == "" then
         return nil, SkillEventConfig.ERROR_CODES.INVALID_PARAMETERS

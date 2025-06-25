@@ -173,7 +173,7 @@ end
 
 -- 处理邮件列表响应
 function MailGui:HandleMailListResponse(data)
-    gg.log("收到邮件列表响应", data)
+    -- gg.log("收到邮件列表响应", data)
 
     if not data then
         gg.log("邮件列表响应数据为空")

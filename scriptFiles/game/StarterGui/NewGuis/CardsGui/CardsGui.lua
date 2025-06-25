@@ -391,9 +391,6 @@ function CardsGui:_setSubCardQualityIcons(cardNode, skillType)
     -- 使用通用函数设置副卡底图
     self:_setCardIcon(cardNode, iconQualityResources)
 
-    -- gg.log("设置副卡品质图标:", skillType.name, "品质:", quality,
-    --        "卡框图标:", frameQualityResources.iconPath,
-    --        "底图图标:", iconQualityResources.iconPath)
 end
 
 
@@ -477,11 +474,6 @@ function CardsGui:RegisterSkillEvents()
     -- 监听技能升星响应
     ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.UPGRADE_STAR, function(data)
         self:OnSkillUpgradeStarResponse(data)
-    end)
-
-    -- 监听单个新技能添加事件
-    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.LEARN, function(data)
-        self:HandleNewSkillAdd(data)
     end)
 
     -- 监听技能装备响应
@@ -769,16 +761,7 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
                     end
                 end, {skillId = skillName})
 
-                -- 更新全局存储
-                self.mainCardButtonStates[skillName] = {
-                    button = mainCardButton,
-                    position = newIndex,
-                    serverUnlocked = false,
-                    isEquipped = false,
-                    equipSlot = 0,
-                    serverData = nil,
-                    configData = skillType
-                }
+                self.mainCardButtonStates[skillName].button = mainCardButton
             end
 
             -- 步骤 3: 更新按钮状态（无论是新是旧）
@@ -796,10 +779,11 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
     for skillName, child in pairs(existingChildrenMap) do
         if child and child.node then
             child.node:Destroy()
-            -- 从字典中移除，防止内存泄漏
+            -- 修复：完整地清理所有相关引用，防止内存泄漏
             if self.mainCardButtonStates[skillName] then
-                self.mainCardButtonStates[skillName] = nil
+                self.mainCardButtonStates[skillName].button = nil
             end
+            -- 注意：mainCardButtondict存储的是技能树内部的按钮，在此处不应被清理
         end
     end
 
@@ -998,6 +982,7 @@ function CardsGui:UpdateAllSkillButtonsGrayState()
     -- 优化：使用单次遍历更新所有技能按钮状态
     for skillName, skillButton in pairs(self.mainCardButtondict) do
         local isUnlocked = self.ServerSkills[skillName] ~= nil
+        
         skillButton:SetGray(not isUnlocked)
     end
 end
@@ -2230,79 +2215,7 @@ function CardsGui:BindQualityButtonEvents()
 end
 
 
--- 处理单个新技能添加
-function CardsGui:HandleNewSkillAdd(data)
-    if not data or not data.data then
-        return
-    end
 
-    local responseData = data.data
-    local skillName = responseData.skillName
-    local skillLevel = responseData.level or 0
-    local skillSlot = responseData.slot or 0
-
-    if not skillName then
-        return
-    end
-
-    -- 构建技能数据
-    local skillData = {
-        level = skillLevel,
-        slot = skillSlot,
-        skill = skillName
-    }
-
-    -- 更新服务端技能数据
-    self.ServerSkills[skillName] = skillData
-
-    -- 记录已装备的技能
-    if skillSlot > 0 then
-        self.equippedSkills[skillSlot] = skillName
-    end
-
-    -- 获取技能配置
-    local skillType = SkillTypeConfig.Get(skillName)
-    if not skillType or not skillType.isEntrySkill then
-        return
-    end
-
-    -- 根据技能类型生成对应的卡片
-    if skillType.category == 0 then
-        -- 主卡技能
-        self:AddNewMainCardSkill(skillName, skillType, skillData)
-    elseif skillType.category == 1 then
-        -- 副卡技能
-        self:AddNewSubCardSkill(skillName, skillType, skillData)
-    end
-
-    -- 更新技能按钮的灰色状态（新获得的技能应该不是灰色）
-    if self.mainCardButtondict[skillName] then
-        self.mainCardButtondict[skillName].img.Grayed = false
-    end
-
-end
-
--- === 修改：添加新的主卡技能（适配新逻辑）===
-function CardsGui:AddNewMainCardSkill(skillName, skillType, skillData)
-
-    -- 检查按钮状态
-    local mainCardButton = self.mainCardButtonStates[skillName].button
-    if not mainCardButton then
-        -- 如果是配置中不存在的新技能，需要动态添加
-        self:AddDynamicMainCardSkill(skillName, skillType, skillData)
-        -- 重新排序
-        self:SortAndUpdateMainCardLayout()
-        return
-    end
-    -- 更新装备状态
-    self:UpdateMainCardEquipStatus(skillName, skillData)
-    -- 恢复按钮正常颜色
-    if mainCardButton then
-        mainCardButton:SetGray(false)
-    end
-    -- 重新排序主卡按钮
-    self:SortAndUpdateMainCardLayout()
-end
 
 -- === 新增：动态添加配置中不存在的主卡技能 ===
 function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
@@ -2394,32 +2307,6 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
     end
 end
 
--- === 修改：添加新的副卡技能（适配新逻辑）===
-function CardsGui:AddNewSubCardSkill(skillName, skillType, skillData)
-
-    -- 检查按钮状态
-    local buttonState = self.subCardButtonStates[skillName]
-    if not buttonState then
-        -- 如果是配置中不存在的新技能，需要动态添加
-        self:AddDynamicSubCardSkill(skillName, skillType, skillData)
-        return
-    end
-
-    if buttonState.serverUnlocked then
-        return
-    end
-    -- 标记为服务端已解锁
-    buttonState.serverUnlocked = true
-    -- 恢复按钮正常颜色
-    if buttonState.button then
-        buttonState.button.img.Grayed = false
-        buttonState.button.extraParams.serverData = skillData
-    end
-
-    -- 重新排序副卡按钮
-    self:SortAndUpdateSubCardLayout()
-
-end
 
 -- === 新增：动态添加配置中不存在的副卡技能 ===
 function CardsGui:AddDynamicSubCardSkill(skillName, skillType, skillData)
@@ -2699,8 +2586,7 @@ function CardsGui:ProcessServerSubCardData(serverSubskillDic)
                 -- 标记为服务端已解锁
                 buttonState.serverUnlocked = true
                 self:UpdateSubCardEquipStatus(skillName, serverData)
-                if buttonState.button then
-                    -- 恢复按钮正常颜色（已解锁）
+                if buttonState.button then       
                     buttonState.button:SetGray(false)
                     -- 更新按钮的服务端数据
                     buttonState.button.extraParams.serverData = serverData
@@ -2772,6 +2658,7 @@ end
 function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
     -- gg.log("副卡重新排序", quality, sortedCards)
     local qualityList = self.subQualityLists[quality]
+    -- gg.log("副卡重新排序", quality, sortedCards,qualityList)
     if not qualityList then return end
 
     -- 获取副卡模板
@@ -2788,6 +2675,7 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
             existingChildrenMap[child.node.Name] = child
         end
     end
+    -- gg.log("existingChildrenMap",existingChildrenMap)
     -- 步骤 2: 遍历排序后的列表，协调UI状态
     local newChildrens = {}
     for newIndex, skillName in ipairs(sortedCards) do
@@ -2796,11 +2684,9 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
         if buttonState and buttonState.configData then
             local skillType = buttonState.configData
             local subCardButton
-
             -- 检查节点是否已存在
             if existingChildrenMap[skillName] then
                 subCardButton = existingChildrenMap[skillName]
-
                 -- 标记为已处理，这样它就不会在末尾被删除
                 existingChildrenMap[skillName] = nil
             else
@@ -2815,28 +2701,13 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
                 self.subCardButtondict[skillName] = subCardButton
                 self.subCardButtonStates[skillName].button = subCardButton
             end
-
+            
             subCardButton:SetVisible(true)
             self:SetSkillLevelSubCardFrame(subCardButton.node, skillType)
-            subCardButton:SetGray(not buttonState.serverUnlocked)
             buttonState.position = newIndex
             table.insert(newChildrens, subCardButton)
         end
     end
-
-    -- 新增：步骤 4: 移除不再需要的旧节点
-    for skillName, child in pairs(existingChildrenMap) do
-        if child and child.node then
-            child.node:Destroy()
-            -- 从字典中移除，防止内存泄漏
-            self.subCardButtondict[skillName] = nil
-            if self.subCardButtonStates[skillName] then
-                self.subCardButtonStates[skillName].button = nil
-            end
-        end
-    end
-
-    -- 步骤 5: 应用新的子节点列表并刷新布局
     qualityList.childrens = newChildrens
     qualityList:_refreshLayout()
 end
@@ -3067,7 +2938,6 @@ function CardsGui:HandleInventorySync(data)
 
 
     -- 打印整合后的库存数据
-    gg.log("=== CardsGui - 玩家库存数据 ===")
     local sortedItems = {}
     for itemName, amount in pairs(inventory) do
         table.insert(sortedItems, {name = itemName, amount = amount})
@@ -3482,7 +3352,6 @@ function CardsGui:UpdateMainCardResourceCost(attributeButton, skill, currentLeve
 
     local descNode = attributeButton["卡片介绍"]
     if descNode then
-        gg.log("Skill", skill)
         descNode.Title = skill:GetDescription()
     end
     local des = self:GetDescriptions(skill, currentLevel)

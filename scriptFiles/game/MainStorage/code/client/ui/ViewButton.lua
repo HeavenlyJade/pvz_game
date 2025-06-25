@@ -35,10 +35,11 @@ end
 
 function ViewButton:SetGray(isGray)
     self.img.Grayed = isGray
-    for _, props in pairs(self.childClickImgs) do
-        local child = props.node
-        child.Grayed= isGray
-    end
+    -- gg.log("self.childClickImgs",self.childClickImgs)
+    -- for _, props in pairs(self.childClickImgs) do
+    --     local child = props.node
+    --     child.Grayed= isGray
+    -- end
 end
 
 function ViewButton:OnTouchOut()
