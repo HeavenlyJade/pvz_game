@@ -534,8 +534,8 @@ end
 --鼠标移动
 function CameraController.InputMove(deltaX, deltaY)
     -- 修复坐标轴映射：deltaX应该影响Y轴旋转（水平转动），deltaY应该影响X轴旋转（垂直转动）
-    local mouseXinput = deltaY  -- 垂直输入影响俯仰角（X轴旋转）
-    local mouseYinput = deltaX  -- 水平输入影响偏航角（Y轴旋转）
+    local mouseXinput = deltaX  -- 水平输入影响偏航角（Y轴旋转）
+    local mouseYinput = deltaY  -- 垂直输入影响俯仰角（X轴旋转） 
     
     if _invertMouseX then
         mouseXinput = -mouseXinput
@@ -551,8 +551,8 @@ function CameraController.InputMove(deltaX, deltaY)
         mouseYinput = 0
     end
 
-    _rawMouseX = _rawMouseX + mouseXinput * _mouseXSensitivity
-    _rawMouseY = _rawMouseY + mouseYinput * _mouseYSensitivity
+    _rawMouseX = _rawMouseX + mouseYinput * _mouseXSensitivity
+    _rawMouseY = _rawMouseY + mouseXinput * _mouseYSensitivity
     --限制角度
     _rawMouseX = math.clamp(_rawMouseX, _mouseXMin, _mouseXMax)
 end
