@@ -146,16 +146,22 @@ function SpellTag:TriggerReal(caster, target, castParam, param, log)
                 -- spellParam.extraModifiers[name] = ClassMgr.New("Battle", {caster, caster, name})
             end
             
-            spellParam.extraModifiers[name]:AddModifier(
-                self.m_tagType.id, 
-                modifier.paramValue.addType, 
-                modifier.paramValue.multiplier
-            )
-            
-            if self.printMessage then
-                table.insert(log, string.format("%s.%s：修改%s的%s为%.2f", 
-                    self.m_tagType.id, self.m_tagIndex, 
-                    name, modifier.paramValue.addType, modifier.paramValue.multiplier))
+            -- 添加安全检查，确保Battle对象存在且有AddModifier方法
+            local battleObj = spellParam.extraModifiers[name]
+            if battleObj and battleObj.AddModifier then
+                battleObj:AddModifier(
+                    self.m_tagType.id, 
+                    modifier.paramValue.addType, 
+                    modifier.paramValue.multiplier
+                )
+                
+                if self.printMessage then
+                    table.insert(log, string.format("%s.%s：修改%s的%s为%.2f", 
+                        self.m_tagType.id, self.m_tagIndex, 
+                        name, modifier.paramValue.addType, modifier.paramValue.multiplier))
+                end
+            else
+                gg.log("错误：Battle对象创建失败或缺少AddModifier方法", name, battleObj)
             end
         end
     end

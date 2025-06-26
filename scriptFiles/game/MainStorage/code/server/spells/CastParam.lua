@@ -1,6 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local Battle = require(MainStorage.code.server.Battle) ---@type Battle
 ---@class CastParam:Class
 ---@field New fun( ...:table ):CastParam
 local CastParam = ClassMgr.Class("CastParam")
@@ -18,12 +19,23 @@ function CastParam:OnInit(...)
 end
 
 function CastParam:Clone()
+    -- 特殊处理extraModifiers，因为它包含Battle对象不能简单clone
+    local clonedExtraModifiers = {}
+    if self.extraModifiers then
+        for key, battle in pairs(self.extraModifiers) do
+            -- 为每个Battle对象创建新的实例而不是克隆
+            if battle and battle.attacker and battle.victim and battle.source then
+                clonedExtraModifiers[key] = Battle.New(battle.attacker, battle.victim, battle.source)
+            end
+        end
+    end
+    
     local cloned = CastParam.New({
         power = self.power,
         cancelled = self.cancelled,
         realTarget = self.realTarget,
         skipTags = gg.clone(self.skipTags),
-        extraModifiers = gg.clone(self.extraModifiers),
+        extraModifiers = clonedExtraModifiers,
         extraParams = gg.clone(self.extraParams),
         dynamicTags = self.dynamicTags and gg.clone(self.dynamicTags) or nil
     })
