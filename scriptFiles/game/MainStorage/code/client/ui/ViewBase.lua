@@ -148,9 +148,11 @@ end
 function ViewBase:Close()
     self:SetVisible(false)
     print("CloseSound", self.closeSound)
-    ClientEventManager.Publish("PlaySound", {
-        soundAssetId = self.closeSound
-    })
+    if self.closeSound then
+        ClientEventManager.Publish("PlaySound", {
+            soundAssetId = self.closeSound
+        })
+    end
     if self.layer > 0 then
         ViewBase.LockMouseVisible(false)
     end

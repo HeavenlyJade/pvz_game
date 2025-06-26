@@ -182,11 +182,6 @@ function HudCards:SetSubCardQualityIcons(cardNode, skillType)
         setNodeQualityIcon(cardNode["卡片框"], quality, CardIcon.qualityBaseMapboxIcon, CardIcon.qualityBaseMapboxClickIcon)
     end
 
-    -- 如果有其他子节点需要设置品质图标，可以在这里添加
-    -- 例如：
-    -- if cardNode["背景"] then
-    --     self:setNodeQualityIcon(cardNode["背景"], quality, CardIcon.someOtherDefIcon, CardIcon.someOtherClickIcon)
-    -- end
 end
 
 -- 处理技能冷却更新事件
@@ -279,29 +274,82 @@ end
 function HudCards:UpdateSubCardDisplay()
     if not self.cardsList then return end
 
-    -- 直接从self.subCardData获取槽位列表并排序
-    local subCardSlots = {}
-    for slotId, skill in pairs(self.subCardData) do
-        table.insert(subCardSlots, slotId)
+    -- === 新增：槽位到卡片名称的映射（与服务器端保持一致）===
+    local SLOT_TO_CARD_MAPPING = {
+        [2] = "卡片_1",  -- 副卡1对应卡片_1
+        [3] = "卡片_2",  -- 副卡2对应卡片_2
+        [4] = "卡片_3",  -- 副卡3对应卡片_3
+        [5] = "卡片_4"   -- 副卡4对应卡片_4
+    }
+
+    -- 获取模板节点
+    if not self.cardTemplate then
+        self.cardTemplate = self:Get("副卡列表_模版/卡片_1", ViewButton)
+        if not self.cardTemplate then
+            gg.log("错误：无法找到卡片模板")
+            return
+        end
     end
-    table.sort(subCardSlots) -- 按槽位ID排序
 
-    -- 设置副卡列表大小
-    self.cardsList:SetElementSize(#subCardSlots)
-
-    -- 直接遍历self.subCardData更新显示
-    for i, slotId in ipairs(subCardSlots) do
-        local card = self.cardsList:GetChild(i) ---@cast card ViewButton
-        local skill = self.subCardData[slotId]
-
+    -- 遍历当前装备的副卡技能
+    for slotId, skill in pairs(self.subCardData) do
         if skill and skill.skillType then
-            -- 有技能时显示技能信息
-            -- card.node.Name = skill.skillType.displayName
-            card.node["名字"].Title = skill.skillType.displayName or skill.skillName
-            card.node["等级"].Title = tostring(skill.level)
-            local icon = skill.skillType.icon
-            if icon and icon ~= "" then
-                card.node["图标"].Icon = icon
+            local cardName = SLOT_TO_CARD_MAPPING[slotId]
+            if cardName then
+
+                -- 1. 先查找是否已存在对应名称的卡片
+                local existingCard = self.cardsList:GetChildByName(cardName)
+                local cardNode = nil
+
+                if existingCard and existingCard.node then
+                    -- 存在就使用现有的卡片节点
+                    gg.log("找到现有卡片，替换内容:", cardName)
+                    cardNode = existingCard.node
+                else
+                    -- 不存在就克隆模板并添加到列表
+                    gg.log("创建新卡片:", cardName)
+                    local newCardNode = self.cardTemplate.node:Clone()
+                    newCardNode.Name = cardName
+                    newCardNode.Visible = true
+                    
+                    -- 使用ViewList的AppendChild方法添加新卡片
+                    self.cardsList:AppendChild(newCardNode)
+                    
+                    -- 获取刚添加的卡片节点
+                    local newCard = self.cardsList:GetChildByName(cardName)
+                    if newCard and newCard.node then
+                        cardNode = newCard.node
+                        gg.log("成功创建并添加新卡片:", cardName)
+                    else
+                        gg.log("错误：添加新卡片失败:", cardName)
+                    end
+                end
+
+                -- 2. 更新卡片内容
+                if cardNode then
+                    -- 确保卡片可见
+                    cardNode.Visible = true
+                    
+                    -- 检查并更新子节点
+                    if cardNode["名字"] then
+                        cardNode["名字"].Title = skill.skillType.displayName or skill.skillName
+                    end
+                    
+                    if cardNode["名字"] then
+                        cardNode["等级"].Title = tostring(skill.level)
+                    end
+                    
+                    local icon = skill.skillType.icon
+                    if icon and icon ~= "" and cardNode["名字"] then
+                        cardNode["图标"].Icon = icon
+                    end
+                    
+                    -- 设置副卡品质图标
+                    self:SetSubCardQualityIcons(cardNode, skill.skillType)
+                    
+                end
+            else
+                gg.log("警告：槽位", slotId, "没有对应的卡片映射")
             end
         end
     end
@@ -397,9 +445,11 @@ function HudCards:RegisterEventFunction()
         end
     end
 end
+
 function HudCards:OnInit(node, config)
     self.mainCardButton =  self:Get("主卡按钮", ViewButton) ---@type ViewButton
     self.CardpackButton = self:Get("卡包", ViewButton) ---@type ViewButton
+
     self.mainCardData = {} ---@type table<string, Skill>
     self.subCardData = {} ---@type table<number, Skill>
     self.selectedSkill ={} ---@type table<string, Skill>
@@ -494,8 +544,8 @@ function HudCards:OnInit(node, config)
     self:RegisterEventFunction()
 end
 
--- === 新增：发送卸下装备请求 ===
----@param skillName string 要卸下的技能名称
+-- === 新增：发送卸下装备请求 ===`
+---@param skillName string 要卸下的技`能名称
 function HudCards:SendUnequipRequest(skillName)
     gg.network_channel:FireServer({
         cmd = SkillEventConfig.REQUEST.UNEQUIP,
@@ -546,7 +596,7 @@ function HudCards:OnEquipSkillResponse(data)
 end
 
 -- === 新增：处理卸下装备响应 ===
----@param data table 卸下装备响应数据 {skillName: string, slot: number, level: number}
+---@param data table 卸下装备响应数据 {skillName: string, slot: number, level: number, cardName: string}
 function HudCards:OnUnequipSkillResponse(data)
     if not data or not data.data then
         return
@@ -554,6 +604,8 @@ function HudCards:OnUnequipSkillResponse(data)
 
     local responseData = data.data
     local skillName = responseData.skillName
+    local cardName = responseData.cardName  -- 获取对应的UI卡片名称
+    local unslot = responseData.unslot  -- 卸下的槽位
     local oldSlot = nil
 
     -- 从主卡数据中移除
@@ -584,6 +636,12 @@ function HudCards:OnUnequipSkillResponse(data)
     -- 从装备技能列表中移除
     if oldSlot and equippedSkills[oldSlot] == skillName then
         equippedSkills[oldSlot] = nil
+    end
+
+    -- === 新增：根据服务器发送的卡片名称直接隐藏对应的UI节点 ===
+    if cardName then
+        gg.log("收到卸下装备响应:", cardName, "技能:", skillName, "槽位:", unslot)
+        self:HideCardByName(cardName)
     end
 
     -- 重新更新卡片显示（让UpdateCardsDisplay统一处理界面更新）
@@ -715,6 +773,27 @@ function HudCards:StartSkillTracking(skill, vector2)
         end
         decal.Position = targetPos
     end, 0, 0.067)
+end
+
+-- === 新增：根据卡片名称隐藏对应的UI节点 ===
+---@param cardName string UI卡片节点名称（如"卡片_1"、"卡片_2"等）
+function HudCards:HideCardByName(cardName)
+    if not cardName or not self.cardsList then
+        gg.log("HideCardByName: 参数无效", cardName, self.cardsList)
+        return
+    end
+
+    gg.log("开始移除UI卡片:", cardName)
+    
+    -- 使用ViewList的RemoveChildByName方法来正确移除节点
+    -- 这会同时销毁节点和从childrens数组中移除对应的ViewButton对象
+    local success = self.cardsList:RemoveChildByName(cardName)
+    
+    if success then
+        gg.log("成功移除UI卡片:", cardName)
+    else
+        gg.log("HideCardByName: 未找到对应的UI卡片", cardName)
+    end
 end
 
 return HudCards.New(script.Parent, uiConfig)

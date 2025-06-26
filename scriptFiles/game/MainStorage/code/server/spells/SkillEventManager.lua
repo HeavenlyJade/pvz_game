@@ -22,6 +22,14 @@ SkillEventManager.NOTIFY = SkillEventConfig.NOTIFY
 SkillEventManager.ERROR_CODES = SkillEventConfig.ERROR_CODES
 SkillEventManager.ERROR_MESSAGES = SkillEventConfig.ERROR_MESSAGES
 
+-- === 新增：副卡槽位到UI卡片节点的映射 ===
+SkillEventManager.SLOT_TO_CARD_MAPPING = {
+    [2] = "卡片_1",  -- 副卡1对应卡片_1
+    [3] = "卡片_2",  -- 副卡2对应卡片_2
+    [4] = "卡片_3",  -- 副卡3对应卡片_3
+    [5] = "卡片_4"   -- 副卡4对应卡片_4
+}
+
 --[[
 ===================================
 初始化和基础功能
@@ -728,10 +736,16 @@ function SkillEventManager.HandleUnequipSkill(evt)
         local misc = MiscConfig.Get("总控")
         player:PlaySound(misc["技能卸下音效"])
 
+        -- === 新增：根据槽位获取对应的UI卡片名称 ===
+        local cardName = SkillEventManager.SLOT_TO_CARD_MAPPING[slot]
+        gg.log("槽位", slot, "对应的UI卡片:", cardName)
+
         local responseData = {
             skillName = skillName,
             slot = 0, -- 卸下后槽位为0
-            level = player.skills[skillName].level
+            level = player.skills[skillName].level,
+            unslot = slot,
+            cardName = cardName  -- 新增：发送对应的UI卡片名称
         }
 
         gg.log("发送技能卸下响应", responseData)

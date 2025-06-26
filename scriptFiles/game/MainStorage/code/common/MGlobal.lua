@@ -936,19 +936,36 @@ end
 
 -- 浅拷贝 不拷贝meta
 ---@param ori_tab table 原始表
+---@param visited table|nil 访问过的表，防止循环引用
 ---@return table|nil 拷贝后的表
-function gg.clone(ori_tab)
+function gg.clone(ori_tab, visited)
     if type(ori_tab) ~= "table" then
         return nil
     end
+    
+    -- 初始化或使用传入的visited表来跟踪已访问的表
+    visited = visited or {}
+    
+    -- 如果这个表已经被访问过，直接返回nil避免循环引用
+    if visited[ori_tab] then
+        return nil
+    end
+    
+    -- 标记这个表为已访问
+    visited[ori_tab] = true
+    
     local new_tab = {}
     for i, v in pairs(ori_tab) do
         if type(v) == "table" then
-            new_tab[i] = gg.clone(v)
+            new_tab[i] = gg.clone(v, visited)
         else
             new_tab[i] = v
         end
     end
+    
+    -- 清除访问标记
+    visited[ori_tab] = nil
+    
     return new_tab
 end
 
