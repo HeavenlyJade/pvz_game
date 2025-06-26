@@ -99,9 +99,9 @@ function MailCommand.sendPlayerToPlayer(params, sender)
     -- 为简化示例，我们假设执行指令的sender就是发件人
     if senderUin ~= sender.uin then
         sender:SendHoverText("警告：指令中的发件人ID与执行者不符。")
-        -- 可以选择在这里返回，或者继续执行
+        return false
     end
-    
+
     local senderInfo = { name = sender.name, id = sender.uin }
     local title = params["标题"] or "无标题邮件"
     local content = params["内容"] or ""

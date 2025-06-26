@@ -37,7 +37,10 @@ end
 function DamageAmplifier:GetModifier(caster, baseValue, multiplier, castParam)
     local amount
     if self.statType then
-        amount = caster:GetStat(self.statType, nil, nil, castParam)
+        amount = caster:GetStat(self.statType, nil, false, castParam)  -- triggerTags=false
+
+
+        -- amount = caster:GetStat(self.statType, nil, nil, castParam)
     else
         amount = 1
     end

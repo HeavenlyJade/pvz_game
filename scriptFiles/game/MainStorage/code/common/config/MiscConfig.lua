@@ -65,7 +65,8 @@ local function LoadConfig()
         ["次要技能升级音效"] = "sandboxId://soundeffect/points点.ogg",
         ["技能装备音效"] = "sandboxId://soundeffect/plant_lift.ogg",
         ["技能卸下音效"] = "sandboxId://soundeffect/shovel铲子.ogg",
-        ["任务完成音效"] = "sandboxId://soundeffect/quest_cleared.mp3"
+        ["任务完成音效"] = "sandboxId://soundeffect/quest_cleared.mp3",
+        ["商城购买音效"] = "sandboxId://soundeffect/shop_buy.ogg"
     }
 }loaded = true
 end

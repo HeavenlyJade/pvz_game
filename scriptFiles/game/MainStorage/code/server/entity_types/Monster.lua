@@ -240,7 +240,7 @@ function _M:Hurt(amount, damager, isCrit)
 
     Entity.Hurt(self, amount, damager, isCrit)
     if self.health <= 0 then
-        print("PlaySound", self.mobType.deadSound)
+        -- print("PlaySound", self.mobType.deadSound)
         if self.mobType.deadSound and damager.isPlayer then ---@cast damager Player
             damager:PlaySound(self.mobType.deadSound, self.actor, 1.0, 1.0)
         end

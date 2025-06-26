@@ -4,6 +4,7 @@ local ClassMgr           = require(MainStorage.code.common.ClassMgr) ---@type Cl
 local Modifiers          = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
 local Entity             = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local ServerScheduler    = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 
 ---@class Npc:Entity    --NPC类 (单个Npc) (管理NPC状态)
 ---@field New fun(npcData: NpcData, actor: SandboxNode) Npc
@@ -15,6 +16,8 @@ local _M                 = ClassMgr.Class('Npc', Entity) --父类Entity
 function _M:OnPlayerTouched(player)
     self:SetTarget(player)
     player:AddNearbyNpc(self)
+    -- 将玩家添加到附近玩家列表
+    self.nearbyPlayers[player.uuid] = player
 end
 
 ---@param npcData NpcData
@@ -27,10 +30,11 @@ function _M:OnInit(npcData, actor)
     self.interactCommands  = npcData["互动指令"]
     self.interactIcon      = npcData["互动图标"]
     self.extraSize      = gg.Vec3.new(npcData["额外互动距离"]) or gg.Vec3.new(0,0)
-    self.lookAtNearbyPlayer      = npcData["看向附近玩家"] or false
-    self.nameSize      = npcData["名字尺寸"]
-    self.target            = nil
+    self.lookAtNearbyPlayer = npcData["看向附近玩家"] or false
+    self.nameSize = npcData["名字尺寸"]
+    self.target = nil
     self.actor = actor
+    self.nearbyPlayers = {} -- 存储附近玩家的列表
     local npcSize = Vector3.New(0,0,0)
     if actor:IsA("Actor") then
         actor.CollideGroupID   = 1
@@ -62,9 +66,17 @@ function _M:OnInit(npcData, actor)
                 end
                 -- 从玩家的附近NPC列表中移除
                 player:RemoveNearbyNpc(self)
+                -- 从NPC的附近玩家列表中移除
+                self.nearbyPlayers[player.uuid] = nil
             end
         end
     end)
+    
+    -- 添加定时任务，每秒检查玩家是否还在交互区域内
+    self.checkTaskId = ServerScheduler.add(function()
+        self:CheckNearbyPlayers()
+    end, 1, 1, "npc_check_" .. self.uuid)
+    
     -- 注册NPC交互事件处理器
     ServerEventManager.Subscribe("InteractWithNpc", function(evt)
         local player = evt.player
@@ -107,8 +119,42 @@ function _M:update_npc()
     end
 end
 
+---检查附近玩家是否还在交互区域内
+function _M:CheckNearbyPlayers()
+    if not self.actor or not self.actor.LocalPosition then
+        return
+    end
+    
+    local npcPos = self.actor.LocalPosition
+    local interactionRadius = (math.max(self.extraSize.x + self.actor.Size.x, self.extraSize.y + self.actor.Size.y) / 2)^2
+    
+    for playerUuid, player in pairs(self.nearbyPlayers) do
+        if player and player:GetPosition() then
+            local playerPos = player:GetPosition()
+            local distance = gg.vec.DistanceSq3(npcPos, playerPos)
+            
+            -- 如果玩家距离NPC太远，将其移除
+            if distance > interactionRadius then
+                if self.target == player then
+                    self:SetTarget(nil)
+                end
+                player:RemoveNearbyNpc(self)
+                self.nearbyPlayers[playerUuid] = nil
+            end
+        else
+            -- 如果玩家对象无效，直接移除
+            self.nearbyPlayers[playerUuid] = nil
+        end
+    end
+end
+
 ---@protected
 function _M:DestroyObject()
+    -- 取消定时任务
+    if self.checkTaskId then
+        ServerScheduler.cancel(self.checkTaskId)
+        self.checkTaskId = nil
+    end
 end
 
 -- 处理NPC交互

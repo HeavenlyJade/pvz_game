@@ -45,7 +45,7 @@ function MainServer.handleMidnightRefresh()
         sec = 0
     })
     local secondsUntilMidnight = nextMidnight - os.time()
-    
+
     ServerScheduler.add(function()
         -- 对所有在线玩家执行刷新
         for _, player in pairs(gg.server_players_list) do
@@ -74,13 +74,23 @@ function MainServer.start_server()
     MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     initFinished = true
 
-    -- 处理等待中的玩家
     for _, player in ipairs(waitingPlayers) do
         MainServer.player_enter_game(player)
     end
     waitingPlayers = {} -- 清空等待列表
     for _, child in pairs(MainStorage.code.common.config.Children) do
         require(child)
+    end
+    local plugins = MainStorage.code.plugins
+    if plugins then
+        for _, child in pairs(plugins.Children) do
+            if child and child.PluginMain then
+                local plugin = require(child.PluginMain)
+                if plugin.StartServer then
+                    plugin.StartServer()
+                end
+            end
+        end
     end
 end
 
@@ -154,7 +164,7 @@ function MainServer.player_enter_game(player)
     local actor_ = player.Character
     actor_.CollideGroupID = 4
     actor_.Movespeed = 800
-    -- actor_.ModelId = 'sandboxSysId://entity/130034/body.omod'    --默认渔民女
+    --actor_.ModelId = 'sandboxSysId://entity/130034/body.omod'    --默认渔民女
     -- actor_:AddAttribute("model_type", Enum.AttributeType.String)
     -- actor_:SetAttribute("model_type", "player")
 

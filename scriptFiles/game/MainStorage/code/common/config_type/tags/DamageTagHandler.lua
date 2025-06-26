@@ -43,6 +43,9 @@ function DamageTag:CanTriggerReal(caster, target, castParam, param, log)
     end
     
     if self["即将击杀"] then
+        if not battle or not battle.GetFinalDamage then
+            return false
+        end
         if target:GetCreature().health > battle:GetFinalDamage() then
             return false
         end
@@ -91,6 +94,10 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
         local temp = caster
         caster = target:GetCreature()
         target = temp
+    end
+    
+    if not battle or not battle.GetFinalDamage then
+        return false
     end
     
     local baseDamage = battle:GetFinalDamage()

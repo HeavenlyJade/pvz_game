@@ -45,6 +45,17 @@ function ClientMain.start_client()
     if game.RunService:IsPC() then
         game.MouseService:SetMode(1)
     end
+    local plugins = MainStorage.code.plugins
+    if plugins then
+        for _, child in pairs(plugins.Children) do
+            if child and child.PluginMain then
+                local plugin = require(child.PluginMain)
+                if plugin.StartClient then
+                    plugin.StartClient()
+                end
+            end
+        end
+    end
     -- ClientEventManager.Subscribe("FetchModelSize", function (evt)
     --     local actor = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast actor Actor
     --     if actor then

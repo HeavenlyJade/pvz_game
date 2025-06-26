@@ -533,8 +533,10 @@ end
 
 --鼠标移动
 function CameraController.InputMove(deltaX, deltaY)
-    local mouseXinput = deltaY
-    local mouseYinput = deltaX
+    -- 修复坐标轴映射：deltaX应该影响Y轴旋转（水平转动），deltaY应该影响X轴旋转（垂直转动）
+    local mouseXinput = deltaY  -- 垂直输入影响俯仰角（X轴旋转）
+    local mouseYinput = deltaX  -- 水平输入影响偏航角（Y轴旋转）
+    
     if _invertMouseX then
         mouseXinput = -mouseXinput
     end
@@ -584,18 +586,24 @@ function CameraController.OnTouchMoved(x, y, touchId)
 
     if _lastTouchPos.x ~= 0 and _lastTouchPos.y ~= 0 then
         local delta = _currentTouchPos - _lastTouchPos
-        local currentTime = gg.GetTimeStamp()  -- Use gg.GetTimeStamp() instead of game.TimeService:GetTime()
+        local currentTime = gg.GetTimeStamp()
         local elapsedTime = currentTime - _touchStartTime
 
-        if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
+        -- 减少延迟时间，提高响应性
+        if _inputEnabled and elapsedTime >= 0.05 then  -- 从0.1秒减少到0.05秒
+            -- 简化Y轴处理逻辑，统一移动端的处理
             local deltaY = delta.y
-            if not game.MouseService:IsSight() or not game.RunService:IsPC() then
+            
+            -- 对于移动端，统一反转Y轴，确保向上滑动对应向上看
+            if game.UserInputService.TouchEnabled and not game.RunService:IsPC() then
                 deltaY = -deltaY
             end
+            
+            -- 处理对齐模式：当锁定目标且移动时对齐为真时，只允许垂直移动
             if _alignWhenMoving and _lockedOnTarget then
-                CameraController.InputMove(0, deltaY)
+                CameraController.InputMove(0, deltaY)  -- 只传递垂直移动
             else
-                CameraController.InputMove(delta.x, deltaY)
+                CameraController.InputMove(delta.x, deltaY)  -- 传递完整的移动
             end
         end
     end

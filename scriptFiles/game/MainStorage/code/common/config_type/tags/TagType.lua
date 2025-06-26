@@ -15,6 +15,7 @@ function TagType:OnInit(data)
     self.maxLevel = data["最高等级"]
     -- self.description = data["描述"]
     self.description = data["详细属性"]
+    self.level2Description = data["各级描述"]
     self.functions = {}
     for _, tagHandler in ipairs(data["功能"]) do
         local tagHandlerClass = require(MainStorage.code.common.config_type.tags[tagHandler["类型"]])
@@ -23,6 +24,9 @@ function TagType:OnInit(data)
 end
 
 function TagType:GetDescription(level)
+    if self.level2Description and self.level2Description[level] then
+        return self.level2Description[level]
+    end
     if not self.description or self.description == "" then
         return ""
     end
