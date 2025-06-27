@@ -3331,7 +3331,9 @@ function CardsGui:GetDescriptions(skill, currentLevel)
         if #descPost <= 0 then
             table.insert(descPost, "解锁技能")
         end
-        table.insert(descPost, string.format("\n玩家等级: +%s", skill.levelUpPlayer))
+        local levelUpPlayerValue = skill:GetLevelUpPlayerAtLevel(nextLevel)
+        gg.log("玩家等级: +%s", levelUpPlayerValue,skill.levelUpPlayer)
+        table.insert(descPost, string.format("\n玩家等级: +%s", levelUpPlayerValue))
         postD = table.concat(descPost, "\n")
     end
     return {

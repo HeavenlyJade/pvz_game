@@ -153,8 +153,117 @@ function SkillType:GetMaxGrowthAtLevel(level)
     end
 
     local expr = self.maxGrowthFormula:gsub("LVL", tostring(level))
-    local result = gg.eval(expr)
+    local result = self:_evaluateExpression(expr)
     return result or 100000000  -- 如果计算失败，返回默认值
+end
+
+-- 内部方法：处理包含数学函数的表达式
+---@param expr string 要计算的表达式
+---@return number|nil 计算结果，失败时返回nil
+function SkillType:_evaluateExpression(expr)
+    -- 递归处理数学函数：min, max
+    local function processFunction(str, funcName)
+        local pattern = funcName .. "%s*%(([^%)]+)%)"
+        local hasMatch = false
+        
+        str = str:gsub(pattern, function(args)
+            hasMatch = true
+            -- 分割参数（处理嵌套括号）
+            local params = {}
+            local depth = 0
+            local currentParam = ""
+            
+            for i = 1, #args do
+                local char = args:sub(i, i)
+                if char == "(" then
+                    depth = depth + 1
+                    currentParam = currentParam .. char
+                elseif char == ")" then
+                    depth = depth - 1
+                    currentParam = currentParam .. char
+                elseif char == "," and depth == 0 then
+                    table.insert(params, currentParam:match("^%s*(.-)%s*$")) -- 去除首尾空格
+                    currentParam = ""
+                else
+                    currentParam = currentParam .. char
+                end
+            end
+            if currentParam ~= "" then
+                table.insert(params, currentParam:match("^%s*(.-)%s*$"))
+            end
+            
+            -- 计算每个参数的值（递归处理可能包含的数学函数）
+            local values = {}
+            for _, param in ipairs(params) do
+                -- 递归调用_evaluateExpression处理参数中可能包含的函数
+                local value = nil
+                if param:find("min%s*%(") or param:find("max%s*%(") then
+                    -- 参数中包含函数，递归处理
+                    value = self:_evaluateExpression(param)
+                else
+                    -- 简单表达式，直接计算
+                    value = gg.eval(param)
+                end
+                
+                if value then
+                    table.insert(values, value)
+                else
+                    gg.log("警告: 无法计算参数:", param)
+                    return "0"
+                end
+            end
+            
+            -- 根据函数名计算结果
+            if funcName == "min" then
+                local result = values[1] or 0
+                for i = 2, #values do
+                    result = math.min(result, values[i])
+                end
+                return tostring(result)
+            elseif funcName == "max" then
+                local result = values[1] or 0
+                for i = 2, #values do
+                    result = math.max(result, values[i])
+                end
+                return tostring(result)
+            end
+            
+            return "0"
+        end)
+        
+        return str, hasMatch
+    end
+    
+    -- 处理嵌套的min和max函数（从内向外处理）
+    local maxIterations = 10  -- 防止无限循环
+    local iteration = 0
+    
+    while iteration < maxIterations do
+        iteration = iteration + 1
+        local originalExpr = expr
+        local hasMinMatch, hasMaxMatch = false, false
+        
+        -- 处理最内层的函数
+        expr, hasMaxMatch = processFunction(expr, "max")
+        expr, hasMinMatch = processFunction(expr, "min")
+        
+        -- 如果没有更多的函数需要处理，退出循环
+        if not hasMinMatch and not hasMaxMatch then
+            break
+        end
+        
+        -- 如果表达式没有变化，也退出循环（防止死循环）
+        if expr == originalExpr then
+            gg.log("警告: 数学函数处理可能陷入死循环，表达式:", expr)
+            break
+        end
+    end
+    
+    if iteration >= maxIterations then
+        gg.log("警告: 数学函数处理达到最大迭代次数，表达式:", expr)
+    end
+    
+    return gg.eval(expr)
 end
 
 function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
@@ -164,7 +273,7 @@ function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
     local costs = {}
     for resourceType, costExpr in pairs(self.oneKeyUpgradeCosts) do
         local expr = costExpr:gsub("LVL", tostring(level))
-        local result = gg.eval(expr)
+        local result = self:_evaluateExpression(expr)
         costs[resourceType] = result
     end
     return costs
@@ -178,12 +287,41 @@ function SkillType:GetCostAtLevel(level)
     local costs = {}
     for resourceType, costExpr in pairs(self.upgradeCosts) do
         local expr = costExpr:gsub("LVL", tostring(level))
-        local result = gg.eval(expr)
+        local result = self:_evaluateExpression(expr)
         if result and result > 0 then
             costs[resourceType] = math.floor(result)
         end
     end
     return costs
+end
+
+-- 获取指定等级下的提升玩家等级数值
+---@param level number 技能等级
+---@return number 提升玩家等级的数值
+function SkillType:GetLevelUpPlayerAtLevel(level)
+    if not self.levelUpPlayer then
+        return 0
+    end
+
+    -- 如果是数字类型，直接返回
+    if type(self.levelUpPlayer) == "number" then
+        return self.levelUpPlayer
+    end
+
+    -- 如果是字符串类型，当作公式解析
+    if type(self.levelUpPlayer) == "string" then
+        local expr = self.levelUpPlayer:gsub("LVL", tostring(level))
+        local result = self:_evaluateExpression(expr)
+        if result then
+            return math.floor(result)
+        else
+            gg.log("警告: 无法计算提升玩家等级公式:", self.levelUpPlayer)
+            return 0
+        end
+    end
+
+    -- 其他类型返回0
+    return 0
 end
 
 function SkillType:GetToStringParams()

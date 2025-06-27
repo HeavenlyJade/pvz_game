@@ -1,7 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
-
+    
 ---@class LevelConfig
 local LevelConfig = {}
 local loaded = false
@@ -803,9 +803,7 @@ local function LoadConfig()
                         ["数量"] = "2",
                         ["几率"] = 40
                     }
-                },
-                ["转波次文字"] = "",
-                ["转波次音效"] = ""
+                }
             },
             {
                 ["刷新波次"] = {

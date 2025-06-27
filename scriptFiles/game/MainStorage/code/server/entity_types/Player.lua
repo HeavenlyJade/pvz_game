@@ -716,7 +716,8 @@ function _M:UpgradeSkill(skillType)
             slot = skillSlot,
             star_level = 1
         })
-        self:SetLevel(self.level + skillType.levelUpPlayer)
+        local levelUpPlayer = skillType:GetLevelUpPlayerAtLevel(1)
+        self:SetLevel(self.level + levelUpPlayer)
         self:saveSkillConfig()
         return true
     end
@@ -728,7 +729,8 @@ function _M:UpgradeSkill(skillType)
 
     -- 升级技能
     foundSkill.level = foundSkill.level + 1
-    self:SetLevel(self.level + foundSkill.skillType.levelUpPlayer)
+    local setlevel = foundSkill.skillType:GetLevelUpPlayerAtLevel(foundSkill.level)
+    self:SetLevel(self.level + setlevel)
     self:SetVariable("skill_".. foundSkill.skillName, foundSkill.level)
     self:SetVariable("skill_enhance_".. foundSkill.skillType.category, foundSkill.level)
     self:RefreshStats()
