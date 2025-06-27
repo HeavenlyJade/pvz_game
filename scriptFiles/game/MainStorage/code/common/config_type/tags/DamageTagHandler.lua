@@ -33,15 +33,15 @@ end
 
 function DamageTag:CanTriggerReal(caster, target, castParam, param, log)
     local battle = param[1] ---@type Battle
-    
+
     if battle.skipTags and battle.skipTags[self.m_tagType.id] then
         return false
     end
-    
+
     if self["要求元素类型"] ~= "无" and battle.elementType ~= self["要求元素类型"] then
         return false
     end
-    
+
     if self["即将击杀"] then
         if not battle or not battle.GetFinalDamage then
             return false
@@ -50,16 +50,16 @@ function DamageTag:CanTriggerReal(caster, target, castParam, param, log)
             return false
         end
     end
-    
+
     if self["影响魔法关键字"] ~= "" then
         if not string.find(battle.source, self["影响魔法关键字"]) then
-            if self.printMessage then 
+            if self.printMessage then
                 table.insert(log, string.format("%s.%s触发失败：魔法名%s不包含关键字%s", self.m_tagType.id, self.m_tagIndex, battle.source, self["影响魔法关键字"]))
             end
             return false
         end
     end
-    
+
     if #self["影响魔法"] > 0 then
         local matchFound = false
         for _, spell in ipairs(self["影响魔法"]) do
@@ -68,26 +68,26 @@ function DamageTag:CanTriggerReal(caster, target, castParam, param, log)
                 break
             end
         end
-        
+
         if not matchFound then
             local spellNames = {}
             for _, spell in ipairs(self["影响魔法"]) do
                 table.insert(spellNames, spell)
             end
-            
-            if self.printMessage then 
+
+            if self.printMessage then
                 table.insert(log, string.format("%s.%s触发失败：魔法%s不匹配目标魔法%s", self.m_tagType.id, self.m_tagIndex, battle.source, table.concat(spellNames, ", ")))
             end
             return false
         end
     end
-    
+
     return true
 end
 
 function DamageTag:TriggerReal(caster, target, castParam, param, log)
     local battle = param ---@type Battle
-    
+
     -- 处理被攻击时的情况，交换施法者和目标
     if string.find(self.m_trigger, "Attacked") then
         if not target.isEntity then return false end
@@ -95,73 +95,73 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
         caster = target:GetCreature()
         target = temp
     end
-    
+
     if not battle or not battle.GetFinalDamage then
         return false
     end
-    
+
     local baseDamage = battle:GetFinalDamage()
-    
+
     -- 处理增伤效果
     if self["增伤"] ~= 0 then
         local damage = self:GetUpgradeValue("增伤", castParam.power)
         battle:AddModifier(self.m_tagIndex, "倍率", damage)
-        if self.printMessage then 
-            table.insert(log, string.format("%s.%s：增加%.2f%%伤害", 
+        if self.printMessage then
+            table.insert(log, string.format("%s.%s：增加%.2f%%伤害",
                 self.m_tagType.id, self.m_tagIndex, damage))
         end
     end
-    
+
     -- 处理暴击率增加
     if self["增加暴击率"] ~= 0 then
         local damage = self:GetUpgradeValue("增加暴击率", castParam.power)
         battle.critChance = battle.critChance + damage
-        if self.printMessage then 
-            table.insert(log, string.format("%s.%s：增加%.2f%%暴击率", 
+        if self.printMessage then
+            table.insert(log, string.format("%s.%s：增加%.2f%%暴击率",
                 self.m_tagType.id, self.m_tagIndex, damage))
         end
     end
-    
+
     -- 处理暴击伤害增加
     if self["增加暴击伤害"] ~= 0 then
         local damage = self:GetUpgradeValue("增加暴击伤害", castParam.power)
         battle.critDamage = battle.critDamage + damage
-        if self.printMessage then 
-            table.insert(log, string.format("%s.%s：增加%.2f%%暴击伤害", 
+        if self.printMessage then
+            table.insert(log, string.format("%s.%s：增加%.2f%%暴击伤害",
                 self.m_tagType.id, self.m_tagIndex, damage))
         end
     end
-    
+
     -- 处理基于自身属性的增伤
     if self["属性增伤"] then
         for _, item in ipairs(self["属性增伤"]) do
             local modifier = item:GetModifier(caster, baseDamage, 1, castParam)
             if modifier then
                 battle:AddDamageModifier(modifier)
-                if self.printMessage then 
+                if self.printMessage then
                     local addType = item.addType == "增加" and "加算" or "乘算"
-                    table.insert(log, string.format("%s.%s：基于自身%s=%.2f%s伤害", 
+                    table.insert(log, string.format("%s.%s：基于自身%s=%.2f%s伤害",
                         self.m_tagType.id, self.m_tagIndex, item.statType, modifier.amount, addType))
                 end
             end
         end
     end
-    
+
     -- 处理基于目标属性的增伤
     if self["目标属性增伤"] then
         for _, item in ipairs(self["目标属性增伤"]) do
             local modifier = item:GetModifier(target:GetCreature(), baseDamage, 1, castParam)
             if modifier then
                 battle:AddDamageModifier(modifier)
-                if self.printMessage then 
+                if self.printMessage then
                     local addType = item.addType == "增加" and "加算" or "乘算"
-                    table.insert(log, string.format("%s.%s：基于目标%s=%.2f%s伤害", 
+                    table.insert(log, string.format("%s.%s：基于目标%s=%.2f%s伤害",
                         self.m_tagType.id, self.m_tagIndex, item.statType, modifier.amount, addType))
                 end
             end
         end
     end
-    
+
     -- 处理额外释放魔法
     if #self["释放魔法"] > 0 then
         local subParam = CastParam.New({
@@ -170,19 +170,19 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
         })
         if self["释放魔法继承威力"] then
             subParam.power = subParam.power * battle:GetFinalDamage()
-            if self.printMessage then 
+            if self.printMessage then
                 table.insert(log, string.format("%s.%s：子魔法继承威力=%.2f", self.m_tagType.id, self.m_tagIndex, subParam.power))
             end
         end
-        
+
         for _, subSpell in ipairs(self["释放魔法"]) do
             subSpell:Cast(caster, target, subParam and gg.clone(subParam))
-            if self.printMessage then 
+            if self.printMessage then
                 table.insert(log, string.format("%s.%s：释放子魔法", self.m_tagType.id, self.m_tagIndex))
             end
         end
     end
-    
+
     return true
 end
 

@@ -2368,7 +2368,7 @@ function CardsGui:AddDynamicSubCardSkill(skillName, skillType, skillData)
                 serverData = skillData
             }
             subCardButton:SetTouchEnable(true)
-            subCardButton.img.Grayed = false  -- 动态添加的技能默认已解锁
+            subCardButton:SetGray(false)  -- 动态添加的技能默认已解锁
 
             subCardButton.clickCb = function(ui, button)
                 self:OnSubCardButtonClick(ui, button)
@@ -2500,6 +2500,8 @@ function CardsGui:InitializeSubCardButtons()
                 subCardButton.extraParams = {skillId = skillName,serverData = nil } -- 初始无服务端数据
                 subCardButton:SetTouchEnable(true) -- 可点击
                 subCardButton.clickCb = function(ui, button) self:OnSubCardButtonClick(ui, button)end
+                -- === 修复：初始化时设置为置灰状态（因为还没有服务端数据）===
+                subCardButton:SetGray(true)
                 ViewListNode:insertIntoChildrens(subCardButton, index)
                 -- 设置副卡UI
                 self:SetSkillLevelSubCardFrame(clonedNode, skillType)
@@ -2697,6 +2699,9 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
                 subCardButton = ViewButton.New(clonedNode, self)
                 subCardButton.extraParams = {skillId = skillName}
                 subCardButton.clickCb = function(ui, button) self:OnSubCardButtonClick(ui, button) end
+                -- === 修复：新创建的按钮需要根据解锁状态设置置灰 ===
+                local isUnlocked = buttonState.serverUnlocked or false
+                subCardButton:SetGray(not isUnlocked)
                 -- 更新全局存储
                 self.subCardButtondict[skillName] = subCardButton
                 self.subCardButtonStates[skillName].button = subCardButton
@@ -2806,7 +2811,7 @@ function CardsGui:HandleSubCardRemoval(skillName, skillType)
         buttonState.serverUnlocked = false
         -- 更新按钮显示（设为灰色）
         if buttonState.button then
-            buttonState.button.img.Grayed = true
+            buttonState.button:SetGray(true)
             buttonState.button.extraParams.serverData = nil
         end
     end
@@ -2865,7 +2870,7 @@ function CardsGui:HandleSubCardUpdate(skillName, skillType, skillData)
 
         -- 更新按钮显示（恢复正常颜色）
         if buttonState.button then
-            buttonState.button.img.Grayed = false
+            buttonState.button:SetGray(false)
             buttonState.button.extraParams.serverData = skillData
         end
     else

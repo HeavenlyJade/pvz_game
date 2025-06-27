@@ -109,7 +109,7 @@ function CameraController.SetActive(active)
     if active then
         CameraController.SetCamera(game.WorkSpace.CurrentCamera)
         _pivotPositionSmooth = CameraController.CalcPivotPosition(_mouseY)
-    
+
         if game.UserInputService.TouchEnabled then -- 触摸设备
             _TouchStartedEvent =
                 game.UserInputService.TouchStarted:Connect(
@@ -146,7 +146,7 @@ function CameraController.SetActive(active)
                     end
                 end
             )
-            
+
             _InputChangedEvent =
                 game.UserInputService.InputChanged:Connect(
                 function(inputObj, gameprocessed)
@@ -162,7 +162,7 @@ function CameraController.SetActive(active)
                     end
                 end
             )
-            
+
             _InputEndedEvent =
                 game.UserInputService.InputEnded:Connect(
                 function(inputObj, gameprocessed)
@@ -174,7 +174,7 @@ function CameraController.SetActive(active)
                 end
             )
         end
-        
+
         -- 绑定渲染更新事件
         game.RunService.RenderStepped:Connect(
             function(dt)

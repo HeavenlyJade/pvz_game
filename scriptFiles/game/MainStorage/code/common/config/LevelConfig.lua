@@ -1,7 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
-    
+
 ---@class LevelConfig
 local LevelConfig = {}
 local loaded = false
@@ -838,9 +838,7 @@ local function LoadConfig()
                         ["数量"] = "25",
                         ["几率"] = 50
                     }
-                },
-                ["转波次文字"] = "",
-                ["转波次音效"] = ""
+                }
             },
             {
                 ["刷新波次"] = {
@@ -873,9 +871,7 @@ local function LoadConfig()
                         ["数量"] = "3",
                         ["几率"] = 50
                     }
-                },
-                ["转波次文字"] = "",
-                ["转波次音效"] = ""
+                }
             }
         },
         ["场景"] = "副本2",
@@ -989,7 +985,9 @@ local function LoadConfig()
                     ["金币"] = 3
                 }
             }
-        }
+        },
+        ["胜利音效"] = nil,
+        ["失败音效"] = nil
     }),
     ["1-4（300级~400级）"] = LevelType.New({
         ["关卡ID"] = "1-4（300级~400级）",
@@ -1470,9 +1468,7 @@ local function LoadConfig()
                 ["怪物等级"] = {
                     0,
                     0
-                },
-                ["转波次文字"] = "",
-                ["转波次音效"] = ""
+                }
             },
             {
                 ["刷新波次"] = {
@@ -1493,9 +1489,7 @@ local function LoadConfig()
                 ["怪物等级"] = {
                     0,
                     0
-                },
-                ["转波次文字"] = "",
-                ["转波次音效"] = ""
+                }
             }
         },
         ["场景"] = "副本1",
@@ -1518,7 +1512,11 @@ local function LoadConfig()
                 },
                 ["动作"] = "必须"
             }
-        })
+        }),
+        ["掉落物数量修改"] = nil,
+        ["排名掉落物"] = nil,
+        ["胜利音效"] = nil,
+        ["失败音效"] = nil
     })
 }loaded = true
 end

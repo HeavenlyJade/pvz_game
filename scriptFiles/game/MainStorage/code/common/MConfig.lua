@@ -15,11 +15,32 @@ local EquipmentSlot = {
     }
 }
 
+-- 槽位到UI卡片名称的映射配置
+local SlotToCardMapping = {
+    [2] = "卡片_1",  -- 副卡1对应卡片_1，数字键1
+    [3] = "卡片_2",  -- 副卡2对应卡片_2，数字键2
+    [4] = "卡片_3",  -- 副卡3对应卡片_3，数字键3
+    [5] = "卡片_4"   -- 副卡4对应卡片_4，数字键4
+}
+
+-- 槽位到卡片名称和按键的完整映射配置（用于事件绑定）
+local SlotToCardWithKeyMapping = {
+    [2] = {cardName = "卡片_1", keyIndex = 1},  -- 槽位2对应卡片_1，数字键1
+    [3] = {cardName = "卡片_2", keyIndex = 2},  -- 槽位3对应卡片_2，数字键2
+    [4] = {cardName = "卡片_3", keyIndex = 3},  -- 槽位4对应卡片_3，数字键3
+    [5] = {cardName = "卡片_4", keyIndex = 4}   -- 槽位5对应卡片_4，数字键4
+}
+
+-- 固定的卡片名称列表（按顺序对应数字键1-4）
+local FixedCardNames = {"卡片_1", "卡片_2", "卡片_3", "卡片_4"}
 
 --所有配置( 其他所有的配置文件将汇总到这里， 游戏逻辑代码只需要require这个文件即可 )
 ---@class common_config
 local common_config = {
     EquipmentSlot = EquipmentSlot,
+    SlotToCardMapping = SlotToCardMapping,
+    SlotToCardWithKeyMapping = SlotToCardWithKeyMapping,
+    FixedCardNames = FixedCardNames,
 }
 
 

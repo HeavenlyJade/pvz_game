@@ -10,6 +10,7 @@ local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@typ
 local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
 local CardIcon = require(MainStorage.code.common.ui_icon.card_icon) ---@type CardIcon
 local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
+local MConfig = require(MainStorage.code.common.MConfig) ---@type common_config
 
 local tweenInfo = TweenInfo.New(0.2, Enum.EasingStyle.Linear)
 local TweenService = game:GetService('TweenService')
@@ -49,45 +50,52 @@ end
 function HudCards:UpdateCooldownDisplay()
     if not self.cardsList then return end
 
-    -- 遍历所有卡片
-    for i = 1, self.cardsList:GetChildCount() do
-        local card = self.cardsList:GetChild(i) ---@type ViewButton
-        local skillId = equippedSkills[i + 1]
-        local skill = skills[skillId]
+    -- === 使用配置文件中的槽位映射 ===
+    local SLOT_TO_CARD_MAPPING = MConfig.SlotToCardMapping
 
-        if skill then
-            local currentTime = gg.GetTimeStamp()
-            local lastCastTime = lastCastTimes[skillId]
-            if lastCastTime and skill.cooldownCache > 0 then
-                local elapsedTime = currentTime - lastCastTime
-                local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
-                local fillAmount = remainingTime / skill.cooldownCache
-                -- 更新冷却显示
-                if card.node["冷却条"] then
-                    card.node["冷却条"].FillAmount = fillAmount
-                end
+    -- === 遍历当前装备的副卡技能来更新冷却显示 ===
+    for slotId, skill in pairs(self.subCardData) do
+        if skill and skill.skillType then
+            local cardName = SLOT_TO_CARD_MAPPING[slotId]
+            if cardName then
+                -- 根据卡片名称获取对应的UI卡片
+                local card = self.cardsList:GetChildByName(cardName)
+                if card then
+                    local currentTime = gg.GetTimeStamp()
+                    local lastCastTime = lastCastTimes[skill.skillName]
+                    if lastCastTime and skill.cooldownCache > 0 then
+                        local elapsedTime = currentTime - lastCastTime
+                        local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
+                        local fillAmount = remainingTime / skill.cooldownCache
+                        
+                        -- 更新冷却显示
+                        if card.node["冷却条"] then
+                            card.node["冷却条"].FillAmount = fillAmount
+                        end
 
-                -- 检查是否在冷却中
-                local isOnCooldown = remainingTime > 0
-                card:SetTouchEnable(not isOnCooldown, false)
-                if isOnCooldown then
-                    if card.node["卡片框"] then
-                        card.node["卡片框"].FillColor = ColorQuad.New(150, 150, 150, 255)
+                        -- 检查是否在冷却中
+                        local isOnCooldown = remainingTime > 0
+                        card:SetTouchEnable(not isOnCooldown, false)
+                        if isOnCooldown then
+                            if card.node["卡片框"] then
+                                card.node["卡片框"].FillColor = ColorQuad.New(150, 150, 150, 255)
+                            end
+                        else
+                            if card.node["卡片框"] then
+                                card.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
+                            end
+                        end
+                    else
+                        -- 如果没有冷却时间或冷却已结束，确保卡片显示正常颜色
+                        if card.node["卡片框"] then
+                            card.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
+                        end
+                        if card.node["冷却条"] then
+                            card.node["冷却条"].FillAmount = 0
+                        end
+                        card:SetTouchEnable(true, false)
                     end
-                else
-                    if card.node["卡片框"] then
-                        card.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
-                    end
                 end
-            else
-                -- 如果没有冷却时间或冷却已结束，确保卡片显示正常颜色
-                if card.node["卡片框"] then
-                    card.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
-                end
-                if card.node["冷却条"] then
-                    card.node["冷却条"].FillAmount = 0
-                end
-                card:SetTouchEnable(true, false)
             end
         end
     end
@@ -204,15 +212,22 @@ end
 function HudCards:OnUpdateSkillCastability(data)
     if not data or not data.castabilityData then return end
 
-    -- 遍历所有卡片
-    for i = 1, self.cardsList:GetChildCount() do
-        local card = self.cardsList:GetChild(i) ---@type ViewButton
-        local skillId = equippedSkills[i + 1]
+    -- === 使用配置文件中的槽位映射 ===
+    local SLOT_TO_CARD_MAPPING = MConfig.SlotToCardMapping
 
-        if skillId then
-            local canCast = data.castabilityData[skillId]
-            if canCast ~= nil then
-                card:SetTouchEnable(canCast)
+    -- === 遍历当前装备的副卡技能来更新可释放状态 ===
+    for slotId, skill in pairs(self.subCardData) do
+        if skill and skill.skillType then
+            local cardName = SLOT_TO_CARD_MAPPING[slotId]
+            if cardName then
+                -- 根据卡片名称获取对应的UI卡片
+                local card = self.cardsList:GetChildByName(cardName)
+                if card then
+                    local canCast = data.castabilityData[skill.skillName]
+                    if canCast ~= nil then
+                        card:SetTouchEnable(canCast)
+                    end
+                end
             end
         end
     end
@@ -274,14 +289,12 @@ end
 function HudCards:UpdateSubCardDisplay()
     if not self.cardsList then return end
 
-    -- === 新增：槽位到卡片名称的映射（与服务器端保持一致）===
-    local SLOT_TO_CARD_MAPPING = {
-        [2] = "卡片_1",  -- 副卡1对应卡片_1
-        [3] = "卡片_2",  -- 副卡2对应卡片_2
-        [4] = "卡片_3",  -- 副卡3对应卡片_3
-        [5] = "卡片_4"   -- 副卡4对应卡片_4
-    }
+    -- === 使用配置文件中的槽位映射 ===
+    local SLOT_TO_CARD_MAPPING = MConfig.SlotToCardMapping
 
+    -- === 确保4个固定卡片位置存在 ===
+    local cardNames = MConfig.FixedCardNames
+    
     -- 获取模板节点
     if not self.cardTemplate then
         self.cardTemplate = self:Get("副卡列表_模版/卡片_1", ViewButton)
@@ -291,62 +304,56 @@ function HudCards:UpdateSubCardDisplay()
         end
     end
 
-    -- 遍历当前装备的副卡技能
+    -- 确保所有4个卡片位置都存在
+    for i, cardName in ipairs(cardNames) do
+        local existingCard = self.cardsList:GetChildByName(cardName)
+        if not existingCard then
+            gg.log("创建固定卡片位置:", cardName)
+            local newCardNode = self.cardTemplate.node:Clone()
+            newCardNode.Name = cardName
+            newCardNode.Visible = false  -- 默认隐藏
+            self.cardsList:AppendChild(newCardNode)
+        end
+    end
+
+    -- === 第一步：隐藏所有卡片 ===
+    for _, cardName in ipairs(cardNames) do
+        local card = self.cardsList:GetChildByName(cardName)
+        if card and card.node then
+            card.node.Visible = false
+        end
+    end
+
+    -- === 第二步：显示并更新有技能的卡片 ===
     for slotId, skill in pairs(self.subCardData) do
         if skill and skill.skillType then
             local cardName = SLOT_TO_CARD_MAPPING[slotId]
             if cardName then
-
-                -- 1. 先查找是否已存在对应名称的卡片
-                local existingCard = self.cardsList:GetChildByName(cardName)
-                local cardNode = nil
-
-                if existingCard and existingCard.node then
-                    -- 存在就使用现有的卡片节点
-                    gg.log("找到现有卡片，替换内容:", cardName)
-                    cardNode = existingCard.node
-                else
-                    -- 不存在就克隆模板并添加到列表
-                    gg.log("创建新卡片:", cardName)
-                    local newCardNode = self.cardTemplate.node:Clone()
-                    newCardNode.Name = cardName
-                    newCardNode.Visible = true
+                local card = self.cardsList:GetChildByName(cardName)
+                if card and card.node then
+                    gg.log("显示并更新卡片:", cardName, "技能:", skill.skillType.displayName, "槽位:", slotId)
                     
-                    -- 使用ViewList的AppendChild方法添加新卡片
-                    self.cardsList:AppendChild(newCardNode)
+                    -- 显示卡片
+                    card.node.Visible = true
                     
-                    -- 获取刚添加的卡片节点
-                    local newCard = self.cardsList:GetChildByName(cardName)
-                    if newCard and newCard.node then
-                        cardNode = newCard.node
-                        gg.log("成功创建并添加新卡片:", cardName)
-                    else
-                        gg.log("错误：添加新卡片失败:", cardName)
-                    end
-                end
-
-                -- 2. 更新卡片内容
-                if cardNode then
-                    -- 确保卡片可见
-                    cardNode.Visible = true
-                    
-                    -- 检查并更新子节点
-                    if cardNode["名字"] then
-                        cardNode["名字"].Title = skill.skillType.displayName or skill.skillName
+                    -- 更新卡片内容
+                    if card.node["名字"] then
+                        card.node["名字"].Title = skill.skillType.displayName or skill.skillName
                     end
                     
-                    if cardNode["名字"] then
-                        cardNode["等级"].Title = tostring(skill.level)
+                    if card.node["等级"] then
+                        card.node["等级"].Title = tostring(skill.level)
                     end
                     
                     local icon = skill.skillType.icon
-                    if icon and icon ~= "" and cardNode["名字"] then
-                        cardNode["图标"].Icon = icon
+                    if icon and icon ~= "" and card.node["图标"] then
+                        card.node["图标"].Icon = icon
                     end
                     
                     -- 设置副卡品质图标
-                    self:SetSubCardQualityIcons(cardNode, skill.skillType)
-                    
+                    self:SetSubCardQualityIcons(card.node, skill.skillType)
+                else
+                    gg.log("错误：无法找到卡片:", cardName)
                 end
             else
                 gg.log("警告：槽位", slotId, "没有对应的卡片映射")
@@ -362,62 +369,88 @@ end
 function HudCards:RebindSubCardEvents()
     if not self.cardsList then return end
 
-    -- 获取排序后的槽位列表
-    local subCardSlots = {}
-    for slotId, skill in pairs(self.subCardData) do
-        table.insert(subCardSlots, slotId)
+    -- === 使用配置文件中的槽位映射 ===
+    local SLOT_TO_CARD_MAPPING = MConfig.SlotToCardWithKeyMapping
+
+    -- === 第一步：清除所有卡片的事件绑定 ===
+    local cardNames = MConfig.FixedCardNames
+    for _, cardName in ipairs(cardNames) do
+        local card = self.cardsList:GetChildByName(cardName)
+        if card then
+            card.touchBeginCb = nil
+            card.touchEndCb = nil
+            card.touchMoveCb = nil
+            -- 清除按键提示
+            if card.node["pc_hint"] then
+                card.node["pc_hint"].Title = ""
+            end
+        end
     end
-    table.sort(subCardSlots)
 
-    -- 为每个副卡按钮重新绑定事件
-    for i, slotId in ipairs(subCardSlots) do
-        local card = self.cardsList:GetChild(i) ---@cast card ViewButton
-        card.node["pc_hint"].Title = string.format("[ %d ]", i)
-        ---@type Skill
-        local skill = self.subCardData[slotId]
-
-        if skill then
-            card.touchBeginCb = function(ui, btn, vector2)
-                self:StartSkillTracking(skill, vector2)
-            end
-
-            card.touchEndCb = function(ui, btn)
-                if self.selectSkillCb then
-                    self.selectSkillCb(btn.index, skill)
-                    self.selectSkillCb = nil
-                    self.pressedSkillId = nil
-                    return
-                end
-                if self.pressedSkillId == skill.skillName then
-                    self:CastSkill(skill)
-                end
-                self.pressedSkillId = nil -- 抬起后清空
-            end
-
-            card.touchMoveCb = function(ui, btn, vector2)
-                -- 检查技能是否在冷却中
-                local currentTime = gg.GetTimeStamp()
-                local lastCastTime = lastCastTimes[skill.skillName]
-                if lastCastTime and skill.cooldownCache > 0 then
-                    local elapsedTime = currentTime - lastCastTime
-                    local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
-                    if remainingTime > 0 then
-                        return -- 在冷却中，不处理触摸事件
+    -- === 第二步：为有技能的卡片绑定事件 ===
+    for slotId, skill in pairs(self.subCardData) do
+        if skill and skill.skillType then
+            local mapping = SLOT_TO_CARD_MAPPING[slotId]
+            if mapping then
+                local card = self.cardsList:GetChildByName(mapping.cardName)
+                if card then
+                    gg.log("为卡片绑定事件:", mapping.cardName, "技能:", skill.skillType.displayName, "数字键:", mapping.keyIndex)
+                    
+                    -- 设置键盘提示
+                    if card.node["pc_hint"] then
+                        card.node["pc_hint"].Title = string.format("[ %d ]", mapping.keyIndex)
                     end
+
+                    -- 绑定触摸开始事件
+                    card.touchBeginCb = function(ui, btn, vector2)
+                        self:StartSkillTracking(skill, vector2)
+                    end
+
+                    -- 绑定触摸结束事件
+                    card.touchEndCb = function(ui, btn)
+                        if self.selectSkillCb then
+                            self.selectSkillCb(btn.index, skill)
+                            self.selectSkillCb = nil
+                            self.pressedSkillId = nil
+                            return
+                        end
+                        if self.pressedSkillId == skill.skillName then
+                            self:CastSkill(skill)
+                        end
+                        self.pressedSkillId = nil -- 抬起后清空
+                    end
+
+                    -- 绑定触摸移动事件
+                    card.touchMoveCb = function(ui, btn, vector2)
+                        -- 检查技能是否在冷却中
+                        local currentTime = gg.GetTimeStamp()
+                        local lastCastTime = lastCastTimes[skill.skillName]
+                        if lastCastTime and skill.cooldownCache > 0 then
+                            local elapsedTime = currentTime - lastCastTime
+                            local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
+                            if remainingTime > 0 then
+                                return -- 在冷却中，不处理触摸事件
+                            end
+                        end
+
+                        if not self.touchBeginPos then return end
+
+                        -- 计算移动的距离
+                        local moveDistance = vector2 - self.touchBeginPos
+                        -- 更新按下的位置
+                        self.touchBeginPos = vector2
+
+                        -- 移动相机
+                        CameraController.InputMove(
+                            moveDistance.x,
+                            moveDistance.y
+                        )
+                    end
+                else
+                    gg.log("警告：无法找到对应的UI卡片:", mapping.cardName, "槽位:", slotId)
                 end
-
-                if not self.touchBeginPos then return end
-
-                -- 计算移动的距离
-                local moveDistance = vector2 - self.touchBeginPos
-                -- 更新按下的位置
-                self.touchBeginPos = vector2
-
-                -- 移动相机
-                CameraController.InputMove(
-                    moveDistance.x,
-                    moveDistance.y
-                )
+            else
+                gg.log("警告：槽位", slotId, "没有对应的卡片映射")
             end
         end
     end
@@ -470,14 +503,22 @@ function HudCards:OnInit(node, config)
         if not data.isDown then
             -- 按键抬起时，检查是否是之前按下的数字键
             if self.pressedKey and data.key == self.pressedKey then
-                -- 数字键1对应槽位2，数字键2对应槽位3，以此类推
-                local skillIndex = self.pressedKey - Enum.KeyCode.One.Value + 2
-                local skillId = equippedSkills[skillIndex]
-                if skillId then
-                    local skill = skills[skillId]
-                    if skill then
-                        self:CastSkill(skill)
+                -- === 修复：数字键1-4直接对应卡片_1到卡片_4 ===
+                local keyIndex = self.pressedKey - Enum.KeyCode.One.Value + 1  -- 1,2,3,4
+                local cardName = "卡片_" .. keyIndex
+                
+                -- 根据卡片名称查找对应的技能
+                local targetSkill = nil
+                for slotId, skill in pairs(self.subCardData) do
+                    if MConfig.SlotToCardMapping[slotId] == cardName then
+                        targetSkill = skill
+                        break
                     end
+                end
+                
+                if targetSkill then
+                    gg.log("键盘释放技能:", targetSkill.skillType.displayName, "卡片:", cardName)
+                    self:CastSkill(targetSkill)
                 end
                 self.pressedKey = nil
             end
@@ -485,14 +526,22 @@ function HudCards:OnInit(node, config)
             -- 按键按下时，记录数字键并执行触摸开始逻辑
             if data.key >= Enum.KeyCode.One.Value and data.key <= Enum.KeyCode.Four.Value then
                 self.pressedKey = data.key
-                -- 数字键1对应槽位2，数字键2对应槽位3，以此类推
-                local skillIndex = data.key - Enum.KeyCode.One.Value + 2
-                local skillId = equippedSkills[skillIndex]
-                if skillId then
-                    local skill = skills[skillId]
-                    if skill then
-                        self:StartSkillTracking(skill)
+                -- === 修复：数字键1-4直接对应卡片_1到卡片_4 ===
+                local keyIndex = data.key - Enum.KeyCode.One.Value + 1  -- 1,2,3,4
+                local cardName = "卡片_" .. keyIndex
+                
+                -- 根据卡片名称查找对应的技能
+                local targetSkill = nil
+                for slotId, skill in pairs(self.subCardData) do
+                    if MConfig.SlotToCardMapping[slotId] == cardName then
+                        targetSkill = skill
+                        break
                     end
+                end
+                
+                if targetSkill then
+                    gg.log("键盘开始追踪技能:", targetSkill.skillType.displayName, "卡片:", cardName)
+                    self:StartSkillTracking(targetSkill)
                 end
             end
         end
@@ -775,7 +824,7 @@ function HudCards:StartSkillTracking(skill, vector2)
     end, 0, 0.067)
 end
 
--- === 新增：根据卡片名称隐藏对应的UI节点 ===
+-- === 修改：根据卡片名称隐藏对应的UI节点（不销毁） ===
 ---@param cardName string UI卡片节点名称（如"卡片_1"、"卡片_2"等）
 function HudCards:HideCardByName(cardName)
     if not cardName or not self.cardsList then
@@ -783,14 +832,25 @@ function HudCards:HideCardByName(cardName)
         return
     end
 
-    gg.log("开始移除UI卡片:", cardName)
+    gg.log("隐藏UI卡片:", cardName)
     
-    -- 使用ViewList的RemoveChildByName方法来正确移除节点
-    -- 这会同时销毁节点和从childrens数组中移除对应的ViewButton对象
-    local success = self.cardsList:RemoveChildByName(cardName)
-    
-    if success then
-        gg.log("成功移除UI卡片:", cardName)
+    -- 根据卡片名称获取对应的UI卡片
+    local card = self.cardsList:GetChildByName(cardName)
+    if card and card.node then
+        -- 隐藏卡片而不是销毁
+        card.node.Visible = false
+        
+        -- 清除事件绑定
+        card.touchBeginCb = nil
+        card.touchEndCb = nil
+        card.touchMoveCb = nil
+        
+        -- 清除按键提示
+        if card.node["pc_hint"] then
+            card.node["pc_hint"].Title = ""
+        end
+        
+        gg.log("成功隐藏UI卡片:", cardName)
     else
         gg.log("HideCardByName: 未找到对应的UI卡片", cardName)
     end

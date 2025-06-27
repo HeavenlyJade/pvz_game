@@ -45,7 +45,7 @@ function MainServer.handleMidnightRefresh()
         sec = 0
     })
     local secondsUntilMidnight = nextMidnight - os.time()
-    
+
     ServerScheduler.add(function()
         -- 对所有在线玩家执行刷新
         for _, player in pairs(gg.server_players_list) do
