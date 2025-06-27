@@ -46,7 +46,7 @@ function _M:OnInit(npcData, actor)
     end
     local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox
     trigger.LocalPosition = Vector3.New(0,0,0)
-    trigger.Size = Vector3.New(self.extraSize.x + npcSize.x, self.extraSize.y + npcSize.y, self.extraSize.y + npcSize.z)                                                               -- 扩展范围
+    trigger.Size = Vector3.New(self.extraSize.x + npcSize.x, self.extraSize.y + npcSize.y, self.extraSize.z + npcSize.z)                                                               -- 扩展范围
     trigger.Touched:Connect(function(node)
         if node and node.UserId then
             local player = gg.getPlayerByUin(node.UserId)
@@ -64,7 +64,7 @@ function _M:OnInit(npcData, actor)
                 if self.target == player then
                     self:SetTarget(nil)
                 end
-                -- 从玩家的附近NPC列表中移除
+                -- 从玩家的附近NPC列表中移除·
                 player:RemoveNearbyNpc(self)
                 -- 从NPC的附近玩家列表中移除
                 self.nearbyPlayers[player.uuid] = nil
@@ -72,7 +72,7 @@ function _M:OnInit(npcData, actor)
         end
     end)
     
-    -- 添加定时任务，每秒检查玩家是否还在交互区域内
+    -- 添加定时任务，每秒检查玩家是否还在交互区域内·
     self.checkTaskId = ServerScheduler.add(function()
         self:CheckNearbyPlayers()
     end, 1, 1, "npc_check_" .. self.uuid)

@@ -97,6 +97,24 @@ function _M:initNpcs()
                 self.uuid2Entity[actor] = npc
                 self.npcs[npc.uuid] = npc
                 npc:ChangeScene(self)
+                
+                gg.log("NPC创建成功：", npc_name, "UUID：", npc.uuid)
+            else
+                gg.log("错误：找不到NPC节点：", npc_name, "节点名：", npc_data["节点名"])
+                if sceneNode then
+                    -- 安全地获取子节点信息
+                    local children = {}
+                    if sceneNode.Children then
+                        for _, child in ipairs(sceneNode.Children) do
+                            if child and child.Name then
+                                table.insert(children, child.Name)
+                            end
+                        end
+                    end
+                    gg.log("可用的NPC节点：", table.concat(children, ", "))
+                else
+                    gg.log("错误：场景中没有NPC节点容器")
+                end
             end
         end
     end

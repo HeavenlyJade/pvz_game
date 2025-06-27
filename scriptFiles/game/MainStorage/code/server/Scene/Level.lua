@@ -225,7 +225,9 @@ function Level:Start()
 
     -- 将玩家传送到进入点
     local playerIndex = 1
+    gg.log("关卡开始: 传送", self.playerCount, "个玩家到进入点")
     for _, player in pairs(self.players) do
+        gg.log("处理玩家:", player.name, "UIN:", player.uin, "索引:", playerIndex)
         -- 保存玩家原始位置
         if player.actor then
             self.playerOriginalPositions[player.uin] = {
@@ -249,11 +251,16 @@ function Level:Start()
             player:SetCameraView(player.actor.Euler)
             local oldGrav = player.actor.Gravity
             player.actor.Gravity = 0
+            -- 为每个玩家创建独立的定时器，避免闭包问题
+            local currentPlayer = player  -- 创建局部变量副本
+            local currentEntryPoint = entryPoint  -- 创建局部变量副本
             ServerScheduler.add(function ()
-                player.actor.Gravity = oldGrav
-                player.actor.Position = entryPoint.Position
-                player:EnterBattle()
-                player:SetMoveable(false)
+                if currentPlayer.actor then
+                    currentPlayer.actor.Gravity = oldGrav
+                    currentPlayer.actor.Position = currentEntryPoint.Position
+                    currentPlayer:EnterBattle()
+                    currentPlayer:SetMoveable(false)
+                end
             end, 3)
         end
 
@@ -298,7 +305,10 @@ end
 ---开始波次
 function Level:StartWave()
     if #self.allWaves == 0 then
-        self:OnLevelComplete()
+        -- 延迟一段时间再完成关卡，确保所有玩家都已经变身
+        ServerScheduler.add(function()
+            self:OnLevelComplete()
+        end, 5)  -- 延迟5秒，确保玩家变身完成
         return
     end
 

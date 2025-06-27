@@ -354,17 +354,23 @@ end
 
 
 function _M:EnterBattle()
+    gg.log("玩家进入战斗:", self.name, "UIN:", self.uin)
     self:showReviveEffect(self:GetPosition())
     local skillId = self.equippedSkills[1]
     if skillId then
         local skill = self.skills[skillId]
-        if skill.skillType.battleModel then
+        if skill and skill.skillType and skill.skillType.battleModel then
+            gg.log("玩家变身植物:", self.name, "技能:", skill.skillType.name, "模型:", skill.skillType.battleModel)
             if skill.skillType.freezesMove then
                 self:SetMoveable(false)
             end
             self:SetModel(skill.skillType.battleModel, skill.skillType.battleAnimator, skill.skillType.battleStateMachine)
             self.actor.LocalScale = Vector3.New(skill.skillType.battlePlayerSize, skill.skillType.battlePlayerSize, skill.skillType.battlePlayerSize)
+        else
+            gg.log("警告: 玩家", self.name, "没有有效的战斗模型技能, skillId:", skillId, "skill:", skill)
         end
+    else
+        gg.log("警告: 玩家", self.name, "没有装备第一个技能")
     end
 
     -- 清理所有召唤物
@@ -385,6 +391,7 @@ function _M:ExitBattle()
     "sandboxSysId&restype=12://ministudio/entity/player/player12/Animation/OfficialController.controller",
     nil)
     self.actor.LocalScale = Vector3.New(1, 1, 1)
+    self:SetMoveable(true)  -- 确保玩家退出战斗后可以移动
     self:RefreshStats()
 
     -- 清理所有召唤物
