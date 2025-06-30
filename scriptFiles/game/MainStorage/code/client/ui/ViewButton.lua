@@ -263,9 +263,9 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
         self.img = self.img[realButtonPath]
     end
     local img = self.img
-    
 
-    
+
+
 self:InitButtonProperties(img)
 
     if img["pc_hint"] then
@@ -310,9 +310,9 @@ function ViewButton:UpdateChildImageCache(childName, normalImg, hoverImg, clickI
     if not self.childClickImgs or not self.childClickImgs[childName] then
         return false
     end
-    
+
     local childProps = self.childClickImgs[childName]
-    
+
     -- 更新图标缓存
     if normalImg then
         childProps.normalImg = normalImg
@@ -323,14 +323,14 @@ function ViewButton:UpdateChildImageCache(childName, normalImg, hoverImg, clickI
     if clickImg then
         childProps.clickImg = clickImg
     end
-    
+
     -- 同时更新节点的当前图标显示
     if childProps.node then
         if normalImg then
             childProps.node.Icon = normalImg
         end
     end
-    
+
     gg.log("ViewButton:UpdateChildImageCache - 已更新子节点缓存:", childName, "normalImg:", normalImg, "hoverImg:", hoverImg, "clickImg:", clickImg)
     return true
 end
@@ -345,16 +345,16 @@ function ViewButton:UpdateChildFullState(childName, normalImg, hoverImg, clickIm
     if updateNodeAttributes == nil then
         updateNodeAttributes = true
     end
-    
+
     -- 如果没有指定悬浮图标，使用默认图标
     if not hoverImg and normalImg then
         hoverImg = normalImg
     end
-    
+
     -- 更新节点的UI属性
     if updateNodeAttributes and self.node and self.node[childName] then
         local childNode = self.node[childName]
-        
+
         if normalImg then
             childNode.Icon = normalImg
             childNode:SetAttribute("图片-默认", normalImg)
@@ -366,7 +366,7 @@ function ViewButton:UpdateChildFullState(childName, normalImg, hoverImg, clickIm
             childNode:SetAttribute("图片-点击", clickImg)
         end
     end
-    
+
     -- 更新ViewButton的缓存
     return self:UpdateChildImageCache(childName, normalImg, hoverImg, clickImg)
 end
@@ -378,12 +378,12 @@ function ViewButton:UpdateMainNodeState(config)
         gg.log("ViewButton:UpdateMainNodeState - 主节点不存在")
         return false
     end
-    
+
     if not config or type(config) ~= "table" then
         gg.log("ViewButton:UpdateMainNodeState - 配置参数无效")
         return false
     end
-    
+
     -- 提取配置表中的临时变量
     local normalImg = config.normalImg
     local hoverImg = config.hoverImg
@@ -391,12 +391,12 @@ function ViewButton:UpdateMainNodeState(config)
     local normalColor = config.normalColor
     local hoverColor = config.hoverColor
     local clickColor = config.clickColor
-    
+
     -- 如果没有指定悬浮图标，使用默认图标
     if not hoverImg and normalImg then
         hoverImg = normalImg
     end
-    
+
     -- 更新节点的UI属性
     if normalImg then
         self.img.Icon = normalImg
@@ -408,7 +408,7 @@ function ViewButton:UpdateMainNodeState(config)
     if clickImg then
         self.img:SetAttribute("图片-点击", clickImg)
     end
-    
+
     -- 更新颜色属性
     if normalColor then
         self.img.FillColor = normalColor
@@ -419,7 +419,7 @@ function ViewButton:UpdateMainNodeState(config)
     if clickColor then
         self.img:SetAttribute("点击颜色", clickColor)
     end
-    
+
     -- 同时更新ViewButton的缓存属性
     if normalImg then
         self.normalImg = normalImg
@@ -439,7 +439,7 @@ function ViewButton:UpdateMainNodeState(config)
     if clickColor then
         self.clickColor = clickColor
     end
-    
+
     gg.log("ViewButton:UpdateMainNodeState - 已更新主节点:", "normalImg:", normalImg, "hoverImg:", hoverImg, "clickImg:", clickImg)
     return true
 end
@@ -450,24 +450,24 @@ function ViewButton:Destroy()
     if self.node then
         self.node:Destroy()
     end
-    
+
     -- 清理回调函数引用
     self.clickCb = nil
     self.touchBeginCb = nil
     self.touchMoveCb = nil
     self.touchEndCb = nil
-    
+
     -- 清理图像引用
     self.img = nil
     self.normalImg = nil
     self.hoverImg = nil
     self.clickImg = nil
-    
+
     -- 清理颜色引用
     self.normalColor = nil
     self.hoverColor = nil
     self.clickColor = nil
-    
+
     -- 清理子图像字典
     if self.childClickImgs then
         for child, _ in pairs(self.childClickImgs) do
@@ -475,7 +475,7 @@ function ViewButton:Destroy()
         end
         self.childClickImgs = {}
     end
-    
+
     -- 清理ViewComponent的基础属性
     self.node = nil
     self.ui = nil

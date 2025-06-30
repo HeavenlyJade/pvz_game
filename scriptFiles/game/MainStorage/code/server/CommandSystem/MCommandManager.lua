@@ -79,21 +79,24 @@ end)
 function CommandManager.ExecuteCommand(commandStr, player, silent)
     if not commandStr or commandStr == "" then return false end
 
-    -- 1. 分割命令和参数
+    -- 1. 清理命令字符串前后的空白字符
+    commandStr = commandStr:match("^%s*(.-)%s*$")
+    
+    -- 2. 分割命令和参数
     local command, jsonStr = commandStr:match("^(%S+)%s+(.+)$")
     if not command then
         gg.log("命令格式错误: " .. commandStr)
         return false
     end
 
-    -- 2. 查找命令处理器
+    -- 3. 查找命令处理器
     local handler = CommandManager.handlers[command]
     if not handler then
         gg.log("未知命令: " .. command)
         return false
     end
 
-    -- 3. 解析JSON参数
+    -- 4. 解析JSON参数
     local params = json.decode(jsonStr)
     if params["在线"] == "不在线" then
         --- 用来处理玩家不在线的情况
@@ -109,7 +112,7 @@ function CommandManager.ExecuteCommand(commandStr, player, silent)
     if not silent then
         gg.log("执行指令", player, command, params)
     end
-    -- 5. 调用处理器
+    -- 6. 调用处理器
     local success, result = pcall(handler, params, player)
     if not success then
         gg.log("命令执行错误: " .. command .. ", " .. tostring(result))

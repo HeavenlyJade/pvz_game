@@ -87,9 +87,10 @@ function ViewList:SetElementSize(size)
             child:SetParent(self.node)
             child.Name = self.childNameTemplate .. i
             if self.onAddElementCb then
-                local button = self.onAddElementCb(child)
+                local childPath = self.path .. "/" .. child.Name
+                local button = self.onAddElementCb(child, childPath)
                 if button then
-                    button.path = self.path .. "/" .. child.Name
+                    button.path = childPath
                     button.index = i
                     self.childrens[i] = button
                 end

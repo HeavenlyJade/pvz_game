@@ -154,7 +154,7 @@ end
 ---@param skillType table 技能类型配置
 function HudCards:SetSubCardQualityIcons(cardButton, skillType)
     if not cardButton or not skillType then return end
-    
+
     local cardNode = cardButton.node
     if not cardNode then return end
 
@@ -164,7 +164,7 @@ function HudCards:SetSubCardQualityIcons(cardButton, skillType)
     -- 如果是ViewButton，直接使用ViewButton的方法
     local defIcon = CardIcon.qualityBaseMapDefIcon[quality]
     local clickIcon = CardIcon.qualityBaseMapClickIcon[quality]
-    
+
     cardButton:UpdateMainNodeState({
         normalImg = defIcon,
         hoverImg = defIcon,

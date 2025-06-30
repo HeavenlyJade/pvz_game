@@ -228,9 +228,9 @@ function Level:Start()
 
     -- 将玩家传送到进入点
     local playerIndex = 1
-    
+
     for _, player in pairs(self.players) do
-        
+
         -- 保存玩家原始位置
         if player.actor then
             self.playerOriginalPositions[player.uin] = {
@@ -249,37 +249,37 @@ function Level:Start()
 
         -- 传送玩家
         if player.actor and entryPoint then
-            
+
             -- 标记玩家正在关卡传送中，避免场景切换冲突
             player._levelTeleporting = true
-            
+
             -- 先切换到目标场景
             player:ChangeScene(self.scene)
-            
+
             -- 然后传送位置
             player.actor.Position = entryPoint.Position
             player.actor.Euler = Vector3.New(0, entryPoint.Euler.y, 0)
             player:SetCameraView(player.actor.Euler)
             local oldGrav = player.actor.Gravity
             player.actor.Gravity = 0
-            
+
             -- 为每个玩家创建独立的定时器，避免闭包问题
             local currentPlayer = player  -- 创建局部变量副本
             local currentEntryPoint = entryPoint  -- 创建局部变量副本
             local currentUin = player.uin  -- 保存UIN
             ServerScheduler.add(function ()
-                
+
                 -- 清除传送标记
                 currentPlayer._levelTeleporting = nil
-                
+
                 if not self.isActive then
                     return
                 end
-                
+
                 if not self.players[currentUin] then
                     return
                 end
-                
+
                 if currentPlayer.actor then
                     currentPlayer.actor.Gravity = oldGrav
                     currentPlayer.actor.Position = currentEntryPoint.Position
@@ -300,7 +300,7 @@ function Level:Start()
 
         playerIndex = playerIndex + 1
     end
-    
+
     -- 确保重新初始化波次
     self:InitializeWaves()
     self:StartWave()
@@ -403,7 +403,7 @@ function Level:Update()
             table.insert(playerStatusList, string.format("%s(死亡)", player.name))
         end
     end
-    
+
     -- 如果没有存活玩家，停止生成怪物并结束关卡
     if alivePlayerCount == 0 then
         self:End(false)
@@ -505,11 +505,11 @@ end
 ---关卡完成
 function Level:OnLevelComplete()
 
-    
+
     -- 记录每个玩家的状态
     for uin, player in pairs(self.players) do
     end
-    
+
     -- 计算星级
     local star = 1
     -- if self.levelType.twoStarConditions then
@@ -588,7 +588,7 @@ end
 ---结束关卡
 ---@param success boolean 是否成功完成
 function Level:End(success)
-    
+
     if not self.isActive then
         return
     end
@@ -653,10 +653,10 @@ function Level:End(success)
     end
 
     for uin, player in pairs(self.players) do
-        
+
         -- 清理关卡传送标记
         player._levelTeleporting = nil
-        
+
         -- 复活死亡的玩家
         if player.isDead then
             player:CompleteRespawn()
@@ -700,10 +700,10 @@ function Level:AddPlayer(player)
     if self.playerCount >= self.levelType.maxPlayers then
         return false
     end
-    
+
     self.players[player.uin] = player
     self.playerCount = self.playerCount + 1
-    
+
     return true
 end
 
@@ -715,7 +715,7 @@ function Level:RemovePlayer(player, success, reason)
     if self.players[player.uin] then
         -- 清理关卡传送标记
         player._levelTeleporting = nil
-        
+
         self.players[player.uin] = nil
         self.playerCount = math.max(0, self.playerCount - 1)
 
@@ -739,7 +739,7 @@ function Level:RemovePlayer(player, success, reason)
         })
         player:ExitBattle()
     end
-    
+
     if self.playerCount == 0 then
         self:End(false)
     end

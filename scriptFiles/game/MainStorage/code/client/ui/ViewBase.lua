@@ -148,7 +148,9 @@ end
 
 function ViewBase:Close()
     self:SetVisible(false)
-    print("CloseSound", self.closeSound)
+    if not self.displaying then
+        return
+    end
     if self.closeSound then
         ClientEventManager.Publish("PlaySound", {
             soundAssetId = self.closeSound

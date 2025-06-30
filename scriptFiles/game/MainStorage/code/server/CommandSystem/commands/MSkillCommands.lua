@@ -217,11 +217,11 @@ end
 
 function SkillCommands.afk(params, player)
     local action = params["操作"] or "进入挂机"
-    
+
     -- 检查玩家是否在关卡中
     local Level = require(MainStorage.code.server.Scene.Level)
     local currentLevel = Level.GetCurrentLevel(player)
-    
+
     if action == "进入挂机" then
         -- 如果玩家在关卡中，不执行挂机操作
         if currentLevel and currentLevel.isActive then
@@ -248,7 +248,7 @@ function SkillCommands.main(params, player)
     local player = gg.getPlayerByUin(uin)
     local skillName = params["技能"]
     local level = params["等级"]
-    local growth = params["经验"] 
+    local growth = params["经验"]
     local optype = params["类型"]
 
     if not player then

@@ -44,7 +44,12 @@ end
 function ItemTooltipHud:DisplayItem(item, x, y)
     self.frame.node.Position = Vector2.New(x, y)
     self.icon.node["ItemIcon"].Icon = item.itemType.icon
-    self.icon.node["Amount"].Title = gg.FormatLargeNumber(item.amount)
+    local amount = gg.FormatLargeNumber(item.amount)
+    if amount == "1" then
+        self.icon.node["Amount"].Title = ""
+    else
+        self.icon.node["Amount"].Title = amount
+    end
     self.title.node.Title = item.itemType.name
     self.description.node.Title = item.itemType.description
     self.useButton:SetVisible(false)

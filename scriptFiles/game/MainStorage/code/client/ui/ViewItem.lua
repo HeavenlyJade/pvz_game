@@ -44,7 +44,12 @@ function ViewItem:SetItem(item)
     self.normalImg = item.itemType.rank.normalImgBg
     self.hoverImg = item.itemType.rank.hoverImgBg
     self.clickImg = item.itemType.rank.hoverImgBg
-    self.node["Amount"].Title = gg.FormatLargeNumber(item.amount)
+    local amount = gg.FormatLargeNumber(item.amount)
+    if amount == "1" then
+        self.node["Amount"].Title = ""
+    else
+        self.node["Amount"].Title = amount
+    end
 end
 
 ---@param item ItemType

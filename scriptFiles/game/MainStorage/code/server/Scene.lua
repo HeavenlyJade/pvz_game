@@ -218,14 +218,14 @@ function _M:OnInit(node)
                     if entity._levelTeleporting then
                         return
                     end
-                    
+
                     -- 检查是否在活跃关卡中
                     local Level = require(MainStorage.code.server.Scene.Level)
                     local currentLevel = Level.GetCurrentLevel(entity)
                     if currentLevel and currentLevel.isActive then
                         return
                     end
-                    
+
                     entity:ChangeScene(self)
                 elseif entity then
                     -- 非玩家实体直接切换

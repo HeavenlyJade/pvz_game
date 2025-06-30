@@ -8,6 +8,7 @@ local WeightedRandomSelector = require(MainStorage.code.common.WeightedRandomSel
 local LevelConfig = require(MainStorage.code.common.config.LevelConfig)  ---@type LevelConfig
 local Item = require(MainStorage.code.server.bag.Item) ---@type Item
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
 
 
 ---@class DropItemInfo
@@ -550,6 +551,45 @@ function LevelType:GetScaledAttributeMultiplier(attributeName, playerCount)
     end
     local baseMultiplier = self.playerAttributeMultiplier[attributeName] or 0
     return 1 + baseMultiplier * (playerCount - 1)
+end
+
+---获取关卡掉落物列表
+---@return Item[] 掉落物列表
+function LevelType:GetDrops()
+    local drops = {} ---@type Item[]
+    local seenItems = {} ---@type table<string, boolean>  -- 用于去重
+    
+    -- 处理所有波次的掉落物
+    for _, wave in ipairs(self.waves) do
+        for _, dropInfo in ipairs(wave.dropItems) do
+            if not seenItems[dropInfo["物品"]] then
+                local itemType = ItemTypeConfig.Get(dropInfo["物品"])
+                if itemType then
+                    local item = itemType:ToItem(1)
+                    if item then
+                        table.insert(drops, item)
+                        seenItems[dropInfo["物品"]] = true  -- 标记为已添加
+                    end
+                end
+            end
+        end
+    end
+    
+    -- 处理排名掉落物
+    for _, rankReward in ipairs(self.rankRewards) do
+        for itemTypeId, _ in pairs(rankReward["物品"] or {}) do
+            if not seenItems[itemTypeId] then
+                local itemType = ItemTypeConfig.Get(itemTypeId)
+                if itemType then
+                    local item = itemType:ToItem(1)
+                    table.insert(drops, item)
+                    seenItems[itemTypeId] = true  -- 标记为已添加
+                end
+            end
+        end
+    end
+    
+    return drops
 end
 
 return LevelType 
