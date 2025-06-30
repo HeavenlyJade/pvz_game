@@ -140,8 +140,11 @@ function Level:OnInit(levelType, scene, index)
             end
 
             -- 检查波次是否结束
-            if self.remainingMobCount == 0 and #self.spawningWaves == 0 and #self.notSpawningWaves == 0 then
+            local spawningCount = #self.spawningWaves
+            local notSpawningCount = #self.notSpawningWaves
+            if self.remainingMobCount == 0 and spawningCount == 0 and notSpawningCount == 0 then
                 self:OnWaveEnd()
+            else
             end
         elseif data.mob then
         end
@@ -185,7 +188,7 @@ function Level:OnInit(levelType, scene, index)
         if player then
             -- 如果玩家在副本中，将其移除
             if self.players[player.uin] then
-                self:RemovePlayer(player)
+                self:RemovePlayer(player, nil, "PlayerLeaveGameEvent")
             end
         end
     end)
@@ -196,7 +199,7 @@ function Level:OnInit(levelType, scene, index)
         local scene = event.scene
         if player and scene == self.scene then
             if self.players[player.uin] then
-                self:RemovePlayer(player)
+                self:RemovePlayer(player, nil, "PlayerLeaveSceneEvent")
             end
         end
     end)
@@ -225,9 +228,9 @@ function Level:Start()
 
     -- 将玩家传送到进入点
     local playerIndex = 1
-    gg.log("关卡开始: 传送", self.playerCount, "个玩家到进入点")
+    
     for _, player in pairs(self.players) do
-        gg.log("处理玩家:", player.name, "UIN:", player.uin, "索引:", playerIndex)
+        
         -- 保存玩家原始位置
         if player.actor then
             self.playerOriginalPositions[player.uin] = {
@@ -246,22 +249,46 @@ function Level:Start()
 
         -- 传送玩家
         if player.actor and entryPoint then
+            
+            -- 标记玩家正在关卡传送中，避免场景切换冲突
+            player._levelTeleporting = true
+            
+            -- 先切换到目标场景
+            player:ChangeScene(self.scene)
+            
+            -- 然后传送位置
             player.actor.Position = entryPoint.Position
             player.actor.Euler = Vector3.New(0, entryPoint.Euler.y, 0)
             player:SetCameraView(player.actor.Euler)
             local oldGrav = player.actor.Gravity
             player.actor.Gravity = 0
+            
             -- 为每个玩家创建独立的定时器，避免闭包问题
             local currentPlayer = player  -- 创建局部变量副本
             local currentEntryPoint = entryPoint  -- 创建局部变量副本
+            local currentUin = player.uin  -- 保存UIN
             ServerScheduler.add(function ()
+                
+                -- 清除传送标记
+                currentPlayer._levelTeleporting = nil
+                
+                if not self.isActive then
+                    return
+                end
+                
+                if not self.players[currentUin] then
+                    return
+                end
+                
                 if currentPlayer.actor then
                     currentPlayer.actor.Gravity = oldGrav
                     currentPlayer.actor.Position = currentEntryPoint.Position
                     currentPlayer:EnterBattle()
                     currentPlayer:SetMoveable(false)
+                else
                 end
             end, 3)
+        else
         end
 
         -- 发送战斗开始事件
@@ -273,7 +300,7 @@ function Level:Start()
 
         playerIndex = playerIndex + 1
     end
-
+    
     -- 确保重新初始化波次
     self:InitializeWaves()
     self:StartWave()
@@ -283,7 +310,7 @@ end
 ---初始化波次
 function Level:InitializeWaves()
     self.allWaves = {}
-    for _, wave in ipairs(self.levelType.waves) do
+    for i, wave in ipairs(self.levelType.waves) do
         table.insert(self.allWaves, wave)
     end
     self.waveCount = 0
@@ -319,7 +346,8 @@ function Level:StartWave()
 
     -- 计算当前波次的怪物总数，考虑玩家数量倍率
     local baseMobCount = self.currentWave:CalculateMobCount()
-    self.currentWaveMobCount = math.floor(baseMobCount * self.levelType:GetScaledMultiplier(1, self.playerCount))
+    local multiplier = self.levelType:GetScaledMultiplier(1, self.playerCount)
+    self.currentWaveMobCount = math.floor(baseMobCount * multiplier)
     self.remainingMobCount = self.currentWaveMobCount
 
 
@@ -364,12 +392,18 @@ function Level:Update()
 
     -- 检查是否还有存活的玩家
     local alivePlayerCount = 0
-    for _, player in pairs(self.players) do
+    local totalPlayerCount = 0
+    local playerStatusList = {}
+    for uin, player in pairs(self.players) do
+        totalPlayerCount = totalPlayerCount + 1
         if not player.isDead then
             alivePlayerCount = alivePlayerCount + 1
+            table.insert(playerStatusList, string.format("%s(存活)", player.name))
+        else
+            table.insert(playerStatusList, string.format("%s(死亡)", player.name))
         end
     end
-
+    
     -- 如果没有存活玩家，停止生成怪物并结束关卡
     if alivePlayerCount == 0 then
         self:End(false)
@@ -470,6 +504,12 @@ end
 
 ---关卡完成
 function Level:OnLevelComplete()
+
+    
+    -- 记录每个玩家的状态
+    for uin, player in pairs(self.players) do
+    end
+    
     -- 计算星级
     local star = 1
     -- if self.levelType.twoStarConditions then
@@ -548,6 +588,7 @@ end
 ---结束关卡
 ---@param success boolean 是否成功完成
 function Level:End(success)
+    
     if not self.isActive then
         return
     end
@@ -611,7 +652,11 @@ function Level:End(success)
         end
     end
 
-    for _, player in pairs(self.players) do
+    for uin, player in pairs(self.players) do
+        
+        -- 清理关卡传送标记
+        player._levelTeleporting = nil
+        
         -- 复活死亡的玩家
         if player.isDead then
             player:CompleteRespawn()
@@ -627,6 +672,7 @@ function Level:End(success)
             player.actor.Euler = originalPos.euler
             player:SetCameraView(originalPos.euler)
             player:SendChatText("已传送回原位置")
+        else
         end
         local stats = self.playerStats[player.uin] or {kills = {}, rewards = {}}
         player:SendEvent("DungeonClearedStats", {
@@ -654,15 +700,22 @@ function Level:AddPlayer(player)
     if self.playerCount >= self.levelType.maxPlayers then
         return false
     end
+    
     self.players[player.uin] = player
     self.playerCount = self.playerCount + 1
+    
     return true
 end
 
 ---移除玩家
 ---@param player Player
-function Level:RemovePlayer(player, success)
+---@param success boolean
+---@param reason string 移除原因
+function Level:RemovePlayer(player, success, reason)
     if self.players[player.uin] then
+        -- 清理关卡传送标记
+        player._levelTeleporting = nil
+        
         self.players[player.uin] = nil
         self.playerCount = math.max(0, self.playerCount - 1)
 
@@ -686,6 +739,7 @@ function Level:RemovePlayer(player, success)
         })
         player:ExitBattle()
     end
+    
     if self.playerCount == 0 then
         self:End(false)
     end

@@ -604,6 +604,15 @@ end
 
 
 function _M:ChangeScene(new_scene)
+    -- 检查是否在关卡中
+    local currentLevel = Level.GetCurrentLevel(self)
+    if currentLevel and currentLevel.isActive then
+        -- 如果不是关卡传送，且目标场景不是关卡场景，则阻止切换
+        if not self._levelTeleporting and new_scene ~= currentLevel.scene then
+            return
+        end
+    end
+    
     if new_scene.bgmSound then
         self:PlaySound(new_scene.bgmSound, nil, 0.2, nil, nil, "bgm")
     end

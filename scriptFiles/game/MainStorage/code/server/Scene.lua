@@ -212,7 +212,23 @@ function _M:OnInit(node)
         self.sceneZone.Touched:Connect(function (node)
             if node then
                 local entity = Entity.node2Entity[node] ---@type Entity
-                if entity then
+                if entity and entity.isPlayer then
+                    ---@cast entity Player
+                    -- 如果玩家正在关卡传送中，跳过场景切换
+                    if entity._levelTeleporting then
+                        return
+                    end
+                    
+                    -- 检查是否在活跃关卡中
+                    local Level = require(MainStorage.code.server.Scene.Level)
+                    local currentLevel = Level.GetCurrentLevel(entity)
+                    if currentLevel and currentLevel.isActive then
+                        return
+                    end
+                    
+                    entity:ChangeScene(self)
+                elseif entity then
+                    -- 非玩家实体直接切换
                     entity:ChangeScene(self)
                 end
             end
