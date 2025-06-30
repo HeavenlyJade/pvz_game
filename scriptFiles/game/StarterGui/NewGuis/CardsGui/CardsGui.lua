@@ -2573,16 +2573,29 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
     descPostTitleNode.Title = des.post
     descPostNode.Title = des.postD
 
-    local index = 1
     local upgradeCosts = skill:GetCostAtLevel(skillLevel+1)
-    self.subCardEnhancementList:SetElementSize(0)
+    
     if upgradeCosts and next(upgradeCosts) then
+        -- 计算有效物品数量（排除cost为0的物品）
+        local validItems = {}
         for materialName, cost in pairs(upgradeCosts) do
+    
             local itemConfig = ItemTypeConfig.Get(materialName)
             if itemConfig then
-                self.subCardEnhancementList:GetChild(index):SetItemCost(itemConfig, self:GetItemAmount(materialName), cost)
+                table.insert(validItems, {materialName = materialName, cost = cost, itemConfig = itemConfig})
             end
+        
         end
+        
+        -- 设置ViewList大小为有效物品数量
+        self.subCardEnhancementList:SetElementSize(#validItems)
+        -- 为每个有效物品设置UI
+        for index, item in ipairs(validItems) do
+            self.subCardEnhancementList:GetChild(index):SetItemCost(item.itemConfig, self:GetItemAmount(item.materialName), item.cost)
+        end
+    else
+        -- 没有升级消耗：清空列表
+        self.subCardEnhancementList:SetElementSize(0)
     end
 
     self:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
@@ -2993,38 +3006,7 @@ function CardsGui:GetInsufficientItems(requiredItems)
     return insufficientItems
 end
 
--- 检查技能升级资源（示例方法）
-function CardsGui:CheckSkillUpgradeResources(skillName)
-    local skillType = SkillTypeConfig.Get(skillName)
-    if not skillType then return end
 
-    local serverSkill = self.ServerSkills[skillName]
-    local currentLevel = serverSkill and serverSkill.level or 0
-
-    if currentLevel >= (skillType.maxLevel or 1) then
-        return
-    end
-
-    -- 获取升级成本
-    local cost = skillType:GetCostAtLevel(currentLevel + 1)
-    if cost then
-        local canUpgrade = true
-        local missingItems = {}
-
-        for resourceName, requiredAmount in pairs(cost) do
-            if requiredAmount < 0 then  -- 负数表示消耗
-                local needAmount = math.abs(requiredAmount)
-                local currentAmount = self:GetItemAmount(resourceName)
-
-                if currentAmount < needAmount then
-                    canUpgrade = false
-                    missingItems[resourceName] = needAmount - currentAmount
-                end
-            end
-        end
-
-    end
-end
 
 -- 计算一键强化的总消耗（逐级检查资源限制）
 function CardsGui:CalculateUpgradeAllCost(skillName)

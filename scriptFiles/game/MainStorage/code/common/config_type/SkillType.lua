@@ -289,7 +289,7 @@ function SkillType:GetCostAtLevel(level)
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = self:_evaluateExpression(expr)
         if result and result > 0 then
-            costs[resourceType] = math.floor(result)
+            costs[resourceType] = math.floor(result)  -- 只保留正数结果
         end
     end
     return costs
