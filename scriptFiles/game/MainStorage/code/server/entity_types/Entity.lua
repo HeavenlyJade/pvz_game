@@ -119,14 +119,14 @@ function _M:SubscribeEvent(eventType, listener, priority)
     ServerEventManager.Subscribe(eventType, listener, priority, self.uuid)
 end
 
-function _M:ExecuteCommand(command, castParam)
+function _M:ExecuteCommand(command, castParam, silent)
     local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
-    CommandManager.ExecuteCommand(command, self)
+    CommandManager.ExecuteCommand(command, self, silent)
 end
 
-function _M:ExecuteCommands(commands, castParam)
+function _M:ExecuteCommands(commands, castParam, silent)
     for _, command in ipairs(commands) do
-        local success, result = pcall(self.ExecuteCommand, self, command, castParam)
+        local success, result = pcall(self.ExecuteCommand, self, command, castParam, silent)
         if not success then
             gg.log("命令执行错误: " .. command .. ", " .. tostring(result))
             return false

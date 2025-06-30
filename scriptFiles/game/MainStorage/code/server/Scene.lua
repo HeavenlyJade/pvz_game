@@ -2,7 +2,7 @@ local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
-local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig
+local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig·
 local AfkSpotConfig = require(MainStorage.code.common.config.AfkSpotConfig) ---@type AfkSpotConfig
 local TriggerZoneConfig = require(MainStorage.code.common.config.TriggerZoneConfig) ---@type TriggerZoneConfig
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
@@ -63,11 +63,11 @@ function _M:Clone()
             end
         end
     end
-    
+
     if #unusedSlots == 0 then
         error("No available slots for scene cloning")
     end
-    
+
     local slot = unusedSlots[#unusedSlots]
     unusedSlots[#unusedSlots] = nil
     local node = self.node:Clone()
@@ -89,15 +89,17 @@ function _M:initNpcs()
     for npc_name, npc_data in pairs(all_npcs) do
         if npc_data["场景"] == self.name then
             local sceneNode = self.node["NPC"]
-            gg.log("--服务端NPC面板数据", npc_name, npc_data["场景"], self.name, self.node["NPC"],
-                sceneNode[npc_data["节点名"]])
+            gg.log("初始化NPC：", npc_name, "场景：", npc_data["场景"], "节点名：", npc_data["节点名"])
+
             if sceneNode and sceneNode[npc_data["节点名"]] then
                 local actor = sceneNode[npc_data["节点名"]]
+                gg.log("找到NPC节点：", npc_name, "节点类型：", actor.ClassName, "节点名：", actor.Name)
+
                 local npc = Npc.New(npc_data, actor)
                 self.uuid2Entity[actor] = npc
                 self.npcs[npc.uuid] = npc
                 npc:ChangeScene(self)
-                
+
                 gg.log("NPC创建成功：", npc_name, "UUID：", npc.uuid)
             else
                 gg.log("错误：找不到NPC节点：", npc_name, "节点名：", npc_data["节点名"])
@@ -367,7 +369,7 @@ end
 ---@param player Player 玩家对象
 function _M:player_leave(player)
     if not player or not player.uin then return end
-    
+
     if self.players[player.uin] then
         -- 从所有NPC中移除玩家
         for _, npc in pairs(self.npcs) do
@@ -379,13 +381,13 @@ function _M:player_leave(player)
                     player:ExecuteCommands(npc.leaveCommands)
                 end
             end
-            
+
             -- 检查是否是挂机点
             if npc.occupiedByPlayer == player then
                 npc:OnPlayerExit(player)
             end
         end
-        
+
         -- 从场景玩家列表中移除
         self.players[player.uin] = nil
     end

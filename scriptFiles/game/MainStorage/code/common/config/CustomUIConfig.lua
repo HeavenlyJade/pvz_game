@@ -10,12 +10,23 @@ local loaded = false
 
 local function LoadConfig()
     CustomUIConfig.config ={
+    ["第一章"] = CustomUI.Load({
+        ["UI名"] = "LevelSelect",
+        ["关卡"] = {
+            "1-1（1~100级）",
+            "1-2（100~200级）",
+            "1-3（200级~300级）",
+            "1-4（300级~400级）",
+            "1-5（400级~500级）"
+        },
+        ["ID"] = "第一章"
+    }),
     ["礼包"] = CustomUI.Load({
         ["UI名"] = "ShopGui",
         ["优先级"] = 1,
         ["其它页面"] = {
-            "道具",
-            "礼包"
+            "礼包",
+            "道具"
         },
         ["商品"] = {
             "副卡大礼包"
@@ -26,8 +37,8 @@ local function LoadConfig()
         ["UI名"] = "ShopGui",
         ["优先级"] = 1,
         ["其它页面"] = {
-            "道具",
-            "礼包"
+            "礼包",
+            "道具"
         },
         ["商品"] = {
             "昼夜加速卡",

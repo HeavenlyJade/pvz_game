@@ -45,13 +45,13 @@ function AfkSpot:OnInit(data, actor)
     self.occupiedByPlayer = nil ---@type Player
     self.selectedSkill = nil ---@type string
     self.occupiedEntity = nil ---@type Actor|nil
-    
+
     self:SubscribeEvent("ExitAfkSpot", function (evt)
         if evt.player then
             self:OnPlayerExit(evt.player)
         end
     end)
-    
+
     self:SubscribeEvent("PlayerLeaveGameEvent", function (evt)
         if evt.player == self.occupiedByPlayer then
             -- 清理占用状态
@@ -69,7 +69,7 @@ function AfkSpot:OnInit(data, actor)
             end
         end
     end)
-    
+
     self:SubscribeEvent("AfkSelectSkill", function (evt)
         if evt.npcId == self.uuid then
             local player = evt.player ---@type Player
@@ -106,15 +106,16 @@ function AfkSpot:OnInit(data, actor)
     end)
 end
 
+--- 副卡的挂机的进度
 function AfkSpot:RefreshTitle()
     local skill = self.occupiedByPlayer.skills[self.selectedSkill]
     local maxGrowth = skill.skillType:GetMaxGrowthAtLevel(skill.level)
     local growth = skill.growth
     if growth >= maxGrowth then
-        self:createTitle(string.format("%s的%s\n%s级\n进度已满，可升级", 
+        self:createTitle(string.format("%s的%s\n%s级\n进度已满，可升级",
             self.occupiedByPlayer.name, skill.skillType.displayName, skill.level))
     else
-        self:createTitle(string.format("%s的%s\n%s级\n进度%s/%s", 
+        self:createTitle(string.format("%s的%s\n%s级\n进度%s/%s",
             self.occupiedByPlayer.name, skill.skillType.displayName, skill.level, growth, maxGrowth))
     end
 end
@@ -215,12 +216,12 @@ function AfkSpot:StartSpellTimer(player)
     if oldTimerId then
         ServerScheduler.cancel(oldTimerId)
     end
-    
+
     -- 创建新的定时器
     local timerId = ServerScheduler.add(function()
         self:CastSpells(player)
     end, 0, self.interval) -- 立即开始，每隔interval秒执行一次
-    
+
     -- 保存定时器ID
     self.activePlayers[player] = timerId
 end
@@ -245,11 +246,22 @@ function AfkSpot:CastSpells(player)
         local amount = (1+mult) * self.growthPerSecond
         skill.growth = amount + skill.growth
         self:RefreshTitle()
+        
         if player:IsNear(self:GetPosition(), 1000) then
             local loc = self:GetPosition()
             player:SendEvent("DropItemAnim", {
                 loc = { loc.x, loc.y + 100, loc.z },
                 text = "+"..tostring(amount)
+            })
+            local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
+            self.occupiedByPlayer:SendEvent(SkillEventConfig.RESPONSE.SET_LEVEL, {
+                data = {
+                    skillName = skill.skillName,
+                    level = skill.level,
+                    growth = skill.growth,
+                    slot = skill.equipSlot,
+                    removed = false
+                }
             })
         end
     else
@@ -273,4 +285,4 @@ end
 function AfkSpot:update_npc()
 end
 
-return AfkSpot 
+return AfkSpot

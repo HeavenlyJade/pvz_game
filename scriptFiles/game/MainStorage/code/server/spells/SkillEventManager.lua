@@ -241,7 +241,7 @@ function SkillEventManager.HandleUpgradeSkill(evt)
             gg.log("副卡技能已达到最大等级: " .. skillName .. " 当前等级: " .. existingSkill.level)
             player:SendHoverText("技能升级失败：已达最大等级")
             return
-        elseif existingSkill.growth < existingSkill.skillType:GetMaxGrowthAtLevel(existingSkill.level+1) then
+        elseif existingSkill.growth < existingSkill.skillType:GetMaxGrowthAtLevel(existingSkill.level) then
             player:SendHoverText("技能升级失败：成长值不足，快去花圃挂机培养副卡吧")
             return
         end

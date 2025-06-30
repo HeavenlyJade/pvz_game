@@ -35,9 +35,7 @@ local function LoadConfig()
                 ["怪物等级"] = {
                     0,
                     0
-                },
-                ["转波次文字"] = "",
-                ["转波次音效"] = ""
+                }
             },
             {
                 ["刷新波次"] = {
@@ -61,9 +59,7 @@ local function LoadConfig()
                 ["怪物等级"] = {
                     0,
                     0
-                },
-                ["转波次文字"] = "",
-                ["转波次音效"] = ""
+                }
             },
             {
                 ["刷新波次"] = {
@@ -87,9 +83,7 @@ local function LoadConfig()
                 ["怪物等级"] = {
                     0,
                     0
-                },
-                ["转波次文字"] = "",
-                ["转波次音效"] = ""
+                }
             },
             {
                 ["刷新波次"] = {
@@ -113,9 +107,7 @@ local function LoadConfig()
                 ["怪物等级"] = {
                     0,
                     0
-                },
-                ["转波次文字"] = "",
-                ["转波次音效"] = ""
+                }
             }
         },
         ["场景"] = "新手关",
@@ -126,6 +118,7 @@ local function LoadConfig()
     }),
     ["1-1（1~100级）"] = LevelType.New({
         ["关卡ID"] = "1-1（1~100级）",
+        ["描述"] = "需求等级: [level]/1级",
         ["前置关卡"] = nil,
         ["关卡波次"] = {
             {
@@ -544,11 +537,13 @@ local function LoadConfig()
                 }
             }
         },
+        ["首通奖励"] = nil,
         ["胜利音效"] = "sandboxId://soundeffect/winmusic胜利音效.ogg",
         ["失败音效"] = "sandboxId://soundeffect/brain_eaten.ogg"
     }),
     ["1-2（100~200级）"] = LevelType.New({
         ["关卡ID"] = "1-2（100~200级）",
+        ["描述"] = "需求等级: [level]/100级",
         ["前置关卡"] = nil,
         ["关卡波次"] = {
             {
@@ -766,7 +761,8 @@ local function LoadConfig()
                     ["金币"] = 10
                 }
             }
-        }
+        },
+        ["首通奖励"] = nil
     }),
     ["1-3（200级~300级）"] = LevelType.New({
         ["关卡ID"] = "1-3（200级~300级）",
@@ -983,9 +979,7 @@ local function LoadConfig()
                     ["金币"] = 3
                 }
             }
-        },
-        ["胜利音效"] = nil,
-        ["失败音效"] = nil
+        }
     }),
     ["1-4（300级~400级）"] = LevelType.New({
         ["关卡ID"] = "1-4（300级~400级）",
@@ -1510,11 +1504,7 @@ local function LoadConfig()
                 },
                 ["动作"] = "必须"
             }
-        }),
-        ["掉落物数量修改"] = nil,
-        ["排名掉落物"] = nil,
-        ["胜利音效"] = nil,
-        ["失败音效"] = nil
+        })
     })
 }loaded = true
 end

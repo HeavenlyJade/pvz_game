@@ -53,20 +53,10 @@ end
 ---@param params table
 ---@param player Player
 function ItemCommands.give(params, player)
-    -- 检查物品类型
-    local itemType = ItemTypeConfig.Get(params["物品类型"])
-    if not itemType then
-        player:SendChatText("物品类型不存在: " .. tostring(params["物品类型"]))
-        return false
-    end
-
-    -- 添加物品并保存
-    local item = itemType:ToItem(params["数量"] or 1)
-    if params["品质"] then
-        item.quality = ItemQualityConfig.Get(params["品质"])
-    end
-    if params["强化"] then
-        item.enhanceLevel = tonumber(params["强化"]) or 0
+    local Item = require(MainStorage.code.server.bag.Item) ---@type Item
+    local item = Item.LoadStack(params["物品"])
+    if not item then
+        return
     end
     player.bag:GiveItem(item)
     player.bag:Save()

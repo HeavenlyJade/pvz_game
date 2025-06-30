@@ -32,6 +32,41 @@ function Item:GetToStringParams()
     }
 end
 
+---@return Item[]
+function Item.LoadStacks(params)
+    local l = {}
+    for _, param in ipairs(params) do
+        local i = Item.LoadStack(param)
+        if i then
+            table.insert(l, i)
+        end
+    end
+    return l
+end
+
+---@return Item|nil
+function Item.LoadStack(params)
+    if not params then
+        return nil
+    end
+    -- 检查物品类型
+    local itemType = ItemTypeConfig.Get(params["物品类型"])
+    if not itemType then
+        print("物品类型不存在: " .. tostring(params["物品类型"]))
+        return nil
+    end
+
+    -- 添加物品并保存
+    local item = itemType:ToItem(params["数量"] or 1)
+    if params["品质"] then
+        item.quality = ItemQualityConfig.Get(params["品质"])
+    end
+    if params["强化"] then
+        item.enhanceLevel = tonumber(params["强化"]) or 0
+    end
+    return item
+end
+
 function Item:OnInit()
     self.itemType = nil
     self.amount = 0

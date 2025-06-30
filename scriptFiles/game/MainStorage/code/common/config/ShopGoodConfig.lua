@@ -98,7 +98,6 @@ local function LoadConfig()
             [[title {"信息":"已成功购买了30天基金卡！"} ]]
         },
         ["奖池"] = nil,
-        ["图标复写"] = nil,
         ["图标数量复写"] = 0,
         ["热卖"] = false,
         ["限定"] = false
@@ -141,7 +140,6 @@ local function LoadConfig()
             [[title {"信息":"已成功购买了30天基金卡！"} ]]
         },
         ["奖池"] = nil,
-        ["图标复写"] = nil,
         ["图标数量复写"] = 0,
         ["热卖"] = false,
         ["限定"] = false

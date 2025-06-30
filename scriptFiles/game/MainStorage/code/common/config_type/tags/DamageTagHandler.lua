@@ -46,7 +46,7 @@ function DamageTag:CanTriggerReal(caster, target, castParam, param, log)
         if not battle or not battle.GetFinalDamage then
             return false
         end
-        if target:GetCreature().health > battle:GetFinalDamage() then
+        if target.health > battle:GetFinalDamage() then
             return false
         end
     end
@@ -87,12 +87,15 @@ end
 
 function DamageTag:TriggerReal(caster, target, castParam, param, log)
     local battle = param ---@type Battle
+    if not ClassMgr.Is(target, "Entity") then
+        return
+    end
 
     -- 处理被攻击时的情况，交换施法者和目标
     if string.find(self.m_trigger, "Attacked") then
         if not target.isEntity then return false end
         local temp = caster
-        caster = target:GetCreature()
+        caster = target
         target = temp
     end
 
@@ -150,7 +153,7 @@ function DamageTag:TriggerReal(caster, target, castParam, param, log)
     -- 处理基于目标属性的增伤
     if self["目标属性增伤"] then
         for _, item in ipairs(self["目标属性增伤"]) do
-            local modifier = item:GetModifier(target:GetCreature(), baseDamage, 1, castParam)
+            local modifier = item:GetModifier(target, baseDamage, 1, castParam)
             if modifier then
                 battle:AddDamageModifier(modifier)
                 if self.printMessage then

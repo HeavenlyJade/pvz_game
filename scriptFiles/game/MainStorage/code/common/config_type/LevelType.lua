@@ -6,6 +6,7 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
 local WeightedRandomSelector = require(MainStorage.code.common.WeightedRandomSelector) ---@type WeightedRandomSelector
 local LevelConfig = require(MainStorage.code.common.config.LevelConfig)  ---@type LevelConfig
+local Item = require(MainStorage.code.server.bag.Item) ---@type Item
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 
 
@@ -232,6 +233,7 @@ local LevelType = ClassMgr.Class("LevelType")
 
 function LevelType:OnInit(data)
     self.levelId = data["关卡ID"] ---@type string
+    self.description = data["描述"] or "" ---@type string
     self.category = data["分类"] or "" ---@type string
     self.prerequisiteLevel = data["前置关卡"] ---@type LevelType
     self.prerequisiteVars = data["前置变量"] or {} ---@type table<string, number>
@@ -258,6 +260,7 @@ function LevelType:OnInit(data)
     self.playerAttributeMultiplier = data["每个玩家增加属性倍率"] or {} ---@type table<string, number>
     self.winSound = data["胜利音效"]
     self.loseSound = data["失败音效"]
+    self.firstClearReward = Item.LoadStack(data["首通奖励"])
 
     -- 初始化匹配相关属性
     self.matchQueue = {} ---@type table<string, Player>
@@ -344,13 +347,54 @@ function LevelType:UpdateMatchTime()
     end
 end
 
+-- 新增：判断玩家是否可以加入关卡/匹配队列
+---@param player Player
+---@return boolean, string? #是否可加入,失败原因
+function LevelType:CanJoin(player)
+    -- 检查是否已在队列
+    if self.matchQueue[player.uin] then
+        return false, "你已经在匹配队列中"
+    end
+
+    -- 检查进入条件
+    local enterParam = self.entryConditions:Check(player, player)
+    if enterParam.cancelled then
+        return false, "不满足进入条件"
+    end
+
+    -- 检查前置关卡
+    if self.prerequisiteLevel then
+        -- TODO: 检查前置关卡是否完成
+        -- 这里需要实现前置关卡的检查逻辑
+    end
+
+    -- 检查前置变量
+    for varName, requiredValue in pairs(self.prerequisiteVars) do
+        local currentValue = player:GetVariable(varName) or 0
+        if currentValue < requiredValue then
+            return false, string.format("不满足前置条件: %s 需要 %d", varName, requiredValue)
+        end
+    end
+
+    -- 检查扣除变量
+    for varName, deductValue in pairs(self.deductVars) do
+        local currentValue = player:GetVariable(varName) or 0
+        if currentValue < deductValue then
+            return false, string.format("资源不足: %s 需要 %d", varName, deductValue)
+        end
+    end
+
+    return true
+end
+
 ---加入匹配队列
 ---@param player Player
 ---@return boolean 成功进入
 function LevelType:Queue(player)
-    -- 如果已经在队列中，直接返回
-    if self.matchQueue[player.uin] then
-        player:SendChatText("你已经在匹配队列中")
+    -- 使用CanJoin统一判断
+    local canJoin, reason = self:CanJoin(player)
+    if not canJoin then
+        player:SendChatText(reason or "无法加入匹配队列")
         return false
     end
 
@@ -361,33 +405,8 @@ function LevelType:Queue(player)
         end
     end
 
-    local enterParam = self.entryConditions:Check(player, player)
-    if enterParam.cancelled then
-        player:SendChatText("不满足进入条件")
-        return false
-    end
-
-    if self.prerequisiteLevel then
-        -- TODO: 检查前置关卡是否完成
-        -- 这里需要实现前置关卡的检查逻辑
-    end
-
-    -- 检查前置变量
-    for varName, requiredValue in pairs(self.prerequisiteVars) do
-        local currentValue = player:GetVariable(varName) or 0
-        if currentValue < requiredValue then
-            player:SendChatText(string.format("不满足前置条件: %s 需要 %d", varName, requiredValue))
-            return false
-        end
-    end
-
-    -- 扣除变量
+    -- 扣除变量（已通过CanJoin检查，这里直接扣除）
     for varName, deductValue in pairs(self.deductVars) do
-        local currentValue = player:GetVariable(varName) or 0
-        if currentValue < deductValue then
-            player:SendChatText(string.format("资源不足: %s 需要 %d", varName, deductValue))
-            return false
-        end
         player:AddVariable(varName, -deductValue)
     end
 

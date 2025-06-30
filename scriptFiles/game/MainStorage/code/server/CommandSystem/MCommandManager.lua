@@ -76,7 +76,7 @@ ServerEventManager.Subscribe("ClientExecuteCommand", function(evt)
     CommandManager.ExecuteCommand(evt.command, evt.player)
 end)
 
-function CommandManager.ExecuteCommand(commandStr, player)
+function CommandManager.ExecuteCommand(commandStr, player, silent)
     if not commandStr or commandStr == "" then return false end
 
     -- 1. 分割命令和参数
@@ -106,7 +106,9 @@ function CommandManager.ExecuteCommand(commandStr, player)
             return false
         end
     end
-    gg.log("执行指令", player, command, params)
+    if not silent then
+        gg.log("执行指令", player, command, params)
+    end
     -- 5. 调用处理器
     local success, result = pcall(handler, params, player)
     if not success then

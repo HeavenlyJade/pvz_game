@@ -189,11 +189,21 @@ function CardsGui:_updateStarDisplay(cardFrame, starLevel)
         local starNode = starContainer["星_" .. i]
         if starNode then
             local targetIcon
-            if starLevel > 0 then
+            -- 修复：从左到右正确显示星级
+            -- 如果UI中星_1在最左边，星_7在最右边，使用正向逻辑
+            if i <= starLevel then
                 targetIcon = starNode:GetAttribute("存在")
             else
                 targetIcon = starNode:GetAttribute("不存在")
             end
+
+            -- === 备选方案：如果星星顺序是反向的，取消注释下面的代码，注释上面的代码 ===
+            -- 如果UI中星_7在最左边，星_1在最右边，使用反向逻辑
+            -- if (8 - i) <= starLevel then
+            --     targetIcon = starNode:GetAttribute("存在")
+            -- else
+            --     targetIcon = starNode:GetAttribute("不存在")
+            -- end
 
             -- === 新增：避免重复设置相同的星级图标 ===
             if starNode.Icon ~= targetIcon then
@@ -550,7 +560,7 @@ function CardsGui:OnInit(node, config)
     -- === 新增的主卡管理数据结构 ===
     self.mainCardButtonConfig = {} ---@type table<string, table> -- 存储所有配置的主卡信息
     self.mainCardButtonStates = {} ---@type table<string, MainCardButtonState> -- 存储主卡按钮状态和位置信息
-    
+
     -- 格式: {skillName = {button = ViewButton, position = number, activated = boolean, serverData = table, configData = table}}
     self.configMainCards = {} ---@type string[] -- 配置中的主卡列表（排序用）
 
@@ -693,7 +703,7 @@ function CardsGui:ProcessServerMainCardData(serverSkillMainTrees)
                 buttonState.serverUnlocked = false
                 buttonState.isEquipped = false
                 buttonState.equipSlot = 0
-                
+
                 if buttonState.button then
                     buttonState.button:SetGray(true)
                 end
@@ -905,7 +915,7 @@ function CardsGui:RegisterMainCardFunctionButtons()
 end
 -- 处理技能同步数据
 function CardsGui:HandleSkillSync(data)
-    -- gg.log("HandleSkillSync",data)
+    gg.log("来自服务端的玩家技能数据",data)
     if not data or not data.skillData then return end
     local skillDataDic = data.skillData.skills
 
@@ -982,7 +992,7 @@ function CardsGui:UpdateAllSkillButtonsGrayState()
     -- 优化：使用单次遍历更新所有技能按钮状态
     for skillName, skillButton in pairs(self.mainCardButtondict) do
         local isUnlocked = self.ServerSkills[skillName] ~= nil
-        
+
         skillButton:SetGray(not isUnlocked)
     end
 end
@@ -997,8 +1007,8 @@ function CardsGui:UpdateMainCardButtonStates()
         if isUnlocked then
             -- 技能已解锁：更新装备状态和服务端数据
             self:UpdateMainCardEquipStatus(skillName, serverSkill)
-        else     
-    
+        else
+
         end
         -- 统一更新按钮的灰色状态
         if mainCardButton.button then
@@ -1604,7 +1614,7 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
                     self.mainCardUnEquipButton:SetVisible(false)
                     self.EquipmentSkillsButton:SetTouchEnable(true)
                 end
-            else 
+            else
                 gg.log("技能不可装备", canEquip,skill.isEquipable,skill.name,canResearchOrEquip)
                 -- 技能不可装备：隐藏所有装备相关按钮
                 self.EquipmentSkillsButton:SetVisible(false)
@@ -1797,7 +1807,7 @@ function CardsGui:UpdateSubCardProgress( skill, growth, skillLevel)
     end
 
     -- 获取当前等级需要的最大经验值
-    local maxGrowthThisLevel = skill:GetMaxGrowthAtLevel(skillLevel+1)
+    local maxGrowthThisLevel = skill:GetMaxGrowthAtLevel(skillLevel)
     if not maxGrowthThisLevel or maxGrowthThisLevel <= 0 then
         maxGrowthThisLevel = 100  -- 使用默认值
     end
@@ -1862,7 +1872,7 @@ function CardsGui:UpdateSubCardProgressInAttributePanel(attributePanel, skill, g
             if progressBar.Fill ~= nil then
                 progressBar.Fill = 1.0
             end
-       
+
         end
 
         if progressText then
@@ -1873,7 +1883,7 @@ function CardsGui:UpdateSubCardProgressInAttributePanel(attributePanel, skill, g
     end
 
     -- 获取下一 等级需要的最大经验值
-    local maxGrowthThisLevel = skill:GetMaxGrowthAtLevel(skillLevel+1)
+    local maxGrowthThisLevel = skill:GetMaxGrowthAtLevel(skillLevel)
     if not maxGrowthThisLevel or maxGrowthThisLevel <= 0 then
         maxGrowthThisLevel = 100  -- 使用默认值
     end
@@ -2569,7 +2579,7 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
             end
         end
     end
-    
+
     self:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
 end
 
@@ -2588,7 +2598,7 @@ function CardsGui:ProcessServerSubCardData(serverSubskillDic)
                 -- 标记为服务端已解锁
                 buttonState.serverUnlocked = true
                 self:UpdateSubCardEquipStatus(skillName, serverData)
-                if buttonState.button then       
+                if buttonState.button then
                     buttonState.button:SetGray(false)
                     -- 更新按钮的服务端数据
                     buttonState.button.extraParams.serverData = serverData
@@ -2706,7 +2716,7 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
                 self.subCardButtondict[skillName] = subCardButton
                 self.subCardButtonStates[skillName].button = subCardButton
             end
-            
+
             subCardButton:SetVisible(true)
             self:SetSkillLevelSubCardFrame(subCardButton.node, skillType)
             buttonState.position = newIndex
@@ -2719,12 +2729,12 @@ end
 
 -- === 新增方法：处理技能等级设置响应（管理员指令）===
 function CardsGui:OnSkillSetLevelResponse(response)
-    gg.log("收到技能等级设置响应", response)
+    -- gg.log("收到技能等级设置响应", response)
     local data = response.data
     local skillName = data.skillName
     local newLevel = data.level
-    local newGrowth = data.growth 
-    local slot = data.slot 
+    local newGrowth = data.growth
+    local slot = data.slot
     local removed = data.removed
 
     if not skillName then
@@ -2768,7 +2778,6 @@ function CardsGui:OnSkillSetLevelResponse(response)
         skillData.level = newLevel
         skillData.growth = newGrowth
         skillData.slot = slot
-        skillData.skill = skillName
 
         -- 更新装备槽数据
         if slot > 0 then
@@ -3041,7 +3050,7 @@ function CardsGui:CalculateUpgradeAllCost(skillName)
     local isResourceLimited = false  -- 是否受资源限制
     local limitingResource = nil     -- 限制资源名称
 
-    for level = currentLevel + 1, maxLevel do
+    for level = currentLevel, maxLevel do
         local levelCost = skillType:GetOneKeyUpgradeCostsAtLevel(level)
 
         if levelCost then
@@ -3332,7 +3341,7 @@ function CardsGui:GetDescriptions(skill, currentLevel)
             table.insert(descPost, "解锁技能")
         end
         local levelUpPlayerValue = skill:GetLevelUpPlayerAtLevel(nextLevel)
-        gg.log("玩家等级: +%s", levelUpPlayerValue,skill.levelUpPlayer)
+        -- gg.log("玩家等级: +%s", levelUpPlayerValue,skill.levelUpPlayer)
         table.insert(descPost, string.format("\n玩家等级: +%s", levelUpPlayerValue))
         postD = table.concat(descPost, "\n")
     end

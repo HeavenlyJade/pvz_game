@@ -71,12 +71,12 @@ function _M:OnInit(npcData, actor)
             end
         end
     end)
-    
+
     -- 添加定时任务，每秒检查玩家是否还在交互区域内·
     self.checkTaskId = ServerScheduler.add(function()
         self:CheckNearbyPlayers()
     end, 1, 1, "npc_check_" .. self.uuid)
-    
+
     -- 注册NPC交互事件处理器
     ServerEventManager.Subscribe("InteractWithNpc", function(evt)
         local player = evt.player
@@ -124,15 +124,15 @@ function _M:CheckNearbyPlayers()
     if not self.actor or not self.actor.LocalPosition then
         return
     end
-    
+
     local npcPos = self.actor.LocalPosition
     local interactionRadius = (math.max(self.extraSize.x + self.actor.Size.x, self.extraSize.y + self.actor.Size.y) / 2)^2
-    
+
     for playerUuid, player in pairs(self.nearbyPlayers) do
         if player and player:GetPosition() then
             local playerPos = player:GetPosition()
             local distance = gg.vec.DistanceSq3(npcPos, playerPos)
-            
+
             -- 如果玩家距离NPC太远，将其移除
             if distance > interactionRadius then
                 if self.target == player then

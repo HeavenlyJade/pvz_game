@@ -46,6 +46,20 @@ function CustomUI:S_BuildPacket(player, packet)
     
 end
 
+---@param text string 提示文本
+---@param player? Player 仅服务端调用时：发送给的玩家
+function CustomUI:SendHoverText(text, playerIfServer)
+    if gg.isServer then
+        if not playerIfServer then
+            return
+        end
+        playerIfServer:SendHoverText(text)
+    else
+        local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
+        ViewBase.GetUI("HoverTextHud"):ShowText(text)
+    end
+end
+
 ---@param player Player
 function CustomUI:S_Open(player)
     if not self._serverInited then

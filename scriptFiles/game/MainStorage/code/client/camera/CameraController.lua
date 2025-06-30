@@ -40,8 +40,8 @@ local _invertMouseY = false
 local _mouseXSensitivity = 0.2
 local _mouseYSensitivity = 0.2
 local _wheelSensitivity = 50
-local _mouseXMin = -20.0
-local _mouseXMax = 40.0
+local _mouseXMin = -60.0
+local _mouseXMax = 60.0
 local _mouseYMin = -90.0
 local _mouseYMax = 90.0
 local _mouseSmoothTime = 0.005
@@ -53,7 +53,7 @@ local _alignmentSmoothTime = 0.05
 local _minAlignDistance = 5
 
 local _mouseX = 10
-local _mouseY = 180
+local _mouseY = 0
 local _distance = 200
 
 local _rawMouseX = _mouseX  -- 记录未经抖动修改的原始mouseX
@@ -103,8 +103,9 @@ ClientEventManager.Subscribe("UpdateCameraView", function(data)
     end
 end)
 -- 在 CameraController.lua 中，替换 SetActive 函数中的鼠标处理部分：
-
+local touchCameraId = nil
 function CameraController.SetActive(active)
+    local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
     _owner = Players.LocalPlayer
     if active then
         CameraController.SetCamera(game.WorkSpace.CurrentCamera)
@@ -114,15 +115,18 @@ function CameraController.SetActive(active)
             _TouchStartedEvent =
                 game.UserInputService.TouchStarted:Connect(
                 function(inputObj, gameprocessed)
-                    _isTouching = true
-                    CameraController.OnTouchStarted(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
+                    if inputObj.Position.x > ViewBase.GetScreenSize().x / 2 then
+                        touchCameraId = inputObj.TouchId
+                        _isTouching = true
+                        CameraController.OnTouchStarted(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
+                    end
                 end
             )
 
             _TouchMovedEvent =
                 game.UserInputService.TouchMoved:Connect(
                 function(inputObj, gameprocessed)
-                    if _isTouching then
+                    if _isTouching and inputObj.TouchId == touchCameraId then
                         CameraController.OnTouchMoved(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
                     end
                 end
@@ -131,8 +135,10 @@ function CameraController.SetActive(active)
             _TouchEndedEvent =
                 game.UserInputService.TouchEnded:Connect(
                 function(inputObj, gameprocessed)
-                    _isTouching = false
-                    CameraController.OnTouchEnded(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
+                    if inputObj.TouchId == touchCameraId then
+                        _isTouching = false
+                        CameraController.OnTouchEnded(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
+                    end
                 end
             )
         elseif game.UserInputService.MouseEnabled then -- 鼠标设备
@@ -282,8 +288,8 @@ function CameraController.ThirdPersonUpdate(dt)
     -- 计算摄像机旋转
     _currentCameraRot = CameraController.CalcCameraRotation(_mouseXSmooth, _mouseYSmooth)
 
-    -- 计算并平滑处理摄像机枢轴位置
-    local pivotPosition = CameraController.CalcPivotPosition(_mouseYSmooth)
+    -- 计算并平滑处理摄像机枢轴位置 （现在用真实的偏航值）
+    local pivotPosition = CameraController.CalcPivotPosition(_mouseXSmooth)
     _pivotPositionSmooth = _pivotPositionSmooth:Lerp(pivotPosition, _pivotPositionSmoothSpeed * dt)
 
     -- 检测并处理摄像机与障碍物的碰撞
@@ -361,12 +367,13 @@ function CameraController.CalcCameraPosition(pivotPosition, xAxisDegrees, yAxisD
     return cameraPos
 end
 
---获取摄像机旋转
-function CameraController.CalcCameraRotation(xAxisDegrees, yAxisDegrees)
-    local orient = Quat.new()
-    orient:FromEuler(Vec3.new(xAxisDegrees, yAxisDegrees, 0))
-    return orient
-end
+ --获取摄像机旋转（第一个参数是 yaw, 第二个是 pitch）
+ function CameraController.CalcCameraRotation(yawDegrees, pitchDegrees)
+     local orient = Quat.new()
+     -- FromEuler(Vec3(pitch, yaw, 0))
+     orient:FromEuler(Vec3.new(pitchDegrees, yawDegrees, 0))
+     return orient
+ end
 
 --获取摄像机距离
 function CameraController.GetClosestDistance(pos, orient)
@@ -531,28 +538,34 @@ function CameraController.SetInputEnabled(enabled)
     _inputEnabled = enabled
 end
 
---鼠标移动
 function CameraController.InputMove(deltaX, deltaY)
-    local mouseXinput = deltaY
-    local mouseYinput = deltaX
+    -- deltaX: 水平输入，驱动偏航（Yaw）
+    -- deltaY: 垂直输入，驱动俯仰（Pitch）
+    local yawInput   = deltaX
+    local pitchInput = deltaY
+
+    -- X 轴反转应该影响水平旋转，Y 轴反转应该影响垂直旋转
     if _invertMouseX then
-        mouseXinput = -mouseXinput
+        yawInput = -yawInput
     end
     if _invertMouseY then
-        mouseYinput = -mouseYinput
+        pitchInput = -pitchInput
     end
 
+    -- 锁定时阻止对应轴的输入
     if _lockMouseX then
-        mouseXinput = 0
+        yawInput = 0
     end
     if _lockMouseY then
-        mouseYinput = 0
+        pitchInput = 0
     end
 
-    _rawMouseX = _rawMouseX + mouseXinput * _mouseXSensitivity
-    _rawMouseY = _rawMouseY + mouseYinput * _mouseYSensitivity
-    --限制角度
-    _rawMouseX = math.clamp(_rawMouseX, _mouseXMin, _mouseXMax)
+    -- 更新 raw 值
+    _rawMouseX = _rawMouseX + yawInput   * _mouseXSensitivity
+    _rawMouseY = _rawMouseY + pitchInput * _mouseYSensitivity
+
+    -- 偏航限制Y轴
+    _rawMouseY = math.clamp(_rawMouseY, _mouseYMin, _mouseYMax)
 end
 
 --鼠标滚轮

@@ -68,10 +68,10 @@ function SpellTag:TriggerReal(caster, target, castParam, param, log)
     local spellParam = param[2] ---@type CastParam
     
     -- 处理被释放魔法时的情况，交换施法者和目标
-    if self.m_trigger == "被释放魔法时" then
+    if self.m_trigger == "被释放魔法时" and ClassMgr.Is(target, "Entity") then
         if not target.isEntity then return false end
         local temp = caster
-        caster = target:GetCreature()
+        caster = target
         target = temp
         if self.printMessage then
             table.insert(log, string.format("%s.%s：交换攻受位置", self.m_tagType.id, self.m_tagIndex))
@@ -94,7 +94,7 @@ function SpellTag:TriggerReal(caster, target, castParam, param, log)
             table.insert(log, string.format("%s.%s：增加%.2f%%威力", self.m_tagType.id, self.m_tagIndex, addPower * 100))
         end
     elseif self["威力增加表达式"] ~= "" then
-        local addPower = caster:CalculateValue(self["威力增加表达式"], target:GetCreature(), self.printMessage) * (1 + castParam.power) / 100.0
+        local addPower = caster:CalculateValue(self["威力增加表达式"], target, self.printMessage) * (1 + castParam.power) / 100.0
         spellParam.power = spellParam.power + addPower
         if self.printMessage then
             table.insert(log, string.format("%s.%s：增加%.2f%%威力", self.m_tagType.id, self.m_tagIndex, addPower * 100))

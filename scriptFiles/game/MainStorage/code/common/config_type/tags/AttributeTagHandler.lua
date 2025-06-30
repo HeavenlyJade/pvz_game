@@ -21,6 +21,9 @@ function AttributeTag:OnInit(data)
 end
 
 function AttributeTag:TriggerReal(caster, target, castParam, param, log)
+    if not ClassMgr.Is(target, "Entity") then
+        return
+    end
     local battle = param[1] ---@type Battle
     
     -- 处理基础属性增加
@@ -52,7 +55,7 @@ function AttributeTag:TriggerReal(caster, target, castParam, param, log)
     -- 处理基于目标属性的增伤
     if self["目标属性增伤"] then
         for _, item in ipairs(self["目标属性增伤"]) do
-            local modifier = item:GetModifier(target:GetCreature(), 0, 1 + castParam.power, castParam)
+            local modifier = item:GetModifier(target, 0, 1 + castParam.power, castParam)
             if modifier then
                 local modifierName = string.format("%s_目标_%s", self.m_tagType.id, item.statType)
                 battle:AddModifier(modifierName, modifier.modifierType, modifier.amount)

@@ -134,7 +134,8 @@ function ViewBase:OnInit(node, config)
     end
 end
 
-function ViewBase:GetScreenSize()
+---@return Vector2
+function ViewBase.GetScreenSize()
     local evt = {}
     ClientEventManager.Publish("GetScreenSize", evt)
     return evt.size

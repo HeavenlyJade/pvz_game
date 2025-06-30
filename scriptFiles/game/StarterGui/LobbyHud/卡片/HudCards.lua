@@ -67,7 +67,7 @@ function HudCards:UpdateCooldownDisplay()
                         local elapsedTime = currentTime - lastCastTime
                         local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
                         local fillAmount = remainingTime / skill.cooldownCache
-                        
+
                         -- 更新冷却显示
                         if card.node["冷却条"] then
                             card.node["冷却条"].FillAmount = fillAmount
@@ -167,7 +167,6 @@ function HudCards:SetSubCardQualityIcons(cardNode, skillType)
 
         local defIcon = defIconTable[quality]
         local clickIcon = clickIconTable[quality]
-        gg.log("设置品质图标",node,quality,defIcon,clickIcon)
         -- 设置默认图标和"图片-默认"属性
         if defIcon and defIcon ~= "" and node.Icon ~= defIcon then
             node.Icon = defIcon
@@ -294,7 +293,7 @@ function HudCards:UpdateSubCardDisplay()
 
     -- === 确保4个固定卡片位置存在 ===
     local cardNames = MConfig.FixedCardNames
-    
+
     -- 获取模板节点
     if not self.cardTemplate then
         self.cardTemplate = self:Get("副卡列表_模版/卡片_1", ViewButton)
@@ -331,25 +330,24 @@ function HudCards:UpdateSubCardDisplay()
             if cardName then
                 local card = self.cardsList:GetChildByName(cardName)
                 if card and card.node then
-                    gg.log("显示并更新卡片:", cardName, "技能:", skill.skillType.displayName, "槽位:", slotId)
-                    
+
                     -- 显示卡片
                     card.node.Visible = true
-                    
+
                     -- 更新卡片内容
                     if card.node["名字"] then
                         card.node["名字"].Title = skill.skillType.displayName or skill.skillName
                     end
-                    
+
                     if card.node["等级"] then
                         card.node["等级"].Title = tostring(skill.level)
                     end
-                    
+
                     local icon = skill.skillType.icon
                     if icon and icon ~= "" and card.node["图标"] then
                         card.node["图标"].Icon = icon
                     end
-                    
+
                     -- 设置副卡品质图标
                     self:SetSubCardQualityIcons(card.node, skill.skillType)
                 else
@@ -395,7 +393,7 @@ function HudCards:RebindSubCardEvents()
                 local card = self.cardsList:GetChildByName(mapping.cardName)
                 if card then
                     gg.log("为卡片绑定事件:", mapping.cardName, "技能:", skill.skillType.displayName, "数字键:", mapping.keyIndex)
-                    
+
                     -- 设置键盘提示
                     if card.node["pc_hint"] then
                         card.node["pc_hint"].Title = string.format("[ %d ]", mapping.keyIndex)
@@ -506,7 +504,7 @@ function HudCards:OnInit(node, config)
                 -- === 修复：数字键1-4直接对应卡片_1到卡片_4 ===
                 local keyIndex = self.pressedKey - Enum.KeyCode.One.Value + 1  -- 1,2,3,4
                 local cardName = "卡片_" .. keyIndex
-                
+
                 -- 根据卡片名称查找对应的技能
                 local targetSkill = nil
                 for slotId, skill in pairs(self.subCardData) do
@@ -515,7 +513,7 @@ function HudCards:OnInit(node, config)
                         break
                     end
                 end
-                
+
                 if targetSkill then
                     gg.log("键盘释放技能:", targetSkill.skillType.displayName, "卡片:", cardName)
                     self:CastSkill(targetSkill)
@@ -529,7 +527,7 @@ function HudCards:OnInit(node, config)
                 -- === 修复：数字键1-4直接对应卡片_1到卡片_4 ===
                 local keyIndex = data.key - Enum.KeyCode.One.Value + 1  -- 1,2,3,4
                 local cardName = "卡片_" .. keyIndex
-                
+
                 -- 根据卡片名称查找对应的技能
                 local targetSkill = nil
                 for slotId, skill in pairs(self.subCardData) do
@@ -538,7 +536,7 @@ function HudCards:OnInit(node, config)
                         break
                     end
                 end
-                
+
                 if targetSkill then
                     gg.log("键盘开始追踪技能:", targetSkill.skillType.displayName, "卡片:", cardName)
                     self:StartSkillTracking(targetSkill)
@@ -833,23 +831,23 @@ function HudCards:HideCardByName(cardName)
     end
 
     gg.log("隐藏UI卡片:", cardName)
-    
+
     -- 根据卡片名称获取对应的UI卡片
     local card = self.cardsList:GetChildByName(cardName)
     if card and card.node then
         -- 隐藏卡片而不是销毁
         card.node.Visible = false
-        
+
         -- 清除事件绑定
         card.touchBeginCb = nil
         card.touchEndCb = nil
         card.touchMoveCb = nil
-        
+
         -- 清除按键提示
         if card.node["pc_hint"] then
             card.node["pc_hint"].Title = ""
         end
-        
+
         gg.log("成功隐藏UI卡片:", cardName)
     else
         gg.log("HideCardByName: 未找到对应的UI卡片", cardName)

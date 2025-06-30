@@ -82,9 +82,25 @@ function TagHandler:CanTrigger(caster, target, param, log)
     return true
 end
 
-function TagHandler:Trigger(caster, target, tag, ...)
+function TagHandler:Trigger(caster, target, tag, args)
     local log = {}
-    local result = self:TriggerIn(caster, target, tag, ..., log)
+    local result = false
+    
+    -- Add try-catch error handling
+    local success, errorMsg = pcall(function()
+        result = self:TriggerIn(caster, target, tag, args, log)
+    end)
+    
+    if not success then
+        -- Log the error
+        local errorLog = string.format("%s.%s触发失败：发生错误 - %s", self.m_tagType.id, self.m_tagIndex, tostring(errorMsg))
+        table.insert(log, errorLog)
+        if self.printMessage then
+            print(errorLog)
+        end
+        return false
+    end
+    
     if self.printMessage and #log > 0 then
         print(table.concat(log, "\n"))
     end

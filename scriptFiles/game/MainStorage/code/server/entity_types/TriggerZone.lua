@@ -77,22 +77,28 @@ function _M:OnInit(TriggerZone, actor)
                         pendingTriggerZones[player.uuid] = {}
                     end
                     pendingTriggerZones[player.uuid][self.uuid] = self
+                    print(string.format("[TriggerZone] 玩家 %s 未初始化完成，缓存触发区域 %s", player.name or player.uuid, self.name or self.uuid))
                     return
                 end
 
                 -- 如果玩家在待移除列表中，不做任何事
                 if self.pendingLeavePlayers[player.uuid] then
                     self.pendingLeavePlayers[player.uuid] = nil
+                    print(string.format("[TriggerZone] 玩家 %s 在待移除列表中，取消离开处理", player.name or player.uuid))
                     return
                 end
                 -- 只有当玩家不在区域内时才执行进入逻辑
                 if not self.playersInZone[player.uuid] then
+                    print(string.format("[TriggerZone] 玩家 %s 进入触发区域 %s", player.name or player.uuid, self.name or self.uuid))
                     -- 执行进入指令
                     if self.enterCommands then
                         player:ExecuteCommands(self.enterCommands)
                     end
                     -- 记录玩家进入
                     self.playersInZone[player.uuid] = player
+                    print(string.format("[TriggerZone] 玩家 %s 已记录进入触发区域", player.name or player.uuid))
+                else
+                    print(string.format("[TriggerZone] 玩家 %s 已在触发区域 %s 内", player.name or player.uuid, self.name or self.uuid))
                 end
             end
         end
@@ -105,16 +111,19 @@ function _M:OnInit(TriggerZone, actor)
             if player then
                 -- 如果玩家未初始化完成，不做任何处理
                 if not player.inited then
+                    print(string.format("[TriggerZone] 玩家 %s 未初始化完成，跳过离开处理", player.name or player.uuid))
                     return
                 end
-
-                -- 将玩家加入待移除列表
+                if self.pendingLeavePlayers[player.uuid] then
+                    return
+                end
                 self.pendingLeavePlayers[player.uuid] = player
-                -- 使用ServerScheduler延迟0.1秒后检查并移除玩家
-                local taskKey = "trigger_zone_leave_" .. player.uuid
+                print(string.format("[TriggerZone] 玩家 %s 离开触发区域 %s，加入待移除列表", player.name or player.uuid, self.name))
                 ServerScheduler.add(function()
                     -- 如果玩家仍在待移除列表中（说明期间没有重新触发Touched）
                     if self.pendingLeavePlayers[player.uuid] then
+                        print(string.format("[TriggerZone] 确认玩家 %s 离开触发区域 %s，执行离开指令", player.name or player.uuid, self.name))
+                        
                         -- 执行离开指令
                         if self.leaveCommands then
                             player:ExecuteCommands(self.leaveCommands)
@@ -122,8 +131,11 @@ function _M:OnInit(TriggerZone, actor)
                         -- 移除玩家记录
                         self.playersInZone[player.uuid] = nil
                         self.pendingLeavePlayers[player.uuid] = nil
+                        print(string.format("[TriggerZone] 玩家 %s 已从触发区域移除", player.name or player.uuid))
+                    else
+                        print(string.format("[TriggerZone] 玩家 %s 在延迟期间重新进入，取消离开处理", player.name or player.uuid))
                     end
-                end, 0.1, 0, taskKey)
+                end, 0.1)
             end
         end
     end)
@@ -135,7 +147,7 @@ function _M:OnInit(TriggerZone, actor)
             for _, zone in pairs(pendingTriggerZones[player.uuid]) do
                 -- 执行进入指令
                 if zone.enterCommands then
-                    player:ExecuteCommands(zone.enterCommands)
+                    player:ExecuteCommands(zone.enterCommands, nil, true)
                 end
                 -- 记录玩家进入
                 zone.playersInZone[player.uuid] = player
