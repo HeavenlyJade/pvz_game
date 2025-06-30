@@ -150,46 +150,42 @@ function HudCards:OnSyncPlayerSkills(data)
 end
 
 -- === 新增：副卡品质图标设置方法 ===
----@param cardNode UIImage 卡片节点
+---@param cardButton ViewButton 卡片按钮对象
 ---@param skillType table 技能类型配置
-function HudCards:SetSubCardQualityIcons(cardNode, skillType)
-    if not cardNode or not skillType then return end
+function HudCards:SetSubCardQualityIcons(cardButton, skillType)
+    if not cardButton or not skillType then return end
+    
+    local cardNode = cardButton.node
+    if not cardNode then return end
 
     local quality = skillType.quality or "N"  -- 默认为N品质
 
-    -- === 通用的节点品质图标设置函数 ===
-    ---@param node UIImage 要设置的节点
-    ---@param quality string 品质等级（如 "N", "R", "SR", "SSR", "UR"）
-    ---@param defIconTable table 默认图标资源表
-    ---@param clickIconTable table 点击图标资源表
-    local function setNodeQualityIcon(node, quality, defIconTable, clickIconTable)
-        if not node or not quality then return end
+    -- === 设置主节点的品质图标 ===
+    -- 如果是ViewButton，直接使用ViewButton的方法
+    local defIcon = CardIcon.qualityBaseMapDefIcon[quality]
+    local clickIcon = CardIcon.qualityBaseMapClickIcon[quality]
+    
+    cardButton:UpdateMainNodeState({
+        normalImg = defIcon,
+        hoverImg = defIcon,
+        clickImg = clickIcon
+    })
+    gg.log("已通过ViewButton方法更新主节点:", "品质:", quality)
 
-        local defIcon = defIconTable[quality]
-        local clickIcon = clickIconTable[quality]
-        -- 设置默认图标和"图片-默认"属性
-        if defIcon and defIcon ~= "" and node.Icon ~= defIcon then
-            node.Icon = defIcon
-            node:SetAttribute("图片-默认", defIcon)
-        end
-
-        -- 设置"图片-点击"属性
-        if clickIcon and clickIcon ~= "" then
-            local currentClickIcon = node:GetAttribute("图片-点击")
-            if currentClickIcon ~= clickIcon then
-                node:SetAttribute("图片-点击", clickIcon)
-            end
-        end
-    end
-    -- 设置主节点的品质图标
-    setNodeQualityIcon(cardNode, quality, CardIcon.qualityBaseMapDefIcon, CardIcon.qualityBaseMapClickIcon)
-
-    -- 设置"卡片框"子节点的品质图标
+    -- === 设置"卡片框"子节点的品质图标 ===
     if cardNode["卡片框"] then
-        setNodeQualityIcon(cardNode["卡片框"], quality, CardIcon.qualityBaseMapboxIcon, CardIcon.qualityBaseMapboxClickIcon)
+        local defIcon = CardIcon.qualityBaseMapboxIcon[quality]
+        local clickIcon = CardIcon.qualityBaseMapboxClickIcon[quality]
+        -- 使用ViewButton方法更新子节点属性和缓存
+        local success = cardButton:UpdateChildFullState("卡片框", defIcon, defIcon, clickIcon, true)
+        if success then
+            gg.log("已通过ViewButton方法更新子节点:", "卡片框", "品质:", quality)
+        end
     end
 
 end
+
+
 
 -- 处理技能冷却更新事件
 ---@param data {cmd: string, skillId: string, cooldown: number}
@@ -330,26 +326,17 @@ function HudCards:UpdateSubCardDisplay()
             if cardName then
                 local card = self.cardsList:GetChildByName(cardName)
                 if card and card.node then
-
                     -- 显示卡片
                     card.node.Visible = true
-
-                    -- 更新卡片内容
-                    if card.node["名字"] then
-                        card.node["名字"].Title = skill.skillType.displayName or skill.skillName
-                    end
-
-                    if card.node["等级"] then
-                        card.node["等级"].Title = tostring(skill.level)
-                    end
-
+                    card.node["名字"].Title = skill.skillType.displayName or skill.skillName
+                    card.node["等级"].Title = tostring(skill.level)
                     local icon = skill.skillType.icon
                     if icon and icon ~= "" and card.node["图标"] then
                         card.node["图标"].Icon = icon
                     end
 
-                    -- 设置副卡品质图标
-                    self:SetSubCardQualityIcons(card.node, skill.skillType)
+                    -- 设置副卡品质图标（传递ViewButton对象）
+                    self:SetSubCardQualityIcons(card, skill.skillType)
                 else
                     gg.log("错误：无法找到卡片:", cardName)
                 end

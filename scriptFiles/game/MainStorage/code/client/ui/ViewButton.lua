@@ -301,6 +301,149 @@ function ViewButton:RebindToNewNode(newNode, realButtonPath)
     self:InitButtonProperties(img)
 end
 
+-- === 新增：更新子节点的图标缓存 ===
+---@param childName string 子节点名称
+---@param normalImg string|nil 默认图标
+---@param hoverImg string|nil 悬浮图标
+---@param clickImg string|nil 点击图标
+function ViewButton:UpdateChildImageCache(childName, normalImg, hoverImg, clickImg)
+    if not self.childClickImgs or not self.childClickImgs[childName] then
+        return false
+    end
+    
+    local childProps = self.childClickImgs[childName]
+    
+    -- 更新图标缓存
+    if normalImg then
+        childProps.normalImg = normalImg
+    end
+    if hoverImg then
+        childProps.hoverImg = hoverImg
+    end
+    if clickImg then
+        childProps.clickImg = clickImg
+    end
+    
+    -- 同时更新节点的当前图标显示
+    if childProps.node then
+        if normalImg then
+            childProps.node.Icon = normalImg
+        end
+    end
+    
+    gg.log("ViewButton:UpdateChildImageCache - 已更新子节点缓存:", childName, "normalImg:", normalImg, "hoverImg:", hoverImg, "clickImg:", clickImg)
+    return true
+end
+
+-- === 新增：批量更新子节点的UI属性和缓存 ===
+---@param childName string 子节点名称
+---@param normalImg string|nil 默认图标
+---@param hoverImg string|nil 悬浮图标（如果为nil，使用normalImg）
+---@param clickImg string|nil 点击图标
+---@param updateNodeAttributes boolean|nil 是否同时更新节点的UI属性，默认true
+function ViewButton:UpdateChildFullState(childName, normalImg, hoverImg, clickImg, updateNodeAttributes)
+    if updateNodeAttributes == nil then
+        updateNodeAttributes = true
+    end
+    
+    -- 如果没有指定悬浮图标，使用默认图标
+    if not hoverImg and normalImg then
+        hoverImg = normalImg
+    end
+    
+    -- 更新节点的UI属性
+    if updateNodeAttributes and self.node and self.node[childName] then
+        local childNode = self.node[childName]
+        
+        if normalImg then
+            childNode.Icon = normalImg
+            childNode:SetAttribute("图片-默认", normalImg)
+        end
+        if hoverImg then
+            childNode:SetAttribute("图片-悬浮", hoverImg)
+        end
+        if clickImg then
+            childNode:SetAttribute("图片-点击", clickImg)
+        end
+    end
+    
+    -- 更新ViewButton的缓存
+    return self:UpdateChildImageCache(childName, normalImg, hoverImg, clickImg)
+end
+
+-- === 新增：更新主节点的UI属性和缓存 ===
+---@param config table 配置表 {normalImg, hoverImg, clickImg, normalColor, hoverColor, clickColor}
+function ViewButton:UpdateMainNodeState(config)
+    if not self.img then
+        gg.log("ViewButton:UpdateMainNodeState - 主节点不存在")
+        return false
+    end
+    
+    if not config or type(config) ~= "table" then
+        gg.log("ViewButton:UpdateMainNodeState - 配置参数无效")
+        return false
+    end
+    
+    -- 提取配置表中的临时变量
+    local normalImg = config.normalImg
+    local hoverImg = config.hoverImg
+    local clickImg = config.clickImg
+    local normalColor = config.normalColor
+    local hoverColor = config.hoverColor
+    local clickColor = config.clickColor
+    
+    -- 如果没有指定悬浮图标，使用默认图标
+    if not hoverImg and normalImg then
+        hoverImg = normalImg
+    end
+    
+    -- 更新节点的UI属性
+    if normalImg then
+        self.img.Icon = normalImg
+        self.img:SetAttribute("图片-默认", normalImg)
+    end
+    if hoverImg then
+        self.img:SetAttribute("图片-悬浮", hoverImg)
+    end
+    if clickImg then
+        self.img:SetAttribute("图片-点击", clickImg)
+    end
+    
+    -- 更新颜色属性
+    if normalColor then
+        self.img.FillColor = normalColor
+    end
+    if hoverColor then
+        self.img:SetAttribute("悬浮颜色", hoverColor)
+    end
+    if clickColor then
+        self.img:SetAttribute("点击颜色", clickColor)
+    end
+    
+    -- 同时更新ViewButton的缓存属性
+    if normalImg then
+        self.normalImg = normalImg
+    end
+    if hoverImg then
+        self.hoverImg = hoverImg
+    end
+    if clickImg then
+        self.clickImg = clickImg
+    end
+    if normalColor then
+        self.normalColor = normalColor
+    end
+    if hoverColor then
+        self.hoverColor = hoverColor
+    end
+    if clickColor then
+        self.clickColor = clickColor
+    end
+    
+    gg.log("ViewButton:UpdateMainNodeState - 已更新主节点:", "normalImg:", normalImg, "hoverImg:", hoverImg, "clickImg:", clickImg)
+    return true
+end
+
 -- === 新增：销毁按钮，清理所有引用和事件绑定 ===
 function ViewButton:Destroy()
     -- === 关键：销毁UI节点，自动清理所有事件绑定和子节点 ===
