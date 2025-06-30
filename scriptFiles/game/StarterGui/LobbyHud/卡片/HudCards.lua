@@ -170,7 +170,6 @@ function HudCards:SetSubCardQualityIcons(cardButton, skillType)
         hoverImg = defIcon,
         clickImg = clickIcon
     })
-    gg.log("已通过ViewButton方法更新主节点:", "品质:", quality)
 
     -- === 设置"卡片框"子节点的品质图标 ===
     if cardNode["卡片框"] then
@@ -179,7 +178,7 @@ function HudCards:SetSubCardQualityIcons(cardButton, skillType)
         -- 使用ViewButton方法更新子节点属性和缓存
         local success = cardButton:UpdateChildFullState("卡片框", defIcon, defIcon, clickIcon, true)
         if success then
-            gg.log("已通过ViewButton方法更新子节点:", "卡片框", "品质:", quality)
+            -- gg.log("已通过ViewButton方法更新子节点:", "卡片框", "品质:", quality)
         end
     end
 
@@ -379,7 +378,7 @@ function HudCards:RebindSubCardEvents()
             if mapping then
                 local card = self.cardsList:GetChildByName(mapping.cardName)
                 if card then
-                    gg.log("为卡片绑定事件:", mapping.cardName, "技能:", skill.skillType.displayName, "数字键:", mapping.keyIndex)
+                    -- gg.log("为卡片绑定事件:", mapping.cardName, "技能:", skill.skillType.displayName, "数字键:", mapping.keyIndex)
 
                     -- 设置键盘提示
                     if card.node["pc_hint"] then

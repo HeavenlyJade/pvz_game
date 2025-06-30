@@ -553,7 +553,7 @@ end
 function _M:initSkillData()
     -- 从云数据读取
     local ret1_, cloud_data_ = cloudDataMgr.ReadSkillData(self.uin)
-    gg.log("initSkillData", ret1_, cloud_data_)
+    -- gg.log("initSkillData", ret1_, cloud_data_)
     if ret1_ == 0 and cloud_data_ and cloud_data_.skills then
         -- 加载已保存的技能
         for skillId, skillData in pairs(cloud_data_.skills) do

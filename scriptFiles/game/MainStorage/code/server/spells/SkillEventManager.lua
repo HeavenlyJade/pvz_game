@@ -611,7 +611,6 @@ function SkillEventManager.HandleEquipSkill(evt)
             gg.log("没有找到可用的主卡槽位")
             return
         end
-
         -- 使用主卡槽位替换原来的slot参数
         slot = mainCardSlot
         gg.log("主卡技能使用槽位: " .. slot .. " (" .. mainCardConfig[slot] .. ")")
@@ -673,10 +672,10 @@ function SkillEventManager.HandleEquipSkill(evt)
         -- 播放装备音效
         local misc = MiscConfig.Get("总控")
         player:PlaySound(misc["技能装备音效"])
-        -- SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
-        --     skillName = skillName,
-        --     slot = slot
-        -- })
+        SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.EQUIP, {
+            skillName = skillName,
+            slot = slot
+        })
     else
         gg.log("技能装备失败: " .. skillName .. " 槽位: " .. slot)
     end

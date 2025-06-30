@@ -331,7 +331,7 @@ function ViewButton:UpdateChildImageCache(childName, normalImg, hoverImg, clickI
         end
     end
 
-    gg.log("ViewButton:UpdateChildImageCache - 已更新子节点缓存:", childName, "normalImg:", normalImg, "hoverImg:", hoverImg, "clickImg:", clickImg)
+    -- gg.log("ViewButton:UpdateChildImageCache - 已更新子节点缓存:", childName, "normalImg:", normalImg, "hoverImg:", hoverImg, "clickImg:", clickImg)
     return true
 end
 
@@ -375,12 +375,10 @@ end
 ---@param config table 配置表 {normalImg, hoverImg, clickImg, normalColor, hoverColor, clickColor}
 function ViewButton:UpdateMainNodeState(config)
     if not self.img then
-        gg.log("ViewButton:UpdateMainNodeState - 主节点不存在")
         return false
     end
 
     if not config or type(config) ~= "table" then
-        gg.log("ViewButton:UpdateMainNodeState - 配置参数无效")
         return false
     end
 
@@ -440,7 +438,7 @@ function ViewButton:UpdateMainNodeState(config)
         self.clickColor = clickColor
     end
 
-    gg.log("ViewButton:UpdateMainNodeState - 已更新主节点:", "normalImg:", normalImg, "hoverImg:", hoverImg, "clickImg:", clickImg)
+    -- gg.log("ViewButton:UpdateMainNodeState - 已更新主节点:", "normalImg:", normalImg, "hoverImg:", hoverImg, "clickImg:", clickImg)
     return true
 end
 

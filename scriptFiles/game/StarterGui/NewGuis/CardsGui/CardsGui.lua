@@ -1155,6 +1155,9 @@ function CardsGui:OnSkillEquipResponse(response)
             if originalButtonState then
                 self:UpdateMainCardEquipStatus(originalSkillName, originalSkillData)
             end
+        elseif originalSkillType and originalSkillType.category == 1 then
+            -- 原有副卡：更新装备状态
+            self:UpdateSubCardEquipStatus(originalSkillName, originalSkillData)
         end
     end
 
@@ -1188,7 +1191,8 @@ function CardsGui:OnSkillEquipResponse(response)
             end
 
         elseif skillType.category == 1 then
-            -- 副卡装备：更新副卡显示
+            -- 副卡装备：更新副卡装备状态和显示
+            self:UpdateSubCardEquipStatus(skillName, skillData)
             self:UpdateSubCardTreeNodeDisplay(skillName)
 
             -- 如果当前选中的是这个副卡，更新属性面板
@@ -1244,7 +1248,8 @@ function CardsGui:OnSkillUnequipResponse(response)
             end
 
         elseif skillType.category == 1 then
-            -- 副卡卸下：更新副卡显示
+            -- 副卡卸下：更新副卡装备状态和显示
+            self:UpdateSubCardEquipStatus(skillName, skillData)
             self:UpdateSubCardTreeNodeDisplay(skillName)
             -- 如果当前选中的是这个副卡，更新属性面板
             if self.currentSubCardButtonName and
