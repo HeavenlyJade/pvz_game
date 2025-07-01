@@ -1445,16 +1445,35 @@ function gg.eval(expr)
             local func3 = expr:sub(pos, pos+2)
             if func3 == "max" or func3 == "min" then
                 pos = pos + 3
-                assert(expr:sub(pos, pos) == "(", "Missing '(' after function name")
-                pos = pos + 1
-                local args = {}
-                args[1] = parseExpr()
-                while expr:sub(pos, pos) == "," do
+                -- 跳过函数名后的空白字符
+                while pos <= #expr and expr:sub(pos, pos):match("%s") do
                     pos = pos + 1
-                    args[#args+1] = parseExpr()
                 end
-                assert(expr:sub(pos, pos) == ")", "Missing ')' after function arguments")
+                
+                if pos > #expr or expr:sub(pos, pos) ~= "(" then
+                    error("Missing '(' after function name")
+                end
                 pos = pos + 1
+                
+                local args = {}
+                -- 解析第一个参数
+                if pos <= #expr and expr:sub(pos, pos) ~= ")" then
+                    args[1] = parseExpr()
+                    
+                    -- 解析后续参数
+                    while pos <= #expr and expr:sub(pos, pos) == "," do
+                        pos = pos + 1
+                        if pos <= #expr then
+                            args[#args+1] = parseExpr()
+                        end
+                    end
+                end
+                
+                if pos > #expr or expr:sub(pos, pos) ~= ")" then
+                    error("Missing ')' after function arguments")
+                end
+                pos = pos + 1
+                
                 if func3 == "max" then
                     return math.max(unpack(args))
                 else
@@ -1463,7 +1482,9 @@ function gg.eval(expr)
             elseif expr:sub(pos, pos) == "(" then
                 pos = pos + 1
                 local val = parseExpr()
-                if expr:sub(pos, pos) ~= ")" then error("Missing closing parenthesis") end
+                if pos > #expr or expr:sub(pos, pos) ~= ")" then 
+                    error("Missing closing parenthesis") 
+                end
                 pos = pos + 1
                 return val
             else

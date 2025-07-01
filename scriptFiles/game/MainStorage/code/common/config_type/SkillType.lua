@@ -163,11 +163,52 @@ end
 function SkillType:_evaluateExpression(expr)
     -- 递归处理数学函数：min, max
     local function processFunction(str, funcName)
-        local pattern = funcName .. "%s*%(([^%)]+)%)"
         local hasMatch = false
+        local result = str
         
-        str = str:gsub(pattern, function(args)
+        -- 手动查找函数调用并处理括号平衡
+        local searchPos = 1
+        while true do
+            local startPos = string.find(result, funcName .. "%s*%(", searchPos)
+            if not startPos then
+                break
+            end
+            
+            -- 找到函数名和开括号的位置
+            local funcStart = startPos
+            local parenStart = string.find(result, "%(", startPos)
+            if not parenStart then
+                break
+            end
+            
+            -- 使用括号计数器找到匹配的右括号
+            local parenCount = 1
+            local pos = parenStart + 1
+            local parenEnd = nil
+            
+            while pos <= #result and parenCount > 0 do
+                local char = string.sub(result, pos, pos)
+                if char == "(" then
+                    parenCount = parenCount + 1
+                elseif char == ")" then
+                    parenCount = parenCount - 1
+                    if parenCount == 0 then
+                        parenEnd = pos
+                        break
+                    end
+                end
+                pos = pos + 1
+            end
+            
+            if not parenEnd then
+                gg.log("警告: 找不到匹配的右括号，表达式:", result)
+                break
+            end
+            
+            -- 提取函数参数
+            local args = string.sub(result, parenStart + 1, parenEnd - 1)
             hasMatch = true
+            
             -- 分割参数（处理嵌套括号）
             local params = {}
             local depth = 0
@@ -209,29 +250,34 @@ function SkillType:_evaluateExpression(expr)
                     table.insert(values, value)
                 else
                     gg.log("警告: 无法计算参数:", param)
-                    return "0"
+                    values = {0}
+                    break
                 end
             end
             
             -- 根据函数名计算结果
+            local funcResult = 0
             if funcName == "min" then
-                local result = values[1] or 0
+                funcResult = values[1] or 0
                 for i = 2, #values do
-                    result = math.min(result, values[i])
+                    funcResult = math.min(funcResult, values[i])
                 end
-                return tostring(result)
             elseif funcName == "max" then
-                local result = values[1] or 0
+                funcResult = values[1] or 0
                 for i = 2, #values do
-                    result = math.max(result, values[i])
+                    funcResult = math.max(funcResult, values[i])
                 end
-                return tostring(result)
             end
             
-            return "0"
-        end)
+            -- 替换原字符串中的函数调用
+            local funcCall = string.sub(result, funcStart, parenEnd)
+            result = string.sub(result, 1, funcStart - 1) .. tostring(funcResult) .. string.sub(result, parenEnd + 1)
+            
+            -- 从替换后的位置继续搜索
+            searchPos = funcStart + string.len(tostring(funcResult))
+        end
         
-        return str, hasMatch
+        return result, hasMatch
     end
     
     -- 处理嵌套的min和max函数（从内向外处理）

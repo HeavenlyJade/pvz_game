@@ -2589,8 +2589,10 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
         
         -- 设置ViewList大小为有效物品数量
         self.subCardEnhancementList:SetElementSize(#validItems)
+        
         -- 为每个有效物品设置UI
         for index, item in ipairs(validItems) do
+            gg.log("设置物品:", item.materialName, "消耗:", item.cost, "索引:", index)
             self.subCardEnhancementList:GetChild(index):SetItemCost(item.itemConfig, self:GetItemAmount(item.materialName), item.cost)
         end
     else
