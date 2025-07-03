@@ -172,6 +172,48 @@ function ViewButton:OnClick()
     end
 end
 
+--- 重新从节点属性中加载按钮的状态（例如图片和颜色）
+-- 当节点的属性被外部代码更改后，调用此方法来同步ViewButton的内部缓存
+function ViewButton:ReloadStateFromNode()
+    if not self.img then return end
+    local img = self.img
+
+    -- 重新加载图片缓存
+    self.clickImg = img:GetAttribute("图片-点击")
+    self.hoverImg = img:GetAttribute("图片-悬浮")
+    if self.hoverImg == "" then
+        self.hoverImg = self.clickImg
+    end
+    self.normalImg = img.Icon
+
+    -- 重新加载颜色缓存
+    self.hoverColor = img:GetAttribute("悬浮颜色")
+    self.clickColor = img:GetAttribute("点击颜色")
+    self.normalColor = img.FillColor
+
+    -- 重新加载子节点的状态
+    for childName, props in pairs(self.childClickImgs) do
+        local childNode = props.node
+        if childNode then
+            local clickImg = childNode:GetAttribute("图片-点击")
+            local hoverImg = childNode:GetAttribute("图片-悬浮")
+            if clickImg == "" then
+                clickImg = nil
+            end
+            if hoverImg == "" then
+                hoverImg = clickImg
+            end
+
+            props.normalImg = childNode.Icon
+            props.clickImg = clickImg
+            props.hoverImg = hoverImg
+            props.hoverColor = childNode:GetAttribute("悬浮颜色")
+            props.clickColor = childNode:GetAttribute("点击颜色")
+            props.normalColor = childNode.FillColor
+        end
+    end
+end
+
 -- 初始化按钮基本属性
 ---@param img UIImage 按钮图片组件
 function ViewButton:InitButtonProperties(img)

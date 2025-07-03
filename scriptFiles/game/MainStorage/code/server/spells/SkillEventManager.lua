@@ -674,6 +674,7 @@ function SkillEventManager.HandleEquipSkill(evt)
         end
         table.sort(subCardSlots) -- 按槽位ID从小到大排序
 
+        gg.log("副卡槽位列表:", subCardSlots)
 
         -- 3. 检查玩家的equippedSkills是否有空位
         local availableSlot = nil

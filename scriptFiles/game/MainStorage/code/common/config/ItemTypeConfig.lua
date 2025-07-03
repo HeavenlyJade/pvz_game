@@ -12,6 +12,7 @@ local function LoadConfig()
     ItemTypeConfig.config ={
     ["星星果碎片"] = ItemType.New({
         ["名字"] = "星星果碎片",
+        ["描述"] = "可以用于星星果一键升级",
         ["图标"] = "sandboxId://textures/fuka/星星果.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -28,6 +29,7 @@ local function LoadConfig()
     }),
     ["窝瓜碎片"] = ItemType.New({
         ["名字"] = "窝瓜碎片",
+        ["描述"] = "可以用于窝瓜一键升级",
         ["图标"] = "sandboxId://textures/fuka/窝瓜.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -44,6 +46,7 @@ local function LoadConfig()
     }),
     ["魅惑菇碎片"] = ItemType.New({
         ["名字"] = "魅惑菇碎片",
+        ["描述"] = "可以用于魅惑菇一键升级",
         ["图标"] = "sandboxId://textures/fuka/迷惑菇.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -60,6 +63,7 @@ local function LoadConfig()
     }),
     ["仙人掌碎片"] = ItemType.New({
         ["名字"] = "仙人掌碎片",
+        ["描述"] = "可以用于仙人掌一键升级",
         ["图标"] = "sandboxId://textures/fuka/仙人掌.png",
         ["品级"] = "史诗",
         ["额外战力"] = 0,
@@ -76,6 +80,7 @@ local function LoadConfig()
     }),
     ["椰子炮碎片"] = ItemType.New({
         ["名字"] = "椰子炮碎片",
+        ["描述"] = "可以用于椰子炮一键升级",
         ["图标"] = "sandboxId://textures/fuka/椰子炮.png",
         ["品级"] = "稀有",
         ["额外战力"] = 0,
@@ -92,6 +97,7 @@ local function LoadConfig()
     }),
     ["火爆辣椒碎片"] = ItemType.New({
         ["名字"] = "火爆辣椒碎片",
+        ["描述"] = "可以用于火爆辣椒一键升级",
         ["图标"] = "sandboxId://textures/fuka/火爆辣椒.png",
         ["品级"] = "史诗",
         ["额外战力"] = 0,
@@ -108,6 +114,7 @@ local function LoadConfig()
     }),
     ["菜问碎片"] = ItemType.New({
         ["名字"] = "菜问碎片",
+        ["描述"] = "可以用于菜问一键升级",
         ["图标"] = "sandboxId://textures/fuka/菜问.png",
         ["品级"] = "史诗",
         ["额外战力"] = 0,
@@ -124,6 +131,7 @@ local function LoadConfig()
     }),
     ["辣椒投手碎片"] = ItemType.New({
         ["名字"] = "辣椒投手碎片",
+        ["描述"] = "可以用于辣椒投手一键升级",
         ["图标"] = "sandboxId://textures/fuka/辣椒投手.png",
         ["品级"] = "史诗",
         ["额外战力"] = 0,
@@ -140,6 +148,7 @@ local function LoadConfig()
     }),
     ["钢铁地刺碎片"] = ItemType.New({
         ["名字"] = "钢铁地刺碎片",
+        ["描述"] = "可以用于钢铁地刺一键升级",
         ["图标"] = "sandboxId://textures/fuka/地刺王.png",
         ["品级"] = "史诗",
         ["额外战力"] = 0,
@@ -156,6 +165,7 @@ local function LoadConfig()
     }),
     ["地刺碎片"] = ItemType.New({
         ["名字"] = "地刺碎片",
+        ["描述"] = "可以用于地刺一键升级",
         ["图标"] = "sandboxId://textures/fuka/地刺.png",
         ["品级"] = "稀有",
         ["额外战力"] = 0,
@@ -172,7 +182,7 @@ local function LoadConfig()
     }),
     ["坚果碎片"] = ItemType.New({
         ["名字"] = "坚果碎片",
-        ["描述"] = "    ",
+        ["描述"] = "可以用于坚果一键升级",
         ["图标"] = "sandboxId://textures/fuka/坚果.png",
         ["品级"] = "稀有",
         ["额外战力"] = 0,
@@ -189,6 +199,7 @@ local function LoadConfig()
     }),
     ["樱桃炸弹碎片"] = ItemType.New({
         ["名字"] = "樱桃炸弹碎片",
+        ["描述"] = "可以用于樱桃炸弹一键升级",
         ["图标"] = "sandboxId://textures/fuka/樱桃炸弹.png",
         ["品级"] = "稀有",
         ["额外战力"] = 0,
@@ -205,6 +216,7 @@ local function LoadConfig()
     }),
     ["豌豆射手碎片"] = ItemType.New({
         ["名字"] = "豌豆射手碎片",
+        ["描述"] = "可以用于豌豆射手一键升级",
         ["图标"] = "sandboxId://textures/fuka/豌豆射手.png",
         ["品级"] = "稀有",
         ["额外战力"] = 0,
@@ -219,9 +231,10 @@ local function LoadConfig()
         ["是货币"] = false,
         ["取消获得物品"] = false
     }),
-    ["地刺"] = ItemType.New({
-        ["名字"] = "地刺",
-        ["图标"] = "sandboxId://textures/plants/Tex_地刺_BaseColor.png",
+    ["向日葵"] = ItemType.New({
+        ["名字"] = "向日葵",
+        ["描述"] = "金灿灿的“小太阳”，可以加速生产阳光，植物界 “阳光工厂”",
+        ["图标"] = "sandboxId://textures/plants/Tex_向日葵_BaseColor.png",
         ["品级"] = "史诗",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
@@ -238,8 +251,69 @@ local function LoadConfig()
         },
         ["取消获得物品"] = false
     }),
+    ["寒冰射手"] = ItemType.New({
+        ["名字"] = "寒冰射手",
+        ["描述"] = "蓝莹莹的“冰豌豆”，射出冰弹减速僵尸，战场 “冰霜射手”",
+        ["图标"] = "sandboxId://textures/plants/寒冰射手.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-地刺","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["小喷菇"] = ItemType.New({
+        ["名字"] = "小喷菇",
+        ["描述"] = "紫乎乎的“喷射专家”，吐出一大片带着刺鼻气味的孢子攻击僵尸，是守护家园的 “毒雾卫士” 。",
+        ["图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-地刺","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["地刺"] = ItemType.New({
+        ["名字"] = "地刺",
+        ["描述"] = "藏土里的带刺 “小怪物”，扎轮胎、戳僵尸脚，专搞 “地下伏击”。",
+        ["图标"] = "sandboxId://textures/plants/Tex_地刺_BaseColor.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-地刺","操作":"习得"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
     ["坚果"] = ItemType.New({
         ["名字"] = "坚果",
+        ["描述"] = "圆滚滚的 “小核桃”，用厚壳为队友扛伤害，植物界 “肉盾担当”。",
         ["图标"] = "sandboxId://textures/plants/Tex_NutWall_BaseColor.png",
         ["品级"] = "史诗",
         ["额外战力"] = 0,
@@ -253,12 +327,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-坚果","操作":"装备"} ]]
+            [[skill {"技能名":"副-坚果","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["樱桃炸弹"] = ItemType.New({
         ["名字"] = "樱桃炸弹",
+        ["描述"] = "双生红樱桃，落地 “嘭” ，是 “暴力双子星”",
         ["图标"] = "sandboxId://textures/plants/Tex_CherryBomb_BaseColor.png",
         ["品级"] = "史诗",
         ["额外战力"] = 0,
@@ -272,12 +347,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-樱桃炸弹","操作":"装备"} ]]
+            [[skill {"技能名":"副-樱桃炸弹","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["豌豆射手"] = ItemType.New({
         ["名字"] = "豌豆射手",
+        ["描述"] = "绿油油的 “呆萌小子”，用豌豆子弹疯狂扫射，是坚守植物阵地的 “初代勇士”",
         ["图标"] = "sandboxId://textures/plants/Tex_豌豆射手_BaseColor.png",
         ["品级"] = "史诗",
         ["额外战力"] = 0,
@@ -291,12 +367,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-豌豆射手","操作":"装备"} ]]
+            [[skill {"技能名":"副-豌豆射手","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["仙人掌"] = ItemType.New({
         ["名字"] = "仙人掌",
+        ["描述"] = "浑身小刺的 “绿刺猬”，发射尖刺攻击僵尸，远程 “火力手”。",
         ["图标"] = "sandboxId://textures/plants/Tex_仙人掌_BaseColor.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -310,12 +387,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-仙人掌","操作":"装备"} ]]
+            [[skill {"技能名":"副-仙人掌","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["椰子炮"] = ItemType.New({
         ["名字"] = "椰子炮",
+        ["描述"] = "植物界的 “硬派投手”，轰出椰子炮弹砸向僵尸，是 “远程重炮手”",
         ["图标"] = "sandboxId://textures/plants/椰子加农炮.png",
         ["品级"] = "稀有",
         ["额外战力"] = 0,
@@ -329,12 +407,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-椰子炮","操作":"装备"} ]]
+            [[skill {"技能名":"副-椰子炮","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["火爆辣椒"] = ItemType.New({
         ["名字"] = "火爆辣椒",
+        ["描述"] = "红通通 “小辣椒”，投掷爆炸点燃敌人，“纵火急先锋”。",
         ["图标"] = "sandboxId://textures/plants/Tex_火爆辣椒_BaseColor.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -348,12 +427,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-火爆辣椒","操作":"装备"} ]]
+            [[skill {"技能名":"副-火爆辣椒","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["菜问"] = ItemType.New({
         ["名字"] = "菜问",
+        ["描述"] = "攥拳头的 “功夫菜”，近身拳打脚踢揍僵尸，植物界 “格斗高手”",
         ["图标"] = "sandboxId://textures/plants/菜问.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -367,12 +447,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-菜问","操作":"装备"} ]]
+            [[skill {"技能名":"副-菜问","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["辣椒投手"] = ItemType.New({
         ["名字"] = "辣椒投手",
+        ["描述"] = "顶着小辣椒的 “大甜椒”，，甩辣椒砸僵尸，是 “远程火辣手”",
         ["图标"] = "sandboxId://textures/plants/Tex_火爆辣椒_BaseColor.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -386,12 +467,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-辣椒投手","操作":"装备"} ]]
+            [[skill {"技能名":"副-辣椒投手","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["钢铁地刺"] = ItemType.New({
         ["名字"] = "钢铁地刺",
+        ["描述"] = "浑身裹 “钢甲” 的尖刺怪，扎碾轧、戳硬茬，专扛狠活的 “地下铁卫”",
         ["图标"] = "sandboxId://textures/plants/地刺王.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -405,12 +487,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-钢铁地刺","操作":"装备"} ]]
+            [[skill {"技能名":"副-钢铁地刺","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["星星果"] = ItemType.New({
         ["名字"] = "星星果",
+        ["描述"] = "金灿灿 “五角星”，朝五方向射星弹，化身 “全能小炮台”",
         ["图标"] = "sandboxId://textures/plants/Tex_杨桃_BaseColor.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -424,13 +507,14 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-星星果","操作":"装备"} ]]
+            [[skill {"技能名":"副-星星果","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["窝瓜"] = ItemType.New({
         ["名字"] = "窝瓜",
-        ["图标"] = "sandboxId://textures/plants/Tex_迷惑菇_BaseColor.png",
+        ["描述"] = "圆滚滚的 “暴脾气瓜”，蹦起来砸扁前方僵尸，专当 “天降拳王”",
+        ["图标"] = "sandboxId://textures/plants/Tex_窝瓜_BaseColor.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
@@ -443,12 +527,13 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-魅惑菇","操作":"装备"} ]]
+            [[skill {"技能名":"副-魅惑菇","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
     ["魅惑菇"] = ItemType.New({
         ["名字"] = "魅惑菇",
+        ["描述"] = "彩伞盖 “迷幻蘑”，让僵尸倒戈互殴，堪称 “策反小能手”",
         ["图标"] = "sandboxId://textures/plants/Tex_迷惑菇_BaseColor.png",
         ["品级"] = "传说",
         ["额外战力"] = 0,
@@ -462,7 +547,7 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = false,
         ["获得时执行指令"] = {
-            [[skill {"技能名":"副-魅惑菇","操作":"装备"} ]]
+            [[skill {"技能名":"副-魅惑菇","操作":"习得"} ]]
         },
         ["取消获得物品"] = false
     }),
@@ -521,6 +606,7 @@ local function LoadConfig()
     }),
     ["副卡抽奖券"] = ItemType.New({
         ["名字"] = "副卡抽奖券",
+        ["描述"] = "参与副卡抽奖，有机会抽取稀有副卡",
         ["图标"] = "sandboxId://textures/items/抽奖券.png",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
@@ -536,6 +622,7 @@ local function LoadConfig()
     }),
     ["水晶"] = ItemType.New({
         ["名字"] = "水晶",
+        ["描述"] = "可以购买你想要的所有东西",
         ["图标"] = "sandboxId://textures/ui/主界面UI/货币单图/钻石.png",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
@@ -553,6 +640,7 @@ local function LoadConfig()
     }),
     ["能量豆"] = ItemType.New({
         ["名字"] = "能量豆",
+        ["描述"] = "用于植物升级",
         ["图标"] = "sandboxId://textures/ui/主界面UI/货币单图/能量豆.png",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
@@ -570,6 +658,7 @@ local function LoadConfig()
     }),
     ["金币"] = ItemType.New({
         ["名字"] = "金币",
+        ["描述"] = "用于植物升级",
         ["图标"] = "sandboxId://textures/ui/主界面UI/货币单图/金币.png",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
@@ -583,13 +672,11 @@ local function LoadConfig()
         ["是货币"] = true,
         ["货币序号"] = 2,
         ["获得音效"] = "sandboxId://soundeffect/moneyfalls.ogg",
-        ["获得时执行指令"] = {
-            ""
-        },
         ["取消获得物品"] = false
     }),
     ["阳光"] = ItemType.New({
         ["名字"] = "阳光",
+        ["描述"] = "用于植物升级",
         ["图标"] = "sandboxId://textures/ui/主界面UI/货币单图/太阳.png",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
@@ -606,6 +693,42 @@ local function LoadConfig()
     }),
     ["限定抽奖券"] = ItemType.New({
         ["名字"] = "限定抽奖券",
+        ["描述"] = "参与限定抽奖，有机会抽取稀有副卡",
+        ["图标"] = "sandboxId://textures/items/限定抽奖券.png",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["SR碎片"] = ItemType.New({
+        ["名字"] = "SR碎片",
+        ["描述"] = "可随机获得一张SR碎片",
+        ["图标"] = "sandboxId://textures/ui/主界面UI/抽卡/SR卡背面.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["阳光加速包"] = ItemType.New({
+        ["名字"] = "阳光加速包",
+        ["描述"] = "可以立即获得8小时阳光",
+        ["图标"] = "sandboxId://textures/plants/Tex_仙人掌_BaseColor.png",
+        ["品级"] = "稀有",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
         ["强化材料增加倍率"] = 0,
@@ -619,8 +742,6 @@ local function LoadConfig()
         ["取消获得物品"] = false
     })
 }loaded = true
-    gg.log("LoadConfig", ItemTypeConfig.config)
-    loaded = true
 end
 
 ---@param itemType string

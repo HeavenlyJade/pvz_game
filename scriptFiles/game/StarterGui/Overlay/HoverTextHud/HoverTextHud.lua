@@ -27,11 +27,11 @@ function HoverTextHud:OnInit(node, config)
     self.activeTexts = {} ---@type TextInfo[]
     self.template = self:Get("文本").node ---@type UITextLabel
     self.template.Visible = false
-    
+
     -- 计算初始位置
     self.initialY = self.template.Position.y
     self.textSpacing = 40 -- 文本之间的间距
-    
+
     -- 监听服务端发送的悬浮文本事件
     ClientEventManager.Subscribe("SendHoverText", function(evt)
         self:ShowText(evt.txt)
@@ -41,7 +41,7 @@ end
 function HoverTextHud:GetTextFromPool()
     -- 尝试从对象池中获取一个文本对象
     local textInfo = table.remove(self.textPool)
-    
+
     -- 如果没有可用的对象，创建一个新的
     if not textInfo then
         local newNode = self.template:Clone()
@@ -55,20 +55,20 @@ function HoverTextHud:GetTextFromPool()
             updateTaskId = 0
         }
     end
-    
+
     -- 重置状态
     textInfo.fadeTimer = 0
     textInfo.node.Visible = true
     textInfo.node.TitleColor = ColorQuad.New(255, 255, 255, 255)
-    
+
     -- 添加到活动列表
     table.insert(self.activeTexts, textInfo)
-    
+
     -- 注册更新任务
     textInfo.updateTaskId = ClientScheduler.add(function()
         self:UpdateText(textInfo)
     end, 0, 0.06) -- 每帧更新一次
-    
+
     return textInfo
 end
 
@@ -78,7 +78,7 @@ function HoverTextHud:ReturnTextToPool(textInfo)
         ClientScheduler.cancel(textInfo.updateTaskId)
         textInfo.updateTaskId = 0
     end
-    
+
     -- 从活动列表中移除
     for i, activeText in ipairs(self.activeTexts) do
         if activeText == textInfo then
@@ -86,7 +86,7 @@ function HoverTextHud:ReturnTextToPool(textInfo)
             break
         end
     end
-    
+
     -- 重置并返回对象池
     textInfo.node.Visible = false
     table.insert(self.textPool, textInfo)
@@ -95,7 +95,7 @@ end
 function HoverTextHud:UpdateText(textInfo)
     -- 更新淡出计时器
     textInfo.fadeTimer = textInfo.fadeTimer + 0.06
-    
+
     -- 如果超过显示时间，开始淡出
     if textInfo.fadeTimer >= textInfo.fadeDuration then
         local fadeProgress = (textInfo.fadeTimer - textInfo.fadeDuration) / textInfo.fadeOutDuration
@@ -104,12 +104,12 @@ function HoverTextHud:UpdateText(textInfo)
             self:ReturnTextToPool(textInfo)
             return
         end
-        
+
         -- 设置透明度
         local alpha = math.floor(255 * (1 - fadeProgress))
         textInfo.node.TitleColor = ColorQuad.New(255, 255, 255, alpha)
     end
-    
+
     -- 更新位置
     local index = 0
     for i, activeText in ipairs(self.activeTexts) do
@@ -118,11 +118,11 @@ function HoverTextHud:UpdateText(textInfo)
             break
         end
     end
-    
+
     if index > 0 then
         local targetY = self.initialY - (index - 1) * self.textSpacing
         textInfo.targetY = targetY
-        
+
         -- 平滑移动到目标位置
         local currentPos = textInfo.node.Position
         local newY = currentPos.y + (targetY - currentPos.y) * 0.2 -- 使用缓动效果
@@ -132,7 +132,7 @@ end
 
 function HoverTextHud:ShowText(text)
     local textInfo = self:GetTextFromPool()
-    
+
     -- 设置文本
     textInfo.node.Title = text
     -- 显示UI

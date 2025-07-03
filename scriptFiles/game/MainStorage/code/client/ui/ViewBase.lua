@@ -233,7 +233,7 @@ function ViewBase:DestroyComponent(component)
             break
         end
     end
-    
+
     -- Destroy the component's node
     if component.node then
         component.node:Destroy()

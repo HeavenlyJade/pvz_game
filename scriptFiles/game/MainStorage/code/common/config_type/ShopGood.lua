@@ -153,7 +153,7 @@ function ShopGood:Buy(player)
     for _, command in ipairs(self.commands) do
         player:ExecuteCommand(command)
     end
-    
+
     return true
 end
 

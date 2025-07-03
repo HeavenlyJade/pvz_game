@@ -4,7 +4,6 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 local DummyEntity = require(MainStorage.code.server.entity_types.DummyEntity) ---@type DummyEntity
-local EffectConfig = require(MainStorage.code.common.config.EffectConfig) ---@type EffectConfig
 
 ---@class Graphic:Class
 local Graphic = ClassMgr.Class("Graphic")
@@ -17,13 +16,13 @@ local function CreateParticle(particleName)
     if particleName == "" then
         return nil, nil
     end
-    
+
     -- 获取或创建对象池
     if not particlePools[particleName] then
         particlePools[particleName] = {}
     end
     local pool = particlePools[particleName]
-    
+
     -- 尝试从对象池中获取对象
     local fx = table.remove(pool)
     if fx then
@@ -35,12 +34,12 @@ local function CreateParticle(particleName)
         end
         return fx, nodeCache[particleName]
     end
-    
+
     if not nodeCache[particleName] then
         local node = MainStorage
         local fullPath = ""
         local lastPart = ""
-        
+
         -- 遍历路径的每一部分
         for part in particleName:gmatch("[^/]+") do
             if part ~= "" then
@@ -56,13 +55,13 @@ local function CreateParticle(particleName)
                 end
             end
         end
-        
+
         if not node then
             return nil, nil
         end
         nodeCache[particleName] = node
     end
-    
+
     return nodeCache[particleName]:Clone(), nodeCache[particleName]
 end
 
@@ -71,12 +70,12 @@ local function RecycleParticle(particleName, fx)
     if not fx or not particleName or particleName == "" then
         return
     end
-    
+
     -- 确保对象池存在
     if not particlePools[particleName] then
         particlePools[particleName] = {}
     end
-    
+
     -- 重置特效状态
     fx.Visible = false
     fx.Enabled = false
@@ -96,7 +95,7 @@ local function ClearParticlePool(particleName)
     if not particleName or particleName == "" then
         return
     end
-    
+
     local pool = particlePools[particleName]
     if pool then
         for _, fx in ipairs(pool) do
@@ -198,7 +197,7 @@ end
 function Graphic:PlayAtReal(caster, target, param, actions)
     local isCancelled = false
     local currentRepeat = 0
-    
+
     local function addCancelFunction(effect, repeatIndex)
         local effectCancel = function()
             if effect.Enabled then
@@ -209,23 +208,23 @@ function Graphic:PlayAtReal(caster, target, param, actions)
         table.insert(actions, effectCancel)
         return effectCancel
     end
-    
+
     local function playEffect()
-        if isCancelled then 
-            return 
+        if isCancelled then
+            return
         end
-        
+
         -- 创建并设置效果对象
         local effect = self:CreateEffect(target, caster.scene)
-        if not effect then 
-            return 
+        if not effect then
+            return
         end
-        
+
         -- 添加取消函数
         local effectCancel = addCancelFunction(effect, currentRepeat + 1)
-        
+
         currentRepeat = currentRepeat + 1
-        
+
         -- 设置持续时间
         if self.duration > 0 then
             ServerScheduler.add(function()
@@ -234,13 +233,13 @@ function Graphic:PlayAtReal(caster, target, param, actions)
                 end
             end, self.duration)
         end
-        
+
         -- 设置下一次重复
         if currentRepeat < self.repeatCount and self.repeatDelay > 0 then
             ServerScheduler.add(playEffect, self.repeatDelay)
         end
     end
-    
+
     -- 启动第一次播放
     playEffect()
 end
@@ -282,14 +281,14 @@ function ParticleGraphic:CreateEffect(target, scene)
     else
         container = game.WorkSpace["Ground"][scene.name]["世界特效"]
     end
-    
+
     if not container then
         return nil
     end
-    
+
     local fx, previous = CreateParticle(self.particleName)
     if not fx or not previous then return nil end
-    
+
     fx:SetParent(container)
     if not self.boundToEntity then
         fx.Position = gg.vec.ToVector3(self.offset + target:GetCenterPosition())
@@ -297,14 +296,14 @@ function ParticleGraphic:CreateEffect(target, scene)
         fx.LocalPosition = previous.LocalPosition
         fx.LocalEuler = previous.LocalEuler
     end
-    
+
     -- 添加自动回收功能
     if self.duration > 0 then
         ServerScheduler.add(function()
             RecycleParticle(self.particleName, fx)
         end, self.duration)
     end
-    
+
     return fx
 end
 
@@ -371,14 +370,14 @@ function ModelGraphic:CreateEffect(target, scene)
     else
         container = game.WorkSpace["Ground"][scene.name]["世界特效"]
     end
-    
+
     if not container then
         return nil
     end
-    
+
     local model, previous = CreateParticle(self.modelName)
     if not model or not previous then return nil end
-    
+
     model:SetParent(container)
     if not self.boundToEntity then
         model.LocalPosition = gg.vec.ToVector3(target:GetPosition())
@@ -387,7 +386,7 @@ function ModelGraphic:CreateEffect(target, scene)
         model.LocalEuler = previous.LocalEuler
     end
     model.Enabled = true
-    
+
     -- 播放动画
     if self.animationName and self.animationName ~= "" then
         local modelPlayer = model.Animator
@@ -395,7 +394,7 @@ function ModelGraphic:CreateEffect(target, scene)
             modelPlayer:Play(self.animationName, 0, 0)
         end
     end
-    
+
     return model
 end
 
@@ -445,22 +444,11 @@ local loaders = {
 }
 
 --- 加载特效配置
----@param effectsData table[]|string|nil 特效配置数组或特效模板名称
+---@param effectsData table[]|nil 特效配置数组
 ---@return Graphic[] 特效实例数组
 local function Load(effectsData)
     if not effectsData then return {} end
-    
-    -- 如果是字符串，则作为特效模板名称处理
-    if type(effectsData) == "string" then
-        local templateEffects = EffectConfig.Get(effectsData)
-        if templateEffects then
-            effectsData = templateEffects
-        else
-            print("警告：未找到特效模板: " .. effectsData)
-            return {}
-        end
-    end
-    
+
     local effects = {}
     for _, effectData in ipairs(effectsData) do
         if effectData["_type"] then
@@ -474,14 +462,6 @@ local function Load(effectsData)
     return effects
 end
 
---- 从特效模板加载特效
----@param templateName string 特效模板名称
----@return Graphic[] 特效实例数组
-local function LoadFromTemplate(templateName)
-    return Load(templateName)
-end
-
 loaders["Load"] = Load
-loaders["LoadFromTemplate"] = LoadFromTemplate
 
 return loaders

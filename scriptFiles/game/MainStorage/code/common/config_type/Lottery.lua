@@ -33,20 +33,20 @@ local Lottery = ClassMgr.Class("Lottery")
 ---@param data table
 function Lottery:OnInit(data)
     self.poolName = data["奖池名"]
-    
+
     -- 概率设置
     self.normalRate = data["普通品级概率"] or 0
     self.rareRate = data["稀有品级概率"] or 0
     self.epicRate = data["史诗品级概率"] or 0
     self.legendaryRate = data["传说品级概率"] or 0
     self.mythicRate = data["神话品级概率"] or 0
-    
+
     -- 保底设置
     self.rarePity = data["稀有保底次数"] or 0
     self.epicPity = data["史诗保底次数"] or 0
     self.legendaryPity = data["传说保底次数"] or 0
     self.mythicPity = data["神话保底次数"] or 0
-    
+
     -- 奖池内容
     self.normalPrizes = data["普通品级"] or {}
     self.rarePrizes = data["稀有品级"] or {}
@@ -73,13 +73,13 @@ function Lottery:Draw(player)
     local rewards = self:SelectRewards(rarity)
     -- 更新保底计数
     self:UpdatePityCounts(player, rarity, pityCounts)
-    
+
     if rewards then
         gg.log(player.uid .. "抽中了" .. rarity .. "品级，获得了" .. rewards.itemType .. "x" .. rewards.amount)
         player:AddVariable("lottery_".. self.poolName, 1)
         player:AddVariable("rarity_".. rarity, 1)
     end
-    
+
     return rewards
 end
 
@@ -108,7 +108,7 @@ function Lottery:CalculateRarity(pityCounts)
     if (sum + self.epicRate) > rand then return "epic" end
     sum = sum + self.epicRate
     if (sum + self.rareRate) > rand then return "rare" end
-    
+
     return "common"
 end
 
@@ -117,7 +117,7 @@ end
 ---@return ItemStack|nil 选中的奖励
 function Lottery:SelectRewards(rarity)
     local rewardPool
-    
+
     -- 根据品级选择对应的奖池
     if rarity == "mythic" then
         rewardPool = self.mythicPrizes
@@ -141,10 +141,10 @@ function Lottery:SelectRewards(rarity)
     for _, reward in ipairs(rewardPool) do
         totalWeight = totalWeight + (reward.weight or 1)
     end
-    
+
     -- 生成随机数
     local random = math.random() * totalWeight
-    
+
     -- 根据权重选择奖品
     local currentWeight = 0
     for _, reward in ipairs(rewardPool) do
@@ -154,7 +154,7 @@ function Lottery:SelectRewards(rarity)
             local minAmount = reward.itemCountMin or 1
             local maxAmount = reward.itemCountMax or minAmount
             local amount = math.random(minAmount, maxAmount)
-            
+
             if reward.itemType then
                 return {
                     itemType = reward.itemType,
@@ -163,20 +163,20 @@ function Lottery:SelectRewards(rarity)
             end
         end
     end
-    
+
     -- 如果因为浮点数精度问题没有选中任何奖品，返回最后一个奖品
     local lastReward = rewardPool[#rewardPool]
     local minAmount = lastReward.itemCountMin or 1
     local maxAmount = lastReward.itemCountMax or minAmount
     local amount = math.random(minAmount, maxAmount)
-    
+
     if lastReward.itemType then
         return {
             itemType = lastReward.itemType,
             amount = amount
         }
     end
-    
+
     return nil
 end
 

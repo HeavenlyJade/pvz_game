@@ -53,7 +53,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["伤害强化_词条"] = TagType.New({
         ["名字"] = "伤害强化_词条",
@@ -92,7 +93,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["射速增加_词条"] = TagType.New({
         ["名字"] = "射速增加_词条",
@@ -134,7 +136,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["产量增加_额外概率提升_词条"] = TagType.New({
         ["名字"] = "产量增加_额外概率提升_词条",
@@ -224,7 +227,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["伤害提升_产量增加_词条"] = TagType.New({
         ["名字"] = "伤害提升_产量增加_词条",
@@ -303,7 +307,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["向日葵_阳光产量提升2_词条"] = TagType.New({
         ["名字"] = "向日葵_阳光产量提升2_词条",
@@ -349,7 +354,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["向日葵_阳光产量提升_词条"] = TagType.New({
         ["名字"] = "向日葵_阳光产量提升_词条",
@@ -395,7 +401,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["向日葵_额外获得阳光_词条"] = TagType.New({
         ["名字"] = "向日葵_额外获得阳光_词条",
@@ -445,7 +452,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["持续伤害_词条_大喷菇"] = TagType.New({
         ["名字"] = "持续伤害_词条_大喷菇",
@@ -1025,7 +1033,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["射速1_词条_高速射手"] = TagType.New({
         ["名字"] = "射速1_词条_高速射手",
@@ -1110,7 +1119,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["射速1_词条_双头豌豆"] = TagType.New({
         ["名字"] = "射速1_词条_双头豌豆",

@@ -4424,11 +4424,11 @@ ColorQuad = {} ---@type ColorQuad
 script = {} ---@type SandboxNode
 TweenInfo = {} ---@type TweenInfo
 -- -- 所有参数为默认的 TweenInfo
--- local default = TweenInfo.New() 
+-- local default = TweenInfo.New()
 -- -- 时间设置为 0.5 秒的 TweenInfo
--- local timeChanged = TweenInfo.New(0.5) 
+-- local timeChanged = TweenInfo.New(0.5)
 -- -- 释放样式设置为 Back 的 TweenInfo
--- local easingStyled = TweenInfo.New(0.5, Enum.EasingStyle.Back, 0, 0, 0, false) 
+-- local easingStyled = TweenInfo.New(0.5, Enum.EasingStyle.Back, 0, 0, 0, false)
 -- -- 释放方向设置为 In 的 TweenInfo
 -- local easingDirected = TweenInfo.New(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In, 0, 0, false)
 -- -- 自身重复 4 次的 TweenInfo

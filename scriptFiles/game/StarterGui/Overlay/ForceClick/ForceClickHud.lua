@@ -52,7 +52,7 @@ function ForceClickHud:OnInit(node, config)
             end
         end
     end)
-    
+
     if game.UserInputService.TouchEnabled then -- 触摸设备
         game.UserInputService.TouchStarted:Connect(
             function(inputObj, gameprocessed)

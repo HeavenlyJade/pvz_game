@@ -397,7 +397,6 @@ function CardsGui:_setSubCardQualityIcons(cardNode, skillType)
 
     -- 使用通用函数设置副卡品质图标
     self:_setCardIcon(cardNode, frameQualityResources)
-
     -- 使用通用函数设置副卡底图
     self:_setCardIcon(cardNode, iconQualityResources)
 
@@ -779,7 +778,6 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
                 -- 节点不存在，创建新的
                 local clonedNode = templateNode:Clone()
                 clonedNode.Name = skillName
-
                 mainCardButton = self:_createButtonWithCallback(clonedNode, function(ui, button)
                     local skillId = button.extraParams["skillId"]
                     self:ShowSkillTree(skillId)
@@ -795,11 +793,11 @@ function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
             -- 步骤 3: 更新按钮状态（无论是新是旧）
             mainCardButton.extraParams.skillId = skillName
             mainCardButton.node.Visible = true
-
             local iconResources = {iconPath = skillType.icon, iconNodePath = "卡框背景/图标"}
             self:_setCardIcon(mainCardButton.node, iconResources)
             self:_setMainCardQualityIcons(mainCardButton.node, skillType)
             table.insert(newChildrens, mainCardButton)
+            mainCardButton:ReloadStateFromNode()
         end
     end
 
@@ -1785,12 +1783,10 @@ function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
     local iconResources = { iconPath = skill.icon,iconNodePath = "图标底图/图标"}
     self:_setCardIcon(cardFrame, iconResources)
     self:_setCardName(cardFrame, skill.displayName, "副卡名字")
-    -- === 新增：设置副卡品质图标 ===
+
     self:_setSubCardQualityIcons(cardFrame, skill)
-    -- 设置new识的可见性
     local newnode = cardFrame["new"]
     if newnode then  newnode.Visible = false end
-    -- 使用工具函数设置星级
     self:_updateStarDisplay(cardFrame, star_level)
 end
 
@@ -2406,6 +2402,7 @@ function CardsGui:AddDynamicSubCardSkill(skillName, skillType, skillData)
             subCardButton.clickCb = function(ui, button)
                 self:OnSubCardButtonClick(ui, button)
             end
+            -- subCardButton:ReloadStateFromNode()
             -- 如果是原品质，存储按钮引用
             if qualityToUpdate == quality then
                 self.subCardButtondict[skillName] = subCardButton
@@ -2742,7 +2739,6 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
                 -- 节点不存在，创建新的
                 local clonedNode = templateNode:Clone()
                 clonedNode.Name = skillName
-
                 subCardButton = ViewButton.New(clonedNode, self)
                 subCardButton.extraParams = {skillId = skillName}
                 subCardButton.clickCb = function(ui, button) self:OnSubCardButtonClick(ui, button) end
@@ -2756,6 +2752,7 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
 
             subCardButton:SetVisible(true)
             self:SetSkillLevelSubCardFrame(subCardButton.node, skillType)
+            subCardButton:ReloadStateFromNode()
             buttonState.position = newIndex
             table.insert(newChildrens, subCardButton)
         end

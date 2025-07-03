@@ -24,13 +24,13 @@ end
 function SkillTree:Print()
     local ClientScheduler = require(MainStorage.code.client.ClientScheduler)
     local output = "========== 技能树结构 ==========\n"
-    
+
     -- 获取最大层级数
     local maxLane = 0
     for lane, _ in pairs(self.skills) do
         maxLane = math.max(maxLane, lane)
     end
-    
+
     -- 竖向显示技能树
     for lane = 0, maxLane do
         local laneSkills = self:GetLane(lane)
@@ -45,9 +45,9 @@ function SkillTree:Print()
             output = output .. table.concat(skillNames, ", ") .. "\n"
         end
     end
-    
+
     output = output .. "========== 技能树结构结束 =========="
-    
+
     -- 使用ClientScheduler延迟打印
     ClientScheduler.add(function()
         print(output)
@@ -57,15 +57,15 @@ end
 -- 递归构建技能树
 local function BuildSkillTreeRecursive(skillType, currentLane, currentIndex, skillTree)
     if not skillType then return end
-    
+
     -- 设置当前技能在树中的位置
     skillTree:SetSkillAt(currentIndex, currentLane, skillType)
-    
+
     -- 如果是入口技能，保存为主技能
     if skillType.isEntrySkill then
         skillTree.mainSkill = skillType
     end
-    
+
     -- 如果有下一技能，递归处理
     if skillType.nextSkills then
         for i, nextSkill in ipairs(skillType.nextSkills) do
@@ -2041,6 +2041,9 @@ local function LoadConfig()
             "副-椰子炮-词条"
         },
         ["最大经验"] = "1*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["椰子炮碎片"] = ""
+        },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "1*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2399,7 +2402,7 @@ function SkillTypeConfig.GetSkillTrees(skillCategory)
 
             -- 创建技能树结构
             local skillTree = SkillTree.New()
-            
+
             -- 从入口技能开始递归构建技能树
             BuildSkillTreeRecursive(skillType, 0, 1, skillTree)
 

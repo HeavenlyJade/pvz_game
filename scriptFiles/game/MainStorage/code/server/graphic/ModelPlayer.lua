@@ -115,7 +115,7 @@ function ModelPlayer:PlayTransition(key)
                 canSwitch = false
             end
         end
-        
+
         if canSwitch then
             table.insert(validAnims, animId)
         end

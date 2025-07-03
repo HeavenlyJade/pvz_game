@@ -16,7 +16,7 @@ local ClientCustomUI      = require(MainStorage.code.common.config_type.custom_u
 return ClientCustomUI.Load(script.Parent)
 2. 在Unity下新建一个自定义UI，其中的"UI名"填UI控件的名字
 3. 在本目录下新建一个ModuleScript，名字为UI控件的名字。继承CustomUI
-    然后在其中实现 
+    然后在其中实现
         S_BuildPacket（服务端构建给客户端的包体 ）
         C_BuildUI（客户端收到包体，刷新UI控件）
     客户端 > 服务端的通信可使用 ：
@@ -43,7 +43,7 @@ end
 
 --服务端构建要发给客户端的包体，一般是加入界面需要的信息
 function CustomUI:S_BuildPacket(player, packet)
-    
+
 end
 
 ---@param text string 提示文本
@@ -82,7 +82,7 @@ end
 --客户端收到包体，初始化界面。注意，界面元素的初始化也在这里面
 --获取元素请使用 self.view:Get！ 它有缓存，对多次调用有优化。绝不可直接 ViewList.New()!
 function CustomUI:C_BuildUI(packet)
-    
+
 end
 
 function CustomUI:C_SendEvent(func, packet)

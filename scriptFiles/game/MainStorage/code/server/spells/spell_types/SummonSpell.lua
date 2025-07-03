@@ -250,4 +250,4 @@ function SummonSpell:CastReal(caster, target, param)
     return true
 end
 
-return SummonSpell 
+return SummonSpell

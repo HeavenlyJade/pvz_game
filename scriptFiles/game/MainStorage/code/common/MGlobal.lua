@@ -637,7 +637,7 @@ function gg.FormatTime(time, isShort)
     end
     local s = ""
     local c = 0
-    
+
     -- Handle days
     if time > 86400 then
         local days = math.floor(time / 86400)
@@ -648,7 +648,7 @@ function gg.FormatTime(time, isShort)
             return s
         end
     end
-    
+
     -- Handle hours
     if time > 3600 then
         local hours = math.floor(time / 3600)
@@ -659,7 +659,7 @@ function gg.FormatTime(time, isShort)
             return s
         end
     end
-    
+
     -- Handle minutes
     if time > 60 then
         local minutes = math.floor(time / 60)
@@ -670,7 +670,7 @@ function gg.FormatTime(time, isShort)
             return s
         end
     end
-    
+
     -- Add seconds
     s = s .. math.floor(time) .. "秒"
     return s
@@ -942,18 +942,18 @@ function gg.clone(ori_tab, visited)
     if type(ori_tab) ~= "table" then
         return nil
     end
-    
+
     -- 初始化或使用传入的visited表来跟踪已访问的表
     visited = visited or {}
-    
+
     -- 如果这个表已经被访问过，直接返回nil避免循环引用
     if visited[ori_tab] then
         return nil
     end
-    
+
     -- 标记这个表为已访问
     visited[ori_tab] = true
-    
+
     local new_tab = {}
     for i, v in pairs(ori_tab) do
         if type(v) == "table" then
@@ -962,10 +962,10 @@ function gg.clone(ori_tab, visited)
             new_tab[i] = v
         end
     end
-    
+
     -- 清除访问标记
     visited[ori_tab] = nil
-    
+
     return new_tab
 end
 
@@ -1444,24 +1444,24 @@ function gg.eval(expr)
             -- 支持 max/min/clamp 函数
             local func3 = expr:sub(pos, pos+2)
             local func5 = expr:sub(pos, pos+4)
-            
+
             if func3 == "max" or func3 == "min" then
                 pos = pos + 3
                 -- 跳过函数名后的空白字符
                 while pos <= #expr and expr:sub(pos, pos):match("%s") do
                     pos = pos + 1
                 end
-                
+
                 if pos > #expr or expr:sub(pos, pos) ~= "(" then
                     error("Missing '(' after function name")
                 end
                 pos = pos + 1
-                
+
                 local args = {}
                 -- 解析第一个参数
                 if pos <= #expr and expr:sub(pos, pos) ~= ")" then
                     args[1] = parseExpr()
-                    
+
                     -- 解析后续参数
                     while pos <= #expr and expr:sub(pos, pos) == "," do
                         pos = pos + 1
@@ -1470,12 +1470,12 @@ function gg.eval(expr)
                         end
                     end
                 end
-                
+
                 if pos > #expr or expr:sub(pos, pos) ~= ")" then
                     error("Missing ')' after function arguments")
                 end
                 pos = pos + 1
-                
+
                 if func3 == "max" then
                     return math.max(unpack(args))
                 else
@@ -1487,17 +1487,17 @@ function gg.eval(expr)
                 while pos <= #expr and expr:sub(pos, pos):match("%s") do
                     pos = pos + 1
                 end
-                
+
                 if pos > #expr or expr:sub(pos, pos) ~= "(" then
                     error("Missing '(' after clamp function name")
                 end
                 pos = pos + 1
-                
+
                 local args = {}
                 -- 解析第一个参数
                 if pos <= #expr and expr:sub(pos, pos) ~= ")" then
                     args[1] = parseExpr()
-                    
+
                     -- 解析后续参数
                     while pos <= #expr and expr:sub(pos, pos) == "," do
                         pos = pos + 1
@@ -1506,12 +1506,12 @@ function gg.eval(expr)
                         end
                     end
                 end
-                
+
                 if pos > #expr or expr:sub(pos, pos) ~= ")" then
                     error("Missing ')' after clamp function arguments")
                 end
                 pos = pos + 1
-                
+
                 -- clamp(value, min, max) 函数实现
                 if #args >= 3 then
                     local value, minVal, maxVal = args[1], args[2], args[3]
@@ -1525,8 +1525,8 @@ function gg.eval(expr)
             elseif expr:sub(pos, pos) == "(" then
                 pos = pos + 1
                 local val = parseExpr()
-                if pos > #expr or expr:sub(pos, pos) ~= ")" then 
-                    error("Missing closing parenthesis") 
+                if pos > #expr or expr:sub(pos, pos) ~= ")" then
+                    error("Missing closing parenthesis")
                 end
                 pos = pos + 1
                 return val
