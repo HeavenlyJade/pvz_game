@@ -44,7 +44,7 @@ function MailCommand.sendSystemGlobal(params, sender)
     local expireDays = tonumber(params["过期天数"]) or MailEventConfig.DEFAULT_EXPIRE_DAYS
     local attachments = parseAttachments(params)
 
-    local mailId = MailManager:SendGlobalMail(title, content, attachments, expireDays)
+    local mailId = select(1, MailManager:SendGlobalMail(title, content, attachments, expireDays))
     if mailId then
         sender:SendHoverText("全服邮件发送成功")
     else
@@ -67,12 +67,12 @@ function MailCommand.sendSystemToPlayer(params, sender)
     local attachments = parseAttachments(params)
     local senderInfo = { name = "系统", id = 0 }
 
-    local mailId = MailManager:SendPersonalMail(recipientUin, title, content, attachments, senderInfo, expireDays)
+    local mailId = select(1, MailManager:SendPersonalMail(recipientUin, title, content, attachments, senderInfo, expireDays))
     if mailId then
         sender:SendHoverText("系统邮件发送给 " .. recipientUin .. " 成功")
     else
         sender:SendHoverText("系统邮件发送给 " .. recipientUin .. " 失败")
-            end
+    end
     return mailId ~= nil
 end
 
@@ -103,7 +103,7 @@ function MailCommand.sendPlayerToPlayer(params, sender)
     local expireDays = tonumber(params["过期天数"])
     local attachments = parseAttachments(params)
 
-    local mailId = MailManager:SendPersonalMail(recipientUin, title, content, attachments, senderInfo, expireDays)
+    local mailId = select(1, MailManager:SendPersonalMail(recipientUin, title, content, attachments, senderInfo, expireDays))
         if mailId then
         sender:SendHoverText("邮件已成功发送给 " .. recipientUin)
         else

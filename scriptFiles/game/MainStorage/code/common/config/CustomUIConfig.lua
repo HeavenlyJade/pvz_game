@@ -1,4 +1,3 @@
-
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local CustomUI      = require(MainStorage.code.common.config_type.custom_ui.CustomUI)    ---@type CustomUI
@@ -75,26 +74,6 @@ local function LoadConfig()
         ["UI名"] = "OnlineRewards",
         ["奖励物品"] = {
             {
-<<<<<<< HEAD
-                ["在线时间"] = 300,
-                ["物品"] = "阳光",
-                ["数量"] = 10000
-            },
-            {
-                ["在线时间"] = 360,
-                ["物品"] = "阳光",
-                ["数量"] = 20000
-            },
-            {
-                ["在线时间"] = 420,
-                ["物品"] = "金币",
-                ["数量"] = 1500
-            },
-            {
-                ["在线时间"] = 480,
-                ["物品"] = "SR碎片",
-                ["数量"] = 1
-=======
                 ["在线时间"] = 0,
                 ["物品"] = "仙人掌",
                 ["数量"] = 30
@@ -103,7 +82,6 @@ local function LoadConfig()
                 ["在线时间"] = 0,
                 ["物品"] = "仙人掌碎片",
                 ["数量"] = 30
->>>>>>> a6ec69c9dc26c9a1446dd65b026b8216a1878da5
             }
         },
         ["ID"] = "在线奖励"
