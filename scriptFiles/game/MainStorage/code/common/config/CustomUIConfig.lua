@@ -1,3 +1,4 @@
+
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local CustomUI      = require(MainStorage.code.common.config_type.custom_ui.CustomUI)    ---@type CustomUI
@@ -28,17 +29,7 @@ local function LoadConfig()
             "道具"
         },
         ["商品"] = {
-            "新手大礼包",
-            "新手进阶礼包",
-            "寒冰射手礼包",
-            "小喷菇礼包",
-            "每周副卡抽奖券",
-            "每周限定抽奖券",
-            "每月限定抽奖券",
-            "每月副卡抽奖券",
-            "能量豆补给包",
-            "副卡抽奖券",
-            "限定抽奖券"
+            "副卡大礼包"
         },
         ["ID"] = "礼包"
     }),
@@ -50,7 +41,8 @@ local function LoadConfig()
             "道具"
         },
         ["商品"] = {
-            "阳光加速包"
+            "昼夜加速卡",
+            "挂机加速卡"
         },
         ["ID"] = "道具"
     }),

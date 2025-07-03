@@ -497,6 +497,7 @@ local function LoadConfig()
         ["显示名"] = "持续伤害提升",
         ["最大等级"] = 10,
         ["技能描述"] = "持续伤害增加",
+        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/大攻击提升.png",
         ["技能品级"] = "SR",
@@ -527,6 +528,7 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 20,
         ["技能描述"] = "伤害增加",
+        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "SR",
@@ -599,6 +601,7 @@ local function LoadConfig()
         ["显示名"] = "射速提升",
         ["最大等级"] = 10,
         ["技能描述"] = "射速增加",
+        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/冷却提升.png",
         ["技能品级"] = "R",
@@ -632,6 +635,7 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 10,
         ["技能描述"] = "伤害增加",
+        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "R",
@@ -665,6 +669,7 @@ local function LoadConfig()
         ["显示名"] = "生命提升",
         ["最大等级"] = 10,
         ["技能描述"] = "生命增加",
+        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/生命提升.png",
         ["技能品级"] = "R",
@@ -736,11 +741,13 @@ local function LoadConfig()
         ["显示名"] = "持续伤害提升",
         ["最大等级"] = 10,
         ["技能描述"] = "持续伤害增加",
+        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_胆小菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/大攻击提升.png",
         ["技能品级"] = "R",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
+        ["提升玩家等级"] = nil,
         ["下一技能"] = {
             "大喷菇"
         },
@@ -748,6 +755,7 @@ local function LoadConfig()
         ["被动词条"] = {
             "持续伤害_词条_胆小菇"
         },
+        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,
@@ -768,6 +776,7 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 10,
         ["技能描述"] = "伤害增加",
+        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_胆小菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "R",
@@ -1449,6 +1458,7 @@ local function LoadConfig()
         ["显示名"] = "射速增加",
         ["最大等级"] = 10,
         ["技能描述"] = "射速增加",
+        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/机枪加特林.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/冷却提升.png",
         ["技能品级"] = "SR",
@@ -1459,6 +1469,7 @@ local function LoadConfig()
         ["被动词条"] = {
             "射速1_词条_高速加特林"
         },
+        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,
@@ -1780,6 +1791,9 @@ local function LoadConfig()
             "副-地刺-词条"
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["地刺碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "0.5*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -1817,6 +1831,9 @@ local function LoadConfig()
             "副-坚果-词条"
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["坚果碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "0.5*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)"
@@ -1862,6 +1879,9 @@ local function LoadConfig()
             "副-樱桃炸弹-词条"
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["樱桃炸弹碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "0.5*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)"
@@ -1907,6 +1927,9 @@ local function LoadConfig()
             nil
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["菜问碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "0.5*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)"
@@ -1952,6 +1975,9 @@ local function LoadConfig()
             "副-豌豆射手-词条"
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["豌豆射手碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "0.5*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)"
@@ -1998,7 +2024,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300",
         ["一键强化素材"] = {
-            ["仙人掌碎片"] = "10+(20*(LVL+10))"
+            ["仙人掌碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
         },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2038,7 +2064,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "1*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["椰子炮碎片"] = ""
+            ["椰子炮碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
         },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2086,6 +2112,9 @@ local function LoadConfig()
             "副-火爆辣椒-词条"
         },
         ["最大经验"] = "1*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["火爆辣椒碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "1*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2132,6 +2161,9 @@ local function LoadConfig()
             "副-辣椒投手-词条"
         },
         ["最大经验"] = "1*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["辣椒投手碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "1*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2178,6 +2210,9 @@ local function LoadConfig()
             "副-钢铁地刺-词条"
         },
         ["最大经验"] = "1*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["钢铁地刺碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "1*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2215,6 +2250,9 @@ local function LoadConfig()
             "副-星星果-词条"
         },
         ["最大经验"] = "1.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["星星果碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "30*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "1.5*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2252,6 +2290,9 @@ local function LoadConfig()
             "副-窝瓜-词条"
         },
         ["最大经验"] = "1.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["窝瓜碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "30*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "1.5*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2298,6 +2339,9 @@ local function LoadConfig()
             "副-魅惑菇-词条"
         },
         ["最大经验"] = "1.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
+        ["一键强化素材"] = {
+            ["魅惑菇碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+        },
         ["升级需求素材"] = {
             ["阳光"] = "30*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
             ["金币"] = "1.5*(max(0,LVL-9)*60-max(0,LVL-10)*30+max(0,LVL-15)*90+max(0,LVL-25)*60+max(0,LVL-35)*60+max(0,LVL-50)*60-max(0,LVL-70)*60)",
