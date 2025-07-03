@@ -150,7 +150,6 @@ end
 
 --鼠标输入
 function Controller.handleMouse( inputObj, flag )
-
     if  Controller.m_enableMove ~= true then
         return
     end

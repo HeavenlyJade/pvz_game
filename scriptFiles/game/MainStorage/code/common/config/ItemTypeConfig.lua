@@ -521,6 +521,7 @@ local function LoadConfig()
     }),
     ["副卡抽奖券"] = ItemType.New({
         ["名字"] = "副卡抽奖券",
+        ["图标"] = "sandboxId://textures/items/抽奖券.png",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
         ["强化材料增加倍率"] = 0,
@@ -582,6 +583,9 @@ local function LoadConfig()
         ["是货币"] = true,
         ["货币序号"] = 2,
         ["获得音效"] = "sandboxId://soundeffect/moneyfalls.ogg",
+        ["获得时执行指令"] = {
+            ""
+        },
         ["取消获得物品"] = false
     }),
     ["阳光"] = ItemType.New({

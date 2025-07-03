@@ -480,7 +480,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["攻击1_词条_大喷菇"] = TagType.New({
         ["名字"] = "攻击1_词条_大喷菇",
@@ -512,7 +513,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["射速1_词条_小喷菇"] = TagType.New({
         ["名字"] = "射速1_词条_小喷菇",
@@ -554,7 +556,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["攻击1_词条_小喷菇"] = TagType.New({
         ["名字"] = "攻击1_词条_小喷菇",
@@ -586,7 +589,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["生命1_词条_小喷菇"] = TagType.New({
         ["名字"] = "生命1_词条_小喷菇",
@@ -612,7 +616,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["持续伤害_词条_胆小菇"] = TagType.New({
         ["名字"] = "持续伤害_词条_胆小菇",
@@ -647,7 +652,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["攻击1_词条_胆小菇"] = TagType.New({
         ["名字"] = "攻击1_词条_胆小菇",
@@ -679,7 +685,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["减速1_词条_寒冰射手"] = TagType.New({
         ["名字"] = "减速1_词条_寒冰射手",
@@ -724,7 +731,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["攻击1_词条_寒冰射手"] = TagType.New({
         ["名字"] = "攻击1_词条_寒冰射手",
@@ -756,7 +764,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["生命1_词条_寒冰射手"] = TagType.New({
         ["名字"] = "生命1_词条_寒冰射手",
@@ -782,7 +791,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["冷冻1_词条_寒冰加特林"] = TagType.New({
         ["名字"] = "冷冻1_词条_寒冰加特林",
@@ -827,7 +837,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["减速1_词条_寒冰加特林"] = TagType.New({
         ["名字"] = "减速1_词条_寒冰加特林",
@@ -869,7 +880,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["持续伤害_词条_寒冰加特林"] = TagType.New({
         ["名字"] = "持续伤害_词条_寒冰加特林",
@@ -904,7 +916,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["攻击1_词条_寒冰加特林"] = TagType.New({
         ["名字"] = "攻击1_词条_寒冰加特林",
@@ -936,7 +949,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["攻击1_词条_火焰豌豆"] = TagType.New({
         ["名字"] = "攻击1_词条_火焰豌豆",
@@ -968,7 +982,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["射速1_词条_三头豌豆"] = TagType.New({
         ["名字"] = "射速1_词条_三头豌豆",
@@ -1052,7 +1067,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["射速1_词条_高速加特林"] = TagType.New({
         ["名字"] = "射速1_词条_高速加特林",
@@ -1136,7 +1152,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["攻击1_词条_双头豌豆"] = TagType.New({
         ["名字"] = "攻击1_词条_双头豌豆",
@@ -1168,7 +1185,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["射速1_词条_豌豆射手"] = TagType.New({
         ["名字"] = "射速1_词条_豌豆射手",
@@ -1210,7 +1228,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["攻击1_词条_豌豆射手"] = TagType.New({
         ["名字"] = "攻击1_词条_豌豆射手",
@@ -1249,7 +1268,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["生命1_词条_豌豆射手"] = TagType.New({
         ["名字"] = "生命1_词条_豌豆射手",
@@ -1275,7 +1295,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["副-地刺-词条"] = TagType.New({
         ["名字"] = "副-地刺-词条",
@@ -1441,7 +1462,8 @@ local function LoadConfig()
                     }
                 }
             }
-        }
+        },
+        ["各级描述"] = nil
     }),
     ["副-樱桃炸弹-词条"] = TagType.New({
         ["名字"] = "副-樱桃炸弹-词条",

@@ -1441,8 +1441,10 @@ function gg.eval(expr)
         end
 
         parseAtom = function()
-            -- 支持 max/min 函数
+            -- 支持 max/min/clamp 函数
             local func3 = expr:sub(pos, pos+2)
+            local func5 = expr:sub(pos, pos+4)
+            
             if func3 == "max" or func3 == "min" then
                 pos = pos + 3
                 -- 跳过函数名后的空白字符
@@ -1478,6 +1480,47 @@ function gg.eval(expr)
                     return math.max(unpack(args))
                 else
                     return math.min(unpack(args))
+                end
+            elseif func5 == "clamp" then
+                pos = pos + 5
+                -- 跳过函数名后的空白字符
+                while pos <= #expr and expr:sub(pos, pos):match("%s") do
+                    pos = pos + 1
+                end
+                
+                if pos > #expr or expr:sub(pos, pos) ~= "(" then
+                    error("Missing '(' after clamp function name")
+                end
+                pos = pos + 1
+                
+                local args = {}
+                -- 解析第一个参数
+                if pos <= #expr and expr:sub(pos, pos) ~= ")" then
+                    args[1] = parseExpr()
+                    
+                    -- 解析后续参数
+                    while pos <= #expr and expr:sub(pos, pos) == "," do
+                        pos = pos + 1
+                        if pos <= #expr then
+                            args[#args+1] = parseExpr()
+                        end
+                    end
+                end
+                
+                if pos > #expr or expr:sub(pos, pos) ~= ")" then
+                    error("Missing ')' after clamp function arguments")
+                end
+                pos = pos + 1
+                
+                -- clamp(value, min, max) 函数实现
+                if #args >= 3 then
+                    local value, minVal, maxVal = args[1], args[2], args[3]
+                    -- 使用与 math.clamp 相同的逻辑
+                    if value < minVal then return minVal end
+                    if value > maxVal then return maxVal end
+                    return value
+                else
+                    error("clamp function requires 3 arguments: clamp(value, min, max)")
                 end
             elseif expr:sub(pos, pos) == "(" then
                 pos = pos + 1

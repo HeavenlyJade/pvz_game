@@ -4,6 +4,7 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 local DummyEntity = require(MainStorage.code.server.entity_types.DummyEntity) ---@type DummyEntity
+local EffectConfig = require(MainStorage.code.common.config.EffectConfig) ---@type EffectConfig
 
 ---@class Graphic:Class
 local Graphic = ClassMgr.Class("Graphic")
@@ -444,10 +445,21 @@ local loaders = {
 }
 
 --- 加载特效配置
----@param effectsData table[]|nil 特效配置数组
+---@param effectsData table[]|string|nil 特效配置数组或特效模板名称
 ---@return Graphic[] 特效实例数组
 local function Load(effectsData)
     if not effectsData then return {} end
+    
+    -- 如果是字符串，则作为特效模板名称处理
+    if type(effectsData) == "string" then
+        local templateEffects = EffectConfig.Get(effectsData)
+        if templateEffects then
+            effectsData = templateEffects
+        else
+            print("警告：未找到特效模板: " .. effectsData)
+            return {}
+        end
+    end
     
     local effects = {}
     for _, effectData in ipairs(effectsData) do
@@ -462,6 +474,14 @@ local function Load(effectsData)
     return effects
 end
 
+--- 从特效模板加载特效
+---@param templateName string 特效模板名称
+---@return Graphic[] 特效实例数组
+local function LoadFromTemplate(templateName)
+    return Load(templateName)
+end
+
 loaders["Load"] = Load
+loaders["LoadFromTemplate"] = LoadFromTemplate
 
 return loaders

@@ -419,14 +419,32 @@ function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
 
         -- === 新增：检查强化资源是否足够 ===
         local canAffordUpgrade = self:CanAffordUpgrade(skill, skillLevel + 1)
-        -- === 新增：检查一键强化是否至少能升一级 ===
+        -- === 修复：检查一键强化按钮是否应该显示 ===
         local upgradeAllData = self:CalculateUpgradeAllCost(skill.name)
-        local canAffordUpgradeAll = upgradeAllData and upgradeAllData.canUpgrade
+        local shouldShowUpgradeAllButton = false
+        
+        -- 判断一键强化按钮是否显示（只要有配置就显示，让玩家点击获得反馈）
+        if upgradeAllData then
+            if upgradeAllData.errorType == "NO_CONFIG" then
+                -- 真正没有配置：不显示按钮
+                shouldShowUpgradeAllButton = false
+            elseif upgradeAllData.errorType == "MAX_LEVEL_REACHED" then
+                -- 已达最大等级：不显示按钮（已满级无需强化）
+                shouldShowUpgradeAllButton = false
+            else
+                -- 有配置（不管资源是否足够）：都显示按钮，让玩家点击获得具体反馈
+                shouldShowUpgradeAllButton = true
+            end
+        else
+            -- 向后兼容：如果返回nil，默认为无配置，不显示按钮
+            shouldShowUpgradeAllButton = false
+        end
 
-        -- 强化按钮：未满级且资源足够时显示
+        -- 强化按钮：未满级时显示
         local showUpgrade = not isMaxLevel
         self:_setButtonVisible(self.SubcardEnhancementButton, showUpgrade, canAffordUpgrade)
-        self:_setButtonVisible(self.SubcardAllEnhancementButton, showUpgrade, canAffordUpgradeAll)
+        -- === 修复：一键强化按钮：未满级且有配置时显示，始终可点击 ===
+        self:_setButtonVisible(self.SubcardAllEnhancementButton, showUpgrade and shouldShowUpgradeAllButton, true)
         -- 升星按钮：未满星时显示
         local showUpgradeStar = currentStar < maxStar
         -- self:_setButtonVisible(self.SubcardUpgradeStarButton, showUpgradeStar, true)
@@ -2592,7 +2610,6 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
         
         -- 为每个有效物品设置UI
         for index, item in ipairs(validItems) do
-            gg.log("设置物品:", item.materialName, "消耗:", item.cost, "索引:", index)
             self.subCardEnhancementList:GetChild(index):SetItemCost(item.itemConfig, self:GetItemAmount(item.materialName), item.cost)
         end
     else
@@ -3010,7 +3027,7 @@ end
 
 
 
--- 计算一键强化的总消耗（逐级检查资源限制）
+-- 计算一键强化的下一级所需资源
 function CardsGui:CalculateUpgradeAllCost(skillName)
     local skillType = SkillTypeConfig.Get(skillName)
     if not skillType then
@@ -3020,65 +3037,74 @@ function CardsGui:CalculateUpgradeAllCost(skillName)
     local serverSkill = self.ServerSkills[skillName]
     local currentLevel = serverSkill and serverSkill.level or 0
     local maxLevel = skillType.maxLevel or 1
+    local nextLevel = currentLevel + 1
 
     if currentLevel >= maxLevel then
-        return
+        return {
+            skillName = skillName,
+            currentLevel = currentLevel,
+            maxLevel = maxLevel,
+            nextLevel = currentLevel,
+            canUpgrade = false,
+            canFullUpgrade = false,
+            nextLevelCost = {},
+            availableResources = {},
+            limitingResource = nil,
+            isResourceLimited = false,
+            hasConfig = true,
+            hasResourceCost = true,
+            errorType = "MAX_LEVEL_REACHED"
+        }
     end
 
+    -- 检查下一级是否有一键强化配置
+    local nextLevelCost = skillType:GetOneKeyUpgradeCostsAtLevel(nextLevel)
+    if not nextLevelCost or not next(nextLevelCost) then
+        return {
+            skillName = skillName,
+            hasConfig = false,
+            hasResourceCost = false,
+            errorType = "NO_CONFIG"
+        }
+    end
 
-    -- 获取玩家当前拥有的资源（创建副本，避免修改原始数据）
+    -- 检查是否有实际的资源消耗
+    local hasActualResourceCost = false
+    local processedCost = {}
+    
+    for resourceName, amount in pairs(nextLevelCost) do
+        local consumeAmount = math.abs(amount)
+        if consumeAmount > 0 then
+            hasActualResourceCost = true
+            processedCost[resourceName] = consumeAmount
+        end
+    end
+    
+    if not hasActualResourceCost then
+        return {
+            skillName = skillName,
+            hasConfig = true,
+            hasResourceCost = false,
+            errorType = "NO_RESOURCE_COST"
+        }
+    end
+
+    -- 获取玩家当前拥有的资源
     local availableResources = {}
     for resourceName, amount in pairs(self.playerInventory or {}) do
         availableResources[resourceName] = amount
     end
 
-    -- 逐级计算消耗，找到最高可达等级
-    local cumulativeCost = {}  -- 累计总消耗
-    local levelDetails = {}    -- 每一级的详细信息
-    local maxAchievableLevel = currentLevel  -- 最高可达等级
-    local isResourceLimited = false  -- 是否受资源限制
-    local limitingResource = nil     -- 限制资源名称
-
-    for level = currentLevel, maxLevel do
-        local levelCost = skillType:GetOneKeyUpgradeCostsAtLevel(level)
-
-        if levelCost then
-            -- 检查这一级是否有足够资源
-            local canUpgradeThisLevel = true
-            local thisLevelCost = {}
-
-            for resourceName, amount in pairs(levelCost) do
-                local consumeAmount = math.abs(amount)
-                thisLevelCost[resourceName] = consumeAmount
-
-                -- 检查累计消耗后是否还有足够资源
-                local totalNeeded = (cumulativeCost[resourceName] or 0) + consumeAmount
-                local available = availableResources[resourceName] or 0
-
-                if available < totalNeeded then
-                    canUpgradeThisLevel = false
-                    isResourceLimited = true
-                    limitingResource = resourceName
-                    break
-                end
-
-            end
-
-            if canUpgradeThisLevel then
-                -- 更新累计消耗
-                local levelInfo = {}
-                for resourceName, consumeAmount in pairs(thisLevelCost) do
-                    cumulativeCost[resourceName] = (cumulativeCost[resourceName] or 0) + consumeAmount
-                    table.insert(levelInfo, resourceName .. ":" .. consumeAmount)
-                end
-
-                maxAchievableLevel = level
-                if #levelInfo > 0 then
-                    levelDetails[level] = "等级" .. (level-1) .. "→" .. level .. " [" .. table.concat(levelInfo, ", ") .. "]"
-                end
-            else
-                break
-            end
+    -- 检查是否有足够资源升级下一级
+    local canUpgrade = true
+    local limitingResource = nil
+    
+    for resourceName, needAmount in pairs(processedCost) do
+        local available = availableResources[resourceName] or 0
+        if available < needAmount then
+            canUpgrade = false
+            limitingResource = resourceName
+            break
         end
     end
 
@@ -3087,29 +3113,16 @@ function CardsGui:CalculateUpgradeAllCost(skillName)
         skillName = skillName,
         currentLevel = currentLevel,
         maxLevel = maxLevel,
-        maxAchievableLevel = maxAchievableLevel,
-        canUpgrade = maxAchievableLevel > currentLevel,
-        canFullUpgrade = maxAchievableLevel == maxLevel,
-        cumulativeCost = cumulativeCost,
+        nextLevel = nextLevel,
+        canUpgrade = canUpgrade,
+        canFullUpgrade = nextLevel == maxLevel and canUpgrade,
+        nextLevelCost = processedCost,
         availableResources = availableResources,
         limitingResource = limitingResource,
-        isResourceLimited = isResourceLimited
+        isResourceLimited = not canUpgrade,
+        hasConfig = true,
+        hasResourceCost = true
     }
-
-    -- 计算下一级所需资源（如果适用）
-    if maxAchievableLevel + 1 <= maxLevel and limitingResource then
-        local nextLevelCost = skillType:GetCostAtLevel(maxAchievableLevel + 1)
-        if nextLevelCost and nextLevelCost[limitingResource] then
-            local nextLevelNeed = math.abs(nextLevelCost[limitingResource])
-            local totalNeedForNext = (cumulativeCost[limitingResource] or 0) + nextLevelNeed
-            local missing = totalNeedForNext - (availableResources[limitingResource] or 0)
-            result.nextLevelMissing = {
-                resource = limitingResource,
-                need = nextLevelNeed,
-                missing = missing
-            }
-        end
-    end
 
     return result
 end
@@ -3120,10 +3133,39 @@ function CardsGui:ShowUpgradeConfirmDialog(skillName)
 
     -- 计算升级数据
     local upgradeData = self:CalculateUpgradeAllCost(skillName)
-    if not upgradeData then return end
+    
+    -- === 新增：处理不同的错误情况 ===
+    if not upgradeData then 
+        -- 向后兼容：如果返回nil，默认为无配置
+        self:ShowOneKeyUpgradeNotConfiguredMessage(skillName)
+        return 
+    elseif upgradeData.errorType then
+        -- 根据具体错误类型显示相应提示
+        if upgradeData.errorType == "NO_CONFIG" then
+            self:ShowOneKeyUpgradeNotConfiguredMessage(skillName)
+        elseif upgradeData.errorType == "NO_RESOURCE_COST" then
+            self:ShowOneKeyUpgradeNoResourceCostMessage(skillName)
+        elseif upgradeData.errorType == "MAX_LEVEL_REACHED" then
+            self:ShowOneKeyUpgradeMaxLevelMessage(skillName)
+        end
+        return
+    elseif upgradeData.canUpgrade == false then
+        -- === 新增：资源不足的情况 ===
+        self:ShowOneKeyUpgradeInsufficientResourcesMessage(upgradeData)
+        return
+    end
 
+    -- 正常情况：显示确认对话框
     -- 保存当前升级数据
     self.currentUpgradeData = upgradeData
+
+    -- === 新增：确保确认按钮可见 ===
+    if self.ConfirmButton then
+        self.ConfirmButton:SetVisible(true)
+    end
+    if self.CancelButton then
+        self.CancelButton:SetVisible(true)
+    end
 
     -- 生成显示内容
     local contentText = self:GenerateUpgradeContentText(upgradeData)
@@ -3144,17 +3186,17 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
 
     if upgradeData.canFullUpgrade then
         table.insert(lines, string.format("等级：%d → %d (满级)",
-            upgradeData.currentLevel, upgradeData.maxAchievableLevel))
+            upgradeData.currentLevel, upgradeData.nextLevel))
     else
-        table.insert(lines, string.format("等级：%d → %d (最高可达/满级%d)",
-            upgradeData.currentLevel, upgradeData.maxAchievableLevel, upgradeData.maxLevel))
+        table.insert(lines, string.format("等级：%d → %d",
+            upgradeData.currentLevel, upgradeData.nextLevel))
     end
 
     table.insert(lines, "")
 
     -- 检查是否可以升级
     if not upgradeData.canUpgrade then
-        table.insert(lines, "❌ 无法升级任何等级，资源不足")
+        table.insert(lines, "❌ 无法升级到下一级，资源不足")
         if upgradeData.limitingResource then
             local available = upgradeData.availableResources[upgradeData.limitingResource] or 0
             table.insert(lines, string.format("💰 限制资源：%s (拥有%d)", upgradeData.limitingResource, available))
@@ -3163,12 +3205,12 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
     end
 
     -- 消耗资源列表
-    table.insert(lines, "消耗资源：")
+    table.insert(lines, "下一级所需资源：")
 
-    if next(upgradeData.cumulativeCost) then
+    if next(upgradeData.nextLevelCost) then
         -- 按资源名称排序
         local sortedResources = {}
-        for resourceName, amount in pairs(upgradeData.cumulativeCost) do
+        for resourceName, amount in pairs(upgradeData.nextLevelCost) do
             table.insert(sortedResources, {name = resourceName, amount = amount})
         end
         table.sort(sortedResources, function(a, b)
@@ -3190,13 +3232,9 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
 
     -- 升级结果提示
     if upgradeData.canFullUpgrade then
-        table.insert(lines, "🎉 可以强化到满级！")
-    elseif upgradeData.isResourceLimited then
-        table.insert(lines, string.format("⚠️ 资源限制，只能强化到等级%d", upgradeData.maxAchievableLevel))
-        if upgradeData.nextLevelMissing then
-            table.insert(lines, string.format("再升一级还需：%s %d个",
-                upgradeData.nextLevelMissing.resource, upgradeData.nextLevelMissing.missing))
-        end
+        table.insert(lines, "🎉 升级后将达到满级！")
+    else
+        table.insert(lines, string.format("✅ 可以升级到等级%d", upgradeData.nextLevel))
     end
 
     return table.concat(lines, "\n")
@@ -3209,7 +3247,7 @@ function CardsGui:OnConfirmUpgrade()
     end
 
     local skillName = self.currentUpgradeData.skillName
-    local targetLevel = self.currentUpgradeData.maxAchievableLevel
+    local targetLevel = self.currentUpgradeData.nextLevel
 
     -- 发送升级请求到服务器，包含目标强化等级
     gg.network_channel:FireServer({
@@ -3224,7 +3262,14 @@ end
 
 -- 取消升级
 function CardsGui:OnCancelUpgrade()
-
+    -- === 新增：恢复确认按钮的可见性 ===
+    if self.ConfirmButton then
+        self.ConfirmButton:SetVisible(true)
+    end
+    if self.CancelButton then
+        self.CancelButton:SetVisible(true)
+    end
+    
     -- 隐藏确认对话框
     self:HideUpgradeConfirmDialog()
 end
@@ -3237,6 +3282,114 @@ function CardsGui:HideUpgradeConfirmDialog()
 
     -- 清除临时数据
     self.currentUpgradeData = nil
+end
+
+-- === 新增：显示一键强化未配置的提示信息 ===
+function CardsGui:ShowOneKeyUpgradeNotConfiguredMessage(skillName)
+    -- 获取技能配置来显示友好的技能名称
+    local skillType = SkillTypeConfig.Get(skillName)
+    local displayName = skillType and skillType.displayName or skillName
+    
+    -- 构建提示消息
+    local message = string.format("【%s】未配置一键强化资源\n\n该技能暂不支持一键强化功能\n请使用单次强化按钮进行升级", displayName)
+    
+    self:ShowOneKeyUpgradeMessage(message, displayName, "未配置一键强化")
+end
+
+-- === 新增：显示一键强化无资源消耗的提示信息 ===
+function CardsGui:ShowOneKeyUpgradeNoResourceCostMessage(skillName)
+    -- 获取技能配置来显示友好的技能名称
+    local skillType = SkillTypeConfig.Get(skillName)
+    local displayName = skillType and skillType.displayName or skillName
+    
+    -- 构建提示消息
+    local message = string.format("【%s】一键强化无资源消耗\n\n该技能的一键强化配置无实际资源消耗\n请使用单次强化按钮进行升级", displayName)
+    
+    self:ShowOneKeyUpgradeMessage(message, displayName, "无资源消耗")
+end
+
+-- === 新增：显示技能已达最大等级的提示信息 ===
+function CardsGui:ShowOneKeyUpgradeMaxLevelMessage(skillName)
+    -- 获取技能配置来显示友好的技能名称
+    local skillType = SkillTypeConfig.Get(skillName)
+    local displayName = skillType and skillType.displayName or skillName
+    
+    -- 构建提示消息
+    local message = string.format("【%s】已达最大等级\n\n该技能已经达到最高等级\n无需继续强化", displayName)
+    
+    self:ShowOneKeyUpgradeMessage(message, displayName, "已达最大等级")
+end
+
+-- === 新增：显示一键强化资源不足的提示信息 ===
+function CardsGui:ShowOneKeyUpgradeInsufficientResourcesMessage(upgradeData)
+    local skillType = SkillTypeConfig.Get(upgradeData.skillName)
+    local displayName = skillType and skillType.displayName or upgradeData.skillName
+    
+    -- 构建资源不足的详细信息
+    local resourceLines = {}
+    table.insert(resourceLines, string.format("【%s】一键强化资源不足", displayName))
+    table.insert(resourceLines, "")
+    
+    if upgradeData.currentLevel < upgradeData.maxLevel then
+        table.insert(resourceLines, string.format("升级目标：等级 %d → %d", 
+            upgradeData.currentLevel, upgradeData.nextLevel))
+    else
+        table.insert(resourceLines, "技能已达最大等级")
+    end
+    
+    table.insert(resourceLines, "")
+    table.insert(resourceLines, "下一级所需资源：")
+    
+    -- 显示具体的资源需求
+    if upgradeData.nextLevelCost and next(upgradeData.nextLevelCost) then
+        local sortedResources = {}
+        for resourceName, amount in pairs(upgradeData.nextLevelCost) do
+            table.insert(sortedResources, {name = resourceName, amount = amount})
+        end
+        table.sort(sortedResources, function(a, b) return a.name < b.name end)
+        
+        for _, resource in ipairs(sortedResources) do
+            local available = upgradeData.availableResources[resource.name] or 0
+            local sufficient = available >= resource.amount
+            local status = sufficient and "✅" or "❌"
+            table.insert(resourceLines, string.format("%s %s：需要 %d，拥有 %d，缺少 %d",
+                status, resource.name, resource.amount, available, 
+                math.max(0, resource.amount - available)))
+        end
+    end
+    
+    table.insert(resourceLines, "")
+    table.insert(resourceLines, "建议：收集足够资源后再尝试一键强化")
+    
+    local message = table.concat(resourceLines, "\n")
+    self:ShowOneKeyUpgradeMessage(message, displayName, "资源不足")
+end
+
+-- === 新增：通用的一键强化消息显示方法 ===
+function CardsGui:ShowOneKeyUpgradeMessage(message, displayName, logType)
+    -- 使用确认强化对话框显示提示信息
+    if self.ConfirmStrengthenUI then
+        -- 设置提示内容
+        if self.ConfirmStrengthenUI.node.content then
+            self.ConfirmStrengthenUI.node.content.Title = message
+        end
+        
+        -- 显示对话框
+        self.ConfirmStrengthenUI.node.Visible = true
+        
+        -- === 隐藏确认按钮，只显示取消按钮 ===
+        if self.ConfirmButton then
+            self.ConfirmButton:SetVisible(false)
+        end
+        if self.CancelButton then
+            self.CancelButton:SetVisible(true)
+        end
+        
+        -- gg.log("显示一键强化提示:", displayName, "类型:", logType)
+    else
+        -- 备用方案：如果确认对话框不可用，直接记录日志
+        -- gg.log("❌ 一键强化问题，技能:", displayName, "类型:", logType)
+    end
 end
 
 -- === 新增方法：统一的副卡点击处理函数 ===
@@ -3417,15 +3570,15 @@ function CardsGui:UpdateMainCardResourceCost(attributeButton, skill, currentLeve
             status, resource.name, resource.current, resource.need)
         table.insert(costTexts, costText)
 
-        gg.log("主卡资源消耗:", skill.name, "升级到", nextLevel,
-            resource.name, "需要", resource.need, "拥有", resource.current, "足够", sufficient)
+        -- gg.log("主卡资源消耗:", skill.name, "升级到", nextLevel,
+        --     resource.name, "需要", resource.need, "拥有", resource.current, "足够", sufficient)
     end
 
     -- 更新UI显示
     local costText = table.concat(costTexts, "\n")
     costContainer.Title = costText
 
-    gg.log("主卡货币消耗显示已更新:", skill.name, "等级:", currentLevel, "->", nextLevel)
+    -- gg.log("主卡货币消耗显示已更新:", skill.name, "等级:", currentLevel, "->", nextLevel)
     return allSufficient
 end
 
@@ -3456,7 +3609,7 @@ function CardsGui:UpdateSubCardLevelDisplay(skillName, skillLevel)
         end
     end
 
-    gg.log("副卡强化等级显示已更新:", skillName, "等级:", skillLevel)
+    -- gg.log("副卡强化等级显示已更新:", skillName, "等级:", skillLevel)
 end
 
 -- === 新增：检查技能升级资源的通用函数 ===
