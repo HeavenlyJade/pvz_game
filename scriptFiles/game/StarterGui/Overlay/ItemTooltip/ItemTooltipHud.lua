@@ -14,7 +14,8 @@ local ItemTooltipHud = ClassMgr.Class("ItemTooltipHud", ViewBase)
 local uiConfig = {
     uiName = "ItemTooltipHud",
     layer = 0,
-    hideOnInit = true
+    hideOnInit = true,
+    closeHuds = false
 }
 
 function ItemTooltipHud:OnInit(node, config)
@@ -42,16 +43,28 @@ function ItemTooltipHud:OnInit(node, config)
 end
 
 function ItemTooltipHud:DisplayItem(item, x, y)
+    local itemType = item
+    if ClassMgr.Is(item, "Item") then
+        itemType = item.itemType
+    end
     self.frame.node.Position = Vector2.New(x, y)
-    self.icon.node["ItemIcon"].Icon = item.itemType.icon
-    local amount = gg.FormatLargeNumber(item.amount)
+    if itemType.icon then
+        self.icon.node["ItemIcon"].Icon = itemType.icon
+    end
+    local amount = gg.FormatLargeNumber(item.amount or 1)
     if amount == "1" then
         self.icon.node["Amount"].Title = ""
     else
         self.icon.node["Amount"].Title = amount
     end
-    self.title.node.Title = item.itemType.name
-    self.description.node.Title = item.itemType.description
+    if itemType.rank then
+        self.icon.node.Icon = itemType.rank.normalImgBg
+        if self.icon.node["Frame"] then
+            self.icon.node["Frame"].Icon = itemType.rank.normalImgFrame
+        end
+    end
+    self.title.node.Title = itemType.name
+    self.description.node.Title = itemType.description
     self.useButton:SetVisible(false)
     self:Open()
 end

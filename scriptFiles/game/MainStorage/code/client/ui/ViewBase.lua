@@ -5,12 +5,13 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 
 local displayingUI = {}
-local allUI = {}
+local hiddenHuds = {} -- 记录被隐藏的layer=0界面
 
 ---@class ViewConfig
 ---@field uiName string 界面名称
 ---@field hideOnInit boolean 是否在初始化时隐藏
 ---@field layer number 0=主界面Hud， >1=GUI界面。 GUI在打开时关闭其他同layer的GUI
+---@field closeHuds boolean
 
 ---@class ViewBase:Class
 ---@field New fun(node: SandboxNode, config: ViewConfig): ViewBase
@@ -19,12 +20,12 @@ local ViewBase = ClassMgr.Class("ViewBase")
 ViewBase.topGui = nil ---@type ViewBase
 ViewBase.UiBag = nil ---@type UiBag
 ViewBase.UIConfirm = nil ---@type UIConfirm
-
+ViewBase.allUI = {}
 ---@generic T : ViewBase
 ---@param name string
 ---@return T
 function ViewBase.GetUI(name)
-    return allUI[name]
+    return ViewBase.allUI[name]
 end
 
 ---@param visible boolean 是否锁定鼠标
@@ -120,17 +121,24 @@ function ViewBase:OnInit(node, config)
     self.node = node ---@type SandboxNode
     self.openSound = self.node:GetAttribute("打开音效")
     self.closeSound = self.node:GetAttribute("关闭音效")
+    self.bgmMusic = self.node:GetAttribute("背景音乐")
     self.hideOnInit = config.hideOnInit == nil and true or config.hideOnInit
     self.layer = config.layer == nil and 1 or config.layer
+    self.closeHuds = config.closeHuds
+    if self.closeHuds == nil then
+        self.closeHuds = self.layer >= 1
+    end
     self.displaying = false
     self.isOnTop = false
-    allUI[self.className] = self
+    ViewBase.allUI[self.className] = self
     ViewBase[self.className] = self
 
     if self.hideOnInit then
-        self:Close()
+        self:SetVisible(false)
+        self.displaying = false
     else
-        self:Open()
+        self:SetVisible(true)
+        self.displaying = true
     end
 end
 
@@ -151,13 +159,30 @@ function ViewBase:Close()
     if not self.displaying then
         return
     end
+    if self.bgmMusic and self.bgmMusic ~= "" then
+        ClientEventManager.Publish("PlaySound", {
+            close = true,
+            key = "bgm",
+            layer = self.layer + 5,
+        })
+    end
     if self.closeSound then
         ClientEventManager.Publish("PlaySound", {
             soundAssetId = self.closeSound
         })
     end
     if self.layer > 0 then
-        ViewBase.LockMouseVisible(false)
+        -- 只有没有任何layer>=1的界面显示时才隐藏鼠标
+        local hasOtherLayerUI = false
+        for _, ui in pairs(ViewBase.allUI) do
+            if ui ~= self and ui.layer and ui.layer > 0 and ui.displaying then
+                hasOtherLayerUI = true
+                break
+            end
+        end
+        if not hasOtherLayerUI then
+            ViewBase.LockMouseVisible(false)
+        end
     end
     if displayingUI[self.layer] == self then
         displayingUI[self.layer] = nil
@@ -179,14 +204,33 @@ function ViewBase:Close()
         end
     end
     self.displaying = false
+    if self.closeHuds then
+        for _, ui in ipairs(hiddenHuds) do
+            if ui and ui.displaying then
+                ui:SetVisible(true)
+            end
+        end
+        hiddenHuds = {}
+    end
     if self.closeCb then
         self.closeCb()
     end
 end
 
 function ViewBase:Open()
+    if self.displaying then
+        return
+    end
     self.displaying = true
     self:SetVisible(true)
+    if self.bgmMusic ~= "" then
+        ClientEventManager.Publish("PlaySound", {
+            soundAssetId = self.bgmMusic,
+            key = "bgm",
+            layer = self.layer + 5,
+            volume = 0.2
+        })
+    end
     ClientEventManager.Publish("PlaySound", {
         soundAssetId = self.openSound
     })
@@ -215,6 +259,15 @@ function ViewBase:Open()
             ViewBase.topGui = self
         end
     end
+    if self.closeHuds then
+        -- 隐藏所有正在显示的layer=0界面
+        for _, ui in pairs(ViewBase.allUI) do
+            if ui.layer == 0 and ui.displaying and ui ~= self then
+                ui:SetVisible(false)
+                table.insert(hiddenHuds, ui)
+            end
+        end
+    end
     if self.openCb then
         self.openCb()
     end
@@ -233,7 +286,7 @@ function ViewBase:DestroyComponent(component)
             break
         end
     end
-
+    
     -- Destroy the component's node
     if component.node then
         component.node:Destroy()

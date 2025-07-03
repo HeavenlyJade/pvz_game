@@ -49,14 +49,14 @@ function SpawningWave:OnInit(data)
     self.maxCount = data["最大数量"] or 0
     self.startTime = data["开始时间"] or 0
     self.selector = WeightedRandomSelector.New(self.mobs, function(mob) return mob.weight end)
-
+    
     -- 计算实际要刷新的怪物数量
     if self.maxCount > 0 then
         self.actualCount = math.floor(self.count + (self.maxCount - self.count) * math.random())
     else
         self.actualCount = self.count
     end
-
+    
     -- 计算每秒刷新的怪物数量
     self.spawnsPerSecond = self.actualCount / self.duration
 end
@@ -86,10 +86,10 @@ function SpawningWave:TrySpawn(deltaTime, level, levelInst, spawnedCount)
     if math.random() < spawnCountF - spawnCount then
         spawnCount = spawnCount + 1
     end
-
+    
     -- 确保不超过剩余数量
     spawnCount = math.min(spawnCount, self.actualCount - spawnedCount)
-
+    
     -- 生成怪物
     local spawnedMobs = {} ---@type Mob[]
     for i = 1, spawnCount do
@@ -111,7 +111,7 @@ function SpawningWave:TrySpawn(deltaTime, level, levelInst, spawnedCount)
             end
         end
     end
-
+    
     -- 返回是否完成生成、生成的怪物列表和更新后的生成数量
     return spawnedCount >= self.actualCount, spawnedMobs, spawnedCount
 end
@@ -141,7 +141,7 @@ function Wave:OnInit(data)
     self.startCommands = data["开始时执行指令"]
     self.healthSum = 0
     self.waveHealths = {} ---@type table<number, number>
-
+    
     -- 加载怪物等级配置（数组格式：开始等级，结束等级）
     local monsterLevelData = data["怪物等级"] or {1, 1}
     if type(monsterLevelData) == "table" then
@@ -151,7 +151,7 @@ function Wave:OnInit(data)
         self.monsterLevelStart = monsterLevelData
         self.monsterLevelEnd = monsterLevelData
     end
-
+    
     -- 加载掉落物配置
     self.dropItems = data["掉落物"] or {} ---@type DropItemInfo[]
     self.waveImg = data["转波次文字"]
@@ -191,19 +191,19 @@ function Wave:CalculateHealthSum(level)
     for waveIndex, wave in ipairs(self.spawningWaves) do
         local waveHealth = 0
         local weightSum = 0
-
+        
         -- 计算权重总和
         for _, mob in ipairs(wave.mobs) do
             weightSum = weightSum + mob.weight
         end
-
+        
         -- 计算每个怪物的血量贡献
         for _, mob in ipairs(wave.mobs) do
             local mobHealth = mob.mobType:GetStatAtLevel("生命", level)
             local healthContribution = mobHealth * self.attributeMultiplier * wave.count * mob.weight / weightSum
             waveHealth = waveHealth + healthContribution
         end
-
+        
         -- 缓存这个波次的血量
         self.waveHealths[waveIndex] = waveHealth
         self.healthSum = self.healthSum + waveHealth
@@ -252,7 +252,7 @@ function LevelType:OnInit(data)
     self.monsterLevel = data["怪物等级"] or 1 ---@type number
     self.level = data["等级"] or 1 ---@type number
     self.dropModifier = Modifiers.New(data["掉落物数量修改"]) ---@type Modifiers
-
+    
     -- 加载排名掉落物配置
     self.rankRewards = data["排名掉落物"] or {} ---@type RankRewardInfo[]
 
@@ -283,7 +283,7 @@ function LevelType:OnInit(data)
     }
 
     -- 创建关卡实例
-    self.levels = {}
+    self.levels = {} ---@type Level[]
     local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
     local scene = gg.server_scene_list[data["场景"]]
     if scene then
@@ -327,10 +327,10 @@ function LevelType:UpdateMatchTime()
     local currentTime = os.time()
     local deltaTime = currentTime - self.lastUpdateTime
     self.lastUpdateTime = currentTime
-
+    
     if self.remainingTime > 0 then
         self.remainingTime = math.max(0, self.remainingTime - deltaTime)
-
+        
         -- 通知队列中的玩家当前匹配进度
         for _, player in pairs(self.matchQueue) do
             player:SendEvent("MatchProgressUpdate", {
@@ -340,7 +340,7 @@ function LevelType:UpdateMatchTime()
                 remainingTime = self.remainingTime
             })
         end
-
+        
         -- 检查是否可以开始游戏
         if self:CanStartGame() then
             self:StartLevel()
@@ -427,7 +427,7 @@ function LevelType:Queue(player)
     self.matchQueue[player.uin] = player
     self.playerCount = self.playerCount + 1
     player:SendChatText("已加入匹配队列")
-
+    
     -- 如果是第一个玩家，初始化匹配时间
     if self.playerCount == 1 then
         self.remainingTime = (self.maxPlayers - 1) * self.extraPlayerTime
@@ -459,7 +459,7 @@ end
 function LevelType:StartLevel()
     -- 找到一个可用的关卡实例
     local availableLevel = nil
-
+    
     -- 遍历所有关卡实例，找到没有玩家的场景
     for _, level in ipairs(self.levels) do
         if not level.isActive then
@@ -470,7 +470,7 @@ function LevelType:StartLevel()
             end
         end
     end
-
+    
     -- 如果没有找到可用的关卡实例，创建新的
     if not availableLevel then
         local newScene = self.levels[1].scene:Clone()
@@ -482,9 +482,8 @@ function LevelType:StartLevel()
 
     -- 将队列中的玩家添加到关卡
     for _, player in pairs(self.matchQueue) do
-        availableLevel:AddPlayer(player)
+        availableLevel.players[player.uin] = player
     end
-
     -- 清空匹配队列
     self.matchQueue = {}
     self.playerCount = 0
@@ -507,7 +506,7 @@ function LevelType:LeaveQueue(player)
         self.playerCount = self.playerCount - 1
         player:SendChatText("已离开匹配队列")
         player:SendEvent("MatchCancel")
-
+        
         -- 玩家退出时，增加匹配时间
         self.remainingTime = self.remainingTime + self.extraPlayerTime
 
@@ -558,7 +557,7 @@ end
 function LevelType:GetDrops()
     local drops = {} ---@type Item[]
     local seenItems = {} ---@type table<string, boolean>  -- 用于去重
-
+    
     -- 处理所有波次的掉落物
     for _, wave in ipairs(self.waves) do
         for _, dropInfo in ipairs(wave.dropItems) do
@@ -574,7 +573,7 @@ function LevelType:GetDrops()
             end
         end
     end
-
+    
     -- 处理排名掉落物
     for _, rankReward in ipairs(self.rankRewards) do
         for itemTypeId, _ in pairs(rankReward["物品"] or {}) do
@@ -588,8 +587,8 @@ function LevelType:GetDrops()
             end
         end
     end
-
+    
     return drops
 end
 
-return LevelType
+return LevelType 

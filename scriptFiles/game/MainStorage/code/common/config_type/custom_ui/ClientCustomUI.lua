@@ -25,11 +25,16 @@ function ClientCustomUI.Load(node)
 end
 
 function ClientCustomUI:OnInit(node)
+    ViewBase.allUI[node.Name] = self
     local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
     ClientEventManager.Subscribe("ViewCustomUI"..node.Name, function (evt)
         local CustomUIConfig = require(MainStorage.code.common.config.CustomUIConfig) ---@type CustomUIConfig
         local customUI = CustomUIConfig.Get(evt.id)
         customUI.view = self
+        if not customUI.inited then
+            customUI.inited = true
+            customUI:C_InitUI()
+        end
         customUI:C_BuildUI(evt)
         self:Open()
     end)

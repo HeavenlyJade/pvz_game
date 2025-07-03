@@ -12,7 +12,6 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 local ItemRank= ClassMgr.Class("ItemRank")
 
 function ItemRank:OnInit(data)
-    gg.log("ItemRank", data)
     self.name = data["名字"]
     self.color = ColorQuad.New(data["颜色"])
     self.priority = data["优先级"] ---@type number

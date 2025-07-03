@@ -109,7 +109,7 @@ function Item:Load(data)
         self.itemType = data.itype
     end
 
-    if self:IsEquipment() then
+    if self.itemType and self:IsEquipment() then
         if data.quality == nil then
             self.quality = ItemQualityConfig:GetRandomQuality()
         else
@@ -119,6 +119,9 @@ function Item:Load(data)
 end
 
 function Item:IsEquipment()
+    if not self.itemType then
+        print(debug.traceback())
+    end
     return self.itemType.equipmentSlot > 0
 end
 

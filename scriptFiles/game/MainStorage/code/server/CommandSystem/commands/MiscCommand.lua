@@ -13,6 +13,10 @@ end
 function MiscCommand.viewUI(params, player)
     local CustomUIConfig = require(MainStorage.code.common.config.CustomUIConfig) ---@type CustomUIConfig
     local customUI = CustomUIConfig.Get(params["界面ID"])
+    if not params["界面ID"] then
+        gg.log("不存在的界面ID", params["界面ID"])
+        return
+    end
     customUI:S_Open(player)
     return true
 end

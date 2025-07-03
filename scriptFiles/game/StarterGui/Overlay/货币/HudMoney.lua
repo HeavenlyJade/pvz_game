@@ -18,8 +18,9 @@ local HudMoney = ClassMgr.Class("HudMoney", ViewBase)
 
 local uiConfig = {
     uiName = "HudMoney",
-    layer = 0,
+    layer = -1,
     hideOnInit = false,
+    closeHuds = false
 }
 
 ---@class MoneyAddPool

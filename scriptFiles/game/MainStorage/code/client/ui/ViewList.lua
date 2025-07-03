@@ -25,7 +25,6 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
     for _, child in pairs(self.node.Children) do
         local childName = child.Name
         local num = childName:match("_([0-9]+)")
-        -- print("Init ViewList", path, ui.className, num)
         if num then
             if not self.childNameTemplate then
                 local pos = childName:find("_") -- 找到 _ 的位置
@@ -34,6 +33,7 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
             local childPath = self.path .. "/" .. child.Name
             local button = self.onAddElementCb(child, childPath)
             if button then
+                button.node.IsNotifyEventStop = false
                 button.path = childPath
                 local idx = tonumber(num)
                 if idx then
@@ -54,6 +54,10 @@ end
 ---@param index number
 ---@return ViewComponent
 function ViewList:GetChild(index)
+    if index <= 0 then
+        print(debug.traceback("GetChild".. self.path .. tostring(index) .. " index <= 0!"))
+        return nil
+    end
     local child = self.childrens[index]
     if not child then
         self:SetElementSize(index)
@@ -90,6 +94,7 @@ function ViewList:SetElementSize(size)
                 local childPath = self.path .. "/" .. child.Name
                 local button = self.onAddElementCb(child, childPath)
                 if button then
+                    button.node.IsNotifyEventStop = false
                     button.path = childPath
                     button.index = i
                     self.childrens[i] = button

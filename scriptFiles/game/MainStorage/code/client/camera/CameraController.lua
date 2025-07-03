@@ -95,6 +95,11 @@ local _InputBeganEvent = nil
 local _InputEndedEvent = nil
 local _InputChangedEvent = nil
 
+local _cameraLocked = false -- 新增：摄像机锁定标志
+
+local _lastExtremeInputTime = 0 -- 极限输入冷却
+local EXTREME_INPUT_THRESHOLD = 300
+local EXTREME_INPUT_COOLDOWN = 1.0
 
 ClientEventManager.Subscribe("UpdateCameraView", function(data)
     if data.x then
@@ -226,6 +231,11 @@ end
 function CameraController.LaterUpdateClient(dt)
     if not _camera then
         print("CameraController:LaterUpdateClient no camera")
+        return
+    end
+
+    if _cameraLocked then
+        -- 摄像机锁定时不自动更新位置和旋转
         return
     end
 
@@ -591,6 +601,31 @@ function CameraController.EnableSightTouch()
     end
 end
 
+function CameraController.SetCameraAt(pos, rot)
+    local Vec3 = require(MainStorage.code.common.math.Vec3)
+    local Quat = require(MainStorage.code.common.math.Quat)
+    local targetPos = Vec3.new(pos)
+    local targetRot = Quat.new()
+    targetRot:FromEuler(Vec3.new(rot))
+    if _camera then
+        _camera.Position = Vector3.New(targetPos.x, targetPos.y, targetPos.z)
+        _camera.Rotation = Quaternion.New(targetRot.x, targetRot.y, targetRot.z, targetRot.w)
+    end
+    _viewDirty = true
+    _projectionDirty = true
+    _cameraLocked = true -- 新增：锁定摄像机
+end
+
+function CameraController.UnlockCamera()
+    _cameraLocked = false
+    -- 触发一次自动更新，恢复摄像机到当前跟随/第三人称等逻辑
+    if _cameraMode == CameraController.CameraMode.ThirdPerson then
+        CameraController.ThirdPersonUpdate(0)
+    end
+    _viewDirty = true
+    _projectionDirty = true
+end
+
 function CameraController.OnTouchMoved(x, y, touchId)
     _currentTouchPos.x = x
     _currentTouchPos.y = y
@@ -600,10 +635,19 @@ function CameraController.OnTouchMoved(x, y, touchId)
         local currentTime = gg.GetTimeStamp()  -- Use gg.GetTimeStamp() instead of game.TimeService:GetTime()
         local elapsedTime = currentTime - _touchStartTime
 
+        -- 极限防抖：如果瞬时x或y极大，且冷却已过，则直接return
+        if (math.abs(delta.x) > EXTREME_INPUT_THRESHOLD or math.abs(delta.y) > EXTREME_INPUT_THRESHOLD)
+            and (currentTime - _lastExtremeInputTime > EXTREME_INPUT_COOLDOWN) then
+            _lastExtremeInputTime = currentTime
+            return
+        end
+
         if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
             local deltaY = delta.y
-            if not game.MouseService:IsSight() or not game.RunService:IsPC() then
-                deltaY = -deltaY
+            if game.RunService:IsPC() then
+                if not game.MouseService:IsSight() then
+                    deltaY = -deltaY
+                end
             end
             if _alignWhenMoving and _lockedOnTarget then
                 CameraController.InputMove(0, deltaY)

@@ -7,14 +7,54 @@ local  soundNodePoolReady = {}
 -- 记录每个声音的最后播放时间，防止0.1秒内重复播放
 local lastPlayTimes = {}
 
-local keyedSounds = {}
+local keyedSounds = {} ---@type table<number, table<number, Sound>>
 
 local function PlaySound(data)
     local sound = data.soundAssetId
+    local key = data.key
+    local layer = data.layer or 1
+    gg.log("PlaySound", data)
+    if data.close and key then
+        -- 检查是否在0.1秒内刚刚播放过同一个layer的同一个音乐，如果是则不处理关闭事件
+        local soundKey = tostring(key) .. "_" .. tostring(layer)
+        local currentTime = gg.GetTimeStamp()
+        local lastPlayTime = lastPlayTimes[soundKey]
+        gg.log("lastPlayTime", soundKey, lastPlayTimes)
+        if lastPlayTime then
+            gg.log("lastPlayTime", soundKey, currentTime - lastPlayTime)
+        end
+        if lastPlayTime and (currentTime - lastPlayTime) < 0.1 then
+            return
+        end
+        -- 停止该key+layer音效
+        if keyedSounds[key] and keyedSounds[key][layer] then
+            local node = keyedSounds[key][layer]
+            node:StopSound()
+            node.SoundPath = ""
+        else
+            return
+        end
+        -- 恢复上一个被暂停的同key音效（SoundPath不为""）
+        if keyedSounds[key] then
+            local maxLayer, resumeNode = nil, nil
+            for l, node in pairs(keyedSounds[key]) do
+                if l < layer and node and node.SoundPath and node.SoundPath ~= "" then
+                    if not maxLayer or l > maxLayer then
+                        maxLayer = l
+                        resumeNode = node
+                    end
+                end
+            end
+            if resumeNode then
+                print("ResumeSound", resumeNode.Name)
+                resumeNode:ResumeSound()
+            end
+        end
+        return
+    end
     if not sound or sound == "" then
         return
     end
-    local key = data.key
     if type(sound) == "string" then
         sound = sound:gsub("%[(%d+)~(%d+)%]", function(a, b)
             local n, m = tonumber(a), tonumber(b)
@@ -25,21 +65,37 @@ local function PlaySound(data)
         end)
     end
 
+
     local soundNode
     if key then
-        if keyedSounds[key] then
-            soundNode = keyedSounds[key]
+        keyedSounds[key] = keyedSounds[key] or {}
+        -- 停止所有更低layer的同key音效
+        for l, node in pairs(keyedSounds[key]) do
+            if l < layer and node then
+                node:PauseSound()
+            end
+        end
+        if keyedSounds[key][layer] then
+            soundNode = keyedSounds[key][layer]
             -- 如果素材一样且正在播放，则无事发生
             if soundNode.SoundPath == sound then
+                local soundKey = tostring(key) .. "_" .. tostring(layer)
+                local currentTime = gg.GetTimeStamp()
+                local lastPlayTime = lastPlayTimes[soundKey]
+                if lastPlayTime and (currentTime - lastPlayTime) < 0.1 then
+                    return
+                end
+                lastPlayTimes[soundKey] = currentTime
                 return
             end
             soundNode:StopSound()
+            soundNode.SoundPath = ""
         else
             -- 创建新的Sound节点
             soundNode = SandboxNode.new("Sound", game.Players.LocalPlayer.Character) ---@type Sound
-            soundNode.Name = "KeyedSound_" .. tostring(key)
+            soundNode.Name = "KeyedSound_" .. tostring(key) .. "_" .. tostring(layer)
             soundNode.IsLoop = true
-            keyedSounds[key] = soundNode
+            keyedSounds[key][layer] = soundNode
         end
     else
         soundNode = soundNodePoolReady[1]
@@ -48,14 +104,6 @@ local function PlaySound(data)
             return
         end
     end
-
-    -- 检查是否在0.1秒内重复播放同一个声音
-    local currentTime = gg.GetTimeStamp()
-    local lastPlayTime = lastPlayTimes[sound]
-    if lastPlayTime and (currentTime - lastPlayTime) < 0.1 then
-        return
-    end
-    lastPlayTimes[sound] = currentTime
 
     -- 设置音效参数
     soundNode.SoundPath = sound

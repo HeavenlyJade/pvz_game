@@ -1,6 +1,8 @@
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 
 ---@class RoulettePrize
 ---@field itemType string|nil 物品类型
@@ -33,32 +35,107 @@ local Lottery = ClassMgr.Class("Lottery")
 ---@param data table
 function Lottery:OnInit(data)
     self.poolName = data["奖池名"]
-
+    
     -- 概率设置
     self.normalRate = data["普通品级概率"] or 0
     self.rareRate = data["稀有品级概率"] or 0
     self.epicRate = data["史诗品级概率"] or 0
     self.legendaryRate = data["传说品级概率"] or 0
     self.mythicRate = data["神话品级概率"] or 0
-
+    
     -- 保底设置
     self.rarePity = data["稀有保底次数"] or 0
     self.epicPity = data["史诗保底次数"] or 0
     self.legendaryPity = data["传说保底次数"] or 0
     self.mythicPity = data["神话保底次数"] or 0
-
+    
     -- 奖池内容
     self.normalPrizes = data["普通品级"] or {}
     self.rarePrizes = data["稀有品级"] or {}
     self.epicPrizes = data["史诗品级"] or {}
     self.legendaryPrizes = data["传说品级"] or {}
     self.mythicPrizes = data["神话品级"] or {}
+
+    self.giveLaters = {} ---@type table<Player, Item[]>
+    self.giveLaterCbs = {} ---@type table<Player, function>
+
+    ServerEventManager.Subscribe("PlayerLeaveGameEvent", function(event)
+        self:TriggerGiveLater(event.player)
+    end)
+    ServerEventManager.Subscribe("CloseDrawGui", function(event)
+        self:TriggerGiveLater(event.player)
+    end)
+end
+
+function Lottery:TriggerGiveLater(player)
+    if player and self.giveLaterCbs[player] then
+        self.giveLaterCbs[player]()
+        self.giveLaterCbs[player] = nil
+    end
+end
+
+---@param player Player
+---@param count number
+---@param giveLater? boolean
+function Lottery:Draw(player, count, giveLater)
+    if giveLater == nil then
+        giveLater = false
+    end
+    local totalRewards = {}
+    local rewardList = {}
+    for i = 1, count do
+        local reward, rarity = self:DrawAPrize(player)
+        if reward then
+            local itemType = ItemTypeConfig.Get(reward.itemType)
+            if itemType then
+                local item = itemType:ToItem(reward.amount)
+                if giveLater then
+                    if not self.giveLaters[player] then
+                        self.giveLaters[player] = {}
+                    end
+                    table.insert(self.giveLaters[player], item)
+                else
+                    player.bag:GiveItem(item)
+                end
+                player:AddVariable("rarity_".. rarity, 1)
+                if not totalRewards[reward.itemType] then
+                    totalRewards[reward.itemType] = 0
+                end
+                totalRewards[reward.itemType] = totalRewards[reward.itemType] + reward.amount
+                table.insert(rewardList, {
+                    itemType = reward.itemType,
+                    amount = reward.amount,
+                    rarity = rarity
+                })
+            end
+        end
+    end
+    local giveLaterCb  = nil
+    if not giveLater then
+        player:AddVariable("lottery_".. self.poolName, count)
+    else
+        giveLaterCb = function ()
+            if self.giveLaters[player] then
+                player:AddVariable("lottery_".. self.poolName, count)
+                for _, item in ipairs(self.giveLaters[player]) do
+                    player.bag:GiveItem(item)
+                end
+                self.giveLaters[player] = nil
+            end
+            self.giveLaterCbs[player] = nil
+        end
+        self.giveLaterCbs[player] = giveLaterCb
+    end
+    player:SendEvent("LotteryRewards", {
+        rewards = rewardList
+    })
+    return giveLaterCb
 end
 
 ---执行单次抽奖
 ---@param player Player 玩家对象
----@return ItemStack|nil 抽中的奖品
-function Lottery:Draw(player)
+---@return ItemStack|nil, string 抽中的奖品
+function Lottery:DrawAPrize(player)
     -- 获取保底计数
     local pityCounts = {
         rare = player:GetVariable("pity_" .. self.poolName .. "_rare"),
@@ -73,14 +150,12 @@ function Lottery:Draw(player)
     local rewards = self:SelectRewards(rarity)
     -- 更新保底计数
     self:UpdatePityCounts(player, rarity, pityCounts)
-
+    
     if rewards then
-        gg.log(player.uid .. "抽中了" .. rarity .. "品级，获得了" .. rewards.itemType .. "x" .. rewards.amount)
-        player:AddVariable("lottery_".. self.poolName, 1)
-        player:AddVariable("rarity_".. rarity, 1)
+        gg.log(player.name .. "抽中了" .. rarity .. "品级，获得了" .. rewards.itemType .. "x" .. rewards.amount)
     end
-
-    return rewards
+    
+    return rewards, rarity
 end
 
 ---计算抽中的品级
@@ -108,7 +183,7 @@ function Lottery:CalculateRarity(pityCounts)
     if (sum + self.epicRate) > rand then return "epic" end
     sum = sum + self.epicRate
     if (sum + self.rareRate) > rand then return "rare" end
-
+    
     return "common"
 end
 
@@ -117,7 +192,7 @@ end
 ---@return ItemStack|nil 选中的奖励
 function Lottery:SelectRewards(rarity)
     local rewardPool
-
+    
     -- 根据品级选择对应的奖池
     if rarity == "mythic" then
         rewardPool = self.mythicPrizes
@@ -141,10 +216,10 @@ function Lottery:SelectRewards(rarity)
     for _, reward in ipairs(rewardPool) do
         totalWeight = totalWeight + (reward.weight or 1)
     end
-
+    
     -- 生成随机数
     local random = math.random() * totalWeight
-
+    
     -- 根据权重选择奖品
     local currentWeight = 0
     for _, reward in ipairs(rewardPool) do
@@ -154,7 +229,7 @@ function Lottery:SelectRewards(rarity)
             local minAmount = reward.itemCountMin or 1
             local maxAmount = reward.itemCountMax or minAmount
             local amount = math.random(minAmount, maxAmount)
-
+            
             if reward.itemType then
                 return {
                     itemType = reward.itemType,
@@ -163,20 +238,20 @@ function Lottery:SelectRewards(rarity)
             end
         end
     end
-
+    
     -- 如果因为浮点数精度问题没有选中任何奖品，返回最后一个奖品
     local lastReward = rewardPool[#rewardPool]
     local minAmount = lastReward.itemCountMin or 1
     local maxAmount = lastReward.itemCountMax or minAmount
     local amount = math.random(minAmount, maxAmount)
-
+    
     if lastReward.itemType then
         return {
             itemType = lastReward.itemType,
             amount = amount
         }
     end
-
+    
     return nil
 end
 

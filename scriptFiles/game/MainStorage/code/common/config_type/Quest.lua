@@ -30,11 +30,11 @@ function Quest:OnInit(data)
     self.category = data["分类"] or "主线"
     self.shortDesc = data["简短描述"]
     self.fullDesc = data["完整描述"]
-
+    
     self.completionCount = data["完成数量"] or 1
     self.acceptConditions = Modifiers.New(data["领取条件"]) ---@type Modifiers
     self.questType = data["任务类型"] or QuestType.NONE
-
+    
     self.questVariable = data["任务变量"]
     self.requiredItem = ItemTypeConfig.Get(data["需求物品"])
     self.eventName = data["事件名"]
@@ -50,12 +50,11 @@ function Quest:OnInit(data)
     self.nextQuest = data["自动领取下一任务"]
     self.refreshType = data["刷新类型"] or QuestRefreshType.NONE
     self.autoTurnIn = data["自动提交兑奖"] or false
-
+    
     self.autoAcceptOnRefresh = data["刷新时自动领取"] or false
     self.showProgress = data["显示完成进度"]
-
+    
     self.questList = data["任务列表"]
-    self.rewardRequiredItem = data["奖励需求物品"]
     self.rewards = data["奖励"]
 end
 
@@ -92,12 +91,12 @@ function Quest:Has(player)
     if player.quests[self.name] then
         return true
     end
-
+    
     -- 检查是否已完成
     if player.acceptedQuestIds[self.name] == 1 then
         return true
     end
-
+    
     return false
 end
 
@@ -121,14 +120,16 @@ function Quest:Accept(player)
     end
     local AcceptedQuest = require(MainStorage.code.server.entity_types.player_data.AcceptedQuest)
     local questInstance = AcceptedQuest.New(self, player)
-
+    
     -- 添加到玩家任务列表
     player.quests[self.name] = questInstance
     player.acceptedQuestIds[self.name] = 0 -- 标记为已接受未完成
-
+    
     -- 同步到客户端
     player:UpdateQuestsData()
-
+    
+    -- 任务被接受时，AcceptedQuest会自动将进度关键字注册到player.questKey，完成时自动移除。
+    
     return true
 end
 

@@ -86,37 +86,7 @@ function ItemCommands.lottery(params, player)
         player:SendHoverText("抽奖次数必须大于0")
         return false
     end
-
-    -- 执行抽奖
-    local totalRewards = {}
-    for i = 1, count do
-        local reward = lottery:Draw(player)
-        if reward then
-            -- 将奖励添加到背包
-            local itemType = ItemTypeConfig.Get(reward.itemType)
-            if itemType then
-                local item = itemType:ToItem(reward.amount)
-                player.bag:AddItem(item)
-
-                -- 记录奖励
-                if not totalRewards[reward.itemType] then
-                    totalRewards[reward.itemType] = 0
-                end
-                totalRewards[reward.itemType] = totalRewards[reward.itemType] + reward.amount
-            end
-        end
-    end
-
-    -- 保存背包
-    player.bag:Save()
-
-    -- 显示抽奖结果
-    local resultText = "抽奖结果:\n"
-    for itemType, amount in pairs(totalRewards) do
-        resultText = resultText .. string.format("%s x%d\n", itemType, amount)
-    end
-    player:SendHoverText(resultText)
-
+    lottery:Draw(player, count, false)
     return true
 end
 

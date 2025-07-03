@@ -11,6 +11,22 @@ function AcceptedQuest:OnInit(quest, player)
     self.quest = quest ---@type Quest
     self.player = player ---@type Player
     self.progress = 0
+    -- 注册进度关键字，支持多个任务
+    local function addKey(key)
+        if not player.questKey[key] then
+            player.questKey[key] = {}
+        end
+        table.insert(player.questKey[key], self)
+    end
+    if quest.questType == "变量" and quest.questVariable then
+        addKey(quest.questVariable)
+    elseif quest.questType == "物品" and quest.requiredItem then
+        addKey(quest.requiredItem.name or quest.requiredItem)
+    elseif quest.questType == "事件" and quest.eventName then
+        addKey(quest.eventName)
+    else
+        addKey(quest.name)
+    end
 end
 
 ---@return boolean
@@ -83,6 +99,32 @@ function AcceptedQuest:GetProgress()
     end
 end
 
+-- 注销任务关键字
+function AcceptedQuest:UnregisterKey()
+    local function removeKey(key)
+        local list = self.player.questKey[key]
+        if list then
+            for i = #list, 1, -1 do
+                if list[i] == self then
+                    table.remove(list, i)
+                end
+            end
+            if #list == 0 then
+                self.player.questKey[key] = nil
+            end
+        end
+    end
+    if self.quest.questType == "变量" and self.quest.questVariable then
+        removeKey(self.quest.questVariable)
+    elseif self.quest.questType == "物品" and self.quest.requiredItem then
+        removeKey(self.quest.requiredItem.id or self.quest.requiredItem)
+    elseif self.quest.questType == "事件" and self.quest.eventName then
+        removeKey(self.quest.eventName)
+    else
+        removeKey(self.quest.name)
+    end
+end
+
 function AcceptedQuest:Finish()
     -- 检查是否已完成
     if not self:IsCompleted() then
@@ -126,6 +168,9 @@ function AcceptedQuest:Finish()
     -- 从玩家任务列表中移除
     self.player.quests[self.quest.name] = nil
     self.player.acceptedQuestIds[self.quest.name] = 1 -- 标记为已完成
+
+    -- 注销关键字
+    self:UnregisterKey()
 
     -- 同步到客户端
     self.player:UpdateQuestsData()

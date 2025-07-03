@@ -5,7 +5,7 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 
 
 ---@class ModelPlayer
----@field New fun(animator:Animator, stateConfig: table)
+---@field New fun(id:string, animator:Animator, stateConfig: table, entity?: Entity):ModelPlayer
 local ModelPlayer = ClassMgr.Class("ModelPlayer")
 local modelAnimCache = {}
 local modelSizeCache = {}
@@ -32,7 +32,8 @@ function ModelPlayer.FetchModelSize(actor, getCallback)
 end
 
 ---@param animator Animator
-function ModelPlayer:OnInit(name, animator, stateConfig)
+function ModelPlayer:OnInit(name, animator, stateConfig, entity)
+    self.entity = entity
     self.name = name
     self.animator = animator
     self.finishTask = nil
@@ -40,8 +41,15 @@ function ModelPlayer:OnInit(name, animator, stateConfig)
     self.currentState = nil ---@type table
     self.animationFinished = true
     self.isMoving = false
+    self.currentEffectCancels = {} -- 新增：当前状态特效取消函数
     self:SwitchState(stateConfig["初始状态"])
     self.animName = animator.ControllerAsset
+    self.onAnimFinishedCb = nil
+    if self.currentState and self.currentState.effectList then
+        self.currentEffects = self.currentState.effectList
+    else
+        self.currentEffects = nil
+    end
     if not modelAnimCache[self.animName] then
         ServerScheduler.add(function ()
             self:FetchModelAnim()
@@ -115,7 +123,7 @@ function ModelPlayer:PlayTransition(key)
                 canSwitch = false
             end
         end
-
+        
         if canSwitch then
             table.insert(validAnims, animId)
         end
@@ -150,7 +158,8 @@ end
 ---@param speed? number = 1
 ---@return number
 function ModelPlayer:SwitchState(stateId, speed)
-    -- print("SwitchState", stateId, speed)
+    -- 先取消上一个状态的特效
+    self:CancelCurrentEffects()
     if self.finishTask then
         self.finishTask = ServerScheduler.cancel(self.finishTask)
     end
@@ -161,8 +170,13 @@ function ModelPlayer:SwitchState(stateId, speed)
     end
     local fadeTime = 0
     if self.currentState then
-        local transition = self.currentState["切换"][stateId]
-        fadeTime = transition and transition["混合时间"] or 0
+        if self.onAnimFinishedCb then
+            self.onAnimFinishedCb(self.currentState, state)
+        end
+        if self.currentState["切换"] then
+            local transition = self.currentState["切换"][stateId]
+            fadeTime = transition and transition["混合时间"] or 0
+        end
     end
     local playMode = state["播放模式"]
     self.animationFinished = false
@@ -184,11 +198,48 @@ function ModelPlayer:SwitchState(stateId, speed)
             self.finishTask = ServerScheduler.add(function ()
                 self.animationFinished = true
                 self:PlayTransition("无")
+                -- 状态结束时取消特效
+                self:CancelCurrentEffects()
             end, playTime - 0.1)
         end
     end
+    state["id"] = stateId
     self.currentState = state
+    if self.currentState and self.currentState.effectList then
+        self.currentEffects = self.currentState.effectList
+    else
+        self.currentEffects = nil
+    end
+    -- 新增：播放新状态的所有特效，并保存取消函数
+    self.currentEffectCancels = {}
+    if self.currentEffects then
+        for _, effect in ipairs(self.currentEffects) do
+            if effect and effect.PlayAt then
+                local cancels = {}
+                if self.entity then
+                    effect:PlayAt(self.entity, self.entity, nil, cancels)
+                else
+                    effect:PlayAt(self.animator.Parent, self.animator.Parent, nil, cancels)
+                end
+                for _, cancel in ipairs(cancels) do
+                    table.insert(self.currentEffectCancels, cancel)
+                end
+            end
+        end
+    end
     return playTime
+end
+
+-- 新增：取消当前所有特效
+function ModelPlayer:CancelCurrentEffects()
+    if self.currentEffectCancels then
+        for _, cancel in ipairs(self.currentEffectCancels) do
+            if type(cancel) == "function" then
+                cancel()
+            end
+        end
+    end
+    self.currentEffectCancels = {}
 end
 
 return ModelPlayer

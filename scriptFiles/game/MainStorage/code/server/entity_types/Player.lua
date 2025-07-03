@@ -60,6 +60,7 @@ function _M:OnInit(info_)
     self.lastDailyRefresh = 0 -- 上次每日刷新时间
     self.lastWeeklyRefresh = 0 -- 上次每周刷新时间
     self.lastMonthlyRefresh = 0 -- 上次每月刷新时间
+    self.questKey = {} ---@type table<string, AcceptedQuest[]> --任务推进关键字=AcceptedQuest
 
     self:SubscribeEvent("FinishFocusUI", function (evt)
         if self.focusOnCommandsCb then
@@ -280,6 +281,8 @@ function _M:RefreshQuest(key)
         end
 
         if shouldRefresh then
+            -- 先注销关键字
+            quest:UnregisterKey()
             table.insert(questsToRemove, questId)
             table.insert(refreshedQuestNames, quest.quest.name)
         end
@@ -404,6 +407,9 @@ function _M:ExitBattle()
         end
         SummonSpell.summonerSummons[self] = nil
     end
+
+    -- 发布玩家退出战斗事件
+    ServerEventManager.Publish("PlayerExitBattleEvent", { player = self })
 end
 
 
@@ -920,9 +926,11 @@ function _M:UpdateNearbyNpcsToClient()
 end
 
 function _M:ProcessQuestEvent(event, amount)
-    for _, quest in pairs(self.quests) do
-        if quest.quest.questType == "事件" and string.find(quest.quest.eventName, event) then
-            quest:AddProgress(amount)
+    if self.questKey[event] then
+        for _, quest in ipairs(self.questKey[event]) do
+            if quest then
+                quest:AddProgress(amount)
+            end
         end
     end
 end
@@ -1042,6 +1050,30 @@ function _M:SetCameraView(euler)
         y = euler.y,
         z = euler.z,
     })
+end
+
+-- 重载SetVariable，变量变动后刷新相关任务进度
+function _M:SetVariable(key, value)
+    Entity.SetVariable(self, key, value)
+    if self.questKey and self.questKey[key] then
+        self:UpdateQuestsData()
+    end
+end
+
+-- 重载AddVariable，变量变动后刷新相关任务进度
+function _M:AddVariable(key, value)
+    Entity.AddVariable(self, key, value)
+    if self.questKey and self.questKey[key] then
+        self:UpdateQuestsData()
+    end
+end
+
+-- 重载RemoveVariable，变量移除后刷新相关任务进度（设为0）
+function _M:RemoveVariable(key)
+    Entity.RemoveVariable(self, key)
+    if self.questKey and self.questKey[key] then
+        self:UpdateQuestsData()
+    end
 end
 
 return _M

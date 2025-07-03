@@ -67,11 +67,8 @@ ServerEventManager.Subscribe("PostBattleEvent", function(event)
     OnPostBattle(event.battle)
 end)
 
--- 订阅玩家退出事件
-ServerEventManager.Subscribe("PlayerLeaveGameEvent", function(event)
-    local player = event.player
+local function ClearAllSummonsForPlayer(player)
     if player then
-        -- 清理玩家的所有召唤物
         local summons = SummonSpell.summonerSummons[player]
         if summons then
             for mob, _ in pairs(summons) do
@@ -83,6 +80,14 @@ ServerEventManager.Subscribe("PlayerLeaveGameEvent", function(event)
             SummonSpell.summonerSummons[player] = nil
         end
     end
+end
+
+ServerEventManager.Subscribe("PlayerLeaveGameEvent", function(event)
+    ClearAllSummonsForPlayer(event.player)
+end)
+
+ServerEventManager.Subscribe("PlayerExitBattleEvent", function(event)
+    ClearAllSummonsForPlayer(event.player)
 end)
 
 function SummonSpell:OnInit(data)
@@ -243,11 +248,11 @@ function SummonSpell:CastReal(caster, target, param)
         summoned.actor.Rotation = casterRot
         summoned:SetOwner(caster)
         self:AddSummon(caster, summoned)
-        caster:TriggerTags("召唤时", target, param, summoned)
+        caster:TriggerTags("召唤时", summoned, param, summoned)
     end
     self:PlayEffect(self.projectileEffects, caster, target, param)
 
     return true
 end
 
-return SummonSpell
+return SummonSpell 

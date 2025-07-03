@@ -24,13 +24,13 @@ end
 function SkillTree:Print()
     local ClientScheduler = require(MainStorage.code.client.ClientScheduler)
     local output = "========== 技能树结构 ==========\n"
-
+    
     -- 获取最大层级数
     local maxLane = 0
     for lane, _ in pairs(self.skills) do
         maxLane = math.max(maxLane, lane)
     end
-
+    
     -- 竖向显示技能树
     for lane = 0, maxLane do
         local laneSkills = self:GetLane(lane)
@@ -45,9 +45,9 @@ function SkillTree:Print()
             output = output .. table.concat(skillNames, ", ") .. "\n"
         end
     end
-
+    
     output = output .. "========== 技能树结构结束 =========="
-
+    
     -- 使用ClientScheduler延迟打印
     ClientScheduler.add(function()
         print(output)
@@ -57,15 +57,15 @@ end
 -- 递归构建技能树
 local function BuildSkillTreeRecursive(skillType, currentLane, currentIndex, skillTree)
     if not skillType then return end
-
+    
     -- 设置当前技能在树中的位置
     skillTree:SetSkillAt(currentIndex, currentLane, skillType)
-
+    
     -- 如果是入口技能，保存为主技能
     if skillType.isEntrySkill then
         skillTree.mainSkill = skillType
     end
-
+    
     -- 如果有下一技能，递归处理
     if skillType.nextSkills then
         for i, nextSkill in ipairs(skillType.nextSkills) do
@@ -129,7 +129,7 @@ local function LoadConfig()
         ["技能品级"] = "SR",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "0",
+        ["提升玩家等级"] = "30*clamp(LVL-3,2,1)",
         ["无需装备也可生效"] = true,
         ["被动词条"] = {
             "丰收葵_阳光产量提升_词条"
@@ -164,7 +164,7 @@ local function LoadConfig()
         ["技能品级"] = "SR",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "0",
+        ["提升玩家等级"] = "30*clamp(LVL-3,2,1)",
         ["无需装备也可生效"] = true,
         ["被动词条"] = {
             "伤害强化_词条"
@@ -199,7 +199,7 @@ local function LoadConfig()
         ["技能品级"] = "SR",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "0",
+        ["提升玩家等级"] = "30*clamp(LVL-3,2,1)",
         ["无需装备也可生效"] = true,
         ["被动词条"] = {
             "射速增加_词条"
@@ -241,7 +241,12 @@ local function LoadConfig()
         },
         ["无需装备也可生效"] = false,
         ["主动释放魔法"] = "向日葵_阳光获取",
-        ["目标模式"] = "敌人",
+        ["目标模式"] = "自己",
+        ["位置偏移"] = {
+            0,
+            0,
+            0
+        },
         ["启用后坐力"] = false,
         ["更改模型"] = "resId&usev2=1://387087665374310402",
         ["更改动画"] = "resId&usev2=1://387089096928014336",
@@ -266,7 +271,7 @@ local function LoadConfig()
         ["技能品级"] = "R",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "0",
+        ["提升玩家等级"] = "10*clamp(LVL-3,2,1)",
         ["下一技能"] = {
             "丰收葵"
         },
@@ -275,10 +280,10 @@ local function LoadConfig()
             "产量增加_额外概率提升_词条"
         },
         ["一键强化素材"] = {
-            ["阳光"] = "(1−min(1,max(0,LVL−4)))*9000*1.3^LVL+min(1,max(0,LVL−4))*6000*1.45^LVL"
+            ["阳光"] = "(1-min(1,max(0,LVL-4)))*9000*1.3^LVL+min(1,max(0,LVL-4))*6000*1.45^LVL"
         },
         ["升级需求素材"] = {
-            ["阳光"] = "(1−min(1,max(0,LVL−4)))*9000*1.3^LVL+min(1,max(0,LVL−4))*6000*1.45^LVL"
+            ["阳光"] = "(1-min(1,max(0,LVL-4)))*9000*1.3^LVL+min(1,max(0,LVL-4))*6000*1.45^LVL"
         },
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
@@ -305,7 +310,7 @@ local function LoadConfig()
         ["技能品级"] = "R",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "0",
+        ["提升玩家等级"] = "30*clamp(LVL-3,2,1)",
         ["下一技能"] = {
             "丰收葵"
         },
@@ -340,7 +345,7 @@ local function LoadConfig()
         ["技能品级"] = "R",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "0",
+        ["提升玩家等级"] = "clamp(LVL-3,2,1)",
         ["下一技能"] = {
             "向日葵_阳光产量提升2"
         },
@@ -378,7 +383,7 @@ local function LoadConfig()
         ["技能品级"] = "R",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "0",
+        ["提升玩家等级"] = "clamp(LVL-3,2,1)",
         ["下一技能"] = {
             "伤害提升_产量增加",
             "产量增加_额外概率提升"
@@ -417,7 +422,7 @@ local function LoadConfig()
         ["技能品级"] = "R",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "0",
+        ["提升玩家等级"] = "clamp(LVL-3,2,1)",
         ["下一技能"] = {
             "向日葵_阳光产量提升2"
         },
@@ -492,7 +497,6 @@ local function LoadConfig()
         ["显示名"] = "持续伤害提升",
         ["最大等级"] = 10,
         ["技能描述"] = "持续伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/大攻击提升.png",
         ["技能品级"] = "SR",
@@ -523,7 +527,6 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 20,
         ["技能描述"] = "伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "SR",
@@ -596,7 +599,6 @@ local function LoadConfig()
         ["显示名"] = "射速提升",
         ["最大等级"] = 10,
         ["技能描述"] = "射速增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/冷却提升.png",
         ["技能品级"] = "R",
@@ -630,7 +632,6 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 10,
         ["技能描述"] = "伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "R",
@@ -664,7 +665,6 @@ local function LoadConfig()
         ["显示名"] = "生命提升",
         ["最大等级"] = 10,
         ["技能描述"] = "生命增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/生命提升.png",
         ["技能品级"] = "R",
@@ -736,13 +736,11 @@ local function LoadConfig()
         ["显示名"] = "持续伤害提升",
         ["最大等级"] = 10,
         ["技能描述"] = "持续伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_胆小菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/大攻击提升.png",
         ["技能品级"] = "R",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = nil,
         ["下一技能"] = {
             "大喷菇"
         },
@@ -750,7 +748,6 @@ local function LoadConfig()
         ["被动词条"] = {
             "持续伤害_词条_胆小菇"
         },
-        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,
@@ -771,7 +768,6 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 10,
         ["技能描述"] = "伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_胆小菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "R",
@@ -1298,7 +1294,7 @@ local function LoadConfig()
         ["技能品级"] = "R",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "2",
+        ["提升玩家等级"] = "30*clamp(LVL-3,2,1)",
         ["下一技能"] = {
             "机枪射手"
         },
@@ -1566,7 +1562,7 @@ local function LoadConfig()
         ["技能品级"] = "UR",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "clamp(LVL-3,2,1)",
+        ["提升玩家等级"] = "5",
         ["下一技能"] = {
             "射速1_双头豌豆",
             "攻击1_双头豌豆"
@@ -2402,7 +2398,7 @@ function SkillTypeConfig.GetSkillTrees(skillCategory)
 
             -- 创建技能树结构
             local skillTree = SkillTree.New()
-
+            
             -- 从入口技能开始递归构建技能树
             BuildSkillTreeRecursive(skillType, 0, 1, skillTree)
 

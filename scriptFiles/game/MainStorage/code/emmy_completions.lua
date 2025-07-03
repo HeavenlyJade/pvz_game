@@ -1261,9 +1261,11 @@
 
 ---@class PlayerGui
 
+---@class PlayerNode
+---@field Character MiniPlayer
 
 ---@class Players
----@field LocalPlayer SandboxNode 是一个只读属性，指的是其客户端正在运行体验的玩家
+---@field LocalPlayer PlayerNode 是一个只读属性，指的是其客户端正在运行体验的玩家
 ---@field GetPlayerByUserId fun(self: Players, userid: number) SandboxNode 在Players中搜索每个玩家，以查找其player.UserId与给定UserId匹配的玩家
 ---@field GetPlayers fun(self: Players) SandboxNode 返回当前连接的所有玩家的表
 ---@field HideTouchUI fun(self: Players) void 隐藏触摸UI
@@ -2027,7 +2029,8 @@
 
 
 
----@class Model
+---@class Model:Transform
+---@field Animator Animator
 ---@field DimensionUnit DimensionUnit 模型尺寸
 ---@field MaterialType MaterialTemplate 材料类型
 ---@field TextureId string 设置模型的材质，即资源id
@@ -4383,7 +4386,7 @@
 ---@class GameService
 ---@field UserInputService UserInputService
 ---@field Workspace WorkSpace 工作区
----@field Players SandboxNode 玩家
+---@field Players Players 玩家
 ---@field ServerStorage SandboxNode 服务器存储
 ---@field Tween TweenService
 ---@field WorkSpace WorkSpace 玩家
@@ -4424,11 +4427,11 @@ ColorQuad = {} ---@type ColorQuad
 script = {} ---@type SandboxNode
 TweenInfo = {} ---@type TweenInfo
 -- -- 所有参数为默认的 TweenInfo
--- local default = TweenInfo.New()
+-- local default = TweenInfo.New() 
 -- -- 时间设置为 0.5 秒的 TweenInfo
--- local timeChanged = TweenInfo.New(0.5)
+-- local timeChanged = TweenInfo.New(0.5) 
 -- -- 释放样式设置为 Back 的 TweenInfo
--- local easingStyled = TweenInfo.New(0.5, Enum.EasingStyle.Back, 0, 0, 0, false)
+-- local easingStyled = TweenInfo.New(0.5, Enum.EasingStyle.Back, 0, 0, 0, false) 
 -- -- 释放方向设置为 In 的 TweenInfo
 -- local easingDirected = TweenInfo.New(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In, 0, 0, false)
 -- -- 自身重复 4 次的 TweenInfo

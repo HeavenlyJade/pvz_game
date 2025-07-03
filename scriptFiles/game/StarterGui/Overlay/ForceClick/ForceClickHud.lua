@@ -22,7 +22,8 @@ local ForceClickHud = ClassMgr.Class("ForceClickHud", ViewBase)
 local uiConfig = {
     uiName = "ForceClickHud",
     layer = 20,
-    hideOnInit = true
+    hideOnInit = true,
+    closeHuds = false
 }
 
 function ForceClickHud:OnInit(node, config)
@@ -37,6 +38,7 @@ function ForceClickHud:OnInit(node, config)
     self.allowClickAnywhere = false
     ClientEventManager.Subscribe("FocusOnUI", function (evt)
         ---@cast evt FocusChain
+        gg.log("FocusOnUI", evt)
         self.focusingChain = evt
         self.index = 0
         self:FocusOnNextNode()
@@ -52,7 +54,7 @@ function ForceClickHud:OnInit(node, config)
             end
         end
     end)
-
+    
     if game.UserInputService.TouchEnabled then -- 触摸设备
         game.UserInputService.TouchStarted:Connect(
             function(inputObj, gameprocessed)
@@ -102,7 +104,7 @@ function ForceClickHud:FocusOnNextNode()
         return
     end
     local focus = self.focusingChain["聚焦UI"][self.index]
-    if game.RunService:IsPC() and focus["若是PC端则改为"] and focus["若是PC端则改为"]["UI名"] then
+    if game.RunService:IsPC() and focus["若是PC端则改为"] and focus["若是PC端则改为"]["UI名"] ~= "" then
         focus = focus["若是PC端则改为"]
     end
     local ui = ViewBase.GetUI(focus["UI名"])

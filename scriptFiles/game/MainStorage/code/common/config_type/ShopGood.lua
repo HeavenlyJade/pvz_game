@@ -3,6 +3,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg            = require(MainStorage.code.common.MGlobal) ---@type gg
 local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
 local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local Price = require(MainStorage.code.common.config_type.Price) ---@type Price
 local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 
@@ -22,44 +23,6 @@ local ShopGoodType = {
     EVENT = "事件"
 }
 
----@class Price:Class
-local Price = ClassMgr.Class("Price")
-
----@param data table
-function Price:OnInit(data)
-    self.varKey = data["varKey"]
-    self.adMode = data["广告模式"]
-    self.adCount = data["广告次数"]
-    self.priceType = ItemTypeConfig.Get(data["价格类型"]) ---@type ItemType
-    self.priceAmount = data["价格数量"]
-end
-
----@param player Player
----@param param CastParam
-function Price:CanAfford(player, param)
-    if self.priceType then
-        if not player.bag:HasItems({[self.priceType] = self.priceAmount * param.power}) then
-            return false, "货币不足"
-        end
-    end
-    return true
-end
-
----@param player Player
----@param param CastParam
-function Price:GetPlayerHas(player)
-    if self.priceType then
-        return player.bag:GetItemAmount(self.priceType)
-    end
-    return 0
-end
-
----@param player Player
-function Price:Pay(player, param)
-    if self.priceType then
-        player.bag:RemoveItems({[self.priceType] = self.priceAmount * param.power})
-    end
-end
 
 ---@class ShopGood:Class
 local ShopGood = ClassMgr.Class("ShopGood")
@@ -153,7 +116,7 @@ function ShopGood:Buy(player)
     for _, command in ipairs(self.commands) do
         player:ExecuteCommand(command)
     end
-
+    
     return true
 end
 

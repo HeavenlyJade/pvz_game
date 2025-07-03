@@ -164,7 +164,7 @@ function _M:SetAnimationController(name)
         local animator = self.actor.Animator
         local animationConfig = AnimationConfig.Get(name)
         if animator and animationConfig then
-            self.modelPlayer = ModelPlayer.New(name, animator, animationConfig)
+            self.modelPlayer = ModelPlayer.New(name, animator, animationConfig, self)
             self.modelPlayer.walkingTask = self.actor.Walking:Connect(function(isWalking)
                 if isWalking then
                     self.modelPlayer:OnWalk()
@@ -402,7 +402,7 @@ end
 ---@param target Entity|Vector3|nil 目标对象
 ---@return boolean 是否在冷却中
 function _M:IsCoolingdown(reason, target)
-    return self:GetCooldown(reason, target) > 0
+    return self:GetCooldown(reason, target) > 0.05
 end
 
 --- 设置冷却时间
@@ -918,12 +918,12 @@ function _M:ChangeScene(new_scene)
     if self.scene then
         -- 从旧场景的注册表中移除
         self.scene.uuid2Entity[self.uuid] = nil
-
+        
         -- 如果是玩家，还需要从玩家列表中移除
         if self.isPlayer then---@cast self Player
             self.scene:player_leave(self)
         end
-
+        
         -- 如果是怪物，还需要从怪物列表中移除
         if not self.isPlayer then
             self.scene.monsters[self.uuid] = nil
@@ -933,7 +933,7 @@ function _M:ChangeScene(new_scene)
     -- 进入新场景
     self.scene = new_scene
     self.scene.uuid2Entity[self.uuid] = self
-
+    
     -- 如果是玩家，还需要添加到玩家列表中
     if self.isPlayer then
         ---@cast self Player

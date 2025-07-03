@@ -38,7 +38,6 @@ function ClientMain.start_client()
                 local playTimeByStr = animator:GetClipLength(fullState)
                 evt.states[stateId] = playTimeByStr
             end
-
             evt.Return(evt.states)
         end
     end)
@@ -56,6 +55,9 @@ function ClientMain.start_client()
             end
         end
     end
+    ClientScheduler.add(function ()
+        ViewBase.LockMouseVisible(false)
+    end, 1)
     -- ClientEventManager.Subscribe("FetchModelSize", function (evt)
     --     local actor = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast actor Actor
     --     if actor then

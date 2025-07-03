@@ -81,9 +81,10 @@ function Level:OnInit(levelType, scene, index)
 
             -- 计算并同步剩余怪物百分比
             local mobPercent = self.currentWaveMobCount > 0 and (self.remainingMobCount / self.currentWaveMobCount) or 0
+            local waveIndex = math.max(1, math.min(self.waveCount, #self.waveMobCounts or {}))
             for _, player in pairs(self.players) do
                 player:SendEvent("WaveHealthUpdate", {
-                    waveIndex = self.waveCount,
+                    waveIndex = waveIndex,
                     healthPercent = mobPercent
                 })
             end
@@ -217,88 +218,19 @@ function Level:Start()
     -- 将关卡添加到活跃关卡列表
     activeLevels[self.scene] = self
 
-    -- 计算所有波次的怪物数量
-    local waveMobCounts = {} ---@type table<number, number>
-    local totalMobCount = 0
+    -- 计算所有波次的怪物数量并缓存
+    self.waveMobCounts = {}
+    self.totalMobCount = 0
     for _, wave in ipairs(self.levelType.waves) do
         local mobCount = wave:CalculateMobCount()
-        table.insert(waveMobCounts, mobCount)
-        totalMobCount = totalMobCount + mobCount
+        table.insert(self.waveMobCounts, mobCount)
+        self.totalMobCount = self.totalMobCount + mobCount
     end
 
-    -- 将玩家传送到进入点
-    local playerIndex = 1
-
-    for _, player in pairs(self.players) do
-
-        -- 保存玩家原始位置
-        if player.actor then
-            self.playerOriginalPositions[player.uin] = {
-                position = player.actor.Position,
-                euler = player.actor.Euler
-            }
-        end
-
-        -- 获取进入点位置
-        local entryPoint = self.entries[playerIndex]
-        if not entryPoint then
-            playerIndex = 1
-            -- 如果没有足够的进入点，循环使用
-            entryPoint = self.entries[playerIndex]
-        end
-
-        -- 传送玩家
-        if player.actor and entryPoint then
-
-            -- 标记玩家正在关卡传送中，避免场景切换冲突
-            player._levelTeleporting = true
-
-            -- 先切换到目标场景
-            player:ChangeScene(self.scene)
-
-            -- 然后传送位置
-            player.actor.Position = entryPoint.Position
-            player.actor.Euler = Vector3.New(0, entryPoint.Euler.y, 0)
-            player:SetCameraView(player.actor.Euler)
-            local oldGrav = player.actor.Gravity
-            player.actor.Gravity = 0
-
-            -- 为每个玩家创建独立的定时器，避免闭包问题
-            local currentPlayer = player  -- 创建局部变量副本
-            local currentEntryPoint = entryPoint  -- 创建局部变量副本
-            local currentUin = player.uin  -- 保存UIN
-            ServerScheduler.add(function ()
-
-                -- 清除传送标记
-                currentPlayer._levelTeleporting = nil
-
-                if not self.isActive then
-                    return
-                end
-
-                if not self.players[currentUin] then
-                    return
-                end
-
-                if currentPlayer.actor then
-                    currentPlayer.actor.Gravity = oldGrav
-                    currentPlayer.actor.Position = currentEntryPoint.Position
-                    currentPlayer:EnterBattle()
-                    currentPlayer:SetMoveable(false)
-                else
-                end
-            end, 3)
-        else
-        end
-
-        -- 发送战斗开始事件
-        player:SendEvent("BattleStartEvent", {
-            levelId = self.levelType.levelId,
-            waveMobCounts = waveMobCounts,
-            totalMobCount = totalMobCount
-        })
-
-        playerIndex = playerIndex + 1
+    local playersQueueing = self.players
+    self.players = {}
+    for _, player in pairs(playersQueueing) do
+        self:AddPlayer(player)
     end
 
     -- 确保重新初始化波次
@@ -365,13 +297,14 @@ function Level:StartWave()
     end
 
     -- 通知玩家波次开始和初始怪物数量
+    local waveIndex = math.max(1, math.min(self.waveCount, #self.waveMobCounts or {}))
     for _, player in pairs(self.players) do
         player:SendEvent("WaveHealthUpdate", {
-            waveIndex = self.waveCount,
+            waveIndex = waveIndex,
             healthPercent = 1.0,
-            waveImg = self.currentWave.waveImg
+            waveImg = self.currentWave and self.currentWave.waveImg or nil
         })
-        player:PlaySound(self.currentWave.waveSound)
+        player:PlaySound(self.currentWave and self.currentWave.waveSound)
     end
 end
 
@@ -700,10 +633,60 @@ function Level:AddPlayer(player)
     if self.playerCount >= self.levelType.maxPlayers then
         return false
     end
-
+    -- 如果玩家已在关卡则不重复添加
+    if self.players[player.uin] then
+        return true
+    end
     self.players[player.uin] = player
     self.playerCount = self.playerCount + 1
 
+    -- 保存玩家原始位置
+    if player.actor then
+        self.playerOriginalPositions[player.uin] = {
+            position = player.actor.Position,
+            euler = player.actor.Euler
+        }
+    end
+
+    -- 获取进入点位置
+    local playerIndex = self.playerCount
+    local entryPoint = self.entries[playerIndex]
+    if not entryPoint then
+        playerIndex = 1
+        entryPoint = self.entries[playerIndex]
+    end
+
+    -- 传送玩家
+    if player.actor and entryPoint then
+        player._levelTeleporting = true
+        player:ChangeScene(self.scene)
+        player.actor.Position = entryPoint.Position
+        player.actor.Euler = Vector3.New(0, entryPoint.Euler.y, 0)
+        player:SetCameraView(player.actor.Euler)
+        local oldGrav = player.actor.Gravity
+        player.actor.Gravity = 0
+        local currentPlayer = player
+        local currentEntryPoint = entryPoint
+        local currentUin = player.uin
+        ServerScheduler.add(function ()
+            currentPlayer._levelTeleporting = nil
+            if not self.isActive then return end
+            if not self.players[currentUin] then return end
+            if currentPlayer.actor then
+                currentPlayer.actor.Gravity = oldGrav
+                currentPlayer.actor.Position = currentEntryPoint.Position
+                currentPlayer:EnterBattle()
+                currentPlayer:SetMoveable(false)
+            end
+        end, 3)
+    end
+
+    -- 发送战斗开始事件，使用缓存的波次数据
+    player:SendEvent("BattleStartEvent", {
+        levelId = self.levelType.levelId,
+        waveMobCounts = self.waveMobCounts or {},
+        totalMobCount = self.totalMobCount or 0
+    })
     return true
 end
 
@@ -717,6 +700,21 @@ function Level:RemovePlayer(player, success, reason)
         player._levelTeleporting = nil
 
         self.players[player.uin] = nil
+        -- 怪物仇恨转移：将target为该玩家的怪物直接SetTarget为随机其它玩家
+        local playersList = {}
+        for uin, p in pairs(self.players) do
+            table.insert(playersList, p)
+        end
+        for _, mob in pairs(self.activeMobs) do
+            if mob.target == player then
+                if #playersList > 0 then
+                    local newTarget = playersList[math.random(1, #playersList)]
+                    mob:SetTarget(newTarget)
+                else
+                    mob:SetTarget(nil)
+                end
+            end
+        end
         self.playerCount = math.max(0, self.playerCount - 1)
 
         local originalPos = self.playerOriginalPositions[player.uin]

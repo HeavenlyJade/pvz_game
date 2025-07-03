@@ -35,7 +35,6 @@ end
 
 ---@param data table 背包数据
 function Bag:Load(data)
-    gg.log("Bag:Load", data)
     if not data or not data.items then
         return
     end
@@ -47,7 +46,6 @@ function Bag:Load(data)
     -- 加载物品数据并重建索引
     for category, itemData in pairs(data.items) do
         -- 打印物品数据内容
-        gg.log("Bag:Load", category, itemData)
         self.bag_items[category] = {}
         for slot, itemData in pairs(itemData) do
             local item = Item.New()
@@ -432,6 +430,9 @@ function Bag:GiveItem(item)
             item = item:Save()
         })
     end
+    if self.player.questKey and self.player.questKey[item.itemType.name] then
+        self.player:UpdateQuestsData()
+    end
     self.player:PlaySound(item.itemType.gainSound)
     return true
 end
@@ -511,10 +512,8 @@ function Bag:RemoveItems(items)
             local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
             itemType = ItemTypeConfig.Get(itemType)
         end
-        gg.log("移除物品",itemType,count)
         local remaining = count
         local slots = self.bag_index[itemType] or {}
-        gg.log("移除物品",itemType,count,slots, self.bag_index)
         for _, slot in ipairs(slots) do
             if remaining <= 0 then
                 break

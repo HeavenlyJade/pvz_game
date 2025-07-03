@@ -4,6 +4,7 @@ local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewB
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local soundPlayer = game:GetService("StarterGui")["UISound"] ---@type Sound
 local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
+local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@class ViewItem:ViewButton
 ---@field New fun(node: SandboxNode, ui: ViewBase, path?: string, realButtonPath?: string): ViewItem
@@ -28,27 +29,52 @@ function ViewItem:OnHoverOut()
     ViewButton.OnHoverOut(self)
 end
 
-function ViewItem:OnClick()
+function ViewItem:OnClick(vector2)
     if self._itemCache then
         ViewBase.GetUI("ItemTooltipHud"):DisplayItem(self._itemCache, vector2.x, vector2.y)
     end
     ViewButton.OnClick(self)
 end
 
----@param item Item
+---@param item Item|ItemType|string
 function ViewItem:SetItem(item)
     self._itemCache = item
-    self.node["ItemIcon"].Icon = item.itemType.icon
-    self:SetChildIcon("Frame", item.itemType.rank.normalImgFrame, item.itemType.rank.hoverImgFrame)
-    self.node.Icon = item.itemType.rank.normalImgBg
-    self.normalImg = item.itemType.rank.normalImgBg
-    self.hoverImg = item.itemType.rank.hoverImgBg
-    self.clickImg = item.itemType.rank.hoverImgBg
-    local amount = gg.FormatLargeNumber(item.amount)
-    if amount == "1" then
-        self.node["Amount"].Title = ""
+    if type(item) == "string" then
+        item = ItemTypeConfig.Get(item)
+    end
+    local itemType = item
+    if ClassMgr.Is(item, "Item") then
+        itemType = item.itemType
+    end
+    if not itemType.icon then
+        gg.log("物品没有配置图标:", itemType)
+        return
+    end
+    self._itemCache = item
+    if self.node["ItemIcon"] then
+        self.node["ItemIcon"].Icon = itemType.icon
+        self.node.Icon = itemType.rank.normalImgBg
+        self.normalImg = itemType.rank.normalImgBg
+        self.hoverImg = itemType.rank.hoverImgBg
+        self.clickImg = itemType.rank.hoverImgBg
     else
-        self.node["Amount"].Title = amount
+        self.node.Icon = itemType.icon
+        self.normalImg = itemType.icon
+        self.hoverImg = itemType.icon
+        self.clickImg = itemType.icon
+    end
+    if self.node["Frame"] then
+        self:SetChildIcon("Frame", itemType.rank.normalImgFrame, itemType.rank.hoverImgFrame)
+    end
+    if ClassMgr.Is(item, "Item") then
+        local amount = gg.FormatLargeNumber(item.amount)
+        if amount == "1" then
+            self.node["Amount"].Title = ""
+        else
+            self.node["Amount"].Title = amount
+        end
+    else
+        self.node["Amount"].Title = ""
     end
 end
 
