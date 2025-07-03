@@ -30,6 +30,14 @@ function Skill:OnInit(player, data)
     end
 end
 
+function Skill:GetToStringParams()
+    return {
+        skill = self.skillName,
+        slot = self.equipSlot,
+        level = self.level
+    }
+end
+
 function Skill:CanAfk()
     if self.level > self.skillType.maxLevel then
         return false

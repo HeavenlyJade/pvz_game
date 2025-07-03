@@ -13,7 +13,6 @@ local function PlaySound(data)
     local sound = data.soundAssetId
     local key = data.key
     local layer = data.layer or 1
-    gg.log("PlaySound", data)
     if data.close and key then
         -- 检查是否在0.1秒内刚刚播放过同一个layer的同一个音乐，如果是则不处理关闭事件
         local soundKey = tostring(key) .. "_" .. tostring(layer)

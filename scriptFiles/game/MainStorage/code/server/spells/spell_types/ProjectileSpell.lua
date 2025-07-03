@@ -314,6 +314,11 @@ function ProjectileSpell:UpdateProjectile(id)
             {1, 2}
         )
         if hitGround and #hitGround > 0 then
+            if self.printInfo then
+                for index, value in ipairs(hitGround) do
+                    print(string.format("%s: 飞弹碰撞到了地形 %s", self.spellName, value.Name))
+                end
+            end
             self:MarkDestroy(item)
         end
     end

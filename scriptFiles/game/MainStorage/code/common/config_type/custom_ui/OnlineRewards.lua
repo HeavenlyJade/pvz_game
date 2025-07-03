@@ -117,7 +117,12 @@ function OnlineRewardsUI:_RefreshBar()
     
     for index, itemInfo in ipairs(self.itemRewards) do
         if online_time < itemInfo.time then
-            local deltaTime = (online_time - self.itemRewards[index-1].time) / (self.itemRewards[index].time - self.itemRewards[index-1].time)
+            local deltaTime = 0
+            if index == 1 then
+                deltaTime = online_time / self.itemRewards[index].time
+            else
+                deltaTime = (online_time - self.itemRewards[index-1].time) / (self.itemRewards[index].time - self.itemRewards[index-1].time)
+            end
             local newFillAmount = self.nodePercent[index-1] + (self.nodePercent[index] - self.nodePercent[index-1]) * deltaTime
             bar.FillAmount = newFillAmount
             self.view:Get("在线奖励背景/倒计时").node.Title = gg.FormatTime(itemInfo.time - online_time, false)

@@ -26,6 +26,7 @@ function _M:OnInit(npcData, actor)
     self.spawnPos          = actor.LocalPosition
     self:setGameActor(actor)
     self.name              = npcData["名字"]
+    self.displayName              = npcData["显示名"] or self.name
     self.interactCondition = Modifiers.New(npcData["互动条件"])
     self.interactCommands  = npcData["互动指令"]
     self.interactIcon      = npcData["互动图标"]
@@ -108,7 +109,7 @@ function _M:SetTarget(target)
 end
 
 function _M:createTitle(name)
-    Entity.createTitle(self, name, self.nameSize)
+    Entity.createTitle(self, self.displayName, self.nameSize)
 end
 
 ---更新NPC状态
@@ -159,7 +160,6 @@ end
 
 -- 处理NPC交互
 function _M:HandleInteraction(player)
-    gg.log("HandleInteraction", self.name, self.uuid, player.name, player.uuid)
     -- 检查交互条件
     if self.interactCondition then
         local param = self.interactCondition:Check(player, self)

@@ -52,6 +52,7 @@ function _M:OnInit(info_)
     self.acceptedQuestIds = {} ---@type table<string, number> --值=0: 已领取, 未完成 =1: 已完成
     self.news = {} ---@type table<string, table> --红点路径
     self.skills = {} ---@type table<string, Skill>
+    self.tempSkills = {} ---@type table<string, Skill>
     self.equippedSkills = {} ---@type table<number, string>
     self.skillCastabilityTask = nil ---@type number 技能可释放状态检查任务ID
     self._moveMethod = nil
@@ -92,7 +93,7 @@ function _M:OnInit(info_)
 
     self:SubscribeEvent("CastSpell", function (evt)
         if evt.player == self then
-            local skill = self.skills[evt.skill]
+            local skill = self:GetSkill(evt.skill)
             if not skill then
                 gg.log("不存在的技能", evt.skill)
                 return
@@ -128,6 +129,26 @@ function _M:OnInit(info_)
     -- 启动技能可释放状态检查任务
     self:StartSkillCastabilityCheck()
     self.loginTime = os.time()
+end
+
+function _M:GetSkill(skillName)
+    return self.tempSkills[skillName] or self.skills[skillName] or nil
+end
+
+function _M:GetEquippedSkill(slot)
+    local skillName = self.equippedSkills[slot]
+    return self:GetSkill(skillName)
+end
+
+function _M:ResetTempSkill()
+    self.tempSkills = nil
+    self.equippedSkills = {}
+    for key, skill in pairs(self.skills) do
+        if skill.equipSlot and skill.equipSlot > 0 then
+            self.equippedSkills[skill.equipSlot] = skill.skillType.name
+        end
+    end
+    self:syncSkillData()
 end
 
 _M.GenerateUUID = function(self)
@@ -359,10 +380,9 @@ end
 function _M:EnterBattle()
     gg.log("玩家进入战斗:", self.name, "UIN:", self.uin)
     self:showReviveEffect(self:GetPosition())
-    local skillId = self.equippedSkills[1]
-    if skillId then
-        local skill = self.skills[skillId]
-        if skill and skill.skillType and skill.skillType.battleModel then
+    local skill = self:GetEquippedSkill(1)
+    if skill then
+        if skill.skillType and skill.skillType.battleModel then
             gg.log("玩家变身植物:", self.name, "技能:", skill.skillType.name, "模型:", skill.skillType.battleModel)
             if skill.skillType.freezesMove then
                 self:SetMoveable(false)
@@ -370,7 +390,7 @@ function _M:EnterBattle()
             self:SetModel(skill.skillType.battleModel, skill.skillType.battleAnimator, skill.skillType.battleStateMachine)
             self.actor.LocalScale = Vector3.New(skill.skillType.battlePlayerSize, skill.skillType.battlePlayerSize, skill.skillType.battlePlayerSize)
         else
-            gg.log("警告: 玩家", self.name, "没有有效的战斗模型技能, skillId:", skillId, "skill:", skill)
+            gg.log("警告: 玩家", self.name, "没有有效的战斗模型技能, skill:", skill)
         end
     else
         gg.log("警告: 玩家", self.name, "没有装备第一个技能")
@@ -494,17 +514,23 @@ function _M:RefreshStats()
     self:RemoveTagHandler("EQUIP-")
     self:RemoveTagHandler("SKILL-")
 
-    -- 遍历所有技能
-    for skillId, skill in pairs(self.skills) do
-        -- 检查技能是否应该生效
-        local shouldBeEffective = skill.equipSlot > 0 or skill.skillType.effectiveWithoutEquip
-
-        if shouldBeEffective then
-            -- 添加被动词条
-            for _, tagType in ipairs(skill.skillType.passiveTags) do
-                local tag = tagType:FactoryEquipingTag("SKILL-" .. skillId, skill.level)
-                self:AddTagHandler(tag)
-				--gg.log(string.format("添加技能词条: %s (等级 %d)", tagType.name, skill.level))
+    -- 先收集所有槽位
+    local slotSet = {}
+    for slot, _ in pairs(self.equippedSkills) do slotSet[slot] = true end
+    if self.tempSkills then
+        for slot, _ in pairs(self.tempSkills) do slotSet[slot] = true end
+    end
+    for slot, _ in pairs(slotSet) do
+        local skill = self:GetEquippedSkill(slot)
+        if skill then
+            -- 检查技能是否应该生效
+            local shouldBeEffective = skill.equipSlot > 0 or skill.skillType.effectiveWithoutEquip
+            if shouldBeEffective then
+                -- 添加被动词条
+                for _, tagType in ipairs(skill.skillType.passiveTags) do
+                    local tag = tagType:FactoryEquipingTag("SKILL-" .. (skill.skillName or skill.skillType.name), skill.level)
+                    self:AddTagHandler(tag)
+                end
             end
         end
     end
@@ -513,7 +539,6 @@ function _M:RefreshStats()
     local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
     for statName, statType in pairs(StatTypeConfig.GetAll()) do
         self:AddStat(statName, statType.baseValue + self.level * statType.valuePerLevel,"EQUIP", false)
-
     end
 
     -- 直接遍历bag_items，跳过c =0
@@ -568,6 +593,9 @@ function _M:initSkillData()
                 gg.log(self.name .. "的技能不存在： " .. skillData["skill"])
             else
                 self.skills[skillId] = skill
+                if skill.equipSlot > 0 then
+                    self.equippedSkills[skill.equipSlot] = skill.skillName
+                end
             end
         end
     end
@@ -581,7 +609,8 @@ end
 -- 同步技能数据到客户端
 function _M:syncSkillData()
     local skillData = {
-        skills = {}
+        skills = {},
+        equipped_skills = {}
     }
 
     -- 收集技能数据
@@ -593,14 +622,25 @@ function _M:syncSkillData()
             growth = skill.growth,
             star_level = skill.star_level,
         }
-
-        -- 记录已装备的技能
-        if skill.equipSlot > 0 then
-            self.equippedSkills[skill.equipSlot] = skillId
-        end
     end
 
-    -- 发送到客户端
+    local slotSet = {}
+    for slot, _ in pairs(self.equippedSkills) do slotSet[slot] = true end
+    if self.tempSkills then
+        for slot, _ in pairs(self.tempSkills) do slotSet[slot] = true end
+    end
+    for slot, _ in pairs(slotSet) do
+        local skill = self:GetEquippedSkill(slot)
+        if skill then
+            skillData.equipped_skills[skill.skillName or (skill.skillType and skill.skillType.name) or tostring(slot)] = {
+                skill = skill.skillType.name,
+                level = skill.level,
+                slot = slot,
+                growth = skill.growth,
+                star_level = skill.star_level,
+            }
+        end
+    end
     gg.network_channel:fireClient(self.uin, {
         cmd = 'SyncPlayerSkills',
         uin = self.uin,
@@ -968,17 +1008,18 @@ end
 ---@private
 function _M:_updateCastability()
     local castabilityData = {}
-
-    -- 遍历所有装备的技能
-    for skillId, skill in pairs(self.skills) do
-        if skill.equipSlot > 0 and skill.skillType.activeSpell then
-            -- 检查技能是否可以释放
+    local slotSet = {}
+    for slot, _ in pairs(self.equippedSkills) do slotSet[slot] = true end
+    if self.tempSkills then
+        for slot, _ in pairs(self.tempSkills) do slotSet[slot] = true end
+    end
+    for slot, _ in pairs(slotSet) do
+        local skill = self:GetEquippedSkill(slot)
+        if skill and skill.skillType and skill.skillType.activeSpell then
             local canCast = skill.skillType.activeSpell:CanCast(self, nil, nil, nil, false)
-            castabilityData[skillId] = canCast
+            castabilityData[skill.skillName or (skill.skillType and skill.skillType.name) or tostring(slot)] = canCast
         end
     end
-
-    -- 发送到客户端
     gg.network_channel:fireClient(self.uin, {
         cmd = "UpdateSkillCastability",
         castabilityData = castabilityData

@@ -230,11 +230,9 @@ local function LoadConfig()
         ["显示名"] = "向日葵",
         ["最大等级"] = 1,
         ["技能描述"] = "向阳而生，更生产阳光的植物。",
-        ["技能图标"] = "sandboxId://textures/plants/Tex_向日葵_BaseColor.png",
         ["技能品级"] = "SR",
         ["是入口技能"] = true,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = "0",
         ["下一技能"] = {
             "向日葵_阳光产量提升",
             "向日葵_额外掉落阳光"
@@ -248,14 +246,12 @@ local function LoadConfig()
             0
         },
         ["启用后坐力"] = false,
-        ["更改模型"] = "resId&usev2=1://387087665374310402",
-        ["更改动画"] = "resId&usev2=1://387089096928014336",
-        ["更改状态机"] = "植物",
-        ["更改玩家尺寸"] = 0.75,
+        ["更改状态机"] = nil,
+        ["更改玩家尺寸"] = 1,
         ["副卡挂机尺寸"] = {
-            0.6,
-            0.6,
-            0.6
+            1,
+            1,
+            1
         },
         ["指示器半径"] = 3,
         ["最大施法距离"] = 0,
@@ -497,7 +493,6 @@ local function LoadConfig()
         ["显示名"] = "持续伤害提升",
         ["最大等级"] = 10,
         ["技能描述"] = "持续伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/大攻击提升.png",
         ["技能品级"] = "SR",
@@ -528,7 +523,6 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 20,
         ["技能描述"] = "伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_大喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "SR",
@@ -601,7 +595,6 @@ local function LoadConfig()
         ["显示名"] = "射速提升",
         ["最大等级"] = 10,
         ["技能描述"] = "射速增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/冷却提升.png",
         ["技能品级"] = "R",
@@ -635,7 +628,6 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 10,
         ["技能描述"] = "伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "R",
@@ -669,7 +661,6 @@ local function LoadConfig()
         ["显示名"] = "生命提升",
         ["最大等级"] = 10,
         ["技能描述"] = "生命增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_小喷菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/生命提升.png",
         ["技能品级"] = "R",
@@ -741,13 +732,11 @@ local function LoadConfig()
         ["显示名"] = "持续伤害提升",
         ["最大等级"] = 10,
         ["技能描述"] = "持续伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_胆小菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/大攻击提升.png",
         ["技能品级"] = "R",
         ["是入口技能"] = false,
         ["技能分类"] = 0,
-        ["提升玩家等级"] = nil,
         ["下一技能"] = {
             "大喷菇"
         },
@@ -755,7 +744,6 @@ local function LoadConfig()
         ["被动词条"] = {
             "持续伤害_词条_胆小菇"
         },
-        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,
@@ -776,7 +764,6 @@ local function LoadConfig()
         ["显示名"] = "攻击提升",
         ["最大等级"] = 10,
         ["技能描述"] = "伤害增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_胆小菇_BaseColor.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/攻击提升.png",
         ["技能品级"] = "R",
@@ -1458,7 +1445,6 @@ local function LoadConfig()
         ["显示名"] = "射速增加",
         ["最大等级"] = 10,
         ["技能描述"] = "射速增加",
-        ["技能详细"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/机枪加特林.png",
         ["技能小角标"] = "sandboxId://textures/ui/主界面UI/主副卡界面/主卡界面/冷却提升.png",
         ["技能品级"] = "SR",
@@ -1469,7 +1455,6 @@ local function LoadConfig()
         ["被动词条"] = {
             "射速1_词条_高速加特林"
         },
-        ["最大经验"] = nil,
         ["主动释放魔法"] = nil,
         ["目标模式"] = "敌人",
         ["启用后坐力"] = false,

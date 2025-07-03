@@ -56,6 +56,10 @@ function ShopGui:_UpdateCard(node, shopGood, status)
     node:Get("热卖").node.Visible = shopGood.isSale
     node:Get("限定").node.Visible = shopGood.isLimited
     node:Get("价格").node.Title = tostring(status.price)
+    if not shopGood.price or not shopGood.price.priceType then
+        gg.log("警告： 商品没有配置价格： ", shopGood.name)
+        return
+    end
     node:Get("货币图标").node.Icon = shopGood.price.priceType.icon
     node.clickCb = function (ui, button)
         self:_ShowGood(shopGood)

@@ -124,7 +124,7 @@ function HudInteract:ShowInteract(interactOptions)
         local button = self.interactList:GetChild(i) ---@cast button ViewButton
         button:Get("Text").node.Title = option.npcName
         if option.icon then
-            button:Get("图标").node.Icon = option.icon 
+            button:Get("装饰按钮").node.Icon = option.icon 
         end
         button.index = i
     end

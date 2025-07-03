@@ -21,7 +21,7 @@ local ForceClickHud = ClassMgr.Class("ForceClickHud", ViewBase)
 
 local uiConfig = {
     uiName = "ForceClickHud",
-    layer = 20,
+    layer = -1,
     hideOnInit = true,
     closeHuds = false
 }

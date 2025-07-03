@@ -102,7 +102,7 @@ function CommandManager.ExecuteCommand(commandStr, player, silent)
         --- 用来处理玩家不在线的情况
         --- 获取玩家
 
-    elseif params["玩家"] then
+    elseif params["玩家"] and params["玩家"] ~= "" then
         player = gg.getLivingByName(params["玩家"])
         if not player then
             gg.log("玩家不存在: " .. params["玩家"])

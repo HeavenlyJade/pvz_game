@@ -18,7 +18,7 @@ local HoverTextHud = ClassMgr.Class("HoverTextHud", ViewBase)
 
 local uiConfig = {
     uiName = "HoverTextHud",
-    layer = 0,
+    layer = -1,
     hideOnInit = false,
     closeHuds = false
 }

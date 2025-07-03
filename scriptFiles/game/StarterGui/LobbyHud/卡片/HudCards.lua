@@ -116,7 +116,7 @@ function HudCards:OnSyncPlayerSkills(data)
     self.subCardData = {}
 
     -- 反序列化技能数据
-    for skillId, skillData in pairs(data.skillData.skills) do
+    for skillId, skillData in pairs(data.skillData.equipped_skills) do
         local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
         local skill = Skill.New(nil, skillData) ---@type Skill
         skills[skillId] = skill

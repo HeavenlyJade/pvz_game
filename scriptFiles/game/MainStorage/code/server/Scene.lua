@@ -2,12 +2,11 @@ local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
-local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig·
+local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig
 local AfkSpotConfig = require(MainStorage.code.common.config.AfkSpotConfig) ---@type AfkSpotConfig
 local TriggerZoneConfig = require(MainStorage.code.common.config.TriggerZoneConfig) ---@type TriggerZoneConfig
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
-
 local Monster = require(MainStorage.code.server.entity_types.Monster) ---@type Monster
 local Npc = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
 local AfkSpot = require(MainStorage.code.server.entity_types.AfkSpot) ---@type AfkSpot

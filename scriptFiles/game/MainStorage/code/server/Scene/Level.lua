@@ -621,6 +621,7 @@ function Level:End(success)
         })
         player:SendChatText(success and "Level completed!" or "Level failed!")
         player:ExitBattle()
+        player:ResetTempSkill()
     end
 
     -- 清理场景
@@ -646,6 +647,22 @@ function Level:AddPlayer(player)
             position = player.actor.Position,
             euler = player.actor.Euler
         }
+    end
+
+    -- 设置临时技能
+    if self.levelType.tempSkill then
+        player.tempSkills = {}
+        for _, skill in ipairs(self.levelType.tempSkill) do
+            local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
+            player.tempSkills[skill.skillType.name] = Skill.New(player, {
+                skill = skill.skillType.name,
+                level = skill.level,
+                slot = skill.slot,
+                star_level = 1
+            })
+            player.equippedSkills[skill.slot] = skill.skillType.name
+        end
+        player:syncSkillData()
     end
 
     -- 获取进入点位置
@@ -716,6 +733,7 @@ function Level:RemovePlayer(player, success, reason)
             end
         end
         self.playerCount = math.max(0, self.playerCount - 1)
+        player:ResetTempSkill()
 
         local originalPos = self.playerOriginalPositions[player.uin]
         if player.actor and originalPos then

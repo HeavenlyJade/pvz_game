@@ -18,7 +18,7 @@ local GainItemHud = ClassMgr.Class("GainItemHud", ViewBase)
 
 local uiConfig = {
     uiName = "GainItemHud",
-    layer = 0,
+    layer = -1,
     hideOnInit = false,
     closeHuds = false
 }

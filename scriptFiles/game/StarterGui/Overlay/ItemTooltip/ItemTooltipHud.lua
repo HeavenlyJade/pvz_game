@@ -13,7 +13,7 @@ local ItemTooltipHud = ClassMgr.Class("ItemTooltipHud", ViewBase)
 
 local uiConfig = {
     uiName = "ItemTooltipHud",
-    layer = 0,
+    layer = 20,
     hideOnInit = true,
     closeHuds = false
 }

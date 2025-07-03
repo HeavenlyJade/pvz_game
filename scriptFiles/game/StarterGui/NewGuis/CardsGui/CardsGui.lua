@@ -1607,9 +1607,6 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
 
     -- === 新增：在设置按钮状态前检查资源 ===
     local canAfford = self:UpdateMainCardResourceCost(attributeButton, skill, skillLevel)
-    gg.log("canEquip", canAfford,skill.isEquipable,skill.name,canResearchOrEquip)
-
-    -- 设置研究装备按钮状态
     if canResearchOrEquip then
         -- 显示研究按钮
         self.confirmPointsButton:SetVisible(true)
@@ -2818,10 +2815,11 @@ function CardsGui:OnSkillSetLevelResponse(response)
             self.equippedSkills[slot] = skillName
         end
         -- 根据技能类型更新UI
-        if skillType.category == 0 then
+        -- gg.log("skillType.category",skillType.category)
+        if skillType.category == 0 and self.currentCardType == uiConfig.mianCard then
             -- 主卡更新：更新主卡状态和显示
             self:HandleMainCardUpdate(skillName, skillType, skillData)
-        elseif skillType.category == 1 then
+        elseif skillType.category == 1 and self.currentCardType == uiConfig.Subcard then
             -- 副卡更新：更新副卡状态和显示
             self:HandleSubCardUpdate(skillName, skillType, skillData)
         end

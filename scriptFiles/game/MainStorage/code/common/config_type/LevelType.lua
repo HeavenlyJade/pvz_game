@@ -9,6 +9,7 @@ local LevelConfig = require(MainStorage.code.common.config.LevelConfig)  ---@typ
 local Item = require(MainStorage.code.server.bag.Item) ---@type Item
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
 
 
 ---@class DropItemInfo
@@ -30,6 +31,18 @@ function SpawningMob:OnInit(data)
     self.weight = data["比重"] or 1
 end
 
+---@class TempSkill:Class
+---@field skillType SkillType
+---@field level number
+---@field slot number
+local TempSkill = ClassMgr.Class("TempSkill")
+
+function TempSkill:OnInit(data)
+    self.skillType = SkillTypeConfig.Get(data["技能类型"])
+    self.level = data["等级"] or 1
+    self.slot = data["装备槽位"]
+end
+
 ---@class SpawningWave:Class
 ---@field mobs SpawningMob[]
 ---@field duration number
@@ -48,6 +61,7 @@ function SpawningWave:OnInit(data)
     self.count = data["数量"] or 0
     self.maxCount = data["最大数量"] or 0
     self.startTime = data["开始时间"] or 0
+
     self.selector = WeightedRandomSelector.New(self.mobs, function(mob) return mob.weight end)
     
     -- 计算实际要刷新的怪物数量
@@ -253,6 +267,12 @@ function LevelType:OnInit(data)
     self.level = data["等级"] or 1 ---@type number
     self.dropModifier = Modifiers.New(data["掉落物数量修改"]) ---@type Modifiers
     
+    self.tempSkill = {} ---@type TempSkill[]
+    if data["临时装备技能"] then
+        for _, skillData in ipairs(data["临时装备技能"]) do
+            table.insert(self.tempSkill, TempSkill.New(skillData))
+        end
+    end
     -- 加载排名掉落物配置
     self.rankRewards = data["排名掉落物"] or {} ---@type RankRewardInfo[]
 

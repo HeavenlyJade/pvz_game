@@ -81,7 +81,7 @@ function MainServer.start_server()
     for _, child in pairs(MainStorage.code.common.config.Children) do
         require(child)
     end
-    local plugins = MainStorage.code.plugins
+    local plugins = MainStorage.plugins
     if plugins then
         for _, child in pairs(plugins.Children) do
             if child and child.PluginMain then
