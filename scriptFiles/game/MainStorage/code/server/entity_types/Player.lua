@@ -508,6 +508,30 @@ function _M:buffer_destory()
     self.buff_instance = {}
 end
 
+local function CalculateStatValue(statType, level)
+    local growth = statType.valuePerLevel
+    local baseValue = statType.baseValue
+
+    if type(growth) == "number" then
+        -- 数值类型，使用原来的公式计算
+        return baseValue + level * growth
+    elseif type(growth) == "string" then
+        -- 字符串类型，使用公式计算
+        local formula = string.gsub(growth, "LVL", tostring(level))
+        
+        -- 使用项目中已有的 gg.eval 函数来安全地计算公式
+        local result = gg.eval(formula)
+        if result and type(result) == "number" then
+            return result
+        else
+            gg.log("Error evaluating stat formula for '%s'. Formula: '%s', Result: %s", statType.statName, growth, tostring(result))
+            return baseValue -- 出错时回退到基础值
+        end
+    else
+        -- 默认情况，如果valuePerLevel既不是数字也不是字符串
+        return baseValue
+    end
+end
 function _M:RefreshStats()
     -- 先重置装备属性
     self:ResetStats("EQUIP")
@@ -538,7 +562,8 @@ function _M:RefreshStats()
     -- 添加所有属性的基础值
     local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
     for statName, statType in pairs(StatTypeConfig.GetAll()) do
-        self:AddStat(statName, statType.baseValue + self.level * statType.valuePerLevel,"EQUIP", false)
+        local calculatedValue = CalculateStatValue(statType, self.level)
+        self:AddStat(statName, calculatedValue, "EQUIP", false)
     end
 
     -- 直接遍历bag_items，跳过c =0
