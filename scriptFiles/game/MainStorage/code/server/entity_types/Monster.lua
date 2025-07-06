@@ -214,28 +214,32 @@ function _M:GetAllDamageRecords()
     return self.damageRecords
 end
 
+function _M:AddHatred(amount, damager)
+    local uin = damager.uuid
+    if damager.isPlayer then
+        uin = damager.uin
+    end
+    local newHatred = (self.damageRecords[uin] or 0) + amount
+    self.damageRecords[uin] = newHatred
+    if self.target and self.target ~= damager then
+        local targetUin = self.target.uuid
+        if self.target.isPlayer then
+            targetUin = self.target.uin
+        end
+        local currentHatred = self.damageRecords[targetUin]
+        if not currentHatred or currentHatred < newHatred then
+            self:SetTarget(damager)
+        end
+    end
+end
+
 ---@override
 function _M:Hurt(amount, damager, isCrit)
     -- 播放受击音效
 
     -- 记录玩家造成的伤害
     if damager then
-        local uin = damager.uuid
-        if damager.isPlayer then
-            uin = damager.uin
-        end
-        local newHatred = (self.damageRecords[uin] or 0) + amount
-        self.damageRecords[uin] = newHatred
-        if self.target and self.target ~= damager then
-            local targetUin = self.target.uuid
-            if self.target.isPlayer then
-                targetUin = self.target.uin
-            end
-            local currentHatred = self.damageRecords[targetUin]
-            if not currentHatred or currentHatred < newHatred then
-                self:SetTarget(damager)
-            end
-        end
+        self:AddHatred(amount, damager)
     end
 
     Entity.Hurt(self, amount, damager, isCrit)

@@ -21,7 +21,7 @@ function SkillType:OnInit(data)
     self.displayName = data["显示名"] or self.name
     self.shortName = data["简短名"] or self.displayName:gsub("增加", ""):gsub("延长", ""):gsub("提升", ""):gsub("额外", "")
     self.maxLevel = data["最大等级"] or 1
-    self.description = data["技能描述"] or ""
+    self.description = data["实际描述"] or ""
     self.icon = data["技能图标"] or ""
     self.levelUpPlayer = data["提升玩家等级"] or 0
     self.miniIcon = data["技能小角标"] or ""
@@ -80,69 +80,73 @@ function SkillType:OnInit(data)
 end
 
 function SkillType:GetDescription(level)
-    if not self.description or self.description == "" then
-        return ""
-    end
+    return self.description
+    -- if not self.description or self.description == "" then
+    --     return ""
+    -- end
 
-    local result = self.description
+    -- local result = self.description
 
-    -- 处理 [数字:每级增加倍率] 格式
-    result = string.gsub(result, "%[(%d+):([%d%.]+)%]", function(baseValue, perLevel)
-        baseValue = tonumber(baseValue)
-        perLevel = tonumber(perLevel)
-        local finalValue = baseValue * (1 + (level - 1) * perLevel)
-        return string.format("%.1f", finalValue)
-    end)
+    -- -- 处理 [数字:每级增加倍率] 格式
+    -- result = string.gsub(result, "%[(%d+):([%d%.]+)%]", function(baseValue, perLevel)
+    --     baseValue = tonumber(baseValue)
+    --     perLevel = tonumber(perLevel)
+    --     local finalValue = baseValue * (1 + (level - 1) * perLevel)
+    --     return string.format("%.1f", finalValue)
+    -- end)
 
-    -- 处理 [魔法名.属性.数组索引] 格式
-    result = string.gsub(result, "%[([^%.%[%]:]+)%.([^%.]+)%.(%d+)%]", function(spellName, fieldName, arrayIndex)
-        arrayIndex = tonumber(arrayIndex)
-        local spell = SpellConfig.Get(spellName)
-        if spell then
-            if fieldName == "属性增伤" and spell.damageAmplifier and spell.damageAmplifier[arrayIndex] then
-                local element = spell.damageAmplifier[arrayIndex]
-                if element then
-                    local finalRate = element.multiplier
-                    if element.statType then
-                        return string.format("%.0f", finalRate*100) .. "%" .. (element.statType or "")
-                    else
-                        return string.format("%.1f", finalRate)
-                    end
-                end
-            end
-        end
-        return string.format("[%s.%s.%d]", spellName, fieldName, arrayIndex)
-    end)
+    -- -- 处理 [魔法名.属性.数组索引] 格式
+    -- result = string.gsub(result, "%[([^%.%[%]:]+)%.([^%.]+)%.(%d+)%]", function(spellName, fieldName, arrayIndex)
+    --     arrayIndex = tonumber(arrayIndex)
+    --     local spell = SpellConfig.Get(spellName)
+    --     if spell then
+    --         if fieldName == "属性增伤" and spell.damageAmplifier and spell.damageAmplifier[arrayIndex] then
+    --             local element = spell.damageAmplifier[arrayIndex]
+    --             if element then
+    --                 local finalRate = element.multiplier
+    --                 if element.statType then
+    --                     return string.format("%.0f", finalRate*100) .. "%" .. (element.statType or "")
+    --                 else
+    --                     return string.format("%.1f", finalRate)
+    --                 end
+    --             end
+    --         end
+    --     end
+    --     return string.format("[%s.%s.%d]", spellName, fieldName, arrayIndex)
+    -- end)
 
-    -- 处理 [魔法名.属性] 格式
-    result = string.gsub(result, "%[([^%.%[%]:]+)%.([^%.]+)%]", function(spellName, fieldName)
-        local spell = SpellConfig.Get(spellName)
-        if spell then
-            local field = spell[fieldName]
-            if field then
-                if type(field) == "number" then
-                    return string.format("%.1f", field)
-                elseif type(field) == "string" then
-                    return field
-                elseif type(field) == "table" then
-                    -- 如果是数组，尝试获取第一个元素
-                    if #field > 0 and field[1] then
-                        local value = field[1]
-                        if type(value) == "table" and value["倍率"] then
-                            return string.format("%.1f", value["倍率"])
-                        elseif type(value) == "number" then
-                            return string.format("%.1f", value)
-                        else
-                            return tostring(value)
-                        end
-                    end
-                end
-            end
-        end
-        return string.format("[%s.%s]", spellName, fieldName)
-    end)
+    -- -- 处理 [魔法名.属性] 格式
+    -- gg.log("result", result)
+    -- result = string.gsub(result, "%[([^%.%[%]:]+)%.([^%.]+)%]", function(spellName, fieldName)
+    --     local spell = SpellConfig.Get(spellName)
+    --     gg.log("spellName", spellName, fieldName, spell)
+    --     if spell then
+    --         local field = spell[fieldName]
+    --         gg.log("field", spellName, fieldName, field,  type(field))
+    --         if field then
+    --             if type(field) == "number" then
+    --                 return string.format("%.1f", field)
+    --             elseif type(field) == "string" then
+    --                 return field
+    --             elseif type(field) == "table" then
+    --                 -- 如果是数组，尝试获取第一个元素
+    --                 if #field > 0 and field[1] then
+    --                     local value = field[1]
+    --                     if type(value) == "table" and value["倍率"] then
+    --                         return string.format("%.1f", value["倍率"])
+    --                     elseif type(value) == "number" then
+    --                         return string.format("%.1f", value)
+    --                     else
+    --                         return tostring(value)
+    --                     end
+    --                 end
+    --             end
+    --         end
+    --     end
+    --     return string.format("[%s.%s]", spellName, fieldName)
+    -- end)
 
-    return result
+    -- return result
 end
 
 function SkillType:GetMaxGrowthAtLevel(level)

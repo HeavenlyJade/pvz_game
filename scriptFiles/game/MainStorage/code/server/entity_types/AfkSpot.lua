@@ -3,6 +3,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Npc = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
+local Entity             = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 
 ---@class AfkSpot:Npc
@@ -26,6 +27,9 @@ local function GetPlayerAfkCount(player)
     return count
 end
 
+function AfkSpot:createTitle(name)
+    Entity.createTitle(self, name, self.nameSize)
+end
 
 function AfkSpot:OnInit(data, actor)
     self.autoInteract = data["自动互动"] or false

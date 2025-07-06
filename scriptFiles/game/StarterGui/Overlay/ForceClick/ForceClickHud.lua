@@ -23,7 +23,8 @@ local uiConfig = {
     uiName = "ForceClickHud",
     layer = -1,
     hideOnInit = true,
-    closeHuds = false
+    closeHuds = false,
+    mouseVisible = true
 }
 
 function ForceClickHud:OnInit(node, config)

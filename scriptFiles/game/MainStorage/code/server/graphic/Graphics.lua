@@ -429,6 +429,7 @@ function SoundGraphic:OnInit( data )
     self.boundToEntity = data["绑定实体"] or false
     self.volume = data["响度"] or 1.0
     self.pitch = data["音调"] or 1.0
+    self.relevantOnly = data["仅播放给相关者"] or false
 end
 
 function SoundGraphic:GetType()
@@ -450,7 +451,16 @@ function SoundGraphic:PlayAtReal(caster, target, param)
         else
             boundTo = gg.Vec3.new(target:GetPosition())
         end
+        if self.relevantOnly then
+            if ClassMgr.Is(target, "Player") then ---@cast target Player
+                target:PlaySound(self.soundAssetId, boundTo, self.volume, self.pitch)
+            end
+            if caster ~= target and ClassMgr.Is(caster, "Player") then ---@cast caster Player
+                caster:PlaySound(self.soundAssetId, boundTo, self.volume, self.pitch)
+            end
+        else
         caster.scene:PlaySound(self.soundAssetId, boundTo, self.volume, self.pitch)
+        end
     else
         local data = {
             soundAssetId = self.soundAssetId,

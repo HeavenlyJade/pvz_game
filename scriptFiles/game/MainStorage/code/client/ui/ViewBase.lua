@@ -12,6 +12,7 @@ local hiddenHuds = {} -- 记录被隐藏的layer=0界面
 ---@field hideOnInit boolean 是否在初始化时隐藏
 ---@field layer number 0=主界面Hud， >1=GUI界面。 GUI在打开时关闭其他同layer的GUI
 ---@field closeHuds boolean
+---@field mouseVisible boolean
 
 ---@class ViewBase:Class
 ---@field New fun(node: SandboxNode, config: ViewConfig): ViewBase
@@ -48,6 +49,9 @@ function ViewBase.LockMouseVisible(visible)
             end
             -- 恢复鼠标模式
             game.MouseService:SetMode(1)
+            -- 新增：通知CameraController进入极限输入保护期
+            local CameraController = require(MainStorage.code.client.camera.CameraController)
+            CameraController.BlockExtremeInputFor(0.1)
         end
     end
 end
@@ -125,6 +129,7 @@ function ViewBase:OnInit(node, config)
     self.hideOnInit = config.hideOnInit == nil and true or config.hideOnInit
     self.layer = config.layer == nil and 1 or config.layer
     self.closeHuds = config.closeHuds
+    self.mouseVisible = config.mouseVisible or self.layer > 0
     if self.closeHuds == nil then
         self.closeHuds = self.layer >= 1
     end
@@ -171,7 +176,7 @@ function ViewBase:Close()
             soundAssetId = self.closeSound
         })
     end
-    if self.layer > 0 then
+    if self.mouseVisible then
         -- 只有没有任何layer>=1的界面显示时才隐藏鼠标
         local hasOtherLayerUI = false
         for _, ui in pairs(ViewBase.allUI) do
@@ -234,7 +239,7 @@ function ViewBase:Open()
     ClientEventManager.Publish("PlaySound", {
         soundAssetId = self.openSound
     })
-    if self.layer > 0 then
+    if self.mouseVisible then
         ViewBase.LockMouseVisible(true)
     end
     if self.layer > 0 then

@@ -10,8 +10,8 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local TagHandler = ClassMgr.Class("TagHandler")
 function TagHandler:OnInit( data )
     self.printMessage = data["打印信息"] ---@type boolean
-    self.m_tagType = data["m_tagType"] ---@type TagType
-    self.m_tagIndex = data["m_tagIndex"] ---@type number
+    self.m_tagType = nil ---@type TagType
+    self.m_tagIndex = 0
     self.m_trigger = data["m_trigger"] ---@type string
     self["优先级"] = data["优先级"] ---@type number
     self["冷却"] = data["冷却"] ---@type number

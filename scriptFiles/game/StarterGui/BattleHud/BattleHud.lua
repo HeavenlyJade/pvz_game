@@ -236,7 +236,7 @@ end
 ---@param skillId string 技能ID
 function BattleHud:SendCastSpellEvent(skillId)
     local camera = game.WorkSpace.CurrentCamera
-    local direction = CameraController.GetRealForward(-accumulatedVerticalRecoil, accumulatedHorizontalRecoil)
+    local direction = CameraController.GetForward()
     local targetPos, _ = CameraController.RaytraceScene({1, 2, 3})
     gg.network_channel:FireServer({
         cmd = "CastSpell",

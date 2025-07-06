@@ -6,6 +6,7 @@ local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) --
 local Price = require(MainStorage.code.common.config_type.Price) ---@type Price
 local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
+local MiniShopManager = require(MainStorage.code.server.bag.MiniShopManager) ---@type MiniShopManager
 
 ---@enum ShopGoodRefreshType
 local ShopGoodRefreshType = {
@@ -33,6 +34,14 @@ function ShopGood:OnInit(data)
     self.description = data["商品描述"]
     self.price = Price.New(data["价格"]) ---@type Price
     self.dailyResetFreeCount = data["每日重置免费次数"] or false
+    self.miniShopId = data["迷你商品ID"]
+    if self.miniShopId then
+        if self.miniShopId == 0 then
+            self.miniShopId = nil
+        else
+            MiniShopManager.miniId2ShopGood[self.miniShopId] = self
+        end
+    end
     self.limitedTime = data["限时"] or false
     self.rewards = data["获得物品"] or {} ---@type table<string, number>
     self.commands = data["执行指令"] or {}
@@ -85,12 +94,14 @@ function ShopGood:CanBuy(player, param)
     if param.cancelled then
         return false, "条件取消"
     end
-    local canAfford, reason = self.price:CanAfford(player, param)
-    if not canAfford then
-        return false, reason
-    end
-    if player:GetVariable(self.price.varKey, 0) > 0 then
-        return false, "已购买"
+    if not self.miniShopId then
+        local canAfford, reason = self.price:CanAfford(player, param)
+        if not canAfford then
+            return false, reason
+        end
+        if player:GetVariable(self.price.varKey, 0) > 0 then
+            return false, "已购买"
+        end
     end
     return true
 end
@@ -98,12 +109,30 @@ end
 ---@param player Player
 function ShopGood:Buy(player)
     local param = self:GetParam(player)
+    if param.cancelled then
+        player:SendHoverText("购买%s失败：条件取消", self.name)
+        return false
+    end
+    if self.miniShopId then
+        player:SendEvent("ViewMiniGood", {
+            goodId = self.miniShopId,
+            desc = self.description,
+            amount = 1
+        })
+        return
+    end
     local canBuy, reason = self:CanBuy(player, param)
     if not canBuy then
         player:SendHoverText("购买%s失败：%s", self.name, reason)
         return false
     end
     self.price:Pay(player)
+    self:Give(player)
+    return true
+end
+
+function ShopGood:Give(player)
+    gg.log(string.format("%s %d 购买了%s", player.name, player.uin, self.name))
     if self.price.varKey then
         player:AddVariable(self.price.varKey, 1)
     end
@@ -116,8 +145,6 @@ function ShopGood:Buy(player)
     for _, command in ipairs(self.commands) do
         player:ExecuteCommand(command)
     end
-    
-    return true
 end
 
 function ShopGood:GetToStringParams()

@@ -21,6 +21,7 @@ function PainSpell:OnInit(data)
     self.baseMultiplier = data["基础倍率"] or 1
     self.extraStats = data["额外属性"] or {}
     self.elementType = data["元素类型"] or "无"
+    self.tauntOnly = data["仅造成仇恨"]
     self.damageAmplifier = DamageAmplifier.Load(data["属性增伤"]) ---@type DamageAmplifier[]
     self.targetDamageAmplifier = DamageAmplifier.Load(data["目标属性增伤"]) ---@type DamageAmplifier[]
 end
@@ -72,43 +73,49 @@ function PainSpell:CastReal(caster, target, param)
         end
     end
     
-    local attackBattle = caster:Attack(target, battle:GetFinalDamage(), self.spellName)
-    
-    -- 打印伤害信息
-    if self.printInfo then
-        local log = {}
-        table.insert(log, string.format("=== %s 伤害构成 ===", self.spellName))
-        
-        table.insert(log, "基础伤害修饰器:")
-        for _, modifier in ipairs(attackBattle:GetBaseModifiers()) do
-            table.insert(log, string.format("  %s: %s (%s)", 
-                modifier.source, 
-                modifier.amount, 
-                modifier.modifierType))
+    if self.tauntOnly then
+        if ClassMgr.Is(target, "Monster") then ---@cast target Monster
+            target:AddHatred(battle:GetFinalDamage(), caster)
+            if self.printInfo then
+                gg.log(caster, "对", target, "造成了", battle:GetFinalDamage(), "仇恨")
+            end
         end
-        
-        table.insert(log, "倍率修饰器:")
-        for _, modifier in ipairs(attackBattle:GetMultiplyModifiers()) do
-            table.insert(log, string.format("  %s: %s (%s)", 
-                modifier.source, 
-                modifier.amount, 
-                modifier.modifierType))
+    else
+        local attackBattle = caster:Attack(target, battle:GetFinalDamage(), self.spellName)
+        -- 打印伤害信息
+        if self.printInfo then
+            local log = {}
+            table.insert(log, string.format("=== %s 伤害构成 ===", self.spellName))
+            table.insert(log, "基础伤害修饰器:")
+            for _, modifier in ipairs(attackBattle:GetBaseModifiers()) do
+                table.insert(log, string.format("  %s: %s (%s)", 
+                    modifier.source, 
+                    modifier.amount, 
+                    modifier.modifierType))
+            end
+            
+            table.insert(log, "倍率修饰器:")
+            for _, modifier in ipairs(attackBattle:GetMultiplyModifiers()) do
+                table.insert(log, string.format("  %s: %s (%s)", 
+                    modifier.source, 
+                    modifier.amount, 
+                    modifier.modifierType))
+            end
+            
+            table.insert(log, "最终倍率修饰器:")
+            for _, modifier in ipairs(attackBattle:GetFinalMultiplyModifiers()) do
+                table.insert(log, string.format("  %s: %s (%s)", 
+                    modifier.source, 
+                    modifier.amount, 
+                    modifier.modifierType))
+            end
+            
+            table.insert(log, string.format("最终伤害: %s", attackBattle:GetFinalDamage()))
+            table.insert(log, "=====================")
+            
+            print(table.concat(log, "\n"))
         end
-        
-        table.insert(log, "最终倍率修饰器:")
-        for _, modifier in ipairs(attackBattle:GetFinalMultiplyModifiers()) do
-            table.insert(log, string.format("  %s: %s (%s)", 
-                modifier.source, 
-                modifier.amount, 
-                modifier.modifierType))
-        end
-        
-        table.insert(log, string.format("最终伤害: %s", attackBattle:GetFinalDamage()))
-        table.insert(log, "=====================")
-        
-        print(table.concat(log, "\n"))
     end
-    
     -- 重置临时属性
     if next(self.extraStats) then
         caster:ResetStats("TEMP")

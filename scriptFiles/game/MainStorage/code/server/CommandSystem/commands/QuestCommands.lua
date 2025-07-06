@@ -36,7 +36,7 @@ function QuestCommand.main(params, player)
     if action == "领取" then
         -- 检查是否已接受或完成
         if quest:Has(player) then
-            player:SendChatText("你已经接受或完成了该任务")
+            player:SendChatText("你已经接受或完成了任务", quest.name)
             return false
         end
         

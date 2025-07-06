@@ -126,8 +126,9 @@ function TagType:FactoryEquipingTag(prefix, level)
     equipingTag.tagType = self
     equipingTag.handlers = {}
 
-    for _, tagHandler in ipairs(self.functions) do
+    for i, tagHandler in ipairs(self.functions) do
         tagHandler.m_tagType = self
+        tagHandler.m_tagIndex = i
         local key = tagHandler.m_trigger
         if not equipingTag.handlers[key] then
             equipingTag.handlers[key] = {}

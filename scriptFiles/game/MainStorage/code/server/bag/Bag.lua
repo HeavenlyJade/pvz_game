@@ -421,11 +421,17 @@ function Bag:DecomposeAllLowQualityItems(rank)
 end
 
 ---@param item Item 物品信息
+---@param silent? boolean true时，不弹出左下角的提示
 ---@return boolean
-function Bag:GiveItem(item)
-    ---玩家从系统处获得物品走此函数
+function Bag:GiveItem(item, silent)
+    if item.itemType.gainCommands then
+        self.player:ExecuteCommands(item.itemType.gainCommands)
+    end
+    if item.itemType.cancelGained then
+        return true
+    end
     self:AddItem(item)
-    if not item.itemType.isMoney then
+    if not item.itemType.isMoney and not silent then
         self.player:SendEvent("GainedItem", {
             item = item:Save()
         })

@@ -421,7 +421,7 @@ function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
         -- === 修复：检查一键强化按钮是否应该显示 ===
         local upgradeAllData = self:CalculateUpgradeAllCost(skill.name)
         local shouldShowUpgradeAllButton = false
-        
+
         -- 判断一键强化按钮是否显示（只要有配置就显示，让玩家点击获得反馈）
         if upgradeAllData then
             if upgradeAllData.errorType == "NO_CONFIG" then
@@ -1005,11 +1005,22 @@ end
 
 -- === 优化方法：批量更新技能按钮的灰色状态 ===
 function CardsGui:UpdateAllSkillButtonsGrayState()
-    -- 优化：使用单次遍历更新所有技能按钮状态
+    -- 更新主卡状态
     for skillName, skillButton in pairs(self.mainCardButtondict) do
         local isUnlocked = self.ServerSkills[skillName] ~= nil
-
         skillButton:SetGray(not isUnlocked)
+    end
+
+    -- 更新所有品质的副卡状态
+    for _, quality in ipairs(uiConfig.qualityList) do
+        local qualityList = self.subQualityLists[quality]
+        if qualityList then
+            for _, button in pairs(qualityList.childrens) do
+                local skillName = button.node.Name
+                local isUnlocked = self.ServerSkills[skillName] ~= nil
+                button:SetGray(not isUnlocked)
+            end
+        end
     end
 end
 
@@ -1056,7 +1067,7 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
             buttonState.serverUnlocked = true
             -- 更新按钮的extraParams中的serverData
             if buttonState.button then
-                buttonState.button.img.Grayed = false  -- 确保按钮不是灰色状态
+                buttonState.button:SetGray(false)  -- 确保按钮不是灰色状态
             end
         end
 
@@ -2586,22 +2597,22 @@ function CardsGui:UpdateSubCardAttributePanel(skill, skillLevel, serverData)
     descPostNode.Title = des.postD
 
     local upgradeCosts = skill:GetCostAtLevel(skillLevel+1)
-    
+
     if upgradeCosts and next(upgradeCosts) then
         -- 计算有效物品数量（排除cost为0的物品）
         local validItems = {}
         for materialName, cost in pairs(upgradeCosts) do
-    
+
             local itemConfig = ItemTypeConfig.Get(materialName)
             if itemConfig then
                 table.insert(validItems, {materialName = materialName, cost = cost, itemConfig = itemConfig})
             end
-        
+
         end
-        
+
         -- 设置ViewList大小为有效物品数量
         self.subCardEnhancementList:SetElementSize(#validItems)
-        
+
         -- 为每个有效物品设置UI
         for index, item in ipairs(validItems) do
             self.subCardEnhancementList:GetChild(index):SetItemCost(item.itemConfig, self:GetItemAmount(item.materialName), item.cost)
@@ -3066,7 +3077,7 @@ function CardsGui:CalculateUpgradeAllCost(skillName)
     -- 检查是否有实际的资源消耗
     local hasActualResourceCost = false
     local processedCost = {}
-    
+
     for resourceName, amount in pairs(nextLevelCost) do
         local consumeAmount = math.abs(amount)
         if consumeAmount > 0 then
@@ -3074,7 +3085,7 @@ function CardsGui:CalculateUpgradeAllCost(skillName)
             processedCost[resourceName] = consumeAmount
         end
     end
-    
+
     if not hasActualResourceCost then
         return {
             skillName = skillName,
@@ -3093,7 +3104,7 @@ function CardsGui:CalculateUpgradeAllCost(skillName)
     -- 检查是否有足够资源升级下一级
     local canUpgrade = true
     local limitingResource = nil
-    
+
     for resourceName, needAmount in pairs(processedCost) do
         local available = availableResources[resourceName] or 0
         if available < needAmount then
@@ -3128,12 +3139,12 @@ function CardsGui:ShowUpgradeConfirmDialog(skillName)
 
     -- 计算升级数据
     local upgradeData = self:CalculateUpgradeAllCost(skillName)
-    
+
     -- === 新增：处理不同的错误情况 ===
-    if not upgradeData then 
+    if not upgradeData then
         -- 向后兼容：如果返回nil，默认为无配置
         self:ShowOneKeyUpgradeNotConfiguredMessage(skillName)
-        return 
+        return
     elseif upgradeData.errorType then
         -- 根据具体错误类型显示相应提示
         if upgradeData.errorType == "NO_CONFIG" then
@@ -3264,7 +3275,7 @@ function CardsGui:OnCancelUpgrade()
     if self.CancelButton then
         self.CancelButton:SetVisible(true)
     end
-    
+
     -- 隐藏确认对话框
     self:HideUpgradeConfirmDialog()
 end
@@ -3284,10 +3295,10 @@ function CardsGui:ShowOneKeyUpgradeNotConfiguredMessage(skillName)
     -- 获取技能配置来显示友好的技能名称
     local skillType = SkillTypeConfig.Get(skillName)
     local displayName = skillType and skillType.displayName or skillName
-    
+
     -- 构建提示消息
     local message = string.format("【%s】未配置一键强化资源\n\n该技能暂不支持一键强化功能\n请使用单次强化按钮进行升级", displayName)
-    
+
     self:ShowOneKeyUpgradeMessage(message, displayName, "未配置一键强化")
 end
 
@@ -3296,10 +3307,10 @@ function CardsGui:ShowOneKeyUpgradeNoResourceCostMessage(skillName)
     -- 获取技能配置来显示友好的技能名称
     local skillType = SkillTypeConfig.Get(skillName)
     local displayName = skillType and skillType.displayName or skillName
-    
+
     -- 构建提示消息
     local message = string.format("【%s】一键强化无资源消耗\n\n该技能的一键强化配置无实际资源消耗\n请使用单次强化按钮进行升级", displayName)
-    
+
     self:ShowOneKeyUpgradeMessage(message, displayName, "无资源消耗")
 end
 
@@ -3308,10 +3319,10 @@ function CardsGui:ShowOneKeyUpgradeMaxLevelMessage(skillName)
     -- 获取技能配置来显示友好的技能名称
     local skillType = SkillTypeConfig.Get(skillName)
     local displayName = skillType and skillType.displayName or skillName
-    
+
     -- 构建提示消息
     local message = string.format("【%s】已达最大等级\n\n该技能已经达到最高等级\n无需继续强化", displayName)
-    
+
     self:ShowOneKeyUpgradeMessage(message, displayName, "已达最大等级")
 end
 
@@ -3319,22 +3330,22 @@ end
 function CardsGui:ShowOneKeyUpgradeInsufficientResourcesMessage(upgradeData)
     local skillType = SkillTypeConfig.Get(upgradeData.skillName)
     local displayName = skillType and skillType.displayName or upgradeData.skillName
-    
+
     -- 构建资源不足的详细信息
     local resourceLines = {}
     table.insert(resourceLines, string.format("【%s】一键强化资源不足", displayName))
     table.insert(resourceLines, "")
-    
+
     if upgradeData.currentLevel < upgradeData.maxLevel then
-        table.insert(resourceLines, string.format("升级目标：等级 %d → %d", 
+        table.insert(resourceLines, string.format("升级目标：等级 %d → %d",
             upgradeData.currentLevel, upgradeData.nextLevel))
     else
         table.insert(resourceLines, "技能已达最大等级")
     end
-    
+
     table.insert(resourceLines, "")
     table.insert(resourceLines, "下一级所需资源：")
-    
+
     -- 显示具体的资源需求
     if upgradeData.nextLevelCost and next(upgradeData.nextLevelCost) then
         local sortedResources = {}
@@ -3342,20 +3353,20 @@ function CardsGui:ShowOneKeyUpgradeInsufficientResourcesMessage(upgradeData)
             table.insert(sortedResources, {name = resourceName, amount = amount})
         end
         table.sort(sortedResources, function(a, b) return a.name < b.name end)
-        
+
         for _, resource in ipairs(sortedResources) do
             local available = upgradeData.availableResources[resource.name] or 0
             local sufficient = available >= resource.amount
             local status = sufficient and "✅" or "❌"
             table.insert(resourceLines, string.format("%s %s：需要 %d，拥有 %d，缺少 %d",
-                status, resource.name, resource.amount, available, 
+                status, resource.name, resource.amount, available,
                 math.max(0, resource.amount - available)))
         end
     end
-    
+
     table.insert(resourceLines, "")
     table.insert(resourceLines, "建议：收集足够资源后再尝试一键强化")
-    
+
     local message = table.concat(resourceLines, "\n")
     self:ShowOneKeyUpgradeMessage(message, displayName, "资源不足")
 end
@@ -3368,10 +3379,10 @@ function CardsGui:ShowOneKeyUpgradeMessage(message, displayName, logType)
         if self.ConfirmStrengthenUI.node.content then
             self.ConfirmStrengthenUI.node.content.Title = message
         end
-        
+
         -- 显示对话框
         self.ConfirmStrengthenUI.node.Visible = true
-        
+
         -- === 隐藏确认按钮，只显示取消按钮 ===
         if self.ConfirmButton then
             self.ConfirmButton:SetVisible(false)
@@ -3379,7 +3390,7 @@ function CardsGui:ShowOneKeyUpgradeMessage(message, displayName, logType)
         if self.CancelButton then
             self.CancelButton:SetVisible(true)
         end
-        
+
         -- gg.log("显示一键强化提示:", displayName, "类型:", logType)
     else
         -- 备用方案：如果确认对话框不可用，直接记录日志

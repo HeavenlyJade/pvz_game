@@ -58,6 +58,7 @@ function ClientMain.start_client()
     ClientScheduler.add(function ()
         ViewBase.LockMouseVisible(false)
     end, 1)
+    require(MainStorage.code.client.graphic.MiniShopManagerClient)
     -- ClientEventManager.Subscribe("FetchModelSize", function (evt)
     --     local actor = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast actor Actor
     --     if actor then

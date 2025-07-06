@@ -80,7 +80,7 @@ function RollCardsGui:S_DrawWithMissing(player, data)
         return
     end
     self.priceConfig:Pay(player, missingCost)
-    player.bag:GiveItem(self.material:ToItem(missingCount))
+    player.bag:GiveItem(self.material:ToItem(missingCount), true)
     self:S_Draw(player, data)
 end
 

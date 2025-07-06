@@ -132,7 +132,10 @@ function _M:OnInit(info_)
 end
 
 function _M:GetSkill(skillName)
-    return self.tempSkills[skillName] or self.skills[skillName] or nil
+    if self.tempSkills and self.tempSkills[skillName] then
+        return self.tempSkills[skillName]
+    end
+    return self.skills[skillName] or nil
 end
 
 function _M:GetEquippedSkill(slot)
@@ -376,6 +379,31 @@ function _M:SetLevel(level)
     })
 end
 
+function _M:SetModel(model, animator, stateMachine)
+    self:SetAnimationController(stateMachine)
+    local actor = self.actor
+    if not model then
+        actor.StandardSkeleton = Enum.StandardSkeleton.Offical_Player12
+        actor.SkinId = self._miniSkinId
+        actor.ModelId = self._miniModelPath
+        actor["Animator"].ControllerAsset = "sandboxSysId&restype=12://ministudio/entity/player/player12/Animation/OfficialController.controller"
+        actor.MoveGroup.IdleBehavior.AnimatorStateName = "Base Layer.Idle"
+        actor.MoveGroup.WalkBehavior.AnimatorStateName = "Base Layer.Run"
+        return
+    end
+    if not self._miniSkinId then
+        self._miniModelPath = self.actor.ModelId
+        self._miniSkinId = self.actor.SkinId
+    end
+    actor.StandardSkeleton = Enum.StandardSkeleton.None
+    actor.SkinId = -1
+    actor.ModelId = model
+    actor["Animator"].ControllerAsset = animator
+    actor.MoveGroup.IdleBehavior.AnimatorStateName = "BaseLayer.Idle"
+    actor.MoveGroup.WalkBehavior.AnimatorStateName = "BaseLayer.Run"
+    actor.MoveGroup.IdleBehavior.SkeletonType = Enum.StandardSkeleton.Offical_Player12
+    actor.MoveGroup.WalkBehavior.SkeletonType = Enum.StandardSkeleton.Offical_Player12
+end
 
 function _M:EnterBattle()
     gg.log("玩家进入战斗:", self.name, "UIN:", self.uin)
@@ -410,9 +438,7 @@ end
 
 function _M:ExitBattle()
     self:showReviveEffect(self:GetPosition())
-    self:SetModel("sandboxSysId://ministudio/entity/player/defaultplayer/body.prefab",
-    "sandboxSysId&restype=12://ministudio/entity/player/player12/Animation/OfficialController.controller",
-    nil)
+    self:SetModel(nil, nil, nil)
     self.actor.LocalScale = Vector3.New(1, 1, 1)
     self:SetMoveable(true)  -- 确保玩家退出战斗后可以移动
     self:RefreshStats()
@@ -481,10 +507,16 @@ function _M:DestroyObject()
 end
 
 function _M:OnLeaveGame()
-    -- 发布玩家退出游戏事件
     ServerEventManager.Publish("PlayerLeaveGameEvent", { player = self })
-    self:SetVariable("daily_onlinetime", os.time() - self.loginTime)
-    Entity.DestroyObject(self)
+    if not self.isDead then
+        self:Die()
+    end
+    self.isDestroyed = true
+    if self.actor then
+        _M.node2Entity[self.actor] = nil
+        self.actor = nil
+    end
+    ServerEventManager.UnsubscribeByKey(self.uuid)
 end
 
 --------------------------------------------------
@@ -508,30 +540,6 @@ function _M:buffer_destory()
     self.buff_instance = {}
 end
 
-local function CalculateStatValue(statType, level)
-    local growth = statType.valuePerLevel
-    local baseValue = statType.baseValue
-
-    if type(growth) == "number" then
-        -- 数值类型，使用原来的公式计算
-        return baseValue + level * growth
-    elseif type(growth) == "string" then
-        -- 字符串类型，使用公式计算
-        local formula = string.gsub(growth, "LVL", tostring(level))
-        
-        -- 使用项目中已有的 gg.eval 函数来安全地计算公式
-        local result = gg.eval(formula)
-        if result and type(result) == "number" then
-            return result
-        else
-            gg.log("Error evaluating stat formula for '%s'. Formula: '%s', Result: %s", statType.statName, growth, tostring(result))
-            return baseValue -- 出错时回退到基础值
-        end
-    else
-        -- 默认情况，如果valuePerLevel既不是数字也不是字符串
-        return baseValue
-    end
-end
 function _M:RefreshStats()
     -- 先重置装备属性
     self:ResetStats("EQUIP")
@@ -562,8 +570,11 @@ function _M:RefreshStats()
     -- 添加所有属性的基础值
     local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
     for statName, statType in pairs(StatTypeConfig.GetAll()) do
-        local calculatedValue = CalculateStatValue(statType, self.level)
-        self:AddStat(statName, calculatedValue, "EQUIP", false)
+        local amount = statType.baseValue
+        if statType.valuePerLevel then
+            amount = amount + gg.ProcessFormula(statType.valuePerLevel:gsub("LVL", tostring(self.level)))
+        end
+        self:AddStat(statName, amount ,"EQUIP", false)
     end
 
     -- 直接遍历bag_items，跳过c =0
@@ -854,6 +865,8 @@ end
 
 -- 玩家离开游戏
 function _M:Save()
+    self:AddVariable("daily_onlinetime", os.time() - self.loginTime)
+    self.loginTime = os.time()
     cloudDataMgr.SavePlayerData(self.uin, true)
     cloudDataMgr.SaveGameTaskData(self)
     cloudDataMgr.SaveSkillConfig(self)

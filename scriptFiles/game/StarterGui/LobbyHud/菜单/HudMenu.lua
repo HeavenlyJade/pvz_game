@@ -32,7 +32,7 @@ end
 function HudMenu:OnInit(node, config)
     gg.log("菜单按钮HudMenu初始化")
     self.selectingCard = 0
-
+    gg.log("图鉴", self:Get("图鉴", ViewButton))
     self:RegisterMenuButton(self:Get("活动", ViewButton))
     self:RegisterMenuButton(self:Get("图鉴", ViewButton))
 

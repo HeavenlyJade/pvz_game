@@ -98,13 +98,19 @@ local _InputChangedEvent = nil
 local _cameraLocked = false -- 新增：摄像机锁定标志
 
 local _lastExtremeInputTime = 0 -- 极限输入冷却
-local EXTREME_INPUT_THRESHOLD = 300
+local EXTREME_INPUT_THRESHOLD = 20
 local EXTREME_INPUT_COOLDOWN = 1.0
+
+local _extremeInputBlockUntil = 0 -- 极限输入保护期
+local _pendingExtremeInputBlockDuration = nil -- 新增：待激活保护时长
+
+local _lastDeltaX = 0
+local _lastDeltaY = 0
 
 ClientEventManager.Subscribe("UpdateCameraView", function(data)
     if data.x then
-        _rawMouseX = data.x
-        _rawMouseY = data.y + 180
+        _rawMouseY = data.x
+        _rawMouseX = data.y + 180
     end
 end)
 -- 在 CameraController.lua 中，替换 SetActive 函数中的鼠标处理部分：
@@ -353,12 +359,14 @@ end
 
 --获取摄像机朝向，未抖动
 function CameraController.GetForward()
-    return gg.vec.ToDirection(Vector3.New(_rawMouseX, _rawMouseY, 0))
+    local winSize = _camera.WindowSize
+    local ray_   =  _camera:ViewportPointToRay( winSize.x/2, winSize.y/2, 12800 )
+    return ray_.Direction
 end
 
-function CameraController.GetRealForward(horizontalRecoil, verticalRecoil)
-    return gg.vec.ToDirection(Vector3.New(_mouseX + horizontalRecoil, _mouseY + verticalRecoil, 0))
-end
+-- function CameraController.GetRealForward(horizontalRecoil, verticalRecoil)
+--     return gg.vec.ToDirection(Vector3.New(_mouseX + horizontalRecoil, _mouseY + verticalRecoil, 0))
+-- end
 
 --获取摄像机观察点位置
 function CameraController.CalcPivotPosition(axisDegrees)
@@ -549,8 +557,18 @@ function CameraController.SetInputEnabled(enabled)
 end
 
 function CameraController.InputMove(deltaX, deltaY)
-    -- deltaX: 水平输入，驱动偏航（Yaw）
-    -- deltaY: 垂直输入，驱动俯仰（Pitch）
+    local now = gg.GetTimeStamp()
+    -- 若有待激活保护，首次输入时激活保护期
+    if _pendingExtremeInputBlockDuration then
+        _extremeInputBlockUntil = now + _pendingExtremeInputBlockDuration
+        _pendingExtremeInputBlockDuration = nil
+    end
+    if now < _extremeInputBlockUntil then
+        if math.abs(deltaX) > EXTREME_INPUT_THRESHOLD or math.abs(deltaY) > EXTREME_INPUT_THRESHOLD then
+            return
+        end
+    end
+
     local yawInput   = deltaX
     local pitchInput = deltaY
 
@@ -573,7 +591,6 @@ function CameraController.InputMove(deltaX, deltaY)
     -- 更新 raw 值
     _rawMouseX = _rawMouseX + yawInput   * _mouseXSensitivity
     _rawMouseY = _rawMouseY + pitchInput * _mouseYSensitivity
-
     -- 偏航限制Y轴
     _rawMouseY = math.clamp(_rawMouseY, _mouseYMin, _mouseYMax)
 end
@@ -634,14 +651,6 @@ function CameraController.OnTouchMoved(x, y, touchId)
         local delta = _currentTouchPos - _lastTouchPos
         local currentTime = gg.GetTimeStamp()  -- Use gg.GetTimeStamp() instead of game.TimeService:GetTime()
         local elapsedTime = currentTime - _touchStartTime
-
-        -- 极限防抖：如果瞬时x或y极大，且冷却已过，则直接return
-        if (math.abs(delta.x) > EXTREME_INPUT_THRESHOLD or math.abs(delta.y) > EXTREME_INPUT_THRESHOLD)
-            and (currentTime - _lastExtremeInputTime > EXTREME_INPUT_COOLDOWN) then
-            _lastExtremeInputTime = currentTime
-            return
-        end
-
         if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
             local deltaY = delta.y
             if game.RunService:IsPC() then
@@ -684,6 +693,10 @@ end
 --是否在震动
 function CameraController.IsShaking()
     return ShakeController.IsShaking()
+end
+
+function CameraController.BlockExtremeInputFor(duration)
+    _pendingExtremeInputBlockDuration = duration
 end
 
 CameraController.SetActive(true)

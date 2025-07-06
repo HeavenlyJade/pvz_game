@@ -759,7 +759,7 @@ function SkillEventManager.HandleUnequipSkill(evt)
         -- 获取当前装备的技能
         local equippedSkill = player.equippedSkills and player.equippedSkills[slot]
         if not equippedSkill then
-            gg.log("槽位没有装备技能:", slot)
+            gg.log("槽位没有装备技能:", slot, player.equippedSkills)
             return
         end
 

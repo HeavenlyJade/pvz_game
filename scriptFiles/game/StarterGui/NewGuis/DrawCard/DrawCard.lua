@@ -73,6 +73,8 @@ function DrawCard:OnInit(node, config)
     self.flyingCardList = self:Get("FlyingCard", ViewList) ---@type ViewList
     self.initialFlyingCardPos = self.flyingCardList:GetChild(1).node.Position
     self.cardSize = self.flyingCardList:GetChild(1).node.Size
+    self.swipeHint = self:Get("SwipeHint")
+    self.swipeHint.node.Visible = false
     self._dragStartPos = nil
     self._dragCompleted = false
     self.closeButton = self:Get("关闭", ViewButton)
@@ -116,8 +118,8 @@ function DrawCard:OnInit(node, config)
                     end
                 end
                 self.maxPercent = math.max(self.maxPercent, percent)
-                self.animator:SetLayerWeight(0, percent)
-                self.animator:SetLayerWeight(1, 1- percent)
+                self.animator:SetLayerWeight(0, 1-percent)
+                self.animator:SetLayerWeight(1, percent)
                 game.WorkSpace.CurrentCamera.FieldOfView = 75 - percent * 15
             end
         end
@@ -139,6 +141,7 @@ function DrawCard:OnInit(node, config)
     )
 
     ClientEventManager.Subscribe("LotteryRewards", function (evt)
+        self.swipeHint.node.Visible = true
         ClientEventManager.Publish("PlaySound", {
             soundAssetId = "sandboxId://soundeffect/carddraw/cardpack_appear.ogg"
         })
@@ -202,6 +205,7 @@ end
 
 function DrawCard:onDragComplete()
     self.state = 2
+    self.swipeHint.node.Visible = false
     self.modelPlayer:SwitchState(self.chosenAnim.anim)
     self.flyingCardList:SetElementSize(#self.rewards)
     TweenService:Create(game.WorkSpace.CurrentCamera, tweenInfo, {FieldOfView = 80}):Play()

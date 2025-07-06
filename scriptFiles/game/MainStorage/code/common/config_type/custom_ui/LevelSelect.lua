@@ -116,7 +116,7 @@ function LevelSelect:_viewLevelType(levelType)
             self:C_SendEvent("onEnterDungeon", {
                 levelType = levelType.levelId
             })
-            selectConfirm.node.Visible = false
+            ui:Close()
         end
     end
     local levelInfo = self._levels[levelType.levelId]
@@ -135,7 +135,6 @@ function LevelSelect:C_BuildUI(packet)
     ui:Get("SelectConfirm").node.Visible = false
 
     self.levelSelectList = ui:Get("背景/关卡列表", ViewList, function (child, childPath)
-        print("childPath", childPath)
         local c = ViewComponent.New(child, ui, childPath)
         c:Get("确认按钮", ViewButton).clickCb = function (ui, button)
             print("self.levelTypes", self.levelTypes[c.index],  c.index)

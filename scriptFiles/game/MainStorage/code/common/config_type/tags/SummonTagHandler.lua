@@ -84,9 +84,9 @@ function SummonTag:TriggerReal(caster, target, castParam, param, log)
             local evaluated = gg.eval(val) * mult / 100.0
             local currentValue = monster:GetStat(attr)
             monster:AddStat(attr, currentValue * (1 + evaluated))
+            gg.log("属性乘以百分比", self.m_tagType.id, self.m_tagIndex, attr, evaluated)
             if self.printMessage then 
-                table.insert(log, string.format("%s.%s：乘以%s=%.1f", 
-                    self.m_tagType.id, self.m_tagIndex, attr, 1+evaluated))
+                table.insert(log, string.format("%s.%s：乘以%s=%.1f", self.m_tagType.id, self.m_tagIndex, attr, 1+evaluated))
             end
         end
     end

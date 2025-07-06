@@ -7,6 +7,7 @@ local MobTypeConfig = require(MainStorage.code.common.config.MobTypeConfig)  ---
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Graphics
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
 
 ---@class SummonSpell:Spell
 ---@field mobTypeName string 怪物类型名称
@@ -98,6 +99,8 @@ function SummonSpell:OnInit(data)
     self.inheritLevel = data["继承等级"]
     self.duration = data["持续时间"]
     self.projectileEffects = Graphics.Load(data["特效_召唤物"])
+    self.extraSummonAttributes = data["额外召唤物属性"] or nil
+    self.printInfo = data["打印信息"] or false
 end
 
 --- 获取召唤者的召唤物数量
@@ -197,6 +200,43 @@ function SummonSpell:CanCast(caster, target, param, log)
     return true
 end
 
+function SummonSpell:ApplyExtraAttributes(caster, summoned, power)
+    if not self.extraSummonAttributes or not summoned then return end
+    for attrName, attrConf in pairs(self.extraSummonAttributes) do
+        local extraAttr = attrConf["额外属性"]
+        local attrBuff = attrConf["属性增伤"]
+        if extraAttr and attrBuff then
+            local baseValue = caster:GetStat(attrBuff["属性类型"])
+            local addValue = (attrBuff["倍率"] or 1) * baseValue * power
+            if attrBuff["增加类型"] == "增加" then
+                summoned:AddStat(extraAttr, addValue, "SUMMON_EXTRA", false)
+            elseif attrBuff["增加类型"] == "减少" then
+                summoned:AddStat(extraAttr, -addValue, "SUMMON_EXTRA", false)
+            end
+            if self.printInfo then
+                print(string.format("[召唤物加成] 属性: %s, 类型: %s, 基础值: %s, 倍率: %s, 最终加成: %s", tostring(extraAttr), tostring(attrBuff["增加类型"]), tostring(baseValue), tostring(attrBuff["倍率"]), tostring(addValue)))
+            end
+        end
+    end
+end
+
+local function printSummonedStats(summoned)
+    local statText = string.format("召唤物属性: %s\n", summoned.name or tostring(summoned))
+    local sortedStats = StatTypeConfig.GetSortedStatList()
+    for _, statName in ipairs(sortedStats) do
+        local statType = StatTypeConfig.Get(statName)
+        local value = summoned:GetStat(statName)
+        if value and value > 0 then
+            if statType.isPercentage then
+                statText = statText .. string.format("%s: %.1f%%\n", statType.displayName, value)
+            else
+                statText = statText .. string.format("%s: %d\n", statType.displayName, value)
+            end
+        end
+    end
+    print(statText)
+end
+
 --- 实际执行魔法
 ---@param caster Entity 施法者
 ---@param target Entity|Vector3 目标
@@ -249,6 +289,12 @@ function SummonSpell:CastReal(caster, target, param)
         summoned:SetOwner(caster)
         self:AddSummon(caster, summoned)
         caster:TriggerTags("召唤时", summoned, param, summoned)
+        -- 应用额外召唤物属性
+        self:ApplyExtraAttributes(caster, summoned, param.power)
+        -- 打印召唤物属性
+        if self.printInfo then
+            printSummonedStats(summoned)
+        end
     end
     self:PlayEffect(self.projectileEffects, caster, target, param)
 

@@ -80,6 +80,9 @@ function ItemType:OnInit(data)
         local Bag = require(MainStorage.code.server.bag.Bag) ---@type Bag
         Bag.MoneyType[self.moneyIndex] = self
     end
+
+    self.gainCommands = data["获得时执行指令"]
+    self.cancelGained = data["取消获得物品"]
 end
 
 function ItemType:GetToStringParams()
@@ -91,6 +94,7 @@ end
 function ItemType:ToItem(count)
     local Item = require(MainStorage.code.server.bag.Item) ---@type Item
     local item = Item.New()
+    count = math.floor(count)
     item:Load({
         uuid = gg.create_uuid('item'),
         itype = self,

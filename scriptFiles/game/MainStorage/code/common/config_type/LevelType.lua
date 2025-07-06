@@ -266,6 +266,7 @@ function LevelType:OnInit(data)
     self.monsterLevel = data["怪物等级"] or 1 ---@type number
     self.level = data["等级"] or 1 ---@type number
     self.dropModifier = Modifiers.New(data["掉落物数量修改"]) ---@type Modifiers
+    self.disableCompleteView = data["关闭结算界面"]
     
     self.tempSkill = {} ---@type TempSkill[]
     if data["临时装备技能"] then

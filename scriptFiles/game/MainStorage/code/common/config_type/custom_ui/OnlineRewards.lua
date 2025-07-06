@@ -12,11 +12,12 @@ local OnlineRewardsUI = ClassMgr.Class("OnlineRewardsUI", CustomUI)
 
 function OnlineRewardsUI:OnInit(data)
     self.itemRewards = {} ---@type
-    if data["重置周期"] == "每日" then
+    local resetType = data["重置周期"] or "每日"
+    if resetType == "每日" then
         self.var = string.format("%s_daily_claimed_", self.id) .. "%d"
-    elseif data["重置周期"] == "每周" then
+    elseif resetType == "每周" then
         self.var = string.format("%s_weekly_claimed_", self.id) .. "%d"
-    elseif data["重置周期"] == "每月" then
+    elseif resetType == "每月" then
         self.var = string.format("%s_monthly_claimed_", self.id) .. "%d"
     else
         self.var = string.format("%s_claimed_", self.id) .. "%d"
@@ -36,13 +37,13 @@ function OnlineRewardsUI:S_BuildPacket(player, packet)
     packet["claimed"] = claimed
     for index, _ in ipairs(self.itemRewards) do
         claimed[index] = player:GetVariable(string.format(self.var, index))
+        gg.log("claimed",claimed , string.format(self.var, index), player:GetVariable(string.format(self.var, index)))
     end
 end
 
 ---@param player Player
 function OnlineRewardsUI:OnClickReward(player, packet)
     local index = packet.index
-    gg.log("OnClickReward", player, packet)
     if player:GetVariable(string.format(self.var, index)) ~= 0 then
         player:SendHoverText("此奖励已领取过！")
         return
@@ -90,7 +91,6 @@ function OnlineRewardsUI:C_BuildUI(packet)
         icon:Get("Item", ViewItem):SetItem(itemInfo.item)
         icon:Get("Item", ViewItem):SetGray(not canClaim)
         icon:Get("时间节点").node.Title = gg.FormatTime(itemInfo.time)
-        gg.log("claimed", index, self.packet["claimed"][index], self.packet["claimed"][index] == 1)
         icon:Get("已领取打勾").node.Visible = self.packet["claimed"][index] == 1
         local pointerX = icon:GetGlobalPos().x + icon.node.Size.x/2
         local percent = (pointerX - startX) / fullWidth

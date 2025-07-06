@@ -56,6 +56,8 @@ function _M:OnInit(TriggerZone, actor)
     self.periodicTaskKey   = nil  -- 存储定时任务的key
     self.target            = nil
     self.playersInZone     = {}  -- 记录在区域内的玩家
+    self.enterLeaveCooldown = TriggerZone["进入离开冷却"] or 0.5 -- 新增：进入/离开指令冷却，默认0.5秒
+    self.enterLeaveCooldownMap = {} -- 新增：每个玩家的冷却到期时间
 
     -- 如果有定时指令，创建定时任务
     if self.periodicCommands then
@@ -90,9 +92,11 @@ function _M:OnInit(TriggerZone, actor)
                 -- 只有当玩家不在区域内时才执行进入逻辑
                 if not self.playersInZone[player.uuid] then
                     -- print(string.format("[TriggerZone] 玩家 %s 进入触发区域 %s", player.name or player.uuid, self.name or self.uuid))
-                    -- 执行进入指令
-                    if self.enterCommands then
+                    -- 冷却判定
+                    local cd_key = "TriggerZone:" .. self.uuid .. ":enter"
+                    if self.enterCommands and player:GetCooldown(cd_key) <= 0 then
                         player:ExecuteCommands(self.enterCommands)
+                        player:SetCooldown(cd_key, self.enterLeaveCooldown)
                     end
                     -- 记录玩家进入
                     self.playersInZone[player.uuid] = player
@@ -122,11 +126,12 @@ function _M:OnInit(TriggerZone, actor)
                 ServerScheduler.add(function()
                     -- 如果玩家仍在待移除列表中（说明期间没有重新触发Touched）
                     if self.pendingLeavePlayers[player.uuid] then
-                        -- print(string.format("[TriggerZone] 确认玩家 %s 离开触发区域 %s，执行离开指令", player.name or player.uuid, self.name))
-                        
-                        -- 执行离开指令
-                        if self.leaveCommands then
+                        -- print(string.format("[TriggerZone] 确认玩家 %s 离开触发区域 %s，执行离开指令", player.name or player.uuid, self.name or self.uuid))
+                        -- 冷却判定
+                        local cd_key = "TriggerZone:" .. self.uuid .. ":leave"
+                        if self.leaveCommands and player:GetCooldown(cd_key) <= 0 then
                             player:ExecuteCommands(self.leaveCommands)
+                            player:SetCooldown(cd_key, self.enterLeaveCooldown)
                         end
                         -- 移除玩家记录
                         self.playersInZone[player.uuid] = nil

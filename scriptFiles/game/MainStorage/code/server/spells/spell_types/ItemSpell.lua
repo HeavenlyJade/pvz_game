@@ -93,7 +93,7 @@ function ItemSpell:CastReal(caster, target, param)
     end
     
     local finalAmount = math.floor(battle:GetFinalDamage() + 0.5) -- 四舍五入
-    target.bag:GiveItem(self.itemType:ToItem(finalAmount))
+    target.bag:GiveItem(self.itemType:ToItem(math.floor(finalAmount)))
     self:PlayEffect(self.castEffects, caster, target, param)
     
     return true

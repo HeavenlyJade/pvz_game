@@ -13,6 +13,13 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ViewList = ClassMgr.Class("ViewList", ViewComponent)
 
 
+local function RecursivlySetNotifyStop(button)
+    button.IsNotifyEventStop = false
+    for _, child in ipairs(button.Children) do
+        RecursivlySetNotifyStop(child)
+    end
+end
+
 ---@param node SandboxNode
 ---@param ui ViewBase
 ---@param onAddElementCb fun(child: SandboxNode): ViewComponent
@@ -33,7 +40,7 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
             local childPath = self.path .. "/" .. child.Name
             local button = self.onAddElementCb(child, childPath)
             if button then
-                button.node.IsNotifyEventStop = false
+                RecursivlySetNotifyStop(button.node)
                 button.path = childPath
                 local idx = tonumber(num)
                 if idx then
@@ -43,6 +50,10 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
             end
         end
     end
+end
+
+---@private
+function ViewList:RegisterComponent(child)
 end
 
 function ViewList:GetToStringParams()
@@ -94,7 +105,7 @@ function ViewList:SetElementSize(size)
                 local childPath = self.path .. "/" .. child.Name
                 local button = self.onAddElementCb(child, childPath)
                 if button then
-                    button.node.IsNotifyEventStop = false
+                    RecursivlySetNotifyStop(button.node)
                     button.path = childPath
                     button.index = i
                     self.childrens[i] = button

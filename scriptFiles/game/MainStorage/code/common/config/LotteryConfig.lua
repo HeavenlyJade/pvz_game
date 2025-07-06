@@ -24,7 +24,7 @@ local function LoadConfig()
             {
                 ["itemType"] = "阳光",
                 ["weight"] = 20,
-                ["itemCountMin"] = 50,
+                ["itemCountMin"] = 100,
                 ["itemCountMax"] = 1000
             }
         },
@@ -186,6 +186,44 @@ local function LoadConfig()
             {
                 ["itemType"] = "魅惑菇",
                 ["weight"] = 12,
+                ["itemCountMin"] = 1,
+                ["itemCountMax"] = 1
+            }
+        }
+    }),
+    ["随机SR碎片"] = Lottery.New({
+        ["奖池名"] = "随机SR碎片",
+        ["普通品级概率"] = 0,
+        ["稀有品级概率"] = 10,
+        ["史诗品级概率"] = 0,
+        ["传说品级概率"] = 0,
+        ["神话品级概率"] = 0,
+        ["稀有保底次数"] = 0,
+        ["史诗保底次数"] = 0,
+        ["传说保底次数"] = 0,
+        ["神话保底次数"] = 0,
+        ["稀有品级"] = {
+            {
+                ["itemType"] = "地刺碎片",
+                ["weight"] = 10,
+                ["itemCountMin"] = 1,
+                ["itemCountMax"] = 1
+            },
+            {
+                ["itemType"] = "坚果碎片",
+                ["weight"] = 10,
+                ["itemCountMin"] = 1,
+                ["itemCountMax"] = 1
+            },
+            {
+                ["itemType"] = "樱桃炸弹碎片",
+                ["weight"] = 10,
+                ["itemCountMin"] = 1,
+                ["itemCountMax"] = 1
+            },
+            {
+                ["itemType"] = "豌豆射手碎片",
+                ["weight"] = 10,
                 ["itemCountMin"] = 1,
                 ["itemCountMax"] = 1
             }

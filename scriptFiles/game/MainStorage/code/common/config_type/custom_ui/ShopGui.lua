@@ -47,6 +47,7 @@ end
 
 
 -----------------------客户端---------------------------
+
 ---@param node ViewButton
 ---@param shopGood ShopGood
 ---@param status ShopGoodStatus
@@ -55,11 +56,11 @@ function ShopGui:_UpdateCard(node, shopGood, status)
     node:Get("图标数量").node.Title = tostring(shopGood:GetIconAmount())
     node:Get("热卖").node.Visible = shopGood.isSale
     node:Get("限定").node.Visible = shopGood.isLimited
-    node:Get("价格").node.Title = tostring(status.price)
     if not shopGood.price or not shopGood.price.priceType then
         gg.log("警告： 商品没有配置价格： ", shopGood.name)
         return
     end
+    node:Get("价格").node.Title = tostring(status.price)
     node:Get("货币图标").node.Icon = shopGood.price.priceType.icon
     node.clickCb = function (ui, button)
         self:_ShowGood(shopGood)
@@ -75,10 +76,16 @@ function ShopGui:_ShowGood(shopGood)
     ui:Get("商城主背景/信息框/名字").node.Title = shopGood.name
     ui:Get("商城主背景/信息框/详细介绍信息").node.Title = shopGood.description
     local status = self.packet.shopGoods[shopGood.name] ---@type ShopGoodStatus
-    ui:Get("商城主背景/价格信息").node.Title = string.format("消耗%s: %s/%s", shopGood.price.priceType.name, 
-        gg.FormatLargeNumber(status.priceHas), gg.FormatLargeNumber(status.price))
     local purchaseButton = ui:Get("商城主背景/购买", ViewButton)
-    purchaseButton:SetTouchEnable(status.priceHas >= status.price)
+    ui:Get("商城主背景/价格信息/UIImage").node.Icon = shopGood.price.priceType.icon
+    if shopGood.miniShopId then
+        ui:Get("商城主背景/价格信息").node.Title = tostring(gg.FormatLargeNumber(status.price))
+        purchaseButton:SetTouchEnable(true)
+    else
+        ui:Get("商城主背景/价格信息").node.Title = string.format("%s/%s",  
+            gg.FormatLargeNumber(status.priceHas), gg.FormatLargeNumber(status.price))
+        purchaseButton:SetTouchEnable(status.priceHas >= status.price)
+    end
     purchaseButton.clickCb = function (ui, button)
         self:C_SendEvent("onPurchase", {
             shopGood = shopGood.name
@@ -86,11 +93,15 @@ function ShopGui:_ShowGood(shopGood)
     end
 end
 
+local store = game:GetService("DeveloperStoreService")
 function ShopGui:C_BuildUI(packet)
     local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
     local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
     local ui = self.view
 
+    ui:Get("商城主背景/兑换迷你币", ViewButton).clickCb = function (ui, button)
+        store:MiniCoinRecharge()
+    end
     self.categoryList = ui:Get("商城主背景/分类栏背景/分类栏列表", ViewList, function (child, childPath)
         local c = ViewButton.New(child, ui, childPath)
         c.clickCb = function (ui, button)

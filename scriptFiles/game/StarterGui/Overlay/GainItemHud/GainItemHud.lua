@@ -138,12 +138,11 @@ function GainItemHud:ShowGainedItem(itemData)
     local itemType = item.itemType
     itemInfo.node["Item"]["ItemIcon"].Icon = item.itemType.icon
     itemInfo.node["Item"]["Amount"].Title = tostring(item.amount)
-    print("Icon", itemType.rank.normalImgBg)
     itemInfo.node["Item"].Icon = itemType.rank.normalImgBg
     if itemInfo.node["Item"]["Frame"] then
         itemInfo.node["Item"]["Frame"].Icon = itemType.rank.normalImgFrame
     end
-    itemInfo.node["物品描述"].Title = string.format("%s\n%s", item.itemType.name, item.itemType.description)
+    itemInfo.node["物品描述"].Title = item.itemType.name
     -- 显示UI
     self:Open()
 end

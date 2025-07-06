@@ -608,22 +608,23 @@ function Level:End(success)
         else
         end
         local stats = self.playerStats[player.uin] or {kills = {}, rewards = {}}
+        if not self.levelType.disableCompleteView then
         player:SendEvent("DungeonClearedStats", {
             text = success and "关卡完成！" or "关卡失败！",
             kills = stats.kills,
             rewards = stats.rewards
         })
+        end
         player:SendEvent("BattleEndEvent", {
             levelId = self.levelType.levelId,
             success = success,
             stars = self.currentStars,
             duration = self.endTime - self.startTime
         })
-        player:SendChatText(success and "Level completed!" or "Level failed!")
         player:ExitBattle()
         player:ResetTempSkill()
     end
-
+    self.players = {}
     -- 清理场景
     self:Cleanup()
 end

@@ -1,19 +1,3 @@
---- V109 miniw-haima
-
-local game     = game
-local pairs    = pairs
-local ipairs   = ipairs
-local type     = type
-local SandboxNode = SandboxNode
-local Vector2  = Vector2
-local Vector3  = Vector3
-local ColorQuad = ColorQuad
-local Enum = Enum
-local wait = wait
-local math = math
-local os   = os
-
-
 local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 gg.isServer = true
@@ -27,6 +11,7 @@ local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type M
 
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local MiniShopManager = require(MainStorage.code.server.bag.MiniShopManager) ---@type MiniShopManager
 -- 总入口
 ---@class MainServer
 local MainServer = {};
@@ -59,7 +44,6 @@ function MainServer.handleMidnightRefresh()
 end
 
 function MainServer.start_server()
-    gg.log("开始服务器")
     math.randomseed(os.time() + gg.GetTimeStamp())
     gg.uuid_start = gg.rand_int_between(100000, 999999)
     MainServer.register_player_in_out()   --玩家进出游戏

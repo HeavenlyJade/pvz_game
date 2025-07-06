@@ -61,6 +61,7 @@ function HudCards:UpdateCooldownDisplay()
                 -- 根据卡片名称获取对应的UI卡片
                 local card = self.cardsList:GetChildByName(cardName)
                 if card then
+
                     local currentTime = gg.GetTimeStamp()
                     local lastCastTime = lastCastTimes[skill.skillName]
                     if lastCastTime and skill.cooldownCache > 0 then

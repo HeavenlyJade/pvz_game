@@ -54,6 +54,9 @@ function SpellCommand.skill(params, player)
             player:SendChatText("无效的装备格子: %d", slot)
             return false
         end
+        if params["仅在该格无装备时生效"] and player.equippedSkills[slot] then
+            return false
+        end
 
         -- 查找玩家是否已拥有该技能
         local foundSkillId = nil
