@@ -4,13 +4,13 @@ local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
-local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
+local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig) ---@type SkillTypeConfig
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local SkillTypeUtils = require(MainStorage.code.common.conf_utils.SkillTypeUtils) ---@type SkillTypeUtils
 local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
 local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 local CardIcon = require(MainStorage.code.common.ui_icon.card_icon) ---@type CardIcon
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig)
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig)
 local ViewItem = require(MainStorage.code.client.ui.ViewItem) ---@type ViewItem
 
 ---@class MainCardButtonState 主卡按钮状态数据结构
@@ -1644,7 +1644,6 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
                     self.EquipmentSkillsButton:SetTouchEnable(true)
                 end
             else
-                gg.log("技能不可装备", canEquip,skill.isEquipable,skill.name,canResearchOrEquip)
                 -- 技能不可装备：隐藏所有装备相关按钮
                 self.EquipmentSkillsButton:SetVisible(false)
                 self.mainCardUnEquipButton:SetVisible(false)
@@ -3005,7 +3004,11 @@ end
 -- === 库存查询API ===
 -- 获取指定物品的数量
 function CardsGui:GetItemAmount(itemName)
-    return self.playerInventory[itemName] or 0
+    local amount = self.playerInventory[itemName] or 0
+    if amount == -1 then
+        return math.huge
+    end
+    return amount
 end
 
 -- 检查是否拥有足够的物品

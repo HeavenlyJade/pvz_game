@@ -6,7 +6,7 @@ local ClientEventManager = require(MainStorage.code.client.event.ClientEventMana
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 local CameraController = require(MainStorage.code.client.camera.CameraController) ---@type CameraController
 local TweenService = game:GetService('TweenService') ---@type TweenService
 
@@ -163,7 +163,7 @@ function DrawCard:OnInit(node, config)
         CameraController.SetCameraAt(self.model.Position + Vector3.New(0, 150, -200), Vector3.New(0,0,0))
         local stateId = self.model:GetAttribute("状态机")
         if stateId and stateId ~= "" then
-            local AnimationConfig = require(MainStorage.code.common.config.AnimationConfig) ---@type AnimationConfig
+            local AnimationConfig = require(MainStorage.config.AnimationConfig) ---@type AnimationConfig
             local ModelPlayer = require(MainStorage.code.server.graphic.ModelPlayer) ---@type ModelPlayer
             self.animator = self.model.Animator
             local animator = self.animator

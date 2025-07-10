@@ -5,7 +5,7 @@ local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
-local MiscConfig = require(MainStorage.code.common.config.MiscConfig) ---@type MiscConfig
+local MiscConfig = require(MainStorage.config.MiscConfig) ---@type MiscConfig
 ---@class HudMenu:ViewBase
 local HudMenu = ClassMgr.Class("HudMenu", ViewBase)
 

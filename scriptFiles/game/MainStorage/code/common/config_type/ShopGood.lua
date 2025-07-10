@@ -2,7 +2,7 @@ local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg            = require(MainStorage.code.common.MGlobal) ---@type gg
 local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 local Price = require(MainStorage.code.common.config_type.Price) ---@type Price
 local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
@@ -43,6 +43,7 @@ function ShopGood:OnInit(data)
         end
     end
     self.limitedTime = data["限时"] or false
+    self.limitedCount = data["限购次数"] or 0
     self.rewards = data["获得物品"] or {} ---@type table<string, number>
     self.commands = data["执行指令"] or {}
     self.prizePool = data["奖池"]
@@ -99,7 +100,7 @@ function ShopGood:CanBuy(player, param)
         if not canAfford then
             return false, reason
         end
-        if player:GetVariable(self.price.varKey, 0) > 0 then
+        if self.limitedCount > 0 and player:GetVariable(self.price.varKey, 0) > self.limitedCount then
             return false, "已购买"
         end
     end
@@ -126,7 +127,7 @@ function ShopGood:Buy(player)
         player:SendHoverText("购买%s失败：%s", self.name, reason)
         return false
     end
-    self.price:Pay(player)
+    self.price:Pay(player, param)
     self:Give(player)
     return true
 end
@@ -136,12 +137,24 @@ function ShopGood:Give(player)
     if self.price.varKey then
         player:AddVariable(self.price.varKey, 1)
     end
+    
+    -- 构建获得物品的提示信息
+    local rewardItems = {}
     for itemName, amount in pairs(self.rewards) do
         local itemType = ItemTypeConfig.Get(itemName)
         if itemType then
             player.bag:GiveItem(itemType:ToItem(amount))
+            table.insert(rewardItems, string.format("%s x%d", itemType.name, amount))
         end
     end
+    
+    -- 显示购买成功提示
+    if #rewardItems > 0 then
+        player:SendHoverText("购买成功！获得：%s", table.concat(rewardItems, "、"))
+    else
+        player:SendHoverText("购买成功！")
+    end
+    
     for _, command in ipairs(self.commands) do
         player:ExecuteCommand(command)
     end

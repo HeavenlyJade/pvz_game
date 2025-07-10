@@ -37,6 +37,11 @@ function _M:OnInit(data)
     self.modifyValues = data["修改数值"] or {}
 end
 
+function _M:GetToStringParams()
+    local l = self.condition
+    return l
+end
+
 function _M:GetTarget(caster, target, targeter, targeterPath)
     if not targeter or targeter == "目标" then
         return target

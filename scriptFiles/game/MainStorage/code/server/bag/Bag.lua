@@ -470,69 +470,133 @@ function Bag:GetItemDataByName(itemName)
     return nil
 end
 
----@param items table<ItemType, number> 物品类型和数量的映射表
----@return boolean 是否拥有所有物品
+-- 私有方法：递归检查是否有足够货币（支持upperPrice分层进位，不会溢出）
+function Bag:_HasMoney(itemType, amount)
+    local own = self:GetItemAmount(itemType, false)
+    if own >= amount then
+        return true
+    end
+    -- 不足时，尝试拆分高面额
+    if itemType.upperPrice and itemType.upperPriceAmount and itemType.upperPriceAmount > 0 then
+        local upperOwn = self:GetItemAmount(itemType.upperPrice, false)
+        local need = amount - own
+        local canSplit = upperOwn * itemType.upperPriceAmount
+        if canSplit <= 0 then
+            return false
+        end
+        local total = own + canSplit
+        if total >= amount then
+            return true
+        end
+    end
+    return false
+end
+
+-- 多层进位递归判断是否有足够货币
+function Bag:_HasMoneyMulti(itemType, amount)
+    local own = self:GetItemAmount(itemType, false)
+    if own >= amount then
+        return true
+    end
+    if itemType.upperPrice and itemType.upperPriceAmount and itemType.upperPriceAmount > 0 then
+        local upperOwn = self:GetItemAmount(itemType.upperPrice, false)
+        local need = amount - own
+        local needUpper = math.ceil(need / itemType.upperPriceAmount)
+        if upperOwn >= needUpper then
+            return self:_HasMoneyMulti(itemType.upperPrice, needUpper)
+        end
+    end
+    return false
+end
+
+-- 私有方法：递归扣除货币（优先扣低面额，不够时自动拆高面额）
+function Bag:_RemoveMoney(itemType, amount)
+    local own = self:GetItemAmount(itemType, false)
+    if own >= amount then
+        self:RemoveItems({[itemType] = amount}, false)
+        return true
+    end
+    -- 不足时，尝试拆分高面额
+    if itemType.upperPrice and itemType.upperPriceAmount and itemType.upperPriceAmount > 0 then
+        local upperOwn = self:GetItemAmount(itemType.upperPrice, false)
+        local need = amount - own
+        local needUpper = math.ceil(need / itemType.upperPriceAmount)
+        if upperOwn >= needUpper then
+            -- 拆分高面额
+            self:RemoveItems({[itemType.upperPrice] = needUpper}, false)
+            self:AddItem(itemType:ToItem(needUpper * itemType.upperPriceAmount))
+            self:RemoveItems({[itemType] = amount}, false)
+            return true
+        end
+    end
+    return false
+end
+
+-- 修改HasItems，支持货币多层进位递归判断，避免大数溢出
 function Bag:HasItems(items)
     if not items then
         return false
     end
-
-    -- 统计每种物品的数量
-    local itemCounts = {}
     for itemType, count in pairs(items) do
         if type(itemType) == "string" then
-            local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+            local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
             itemType = ItemTypeConfig.Get(itemType)
         end
-        local slots = self.bag_index[itemType] or {}
-        local total = 0
-        for _, slot in ipairs(slots) do
-            local item = self:GetItem(slot)
-            if item then
-                total = total + item:GetAmount()
+        if itemType.isMoney then
+            if not self:_HasMoneyMulti(itemType, count) then
+                return false
+            end
+        else
+            local slots = self.bag_index[itemType] or {}
+            local total = 0
+            for _, slot in ipairs(slots) do
+                local item = self:GetItem(slot)
+                if item then
+                    total = total + item:GetAmount()
+                end
+            end
+            if total < count then
+                return false
             end
         end
-        if total < count then
-            return false
-        end
     end
-
     return true
 end
 
----@param items table<ItemType, number> 物品类型和数量的映射表
----@return boolean 是否成功移除所有物品
-function Bag:RemoveItems(items)
+-- 修改RemoveItems，支持货币分层进位
+function Bag:RemoveItems(items, checkMoney)
+    if checkMoney == nil then
+        checkMoney = true
+    end
     if not items then
         return false
     end
-
-    -- 先检查是否拥有所有物品
     if not self:HasItems(items) then
         return false
     end
-
-    -- 移除物品
     for itemType, count in pairs(items) do
         if type(itemType) == "string" then
-            local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+            local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
             itemType = ItemTypeConfig.Get(itemType)
         end
-        local remaining = count
-        local slots = self.bag_index[itemType] or {}
-        for _, slot in ipairs(slots) do
-            if remaining <= 0 then
-                break
+        if checkMoney and itemType.isMoney then
+            if not self:_RemoveMoney(itemType, count) then
+                return false
             end
-            local item = self:GetItem(slot)
-            if item then
-                local amount = item:GetAmount()
-                if amount > remaining then
-                    self:SetItemAmount(slot, amount - remaining)
-                else
-                    self:SetItem(slot, nil)
+        else
+            local remaining = count
+            local slots = self.bag_index[itemType] or {}
+            for _, slot in ipairs(slots) do
+                if remaining <= 0 then
+                    break
                 end
-                remaining = remaining - amount
+                local item = self:GetItem(slot)
+                if item then
+                    local amount = item:GetAmount()
+                    local toRemove = math.min(amount, remaining)
+                    self:SetItemAmount(slot, amount - toRemove)
+                    remaining = remaining - toRemove
+                end
             end
         end
     end
@@ -575,8 +639,12 @@ function Bag:PrintContent()
 end
 
 ---@param itemType ItemType 物品类型
+---@param checkMoney? boolean 物品类型
 ---@return number 物品总数量
-function Bag:GetItemAmount(itemType)
+function Bag:GetItemAmount(itemType, checkMoney)
+    if checkMoney == nil then
+        checkMoney = true
+    end
     local total = 0
     local slots = self.bag_index[itemType] or {}
     for _, slot in ipairs(slots) do
@@ -585,7 +653,17 @@ function Bag:GetItemAmount(itemType)
             total = total + item:GetAmount()
         end
     end
-    return total
+    if total > 0 then
+        return total
+    end
+    -- 检查高面额
+    if checkMoney and itemType.upperPrice then
+        local upper = self:GetItemAmount(itemType.upperPrice)
+        if upper > 0 or upper == -1 then
+            return -1
+        end
+    end
+    return 0
 end
 
 ---@param moneyId number 货币类型

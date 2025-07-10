@@ -4,6 +4,7 @@ local Npc = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
 local Entity             = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
+local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 
 ---@class AfkSpot:Npc
@@ -34,13 +35,9 @@ end
 function AfkSpot:OnInit(data, actor)
     self.autoInteract = data["自动互动"] or false
     self.interval = data["间隔时间"] or 10
-    self.subSpells = {}
-    if data["定时释放魔法"] then
-        for _, subSpellData in ipairs(data["定时释放魔法"]) do
-            local subSpell = SubSpell.New(subSpellData, self)
-            table.insert(self.subSpells, subSpell)
-        end
-    end
+    self.enterCommands     = data["进入指令"]
+    self.leaveCommands     = data["离开指令"]
+    self.periodicCommands  = data["定时指令"]
     self.mode = data["模式"] or "副卡"
     self.growthPerSecond = data["成长速度"] or 0
     self.growthMultVar = data["额外成长倍率变量"] or nil
@@ -58,19 +55,7 @@ function AfkSpot:OnInit(data, actor)
 
     self:SubscribeEvent("PlayerLeaveGameEvent", function (evt)
         if evt.player == self.occupiedByPlayer then
-            -- 清理占用状态
-            self.occupiedByPlayer = nil
-            -- 删除占用的实体
-            if self.occupiedEntity then
-                self.occupiedEntity:Destroy()
-                self.occupiedEntity = nil
-            end
-            -- 停止定时器
-            local timerId = self.activePlayers[evt.player]
-            if timerId then
-                ServerScheduler.cancel(timerId)
-                self.activePlayers[evt.player] = nil
-            end
+            self:OnPlayerExit(evt.player)
         end
     end)
 
@@ -112,6 +97,7 @@ end
 
 --- 副卡的挂机的进度
 function AfkSpot:RefreshTitle()
+    if self.mode ~= "副卡" or not self.occupiedByPlayer then return end
     local skill = self.occupiedByPlayer.skills[self.selectedSkill]
     local maxGrowth = skill.skillType:GetMaxGrowthAtLevel(skill.level)
     local growth = skill.growth
@@ -129,15 +115,19 @@ end
 ---@param player Player 玩家
 ---@return boolean 是否可以进入
 function AfkSpot:CanEnter(player)
-    if self.occupiedByPlayer then
-        return self.occupiedByPlayer == player
+    if self.mode == "副卡" then
+        if self.occupiedByPlayer then
+            return self.occupiedByPlayer == player
+        end
+        if GetPlayerAfkCount(player) >= (player:GetVariable("最大副卡挂机数")+1) then
+            player:SendHoverText("副卡挂机已达上限!")
+            return false
+        end
     end
-    if GetPlayerAfkCount(player) >= (player:GetVariable("最大副卡挂机数")+1) then
-        player:SendHoverText("副卡挂机已达上限!")
-        return false
-    end
+    gg.log("self.interactCondition", self.name, self.interactCondition)
     if not self.interactCondition then return true end
     local param = self.interactCondition:Check(player, self)
+    gg.log("self.interactCondition", param)
     return not param.cancelled
 end
 
@@ -162,7 +152,10 @@ function AfkSpot:OnPlayerEnter(player)
             })
         end
     else
-        self.occupiedByPlayer = player
+        if self.enterCommands then
+            player:ExecuteCommands(self.enterCommands)
+        end
+        self.occupiedByPlayer = nil -- 非副卡模式下始终为nil
         player:SetMoveable(false)
         self:StartSpellTimer(player)
     end
@@ -199,16 +192,21 @@ function AfkSpot:OnPlayerExit(player)
     if timerId then
         ServerScheduler.cancel(timerId)
         self.activePlayers[player] = nil
-        local skill = self.occupiedByPlayer.skills[self.selectedSkill]
-        self.occupiedByPlayer = nil
-        skill.afking = false
-        -- 删除占用的实体
+        if self.occupiedByPlayer then
+            local skill = self.occupiedByPlayer.skills[self.selectedSkill]
+            self.occupiedByPlayer = nil
+            skill.afking = false
+        end
         if self.occupiedEntity then
             self.occupiedEntity:Destroy()
             self.occupiedEntity = nil
         end
         self:createTitle("")
         player:UpdateNearbyNpcsToClient()
+        if self.leaveCommands then
+            player:ExecuteCommands(self.leaveCommands)
+        end
+        self.activePlayers[player] = nil
     end
 end
 
@@ -234,8 +232,10 @@ end
 ---@param player Player 玩家
 function AfkSpot:CastSpells(player)
     if self.mode == "副卡" then
-        if self.occupiedByPlayer.isDestroyed then
-            self:OnPlayerExit(self.occupiedByPlayer)
+        if not self.occupiedByPlayer or self.occupiedByPlayer.isDestroyed then
+            if self.occupiedByPlayer then
+                self:OnPlayerExit(self.occupiedByPlayer)
+            end
             return
         end
         local skill = self.occupiedByPlayer.skills[self.selectedSkill]
@@ -269,8 +269,9 @@ function AfkSpot:CastSpells(player)
             })
         end
     else
-        for _, subSpell in ipairs(self.subSpells) do
-            subSpell:Cast(player, player)
+        self.occupiedByPlayer = nil -- 非副卡模式下始终为nil
+        for player, _ in pairs(self.activePlayers) do
+            player:ExecuteCommands(self.periodicCommands)
         end
     end
 end
@@ -279,14 +280,30 @@ end
 ---@param player Player 玩家
 function AfkSpot:HandleInteraction(player)
     -- 先调用父类的交互处理
-    Npc.HandleInteraction(self, player)
+    -- 执行交互指令
     if self:CanEnter(player) then
         self:OnPlayerEnter(player)
+        if self.interactCommands then
+            player:ExecuteCommands(self.interactCommands)
+        end
+    
+        ServerEventManager.Publish("NpcInteractionEvent", {
+            player = player,
+            npc = self
+        })
     end
 end
 
 --- 更新NPC状态
 function AfkSpot:update_npc()
+end
+
+function AfkSpot:DestroyObject()
+    Entity.DestroyObject(self)
+    if self.periodicTaskKey then
+        ServerScheduler.cancel(self.periodicTaskKey)
+        self.periodicTaskKey = nil
+    end
 end
 
 return AfkSpot

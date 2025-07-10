@@ -4,7 +4,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local LevelType = require(MainStorage.code.common.config_type.LevelType) ---@type LevelType
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 ---@class Level
 ---@field New fun( levelType:LevelType, scene:Scene, index:number ):Level
 local Level = ClassMgr.Class("Level")
@@ -159,27 +159,13 @@ function Level:OnInit(levelType, scene, index)
             if self.levelType.loseSound then
                 data.player:PlaySound(self.levelType.loseSound)
             end
-
-            -- 注意：这里不减少playerCount，因为死亡的玩家仍然在关卡中
-
             -- 通知其他玩家
             for _, player in pairs(self.players) do
                 if player.uin ~= data.player.uin then
                     player:SendChatText(string.format("玩家 %s 已阵亡", data.player.name))
                 end
             end
-            -- 检查是否所有玩家都死亡
-            local alivePlayerCount = 0
-            for _, player in pairs(self.players) do
-                if not player.isDead then
-                    alivePlayerCount = alivePlayerCount + 1
-                end
-            end
-
-            if alivePlayerCount == 0 then
-                -- 所有玩家都死亡，结束关卡
-                self:End(false)
-            end
+            self:RemovePlayer(data.player, false, "死亡")
         end
     end)
 
@@ -586,8 +572,6 @@ function Level:End(success)
     end
 
     for uin, player in pairs(self.players) do
-
-        -- 清理关卡传送标记
         player._levelTeleporting = nil
 
         -- 复活死亡的玩家

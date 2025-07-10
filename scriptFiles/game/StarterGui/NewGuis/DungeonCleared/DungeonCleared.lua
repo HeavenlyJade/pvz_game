@@ -7,7 +7,7 @@ local ClientEventManager = require(MainStorage.code.client.event.ClientEventMana
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local ViewItem = require(MainStorage.code.client.ui.ViewItem) ---@type ViewItem
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 
 ---@class DungeonCleared:ViewBase
 local DungeonCleared = ClassMgr.Class("DungeonCleared", ViewBase)

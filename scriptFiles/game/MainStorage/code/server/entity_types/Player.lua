@@ -7,13 +7,13 @@ local Entity      = require(MainStorage.code.server.entity_types.Entity) ---@typ
 -- local skillMgr     = require(MainStorage.code.server.skill.MSkillMgr) ---@type SkillMgr
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
+local TagTypeConfig = require(MainStorage.config.TagTypeConfig) ---@type TagTypeConfig
 local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local cloudService      = game:GetService("CloudService")     --- @type CloudService
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
-local MiscConfig = require(MainStorage.code.common.config.MiscConfig) ---@type MiscConfig
+local MiscConfig = require(MainStorage.config.MiscConfig) ---@type MiscConfig
 
 
 
@@ -323,7 +323,7 @@ function _M:RefreshQuest(key)
         -- 检查刷新类型
         if key == "每日" or key == "每周" or key == "每月" then
             -- 从任务配置中获取刷新类型
-            local questConfig = require(MainStorage.code.common.config.QuestConfig).Get(questId)
+            local questConfig = require(MainStorage.config.QuestConfig).Get(questId)
             shouldRefresh = questConfig and questConfig.refreshType == key
         else
             shouldRefresh = string.find(questId, key) ~= nil
@@ -384,8 +384,12 @@ function _M:SetModel(model, animator, stateMachine)
     local actor = self.actor
     if not model then
         actor.StandardSkeleton = Enum.StandardSkeleton.Offical_Player12
-        actor.SkinId = self._miniSkinId
+        if self._miniSkinId then
+            actor.SkinId = self._miniSkinId
+        end
+        if self._miniModelPath then
         actor.ModelId = self._miniModelPath
+        end
         actor["Animator"].ControllerAsset = "sandboxSysId&restype=12://ministudio/entity/player/player12/Animation/OfficialController.controller"
         actor.MoveGroup.IdleBehavior.AnimatorStateName = "Base Layer.Idle"
         actor.MoveGroup.WalkBehavior.AnimatorStateName = "Base Layer.Run"
@@ -568,7 +572,7 @@ function _M:RefreshStats()
     end
 
     -- 添加所有属性的基础值
-    local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
+    local StatTypeConfig = require(MainStorage.config.StatTypeConfig) ---@type StatTypeConfig
     for statName, statType in pairs(StatTypeConfig.GetAll()) do
         local amount = statType.baseValue
         if statType.valuePerLevel then

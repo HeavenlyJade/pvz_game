@@ -3,7 +3,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local Battle = require(MainStorage.code.server.Battle) ---@type Battle
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 
 ---@class ItemSpell:Spell
 ---@field itemType ItemType 物品类型
@@ -16,6 +16,7 @@ local ItemSpell = ClassMgr.Class("ItemSpell", Spell)
 function ItemSpell:OnInit(data)
     self.itemType = ItemTypeConfig.Get(data["物品类型"])
     self.baseAmount = data["基础数量"] or 0
+    self.broadcastGained = data["向附近广播获得物品"]
     self.baseMultiplier = data["基础倍率"] or 1
     self.amountAmplifiers = data["属性增数"] or {}
     self.targetAmountAmplifiers = data["目标属性增数"] or {}
@@ -95,7 +96,19 @@ function ItemSpell:CastReal(caster, target, param)
     local finalAmount = math.floor(battle:GetFinalDamage() + 0.5) -- 四舍五入
     target.bag:GiveItem(self.itemType:ToItem(math.floor(finalAmount)))
     self:PlayEffect(self.castEffects, caster, target, param)
-    
+    if self.broadcastGained then
+        local targetPos = target:GetPosition()
+        local nearbyPlayers = caster.scene:OverlapSphereEntity(targetPos, 1000, {4})
+        for _, value in ipairs(nearbyPlayers) do
+            if value.isPlayer and value ~= target then ---@cast value Player
+                value:SendEvent("DropItemAnim", {
+                    loc = { targetPos.x, targetPos.y + 100, targetPos.z },
+                    text = amount,
+                    icon = self.itemType.icon
+                })
+            end
+        end
+    end
     return true
 end
 

@@ -240,7 +240,7 @@ function MeleeBehavior:OnInit()
             local attackDelay = (entity.mobType.data["攻击时点"] or 0) * attackDuration
             if attackDelay > 0 then
                 ServerScheduler.add(function()
-                    if entity.isAttacking then -- 再次检查是否仍在攻击状态
+                    if entity.target and entity.isAttacking then -- 再次检查是否仍在攻击状态
                         entity:Attack(entity.target, entity:GetStat("攻击"), "melee_attack")
                     end
                 end, attackDelay)

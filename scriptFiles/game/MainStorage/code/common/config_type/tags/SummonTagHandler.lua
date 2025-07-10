@@ -94,7 +94,7 @@ function SummonTag:TriggerReal(caster, target, castParam, param, log)
     -- 处理额外添加词条
     if self["额外添加词条"] then
         local level = self:GetUpgradeValue("额外词条等级", castParam.power)
-        local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
+        local TagTypeConfig = require(MainStorage.config.TagTypeConfig) ---@type TagTypeConfig
         for _, tagId in ipairs(self["额外添加词条"]) do
             local tagType = TagTypeConfig.Get(tagId)
             if tagType then

@@ -1,8 +1,8 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
-local SpellConfig = require(MainStorage.code.common.config.SpellConfig)  ---@type SpellConfig
+local TagTypeConfig = require(MainStorage.config.TagTypeConfig) ---@type TagTypeConfig
+local SpellConfig = require(MainStorage.config.SpellConfig)  ---@type SpellConfig
 
 ---@class SkillType:Class
 ---@field name string 技能名

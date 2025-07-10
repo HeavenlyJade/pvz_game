@@ -21,6 +21,7 @@
 ---@field SetAutoPlay fun(self: Animation, autoPlay: boolean) None 设置自动播放
 
 
+
 ---@class AnimationItem
 ---@field Play boolean 是否开启播放
 ---@field ClipName string 动画Name

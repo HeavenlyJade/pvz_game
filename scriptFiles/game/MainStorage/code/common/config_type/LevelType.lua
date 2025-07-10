@@ -1,15 +1,15 @@
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local MobTypeConfig = require(MainStorage.code.common.config.MobTypeConfig)  ---@type MobTypeConfig
+local MobTypeConfig = require(MainStorage.config.MobTypeConfig)  ---@type MobTypeConfig
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
 local WeightedRandomSelector = require(MainStorage.code.common.WeightedRandomSelector) ---@type WeightedRandomSelector
-local LevelConfig = require(MainStorage.code.common.config.LevelConfig)  ---@type LevelConfig
+local LevelConfig = require(MainStorage.config.LevelConfig)  ---@type LevelConfig
 local Item = require(MainStorage.code.server.bag.Item) ---@type Item
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
-local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
+local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig) ---@type SkillTypeConfig
 
 
 ---@class DropItemInfo

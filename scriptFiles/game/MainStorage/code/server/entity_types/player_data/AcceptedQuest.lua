@@ -1,6 +1,6 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 
 ---@class AcceptedQuest:Class
 local AcceptedQuest = ClassMgr.Class("AcceptedQuest")
@@ -83,7 +83,7 @@ function AcceptedQuest:GetProgress()
     if self.quest.questType == "物品" then
         local progress = self.player.bag:GetItemAmount(self.quest.requiredItem)
         -- 检查是否达到完成条件且设置了自动提交
-        if progress >= self.quest.completionCount and self.quest.autoTurnIn then
+        if (progress == -1 or progress >= self.quest.completionCount) and self.quest.autoTurnIn then
             self:Finish()
         end
         return progress
@@ -159,7 +159,7 @@ function AcceptedQuest:Finish()
 
     -- 自动领取下一任务
     if self.quest.nextQuest then
-        local nextQuest = require(MainStorage.code.common.config.QuestConfig).Get(self.quest.nextQuest)
+        local nextQuest = require(MainStorage.config.QuestConfig).Get(self.quest.nextQuest)
         if nextQuest then
             nextQuest:Accept(self.player)
         end

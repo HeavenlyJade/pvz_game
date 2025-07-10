@@ -20,7 +20,7 @@ local ServerEventManager = require(MainStorage.code.server.event.ServerEventMana
 local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) ---@type MailEventConfig
 local MailBase = require(MainStorage.code.server.Mail.MailBase) ---@type MailBase
 local GlobalMailManager = require(MainStorage.code.server.Mail.GlobalMailManager) ---@type GlobalMailManager
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 
 ---@class SenderInfo
 ---@field name string 发件人的名字 (例如 "系统" 或 "玩家A")

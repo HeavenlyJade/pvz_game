@@ -3,7 +3,7 @@
 
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
-local QuestConfig = require(MainStorage.code.common.config.QuestConfig)
+local QuestConfig = require(MainStorage.config.QuestConfig)
 
 
 ---@class QuestCommand

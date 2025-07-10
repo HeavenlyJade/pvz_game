@@ -1,11 +1,11 @@
 local MainStorage  = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
+local ItemRankConfig = require(MainStorage.config.ItemRankConfig) ---@type ItemRankConfig
 local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 local CustomUI      = require(MainStorage.code.common.config_type.custom_ui.CustomUI)    ---@type CustomUI
-local LevelConfig = require(MainStorage.code.common.config.LevelConfig)  ---@type LevelConfig
-local LotteryConfig = require(MainStorage.code.common.config.LotteryConfig)  -- 确保已 require
+local LevelConfig = require(MainStorage.config.LevelConfig)  ---@type LevelConfig
+local LotteryConfig = require(MainStorage.config.LotteryConfig)  -- 确保已 require
 local Price = require(MainStorage.code.common.config_type.Price) ---@type Price
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 
@@ -42,7 +42,7 @@ function RollCardsGui:S_BuildPacket(player, packet)
     local pity_legendary = player:GetVariable("pity_" .. pool.poolName .. "_legendary")
     local pity_mythic = player:GetVariable("pity_" .. pool.poolName .. "_mythic")
     local item_count = player.bag:GetItemAmount(self.material)
-
+    if item_count == -1 then item_count = math.huge end
     -- 计算下一个保底品级和还需次数
     local next_pity, next_pity_count = nil, nil
     local pity_list = {
@@ -62,12 +62,15 @@ function RollCardsGui:S_BuildPacket(player, packet)
         next_pity_count = 0
     end
 
+    local price_count = player.bag:GetItemAmount(self.priceConfig.priceType)
+    if price_count == -1 then price_count = math.huge end
+
     packet.lottery = {
         next_pity = next_pity,
         next_pity_count = next_pity_count,
         pity_list = pity_list,
         item_count = item_count,
-        price_count = player.bag:GetItemAmount(self.priceConfig.priceType)
+        price_count = price_count
     }
 end
 
@@ -90,14 +93,19 @@ function RollCardsGui:S_TriggerPurchaseCommands(player, data)
 end
 
 ---@param player Player
+function RollCardsGui:S_OpenPurchaseMiniB(player, data)
+    player:ExecuteCommand([[ viewUI {"界面ID":"水晶"} ]])
+end
+
+---@param player Player
 function RollCardsGui:S_Draw(player, data)
     local count = data.count
     local cost = player.bag:GetItemAmount(self.material)
-    if cost < count then
+    if cost ~= -1 and cost < count then
         player:SendHoverText("道具不足，无法抽奖")
         return
     end
-    player.bag:RemoveItems({[self.material] = cost})
+    player.bag:RemoveItems({[self.material] = count})
     self.lotteryPool:Draw(player, count, true)
 end
 
@@ -130,9 +138,9 @@ function RollCardsGui:_SwayPacks()
     for i = 1, self._packsList:GetChildCount(), 1 do
         local packComponent = self._packsList:GetChild(i)
         ClientScheduler.add(function ()
-            self:_SwayPack(packComponent:Get("卡包").node, SWAY_FORCE * (0.8 + math.random() * 0.4))
+            self:_SwayPack(packComponent:Get(self.paths.Pack).node, SWAY_FORCE * (0.8 + math.random() * 0.4))
             ClientScheduler.add(function ()
-                self:_SwayPack(packComponent:Get("卡包_上层").node, SWAY_FORCE * (0.8 + math.random() * 0.4))
+                self:_SwayPack(packComponent:Get(self.paths.PackUpper).node, SWAY_FORCE * (0.8 + math.random() * 0.4))
             end, math.random() * 0.2)
         end, i * 0.02)
     end
@@ -155,7 +163,7 @@ function RollCardsGui:_DropPack(callCb)
             y = 164
             tweenInfo = tweenInfoLower
         end
-        local packNode = self._packsList:GetChild(i):Get("卡包_上层").node
+        local packNode = self._packsList:GetChild(i):Get(self.paths.PackUpper).node
         packAnim[packNode] = nil
         TweenService:Create(packNode, tweenInfo, {Position = Vector2.New(packNode.Position.x, y)}):Play()
         ClientScheduler.add(callCb, 0.5)
@@ -173,7 +181,8 @@ function RollCardsGui:C_TryDraw(count)
                 --若数量足够
                 if self.lotteryInfo.price_count < missingCost then
                     confirmUI:Display(string.format("%s 不足", self.priceConfig.priceType.name), "是否要前往获取？", function ()
-                        --打开充值界面
+                        self:C_SendEvent("S_OpenPurchaseMiniB", {
+                        })
                     end)
                 else
                     self:_DropPack(function ()
@@ -195,30 +204,31 @@ end
 
 function RollCardsGui:C_InitUI()
     local ui = self.view
-    self._packsList = ui:Get("抽卡机背景", ViewList) ---@type ViewList
+    local paths = self.paths
+    self._packsList = ui:Get(paths.PacksList, ViewList) ---@type ViewList
     uiInitialPos = self._packsList.node.Position
-    ui:Get("抽卡机背景/前挡风玻璃", ViewButton).clickCb = function (ui, button)
+    ui:Get(paths.FrontGlass, ViewButton).clickCb = function (ui, button)
         self:_SwayPacks()
         uiShakeMult = ui.node:GetAttribute("框体震动幅度")
         uiShakeX = 0
     end
-    self._prizesList = ui:Get("侧边奖池/奖池列表", ViewList, function (child, childPath)
+    self._prizesList = ui:Get(paths.PrizesList, ViewList, function (child, childPath)
         return ViewItem.New(child, ui, childPath)
         end) ---@type ViewList
 
-    self._drawOnce = ui:Get("抽卡机背景/前挡风玻璃/单抽", ViewButton)
+    self._drawOnce = ui:Get(paths.DrawOnce, ViewButton)
     self._drawOnce.clickCb = function (ui, button)
         self:C_TryDraw(1)
     end
     
-    self._drawTen = ui:Get("抽卡机背景/前挡风玻璃/十连", ViewButton)
+    self._drawTen = ui:Get(paths.DrawTen, ViewButton)
     self._drawTen.clickCb = function (ui, button)
         self:C_TryDraw(10)
     end
-    ui:Get("抽卡机背景/前挡风玻璃/购买抽奖券", ViewButton).clickCb = function (ui, button)
+    ui:Get(paths.BuyTicket, ViewButton).clickCb = function (ui, button)
         self:C_SendEvent("S_TriggerPurchaseCommands", {})
     end
-    ui:Get("关闭", ViewButton).clickCb = function (ui, button)
+    ui:Get(paths.CloseBtn, ViewButton).clickCb = function (ui, button)
         self.view:Close()
     end
     self.view.openCb = function ()
@@ -260,6 +270,7 @@ function RollCardsGui:C_BuildUI(packet)
     local lottery = packet.lottery
     self.lotteryInfo = lottery
     local ui = self.view
+    local paths = self.paths
     DAMPING = ui.node:GetAttribute("卡包摆动阻尼")
     SWAY_FORCE = ui.node:GetAttribute("卡包摆动初始速度")
     -- 设置顶部信息栏，显示下次保底的次数和品级
@@ -267,16 +278,16 @@ function RollCardsGui:C_BuildUI(packet)
     local next_pity_count = lottery.next_pity_count
     local rarityStr = rarityMap[next_pity] or next_pity
     if next_pity ~= "none" and next_pity_count > 0 then
-        ui:Get("抽卡机背景/顶部信息栏/顶部信息").node.Title = string.format("再抽取 %d 次", next_pity_count)
-        ui:Get("抽卡机背景/顶部信息栏/顶部信息2").node.Title = string.format("必得 %s 级卡片", rarityStr)
+        ui:Get(paths.TopInfo).node.Title = string.format("再抽取 %d 次", next_pity_count)
+        ui:Get(paths.TopInfo2).node.Title = string.format("必得 %s 级卡片", rarityStr)
     else
-        ui:Get("抽卡机背景/顶部信息栏/顶部信息").node.Title = ""
-        ui:Get("抽卡机背景/顶部信息栏/顶部信息2").node.Title = ""
+        ui:Get(paths.TopInfo).node.Title = ""
+        ui:Get(paths.TopInfo2).node.Title = ""
     end
     for i = 1, self._packsList:GetChildCount(), 1 do
         local packComponent = self._packsList:GetChild(i)
-        packComponent.node["卡包_上层"].Rotation = 0
-        packComponent.node["卡包_上层"].Position = Vector2.New(packComponent.node["卡包_上层"].Position.x, 0)
+        packComponent.node[paths.PackUpper].Rotation = 0
+        packComponent.node[paths.PackUpper].Position = Vector2.New(packComponent.node[paths.PackUpper].Position.x, 0)
     end
 
     self._prizesList:SetElementSize(0)
@@ -308,13 +319,15 @@ function RollCardsGui:C_BuildUI(packet)
             -- 概率
             local prob = totalWeight > 0 and (prize.weight or 1) / totalWeight or 0
             local probStr = string.format("%.2f%%", prob * 100)
-            child:Get("Amount").node.Title = amountStr .. "\n" .. probStr
+            child:Get(paths.Amount).node.Title = amountStr .. "\n" .. probStr
             idx = idx + 1
         end
     end
 
-    ui:Get("抽卡机背景/前挡风玻璃/ItemIcon", ViewItem):SetItem(self.material:ToItem(1))
-    ui:Get("抽卡机背景/前挡风玻璃/ItemIcon/Amount", ViewComponent).node.Title = gg.FormatLargeNumber(lottery.item_count)
+    local display_count = lottery.item_count
+    if display_count == math.huge then display_count = "∞" end
+    ui:Get(paths.ItemIcon, ViewItem):SetItem(self.material:ToItem(1))
+    ui:Get(paths.ItemIconAmount, ViewComponent).node.Title = gg.FormatLargeNumber(display_count)
     
     self.packet = packet
     self.view:Open()

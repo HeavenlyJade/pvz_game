@@ -26,7 +26,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["星星果碎片"] = ItemType.New({
         ["名字"] = "星星果碎片",
@@ -43,7 +44,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["窝瓜碎片"] = ItemType.New({
         ["名字"] = "窝瓜碎片",
@@ -60,7 +62,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["魅惑菇碎片"] = ItemType.New({
         ["名字"] = "魅惑菇碎片",
@@ -77,7 +80,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["仙人掌碎片"] = ItemType.New({
         ["名字"] = "仙人掌碎片",
@@ -94,7 +98,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["椰子炮碎片"] = ItemType.New({
         ["名字"] = "椰子炮碎片",
@@ -111,7 +116,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["火爆辣椒碎片"] = ItemType.New({
         ["名字"] = "火爆辣椒碎片",
@@ -128,7 +134,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["菜问碎片"] = ItemType.New({
         ["名字"] = "菜问碎片",
@@ -145,7 +152,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["辣椒投手碎片"] = ItemType.New({
         ["名字"] = "辣椒投手碎片",
@@ -162,7 +170,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["钢铁地刺碎片"] = ItemType.New({
         ["名字"] = "钢铁地刺碎片",
@@ -179,7 +188,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["地刺碎片"] = ItemType.New({
         ["名字"] = "地刺碎片",
@@ -196,7 +206,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["坚果碎片"] = ItemType.New({
         ["名字"] = "坚果碎片",
@@ -213,7 +224,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["樱桃炸弹碎片"] = ItemType.New({
         ["名字"] = "樱桃炸弹碎片",
@@ -230,7 +242,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["豌豆射手碎片"] = ItemType.New({
         ["名字"] = "豌豆射手碎片",
@@ -247,7 +260,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["向日葵"] = ItemType.New({
         ["名字"] = "向日葵",
@@ -267,7 +281,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"向日葵","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["寒冰射手"] = ItemType.New({
         ["名字"] = "寒冰射手",
@@ -287,7 +302,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"寒冰射手","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["小喷菇"] = ItemType.New({
         ["名字"] = "小喷菇",
@@ -307,7 +323,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"小喷菇","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["地刺"] = ItemType.New({
         ["名字"] = "地刺",
@@ -327,7 +344,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-地刺","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["坚果"] = ItemType.New({
         ["名字"] = "坚果",
@@ -347,7 +365,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-坚果","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["樱桃炸弹"] = ItemType.New({
         ["名字"] = "樱桃炸弹",
@@ -367,7 +386,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-樱桃炸弹","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["豌豆射手"] = ItemType.New({
         ["名字"] = "豌豆射手",
@@ -387,7 +407,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-豌豆射手","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["仙人掌"] = ItemType.New({
         ["名字"] = "仙人掌",
@@ -407,7 +428,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-仙人掌","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["椰子炮"] = ItemType.New({
         ["名字"] = "椰子炮",
@@ -427,7 +449,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-椰子炮","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["火爆辣椒"] = ItemType.New({
         ["名字"] = "火爆辣椒",
@@ -447,7 +470,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-火爆辣椒","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["菜问"] = ItemType.New({
         ["名字"] = "菜问",
@@ -467,7 +491,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-菜问","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["辣椒投手"] = ItemType.New({
         ["名字"] = "辣椒投手",
@@ -487,7 +512,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-辣椒投手","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["钢铁地刺"] = ItemType.New({
         ["名字"] = "钢铁地刺",
@@ -507,7 +533,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-钢铁地刺","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["星星果"] = ItemType.New({
         ["名字"] = "星星果",
@@ -527,7 +554,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-星星果","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["窝瓜"] = ItemType.New({
         ["名字"] = "窝瓜",
@@ -547,7 +575,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-魅惑菇","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["魅惑菇"] = ItemType.New({
         ["名字"] = "魅惑菇",
@@ -567,7 +596,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[skill {"技能名":"副-魅惑菇","操作":"习得"} ]]
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["模板"] = ItemType.New({
         ["名字"] = "模板",
@@ -585,7 +615,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["物品"] = ItemType.New({
         ["名字"] = "物品",
@@ -620,11 +651,12 @@ local function LoadConfig()
         ["获得词条"] = {
             nil
         },
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["副卡抽奖券"] = ItemType.New({
         ["名字"] = "副卡抽奖券",
-        ["描述"] = "参与副卡抽奖，有机会抽取稀有副卡",
+        ["描述"] = "参与抽奖，抽取心仪植物",
         ["图标"] = "sandboxId://textures/items/抽奖券.png",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
@@ -636,7 +668,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["水晶"] = ItemType.New({
         ["名字"] = "水晶",
@@ -654,7 +687,8 @@ local function LoadConfig()
         ["是货币"] = true,
         ["货币序号"] = 4,
         ["获得音效"] = "sandboxId://soundeffect/prize奖杯.ogg",
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["能量豆"] = ItemType.New({
         ["名字"] = "能量豆",
@@ -672,7 +706,8 @@ local function LoadConfig()
         ["是货币"] = true,
         ["货币序号"] = 3,
         ["获得音效"] = "sandboxId://soundeffect/chime_宝石金币掉落.ogg",
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["金币"] = ItemType.New({
         ["名字"] = "金币",
@@ -690,7 +725,8 @@ local function LoadConfig()
         ["是货币"] = true,
         ["货币序号"] = 2,
         ["获得音效"] = "sandboxId://soundeffect/moneyfalls.ogg",
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["阳光"] = ItemType.New({
         ["名字"] = "阳光",
@@ -707,11 +743,12 @@ local function LoadConfig()
         ["在背包里显示"] = true,
         ["是货币"] = true,
         ["货币序号"] = 1,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["限定抽奖券"] = ItemType.New({
         ["名字"] = "限定抽奖券",
-        ["描述"] = "参与限定抽奖，有机会抽取稀有副卡",
+        ["描述"] = "参与抽奖，抽取心仪植物",
         ["图标"] = "sandboxId://textures/items/限定抽奖券.png",
         ["额外战力"] = 0,
         ["强化倍率"] = 0,
@@ -723,7 +760,8 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     }),
     ["SR碎片"] = ItemType.New({
         ["名字"] = "SR碎片",
@@ -743,7 +781,8 @@ local function LoadConfig()
         ["获得时执行指令"] = {
             [[lottery {"奖池":"随机SR碎片","数量":1} ]]
         },
-        ["取消获得物品"] = true
+        ["取消获得物品"] = true,
+        ["上级兑换单位数量"] = 0
     }),
     ["阳光加速包"] = ItemType.New({
         ["名字"] = "阳光加速包",
@@ -760,9 +799,22 @@ local function LoadConfig()
         ["售出价格"] = 0,
         ["在背包里显示"] = true,
         ["是货币"] = false,
-        ["取消获得物品"] = false
+        ["取消获得物品"] = false,
+        ["上级兑换单位数量"] = 0
     })
 }loaded = true
+
+
+    for _, itemType in pairs(ItemTypeConfig.config) do
+        if itemType.upperPrice then
+            local upper = ItemTypeConfig.config[itemType.upperPrice]
+            if upper and upper ~= itemType then
+                itemType.upperPrice = upper
+                upper.minorPrice = itemType
+                upper.minorPriceAmount = itemType.upperPriceAmount
+            end
+        end
+    end
 end
 
 ---@param itemType string

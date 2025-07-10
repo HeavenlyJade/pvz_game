@@ -61,7 +61,7 @@ end
 
 function SubSpell:CanCast(caster, target)
     if not self.spellCache then
-        local SpellConfig = require(MainStorage.code.common.config.SpellConfig)
+        local SpellConfig = require(MainStorage.config.SpellConfig)
         self.spellCache = SpellConfig.Get(self.spellName)
     end
     local param = CastParam.New()
@@ -76,7 +76,7 @@ end
 ---@return boolean 是否成功释放
 function SubSpell:Cast(caster, target, param)
     if not self.spellCache then
-        local SpellConfig = require(MainStorage.code.common.config.SpellConfig)
+        local SpellConfig = require(MainStorage.config.SpellConfig)
         self.spellCache = SpellConfig.Get(self.spellName)
         if not self.spellCache then
             gg.log(self.parent, "有不存在的子魔法", self.spellName)

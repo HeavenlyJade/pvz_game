@@ -1,8 +1,8 @@
 --- 物品相关命令处理器
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
-local MobTypeConfig = require(MainStorage.code.common.config.MobTypeConfig)  ---@type MobTypeConfig
-local LevelConfig = require(MainStorage.code.common.config.LevelConfig)  ---@type LevelConfig
+local MobTypeConfig = require(MainStorage.config.MobTypeConfig)  ---@type MobTypeConfig
+local LevelConfig = require(MainStorage.config.LevelConfig)  ---@type LevelConfig
 local Level = require(MainStorage.code.server.Scene.Level)  ---@type Level
 
 ---@class LevelCommand

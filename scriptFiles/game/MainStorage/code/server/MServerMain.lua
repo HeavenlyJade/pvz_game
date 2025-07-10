@@ -62,14 +62,14 @@ function MainServer.start_server()
         MainServer.player_enter_game(player)
     end
     waitingPlayers = {} -- 清空等待列表
-    for _, child in pairs(MainStorage.code.common.config.Children) do
+    for _, child in pairs(MainStorage.config.Children) do
         require(child)
     end
-    local plugins = MainStorage.plugins
+    local plugins = MainStorage.plugin
     if plugins then
         for _, child in pairs(plugins.Children) do
-            if child and child.PluginMain then
-                local plugin = require(child.PluginMain)
+            if child then
+                local plugin = require(child)
                 if plugin.StartServer then
                     plugin.StartServer()
                 end

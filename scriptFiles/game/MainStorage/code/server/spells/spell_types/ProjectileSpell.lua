@@ -169,20 +169,19 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
     end
 
     local launchPos = Vec3.new(position)
+    local launchOffset = actor.LocalPosition
     if self.launchOffset and not self.launchOffset:IsZero() then
-        -- 构建局部坐标系
-        local forward = baseDirection:Normalized()
-        local right = Vec3.up():Cross(forward):Normalized()
-        local up = forward:Cross(right):Normalized()
-        
-        -- 在局部坐标系中应用偏移
-        launchPos = launchPos + 
-            right * self.launchOffset.x + 
-            up * self.launchOffset.y + 
-            forward * -self.launchOffset.z
-    else
-        launchPos = launchPos + Vector3.New(0, caster:GetSize().y / 2, 0)
+        launchOffset = self.launchOffset
     end
+    local forward = baseDirection:Normalized()
+    local right = Vec3.up():Cross(forward):Normalized()
+    local up = forward:Cross(right):Normalized()
+    
+    -- 在局部坐标系中应用偏移
+    launchPos = launchPos + 
+        right * launchOffset.x + 
+        up * launchOffset.y + 
+        forward * -launchOffset.z
 
     local item = {
         actor = actor,

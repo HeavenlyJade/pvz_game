@@ -99,7 +99,8 @@ end
 
 function CastParam:GetToStringParams()
     return {
-        power = self.power
+        power = self.power,
+        cancelled = self.cancelled
     }
 end
 

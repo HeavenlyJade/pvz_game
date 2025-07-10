@@ -61,7 +61,8 @@ function ClientScheduler.add(func, delay, repeatInterval)
         repeatInterval = repeatInterval * 30,
         remaining = delay,
         taskId = taskId,
-        rounds = rounds
+        rounds = rounds,
+        traceback = debug.traceback("[ClientScheduler.add] task created here:")
     }
     
     ClientScheduler.tasks[taskId] = task
@@ -90,7 +91,7 @@ function ClientScheduler.update()
                 -- Execute the task
                 local success, err = pcall(task.func)
                 if not success then
-                    gg.log("[ERROR] Scheduled task failed:", err)
+                    gg.log("[ERROR] Scheduled task failed:", err, task.traceback)
                 end
                 
                 -- Handle repeating tasks

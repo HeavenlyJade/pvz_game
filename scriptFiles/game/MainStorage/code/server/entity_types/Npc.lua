@@ -27,7 +27,7 @@ function _M:OnInit(npcData, actor)
     self:setGameActor(actor)
     self.name              = npcData["名字"]
     self.displayName              = npcData["显示名"] or self.name
-    self.interactCondition = Modifiers.New(npcData["互动条件"])
+    self.interactCondition = npcData["互动条件"]
     self.interactCommands  = npcData["互动指令"]
     self.interactIcon      = npcData["互动图标"]
     self.extraSize      = gg.Vec3.new(npcData["额外互动距离"]) or gg.Vec3.new(0,0)

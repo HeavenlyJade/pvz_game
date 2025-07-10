@@ -15,21 +15,27 @@ local TweenService = game:GetService('TweenService') ---@type TweenService
 ---@class ClientCustomUI:ViewBase
 local ClientCustomUI = ClassMgr.Class("ClientCustomUI", ViewBase)
 
-function ClientCustomUI.Load(node)
+function ClientCustomUI.Load(node, initFunc)
     local uiConfig = {
         uiName = node.Name,
         layer = 1,
         hideOnInit = true
     }
-    return ClientCustomUI.New(node, uiConfig)
+    local ui = ClientCustomUI.New(node, uiConfig, initFunc)
+    return ui
 end
 
-function ClientCustomUI:OnInit(node)
+function ClientCustomUI:OnInit(node, uiConfig, initFunc)
     ViewBase.allUI[node.Name] = self
+    local paths = {}
+    if initFunc then
+        paths = initFunc()
+    end
     local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
     ClientEventManager.Subscribe("ViewCustomUI"..node.Name, function (evt)
-        local CustomUIConfig = require(MainStorage.code.common.config.CustomUIConfig) ---@type CustomUIConfig
+        local CustomUIConfig = require(MainStorage.config.CustomUIConfig) ---@type CustomUIConfig
         local customUI = CustomUIConfig.Get(evt.id)
+        customUI.paths = paths
         customUI.view = self
         if not customUI.inited then
             customUI.inited = true

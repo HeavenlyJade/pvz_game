@@ -6,7 +6,7 @@ local require = require
 
 local MainStorage = game:GetService("MainStorage")
 local gg              = require(MainStorage.code.common.MGlobal)   ---@type gg
-local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
+local ItemRankConfig = require(MainStorage.config.ItemRankConfig) ---@type ItemRankConfig
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 
 -- 所有玩家的背包装备管理，服务器侧

@@ -49,9 +49,9 @@ function _M:OnInit(TriggerZone, actor)
         return processed
     end
     
-    self.enterCommands     = processCommands(TriggerZone["进入指令"])
-    self.leaveCommands     = processCommands(TriggerZone["离开指令"])
-    self.periodicCommands  = processCommands(TriggerZone["定时指令"])
+    self.enterCommands     = TriggerZone["进入指令"]
+    self.leaveCommands     = TriggerZone["离开指令"]
+    self.periodicCommands  = TriggerZone["定时指令"]
     self.periodicInterval  = TriggerZone["定时间隔"] or 1  -- 默认1秒
     self.periodicTaskKey   = nil  -- 存储定时任务的key
     self.target            = nil

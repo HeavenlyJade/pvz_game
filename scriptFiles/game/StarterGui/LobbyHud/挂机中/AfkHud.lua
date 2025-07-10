@@ -19,6 +19,15 @@ local uiConfig = {
 
 function AfkHud:OnInit(node, config)
     self.gainSpeed = self:Get("挂机底图/获取速度") ---@type ViewComponent
+    self.escapeButton = self:Get("挂机底图/退出按钮", ViewButton) ---@type ViewButton
+    self.escapeButton.clickCb = function (ui, button)
+        ClientEventManager.SendToServer("ExitAfkSpot", {})
+    end
+    ClientEventManager.Subscribe("PressKey", function (evt)
+        if evt.key == Enum.KeyCode.Space.Value then
+            ClientEventManager.SendToServer("ExitAfkSpot", {})
+        end
+    end)
 
     -- 用于跟踪阳光变化
     self.lastSunlight = 0

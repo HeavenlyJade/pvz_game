@@ -130,7 +130,7 @@ function MCloudDataMgr.ReadGameTaskData(player)
         if ret2_ and ret2_.uin == player.uin then
             -- 重建任务
             for questId, questData in pairs(ret2_.quests) do
-                local QuestConfig = require(MainStorage.code.common.config.QuestConfig) ---@type QuestConfig
+                local QuestConfig = require(MainStorage.config.QuestConfig) ---@type QuestConfig
                 local quest = QuestConfig.Get(questId)  ---@type Quest
                 if quest then
                     local AcceptedQuest = require(MainStorage.code.server.entity_types.player_data.AcceptedQuest)

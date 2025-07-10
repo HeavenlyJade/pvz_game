@@ -4,7 +4,7 @@ local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewB
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local soundPlayer = game:GetService("StarterGui")["UISound"] ---@type Sound
 local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@class ViewItem:ViewButton
 ---@field New fun(node: SandboxNode, ui: ViewBase, path?: string, realButtonPath?: string): ViewItem
@@ -33,7 +33,7 @@ function ViewItem:OnClick(vector2)
     if self._itemCache then
         ViewBase.GetUI("ItemTooltipHud"):DisplayItem(self._itemCache, vector2.x, vector2.y)
     end
-    ViewButton.OnClick(self)
+    ViewButton.OnClick(self, vector2)
 end
 
 ---@param item Item|ItemType|string

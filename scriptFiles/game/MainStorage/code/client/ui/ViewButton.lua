@@ -35,7 +35,6 @@ end
 
 function ViewButton:SetGray(isGray)
     self.img.Grayed = isGray
-    -- gg.log("self.childClickImgs",self.childClickImgs)
     -- for _, props in pairs(self.childClickImgs) do
     --     local child = props.node
     --     child.Grayed= isGray
@@ -43,6 +42,11 @@ function ViewButton:SetGray(isGray)
 end
 
 function ViewButton:OnTouchOut()
+    local currentTime = gg.GetTimeStamp()
+    if currentTime - self.lastTouchOutTime < 0.1 then return end
+    self.lastTouchOutTime = currentTime
+
+    self.isPressed = false
     if self.isHover then
         if self.hoverImg then
             self.img.Icon = self.hoverImg
@@ -54,7 +58,9 @@ function ViewButton:OnTouchOut()
         self.img.Icon = self.normalImg
         self.img.FillColor = self.normalColor
     end
-    if not self.enabled then return end
+    if not self.enabled then
+        return
+    end
     if self.soundRelease then
         ClientEventManager.Publish("PlaySound", {
             soundAssetId = self.soundRelease
@@ -83,7 +89,14 @@ function ViewButton:OnTouchOut()
 end
 
 function ViewButton:OnTouchIn(vector2)
-    if not self.enabled then return end
+    local currentTime = gg.GetTimeStamp()
+    if currentTime - self.lastTouchInTime < 0.1 then return end
+    self.lastTouchInTime = currentTime
+
+    if not self.enabled then
+        return
+    end
+    self.isPressed = true
     if self.clickImg then
         self.img.Icon = self.clickImg
     end
@@ -99,9 +112,6 @@ function ViewButton:OnTouchIn(vector2)
     -- Handle child images
     for _, props in pairs(self.childClickImgs) do
         local child = props.node
-        if not self.isHover then
-            props.normalImg = child.Icon
-        end
         if props.clickImg then
             child.Icon = props.clickImg
         end
@@ -127,6 +137,7 @@ function ViewButton:OnTouchMove(node, isTouchMove, vector2, int)
 end
 
 function ViewButton:OnHoverOut()
+    if self.isPressed then return end
     self.isHover = false
     self.img.Icon = self.normalImg
     self.img.FillColor = self.normalColor
@@ -138,6 +149,7 @@ function ViewButton:OnHoverOut()
 end
 
 function ViewButton:OnHoverIn(vector2)
+    if self.isPressed then return end
     if not self.enabled then return end
     self.isHover = true
     if self.hoverImg then
@@ -155,7 +167,6 @@ function ViewButton:OnHoverIn(vector2)
     -- Handle child images
     for _, props in pairs(self.childClickImgs) do
         local child = props.node
-        props.normalImg = child.Icon
         if props.hoverImg then
             child.Icon = props.hoverImg
         end
@@ -165,7 +176,7 @@ function ViewButton:OnHoverIn(vector2)
     end
 end
 
-function ViewButton:OnClick()
+function ViewButton:OnClick(vector2)
     if not self.enabled then return end
     if self.clickCb then
         self.clickCb(self.ui, self)
@@ -252,10 +263,10 @@ function ViewButton:InitButtonProperties(img)
     img.RollOut:Connect(function(node, isOver, vector2)
         self:OnHoverOut()
     end)
-    self:_BindNodeAndChild(img, false)
+    self:_BindNodeAndChild(img, false, true)
 end
 
-function ViewButton:_BindNodeAndChild(child, isDeep)
+function ViewButton:_BindNodeAndChild(child, isDeep, bindEvents)
     if child:IsA("UIImage") then
         if isDeep then
             local clickImg = child:GetAttribute("图片-点击")---@type string|nil
@@ -277,22 +288,24 @@ function ViewButton:_BindNodeAndChild(child, isDeep)
                 normalColor = child.FillColor,
             }
         end
-        child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-            self:OnTouchIn(vector2)
-        end)
-        child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
-            self:OnTouchOut()
-        end)
-        child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
-            self:OnTouchMove(node, isTouchMove, vector2, number)
-        end)
-        child.Click:Connect(function(node, isClick, vector2, number)
-            self:OnClick()
-        end)
+        if bindEvents then
+            child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
+                self:OnTouchIn(vector2)
+            end)
+            child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
+                self:OnTouchOut()
+            end)
+            child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
+                self:OnTouchMove(node, isTouchMove, vector2, number)
+            end)
+            child.Click:Connect(function(node, isClick, vector2, number)
+                self:OnClick(vector2)
+            end)
+        end
     end
     for _, c in ipairs(child.Children) do ---@type UIComponent
         if c:GetAttribute("继承按钮") then
-            self:_BindNodeAndChild(c, true)
+            self:_BindNodeAndChild(c, true, true)
         end
     end
 end
@@ -300,6 +313,9 @@ end
 function ViewButton:OnInit(node, ui, path, realButtonPath)
     self.childClickImgs = {} ---@type table<string, table>
     self.enabled = true
+    self.lastTouchInTime = 0  -- 防抖：记录上次TouchIn时间
+    self.lastTouchOutTime = 0 -- 防抖：记录上次TouchOut时间
+    self.isPressed = false
     self.img = node ---@type UIImage
     if realButtonPath then
         self.img = self.img[realButtonPath]
@@ -328,9 +344,9 @@ function ViewButton:RebindToNewNode(newNode, realButtonPath)
     self.childClickImgs = {}
 
     -- 更新节点引用
-    self.node = newNode
+    self.node = newNode ---@type UIImage
     local oldImg = self.img
-    self.img = newNode
+    self.img = newNode ---@type UIImage
     if realButtonPath then
         self.img = self.img[realButtonPath]
     end
@@ -373,7 +389,6 @@ function ViewButton:UpdateChildImageCache(childName, normalImg, hoverImg, clickI
         end
     end
 
-    -- gg.log("ViewButton:UpdateChildImageCache - 已更新子节点缓存:", childName, "normalImg:", normalImg, "hoverImg:", hoverImg, "clickImg:", clickImg)
     return true
 end
 

@@ -44,11 +44,11 @@ function ClientMain.start_client()
     if game.RunService:IsPC() then
         game.MouseService:SetMode(1)
     end
-    local plugins = MainStorage.plugins
+    local plugins = MainStorage.plugin
     if plugins then
         for _, child in pairs(plugins.Children) do
-            if child and child.PluginMain then
-                local plugin = require(child.PluginMain)
+            if child then
+                local plugin = require(child)
                 if plugin.StartClient then
                     plugin.StartClient()
                 end

@@ -1,9 +1,9 @@
 --- 物品相关命令处理器
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
-local SpellConfig = require(MainStorage.code.common.config.SpellConfig)  ---@type SpellConfig
+local SpellConfig = require(MainStorage.config.SpellConfig)  ---@type SpellConfig
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
-local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
+local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig) ---@type SkillTypeConfig
 local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Graphics
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 

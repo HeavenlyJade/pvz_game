@@ -530,7 +530,7 @@ end
 -- 处理奖励数据，转换为统一格式
 function MailGui:ProcessRewardData(rewards)
     local rewardItems = {}
-    local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+    local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 
     if type(rewards) == "table" then
         -- 附件的数据格式是一个 table 数组, e.g., { {type="itemA", amount=1}, {type="itemB", amount=2} }

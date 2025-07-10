@@ -3,11 +3,11 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local MobType = require(MainStorage.code.common.config_type.MobType) ---@type MobType
-local MobTypeConfig = require(MainStorage.code.common.config.MobTypeConfig)  ---@type MobTypeConfig
+local MobTypeConfig = require(MainStorage.config.MobTypeConfig)  ---@type MobTypeConfig
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Graphics
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local StatTypeConfig = require(MainStorage.code.common.config.StatTypeConfig) ---@type StatTypeConfig
+local StatTypeConfig = require(MainStorage.config.StatTypeConfig) ---@type StatTypeConfig
 
 ---@class SummonSpell:Spell
 ---@field mobTypeName string 怪物类型名称

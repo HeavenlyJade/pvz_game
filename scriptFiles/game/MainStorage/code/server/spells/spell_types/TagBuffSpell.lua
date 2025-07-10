@@ -3,7 +3,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local BuffSpell = require(MainStorage.code.server.spells.spell_types.BuffSpell) ---@type BuffSpell
-local TagTypeConfig = require(MainStorage.code.common.config.TagTypeConfig) ---@type TagTypeConfig
+local TagTypeConfig = require(MainStorage.config.TagTypeConfig) ---@type TagTypeConfig
 
 ---@class TagBuffSpell:BuffSpell
 ---@field tagTypes TagType[] 词条类型列表

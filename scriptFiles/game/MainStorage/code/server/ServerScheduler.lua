@@ -67,7 +67,8 @@ function ServerScheduler.add(func, delay, repeatInterval, key)
         remaining = delay,
         taskId = taskId,
         rounds = rounds,
-        key = key
+        key = key,
+        traceback = debug.traceback("[ServerScheduler.add] task created here:")
     }
     
     ServerScheduler.tasks[taskId] = task
@@ -106,7 +107,7 @@ function ServerScheduler.update()
                 -- Execute the task
                 local success, err = pcall(task.func)
                 if not success then
-                    gg.log("[ERROR] Scheduled task failed:", err)
+                    gg.log("[ERROR] Scheduled task failed:", err, task.traceback)
                 end
                 
                 -- Handle repeating tasks

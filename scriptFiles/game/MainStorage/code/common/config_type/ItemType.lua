@@ -1,6 +1,6 @@
 local MainStorage  = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
+local ItemRankConfig = require(MainStorage.config.ItemRankConfig) ---@type ItemRankConfig
 local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
 
 -- ItemType class
@@ -83,6 +83,10 @@ function ItemType:OnInit(data)
 
     self.gainCommands = data["获得时执行指令"]
     self.cancelGained = data["取消获得物品"]
+    self.upperPrice = data["上级兑换单位"] ---@type ItemType
+    self.upperPriceAmount = data["上级兑换单位数量"] ---@type integer
+    self.minorPrice = nil ---@type ItemType
+    self.minorPriceAmount = 0 ---@type integer
 end
 
 function ItemType:GetToStringParams()

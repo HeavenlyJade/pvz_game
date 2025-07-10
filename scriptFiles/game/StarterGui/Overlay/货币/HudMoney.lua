@@ -5,9 +5,9 @@ local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
+local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig) ---@type SkillTypeConfig
 local TweenService = game:GetService("TweenService")
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 local CoreUI = game:GetService("CoreUI")
@@ -75,6 +75,9 @@ function HudMoney:OnInit(node, config)
                 local button = self.moneyButtonList:GetChild(idx)
                 if button then
                     local node = button:Get("Text").node ---@cast node UITextLabel
+                    local itemType = ItemTypeConfig.Get(money.it)
+                    local mainAmount = money.a or 0
+                    local displayText = ""
                     -- 检查是否有货币增加
                     if self.lastMoneyValues and self.lastMoneyValues[idx] and money.a > self.lastMoneyValues[idx] then
                         -- 从对象池获取文本标签
@@ -106,6 +109,34 @@ function HudMoney:OnInit(node, config)
                         end)
                     end
                     node.Title = gg.FormatLargeNumber(money.a)
+                    if itemType and itemType.minorPrice and itemType.minorPriceAmount and itemType.minorPriceAmount > 0 then
+                        -- 获取次一级货币数量
+                        local minorType = itemType.minorPrice
+                        local minorIdx = nil
+                        for i, m in ipairs(evt.moneys) do
+                            if m.it == minorType.name then
+                                minorIdx = i break
+                            end
+                        end
+                        local minorAmount = 0
+                        if minorIdx then
+                            minorAmount = evt.moneys[minorIdx].a or 0
+                        end
+                        if mainAmount > 0 then
+                            -- 显示主货币+小数形式的次一级货币
+                            local decimal = minorAmount / itemType.minorPriceAmount
+                            local total = mainAmount + decimal
+                            total = math.floor(total * 100 + 0.5) / 100
+                            displayText = gg.FormatLargeNumber(total)
+                        else
+                            -- 主货币为0，显示次一级货币
+                            displayText = gg.FormatLargeNumber(minorAmount)
+                        end
+                    else
+                        -- 没有进位关系，直接显示
+                        displayText = gg.FormatLargeNumber(mainAmount)
+                    end
+                    node.Title = displayText
                 end
             end
             -- 保存当前货币值用于下次比较

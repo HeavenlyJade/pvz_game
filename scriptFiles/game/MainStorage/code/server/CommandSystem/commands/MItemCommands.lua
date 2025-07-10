@@ -1,9 +1,9 @@
 --- 物品相关命令处理器
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig)  ---@type ItemTypeConfig
-local ItemQualityConfig = require(MainStorage.code.common.config.ItemQualityConfig)  ---@type ItemQualityConfig
-local LotteryConfig = require(MainStorage.code.common.config.LotteryConfig)  ---@type LotteryConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig)  ---@type ItemTypeConfig
+local ItemQualityConfig = require(MainStorage.config.ItemQualityConfig)  ---@type ItemQualityConfig
+local LotteryConfig = require(MainStorage.config.LotteryConfig)  ---@type LotteryConfig
 ---@class ItemCommands
 local ItemCommands = {}
 

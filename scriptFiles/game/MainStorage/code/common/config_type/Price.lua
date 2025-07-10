@@ -1,6 +1,6 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 
 
 ---@class Price:Class
@@ -37,8 +37,12 @@ end
 
 ---@param player Player
 function Price:Pay(player, param)
+    local power = 1
+    if param then
+        power = param.power
+    end
     if self.priceType then
-        player.bag:RemoveItems({[self.priceType] = self.priceAmount * param.power})
+        player.bag:RemoveItems({[self.priceType] = self.priceAmount * power})
     end
 end
 return Price

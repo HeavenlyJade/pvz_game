@@ -1,10 +1,10 @@
 local MainStorage  = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
+local ItemRankConfig = require(MainStorage.config.ItemRankConfig) ---@type ItemRankConfig
 local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 local CustomUI      = require(MainStorage.code.common.config_type.custom_ui.CustomUI)    ---@type CustomUI
-local LevelConfig = require(MainStorage.code.common.config.LevelConfig)  ---@type LevelConfig
+local LevelConfig = require(MainStorage.config.LevelConfig)  ---@type LevelConfig
 
 
 ---@class LevelSelect:CustomUI

@@ -1,6 +1,6 @@
 local MainStorage  = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
+local ItemRankConfig = require(MainStorage.config.ItemRankConfig) ---@type ItemRankConfig
 local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
 
 -- ItemType class
@@ -39,6 +39,7 @@ function CustomUI:OnInit(data)
     self.miscData = data
     self._serverInited = false
     self.view = nil ---@type ViewBase
+    self.paths = {}
 end
 
 --服务端构建要发给客户端的包体，一般是加入界面需要的信息
@@ -62,10 +63,13 @@ end
 
 ---@param player Player
 function CustomUI:S_Open(player)
+    print("S_Open", self.id, self._serverInited)
     if not self._serverInited then
         self._serverInited = true
         local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+        print(self.className, "CustomUIEvent_".. self.id)
         ServerEventManager.Subscribe("CustomUIEvent_".. self.id, function (evt)
+            print("CustomUIEvent_", evt.__func)
             if evt.__func then
                 self[evt.__func](self, evt.player, evt)
             end
@@ -93,6 +97,7 @@ end
 function CustomUI:C_SendEvent(func, packet)
     local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
     packet.__func = func
+    print("call", self.className, "CustomUIEvent_".. self.id)
     ClientEventManager.SendToServer("CustomUIEvent_".. self.id, packet)
 end
 

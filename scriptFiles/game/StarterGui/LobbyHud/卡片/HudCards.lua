@@ -77,17 +77,30 @@ function HudCards:UpdateCooldownDisplay()
                         -- 检查是否在冷却中
                         local isOnCooldown = remainingTime > 0
                         card:SetTouchEnable(not isOnCooldown, false)
+
+                        -- 根据冷却状态，仅改变图标颜色，不改变框体颜色
                         if isOnCooldown then
-                            if card.node["卡片框"] then
-                                card.node["卡片框"].FillColor = ColorQuad.New(150, 150, 150, 255)
+                            -- 将图标变灰
+                            if card.node["图标"] then
+                                card.node["图标"].FillColor = ColorQuad.New(100, 100, 100, 255)
                             end
                         else
+                            -- 恢复图标颜色
+                            if card.node["图标"] then
+                                card.node["图标"].FillColor = ColorQuad.New(255, 255, 255, 255)
+                            end
+                            -- 确保框体颜色是正常的（白色，无滤镜）
                             if card.node["卡片框"] then
                                 card.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
                             end
                         end
                     else
                         -- 如果没有冷却时间或冷却已结束，确保卡片显示正常颜色
+                        -- 恢复图标颜色
+                        if card.node["图标"] then
+                            card.node["图标"].FillColor = ColorQuad.New(255, 255, 255, 255)
+                        end
+                        -- 确保框体颜色是正常的
                         if card.node["卡片框"] then
                             card.node["卡片框"].FillColor = ColorQuad.New(255, 255, 255, 255)
                         end
@@ -123,7 +136,7 @@ function HudCards:OnSyncPlayerSkills(data)
         skills[skillId] = skill
 
         -- 获取技能类型配置
-        local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
+        local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig) ---@type SkillTypeConfig
         local skillType = SkillTypeConfig.Get(skillId)
         self.selectedSkill[skillId] = skill
         if skillType then
@@ -160,6 +173,8 @@ function HudCards:SetSubCardQualityIcons(cardButton, skillType)
     if not cardNode then return end
 
     local quality = skillType.quality or "N"  -- 默认为N品质
+    
+    gg.log(string.format("--- [HudCards] SetSubCardQualityIcons for Node: %s, Quality: %s ---", cardButton.node.Name, quality))
 
     -- === 设置主节点的品质图标 ===
     -- 如果是ViewButton，直接使用ViewButton的方法
@@ -174,15 +189,18 @@ function HudCards:SetSubCardQualityIcons(cardButton, skillType)
 
     -- === 设置"卡片框"子节点的品质图标 ===
     if cardNode["卡片框"] then
-        local defIcon = CardIcon.qualityBaseMapboxIcon[quality]
-        local clickIcon = CardIcon.qualityBaseMapboxClickIcon[quality]
+        local defIconBox = CardIcon.qualityBaseMapboxIcon[quality]
+        local clickIconBox = CardIcon.qualityBaseMapboxClickIcon[quality]
         -- 使用ViewButton方法更新子节点属性和缓存
-        local success = cardButton:UpdateChildFullState("卡片框", defIcon, defIcon, clickIcon, true)
+        local success = cardButton:UpdateChildFullState("卡片框", defIconBox, defIconBox, clickIconBox, true)
         if success then
-            -- gg.log("已通过ViewButton方法更新子节点:", "卡片框", "品质:", quality)
         end
     end
 
+    -- 新增：调用调试函数打印按钮更新后的状态
+    if cardButton.DebugPrintState then
+        cardButton:DebugPrintState("After SetSubCardQualityIcons")
+    end
 end
 
 
@@ -294,7 +312,6 @@ function HudCards:UpdateSubCardDisplay()
     if not self.cardTemplate then
         self.cardTemplate = self:Get("副卡列表_模版/卡片_1", ViewButton)
         if not self.cardTemplate then
-            gg.log("错误：无法找到卡片模板")
             return
         end
     end
@@ -303,7 +320,6 @@ function HudCards:UpdateSubCardDisplay()
     for i, cardName in ipairs(cardNames) do
         local existingCard = self.cardsList:GetChildByName(cardName)
         if not existingCard then
-            gg.log("创建固定卡片位置:", cardName)
             local newCardNode = self.cardTemplate.node:Clone()
             newCardNode.Name = cardName
             newCardNode.Visible = false  -- 默认隐藏
@@ -332,16 +348,14 @@ function HudCards:UpdateSubCardDisplay()
                     card.node["等级"].Title = tostring(skill.level)
                     local icon = skill.skillType.icon
                     if icon and icon ~= "" and card.node["图标"] then
-                        card.node["图标"].Icon = icon
+                        card:UpdateChildFullState("图标", icon, icon, icon)
                     end
 
                     -- 设置副卡品质图标（传递ViewButton对象）
                     self:SetSubCardQualityIcons(card, skill.skillType)
                 else
-                    gg.log("错误：无法找到卡片:", cardName)
                 end
             else
-                gg.log("警告：槽位", slotId, "没有对应的卡片映射")
             end
         end
     end
@@ -379,8 +393,6 @@ function HudCards:RebindSubCardEvents()
             if mapping then
                 local card = self.cardsList:GetChildByName(mapping.cardName)
                 if card then
-                    -- gg.log("为卡片绑定事件:", mapping.cardName, "技能:", skill.skillType.displayName, "数字键:", mapping.keyIndex)
-
                     -- 设置键盘提示
                     if card.node["pc_hint"] then
                         card.node["pc_hint"].Title = string.format("[ %d ]", mapping.keyIndex)
@@ -388,11 +400,24 @@ function HudCards:RebindSubCardEvents()
 
                     -- 绑定触摸开始事件
                     card.touchBeginCb = function(ui, btn, vector2)
+                        -- 防抖检查，防止事件重复触发
+                        local currentTime = gg.GetTimeStamp()
+                        if (currentTime - self.lastTouchBeginTime) < 0.2 then -- 100毫秒内忽略重复事件
+                            return
+                        end
+                        self.lastTouchBeginTime = currentTime
                         self:StartSkillTracking(skill, vector2)
                     end
 
                     -- 绑定触摸结束事件
                     card.touchEndCb = function(ui, btn)
+                        -- 防抖检查，防止事件重复触发
+                        local currentTime = gg.GetTimeStamp()
+                        if (currentTime - self.lastTouchEndTime) < 0.2 then -- 100毫秒内忽略重复事件
+                            return
+                        end
+                        self.lastTouchEndTime = currentTime
+
                         if self.selectSkillCb then
                             self.selectSkillCb(btn.index, skill)
                             self.selectSkillCb = nil
@@ -432,10 +457,8 @@ function HudCards:RebindSubCardEvents()
                         )
                     end
                 else
-                    gg.log("警告：无法找到对应的UI卡片:", mapping.cardName, "槽位:", slotId)
                 end
             else
-                gg.log("警告：槽位", slotId, "没有对应的卡片映射")
             end
         end
     end
@@ -456,7 +479,6 @@ end
 function HudCards:RegisterEventFunction()
     if self.CardpackButton then
         self.CardpackButton.clickCb = function (ui, button)
-            gg.log("HudCards:RegisterEventFunction,打开卡包")
             -- 同时请求同步背包数据和技能数据
             gg.network_channel:FireServer({ cmd = SkillEventConfig.REQUEST.SYNC_SKILLS})
             ViewBase["CardsGui"]:Open()
@@ -474,6 +496,8 @@ function HudCards:OnInit(node, config)
     self.selectSkillCb = nil
     self.pressedSkillId = nil
     self.pressedKey = nil -- 记录当前按下的数字键
+    self.lastTouchBeginTime = 0
+    self.lastTouchEndTime = 0 -- 防抖变量
 
     -- 注册技能同步事件监听
     ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SYNC_SKILLS, function(data)
@@ -502,7 +526,6 @@ function HudCards:OnInit(node, config)
                 end
 
                 if targetSkill then
-                    gg.log("键盘释放技能:", targetSkill.skillType.displayName, "卡片:", cardName)
                     self:CastSkill(targetSkill)
                 end
                 self.pressedKey = nil
@@ -525,7 +548,6 @@ function HudCards:OnInit(node, config)
                 end
 
                 if targetSkill then
-                    gg.log("键盘开始追踪技能:", targetSkill.skillType.displayName, "卡片:", cardName)
                     self:StartSkillTracking(targetSkill)
                 end
             end
@@ -608,7 +630,7 @@ function HudCards:OnEquipSkillResponse(data)
     skill.equipSlot = slot
 
     -- 获取技能类型配置
-    local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
+    local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig) ---@type SkillTypeConfig
     local skillType = SkillTypeConfig.Get(skillName)
 
     if skillType then
@@ -674,7 +696,6 @@ function HudCards:OnUnequipSkillResponse(data)
 
     -- === 新增：根据服务器发送的卡片名称直接隐藏对应的UI节点 ===
     if cardName then
-        gg.log("收到卸下装备响应:", cardName, "技能:", skillName, "槽位:", unslot)
         self:HideCardByName(cardName)
     end
 
@@ -813,16 +834,13 @@ end
 ---@param cardName string UI卡片节点名称（如"卡片_1"、"卡片_2"等）
 function HudCards:HideCardByName(cardName)
     if not cardName or not self.cardsList then
-        gg.log("HideCardByName: 参数无效", cardName, self.cardsList)
         return
     end
 
-    gg.log("隐藏UI卡片:", cardName)
 
     -- 根据卡片名称获取对应的UI卡片
     local card = self.cardsList:GetChildByName(cardName)
     if card and card.node then
-        -- 隐藏卡片而不是销毁
         card.node.Visible = false
 
         -- 清除事件绑定
@@ -835,9 +853,7 @@ function HudCards:HideCardByName(cardName)
             card.node["pc_hint"].Title = ""
         end
 
-        gg.log("成功隐藏UI卡片:", cardName)
     else
-        gg.log("HideCardByName: 未找到对应的UI卡片", cardName)
     end
 end
 

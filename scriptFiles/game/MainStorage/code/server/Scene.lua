@@ -2,17 +2,16 @@ local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
-local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig
-local AfkSpotConfig = require(MainStorage.code.common.config.AfkSpotConfig) ---@type AfkSpotConfig
-local TriggerZoneConfig = require(MainStorage.code.common.config.TriggerZoneConfig) ---@type TriggerZoneConfig
-local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local NpcConfig = require(MainStorage.config.NpcConfig) ---@type NpcConfig
+local AfkSpotConfig = require(MainStorage.config.AfkSpotConfig) ---@type AfkSpotConfig
+local TriggerZoneConfig = require(MainStorage.config.TriggerZoneConfig) ---@type TriggerZoneConfig
 local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 local Monster = require(MainStorage.code.server.entity_types.Monster) ---@type Monster
 local Npc = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
 local AfkSpot = require(MainStorage.code.server.entity_types.AfkSpot) ---@type AfkSpot
 local TriggerZone = require(MainStorage.code.server.entity_types.TriggerZone) ---@type TriggerZone
-local Environment = game:GetService("WorkSpace")["Environment"] ---@type Environment
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 
 
 local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
@@ -31,20 +30,12 @@ local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
 ---@field tick number 总tick值(递增)
 ---@field node SandboxNode
 local _M = ClassMgr.Class("Scene")
-_M.worldTime = 12
 _M.sceneId = 1
 _M.spawnScene = nil
 local maxSlotRad = 2
 local unusedSlots = {} ---@type table[int, int]
 local occupiedSlot = {} ---@type Scene[][]
 
-ServerScheduler.add(function ()
-    _M.worldTime = _M.worldTime + 0.01
-    if _M.worldTime > 24 then
-        _M.worldTime = 0
-    end
-    Environment.TimeHour = _M.worldTime
-end, 0, 1)
 
 ---@return Scene
 function _M:Clone()
@@ -270,6 +261,7 @@ function _M:OverlapSphere(center, radius, filterGroup, filterFunc)
     return retActors
 end
 
+---@return Entity[]
 function _M:OverlapSphereEntity(center, radius, filterGroup, filterFunc)
     local nodes = self:OverlapSphere(center, radius, filterGroup, filterFunc)
     local retEntities = {}

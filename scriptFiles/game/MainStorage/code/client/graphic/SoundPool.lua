@@ -18,10 +18,6 @@ local function PlaySound(data)
         local soundKey = tostring(key) .. "_" .. tostring(layer)
         local currentTime = gg.GetTimeStamp()
         local lastPlayTime = lastPlayTimes[soundKey]
-        gg.log("lastPlayTime", soundKey, lastPlayTimes)
-        if lastPlayTime then
-            gg.log("lastPlayTime", soundKey, currentTime - lastPlayTime)
-        end
         if lastPlayTime and (currentTime - lastPlayTime) < 0.1 then
             return
         end
@@ -108,7 +104,18 @@ local function PlaySound(data)
     soundNode.SoundPath = sound
     soundNode.Volume = data.volume or 1
     soundNode.Pitch = data.pitch or 1
-    soundNode.RollOffMaxDistance = data.range or 6000
+    if data.range then
+        if type(data.range) == "table" then
+            soundNode.RollOffMinDistance = data.range[1]
+            soundNode.RollOffMaxDistance = data.range[2]
+        else
+            soundNode.RollOffMinDistance = 600
+            soundNode.RollOffMaxDistance = data.range
+        end
+    else
+        soundNode.RollOffMinDistance = 600
+        soundNode.RollOffMaxDistance = 6000
+    end
 
     if not key then
         if data.boundTo then

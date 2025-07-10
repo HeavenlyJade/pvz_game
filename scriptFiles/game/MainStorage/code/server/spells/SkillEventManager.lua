@@ -4,12 +4,12 @@
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local SkillTypeConfig = require(MainStorage.code.common.config.SkillTypeConfig) ---@type SkillTypeConfig
+local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig) ---@type SkillTypeConfig
 local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
 local SkillCommon = require(MainStorage.code.server.spells.SkillCommon) ---@type SkillCommon
 local common_config = require(MainStorage.code.common.MConfig) ---@type common_config
-local MiscConfig = require(MainStorage.code.common.config.MiscConfig) ---@type MiscConfig
+local MiscConfig = require(MainStorage.config.MiscConfig) ---@type MiscConfig
 
 
 ---@class SkillEventManager

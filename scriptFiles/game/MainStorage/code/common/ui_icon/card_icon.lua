@@ -48,8 +48,8 @@ CardIcon.qualityBaseMapboxIcon = {
 }
 
 CardIcon.qualityBaseMapboxClickIcon = {
-    ["N"] = "sandboxId://textures/ui/主界面UI/快捷栏/蓝卡_1.png",
-    ["R"] = "sandboxId://textures/ui/主界面UI/快捷栏/绿卡_1.png",
+    ["N"] = "sandboxId://textures/ui/主界面UI/快捷栏/绿卡_1.png",
+    ["R"] = "sandboxId://textures/ui/主界面UI/快捷栏/蓝卡_1.png",
     ["SR"] = "sandboxId://textures/ui/主界面UI/快捷栏/紫卡_1.png",
     ["SSR"] = "sandboxId://textures/ui/主界面UI/快捷栏/橙卡_1.png",
     ["UR"] = "sandboxId://textures/ui/主界面UI/快捷栏/彩卡_1.png",

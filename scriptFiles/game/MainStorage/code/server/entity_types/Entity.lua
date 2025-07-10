@@ -159,7 +159,7 @@ function _M:SetAnimationController(name)
         self.modelPlayer = nil
     end
     if name then
-        local AnimationConfig = require(MainStorage.code.common.config.AnimationConfig) ---@type AnimationConfig
+        local AnimationConfig = require(MainStorage.config.AnimationConfig) ---@type AnimationConfig
         local ModelPlayer = require(MainStorage.code.server.graphic.ModelPlayer) ---@type ModelPlayer
         local animator = self.actor.Animator
         local animationConfig = AnimationConfig.Get(name)

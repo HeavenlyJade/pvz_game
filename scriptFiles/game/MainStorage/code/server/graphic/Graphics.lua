@@ -429,6 +429,7 @@ function SoundGraphic:OnInit( data )
     self.boundToEntity = data["绑定实体"] or false
     self.volume = data["响度"] or 1.0
     self.pitch = data["音调"] or 1.0
+    self.range = data["距离"]
     self.relevantOnly = data["仅播放给相关者"] or false
 end
 
@@ -466,8 +467,7 @@ function SoundGraphic:PlayAtReal(caster, target, param)
             soundAssetId = self.soundAssetId,
             volume = self.volume,
             pitch = self.pitch,
-            range = 6000,
-            key = key,
+            range = self.range,
             position = {target.Position.x, target.Position.y, target.Position.z}
         }
         local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
