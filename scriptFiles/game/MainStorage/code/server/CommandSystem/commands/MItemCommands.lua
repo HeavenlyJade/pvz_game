@@ -85,7 +85,7 @@ function ItemCommands.lottery(params, player)
         player:SendHoverText("抽奖次数必须大于0")
         return false
     end
-    lottery:Draw(player, count, false)
+    lottery:Draw(player, count, false, false)
     return true
 end
 

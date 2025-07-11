@@ -84,13 +84,13 @@ function MailCommand.sendPersonalMail(params, sender)
             sender:SendHoverText("玩家邮件缺少'发件人ID'字段")
             return false
         end
-        
+
         -- 验证发件人权限
         if senderUin ~= sender.uin then
             sender:SendHoverText("只能以自己的身份发送邮件")
             return false
         end
-        
+
         senderInfo = { name = sender.name, id = sender.uin }
     else
         sender:SendHoverText("未知的发件人类型: " .. (senderType or "nil") .. "。有效类型: '系统', '玩家'")
@@ -121,7 +121,7 @@ function MailCommand.main(params, player)
         player:SendHoverText("缺少'投递方式'字段。有效方式: '全服', '个人'")
         return false
     end
-    
+
     if not senderType then
         player:SendHoverText("缺少'发件人'字段。有效类型: '系统', '玩家'")
         return false
@@ -136,10 +136,10 @@ function MailCommand.main(params, player)
             return false
         end
         return MailCommand.sendGlobalMail(params, player)
-        
+
     elseif deliveryMethod == "个人" then
         return MailCommand.sendPersonalMail(params, player)
-        
+
     else
         player:SendHoverText("未知的投递方式: " .. deliveryMethod .. "。有效方式: '全服', '个人'")
         return false

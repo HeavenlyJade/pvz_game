@@ -77,7 +77,11 @@ end
 ---@param player Player
 ---@param count number
 ---@param giveLater? boolean
-function Lottery:Draw(player, count, giveLater)
+---@param playAnim? boolean
+function Lottery:Draw(player, count, giveLater, playAnim)
+    if playAnim == nil then
+        playAnim = true
+    end
     if giveLater == nil then
         giveLater = false
     end
@@ -126,9 +130,11 @@ function Lottery:Draw(player, count, giveLater)
         end
         self.giveLaterCbs[player] = giveLaterCb
     end
-    player:SendEvent("LotteryRewards", {
-        rewards = rewardList
-    })
+    if playAnim then
+        player:SendEvent("LotteryRewards", {
+            rewards = rewardList
+        })
+    end
     return giveLaterCb
 end
 

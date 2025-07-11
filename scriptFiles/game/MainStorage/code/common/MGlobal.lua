@@ -439,16 +439,11 @@ function gg.ProcessVariables(formula, caster, target)
         return nil
     end
     target = target or caster
-    local processedFormula = formula:gsub("%[(.-)%]", function(varName)
-        -- 检查是否为JSON格式（包含花括号和双引号的内容），如果是则不处理
-        if varName:match('[{}"]') then
-            return "[" .. varName .. "]"  -- 保持原样，不作为变量处理
-        end
-        
+    local processedFormula = formula:gsub("%【(.-)%】", function(varName)
         if not target then
             gg.log("解析公式%s时出错：target不存在！")
             print(debug.traceback())
-            return "[" .. varName .. "]"
+            return varName
         end
         local useCaster = target ---@type Entity
         local realVarName = varName

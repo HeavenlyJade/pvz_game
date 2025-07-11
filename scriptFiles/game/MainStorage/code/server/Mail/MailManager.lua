@@ -187,7 +187,7 @@ function MailManager:AddGlobalMail(mailData)
         if mailObject then
             local clientMailData = mailObject:ToClientData()
             clientMailData.is_global_mail = true -- 明确这是全局邮件
-            
+
             -- 向所有在线玩家广播新邮件通知
             for _, p in pairs(gg.server_players_list) do
                 gg.log("向玩家", p.uin, "发送新邮件通知")
@@ -325,7 +325,7 @@ function MailManager:_handleClaimMail( event)
     local uin = event.player.uin
     local player = gg.getPlayerByUin(uin)
     if not player then
-        return 
+        return
     end
     local mailId = event.mail_id
     local isGlobal = event.is_global
@@ -456,7 +456,7 @@ function MailManager:HandleBatchClaim(event)
                         end
                         player.mail.globalMailStatus.statuses[mailId].is_claimed = true
                         player.mail.globalMailStatus.statuses[mailId].status = self.MAIL_STATUS.CLAIMED
-                        
+
                         -- 构造包含玩家状态的邮件数据返回给客户端
                         local mailInfoForClient = {
                             id = globalMail.id,
@@ -549,7 +549,7 @@ function MailManager:HandleDeleteReadMails(event)
             player.mail.globalMailStatus.last_update = os.time()
         end
     end
-    
+
     -- 如果没有任何邮件被删除，可以提前返回，避免不必要的网络消息
     if #allDeletedIds == 0 then
         gg.log("为玩家", player.uin, "没有找到可删除的已读邮件")
@@ -557,10 +557,10 @@ function MailManager:HandleDeleteReadMails(event)
     end
 
     gg.log("为玩家", player.uin, "删除了", #allDeletedIds, "封已读邮件")
-    
+
     -- 保存玩家邮件数据
     self:SavePlayerMails(player)
-    
+
     -- 向客户端发送成功响应
     gg.network_channel:FireClient(player.uin, {
         cmd = MailEventConfig.RESPONSE.DELETE_READ_SUCCESS,

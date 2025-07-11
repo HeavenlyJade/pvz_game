@@ -80,6 +80,7 @@ end
 
 
 function MainServer.initModule()
+    gg.log("初始化模块")
     -- local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
     local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
     local BagEventManager = require(MainStorage.code.server.bag.BagEventManager) ---@type BagEventManager
@@ -92,7 +93,7 @@ function MainServer.initModule()
     gg.log("事件初始化完成")
     ServerEventManager.Subscribe("PlayerClientInited", function (evt)
         evt.player:UpdateHud()
-    end)
+    end)    
 
 end
 
@@ -209,6 +210,7 @@ function MainServer.player_enter_game(player)
     player_:RefreshStats()               --重生 --刷新战斗属性
     player_:SetHealth(player_.maxHealth)
     player_:UpdateHud()
+
     if Scene.spawnScene then
         if not player_:IsNear(Scene.spawnScene.node.Position, 500) then
             actor_.Position = Scene.spawnScene.node.Position
