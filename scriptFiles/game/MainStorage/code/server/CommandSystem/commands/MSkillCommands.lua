@@ -176,6 +176,10 @@ function SkillCommands.destroyAll(params, player)
 
     -- 强制清空玩家技能表（确保完全清空）
     player.skills = {}
+    -- player.equippedSkills = {} -- 同时清空已装备技能
+
+    -- 根据用户要求，在销毁所有技能后将玩家等级归零
+    player:SetLevel(0)
 
     -- 保存玩家数据
     player:saveSkillConfig()

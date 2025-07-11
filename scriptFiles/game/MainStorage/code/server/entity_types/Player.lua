@@ -752,7 +752,7 @@ function _M:LearnSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = 0,
-            star_level = 1
+            star_level = 0
         })
         self:saveSkillConfig()
         return true
@@ -807,7 +807,7 @@ function _M:UpgradeSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = skillSlot,
-            star_level = 1
+            star_level = 0
         })
         local levelUpPlayer = skillType:GetLevelUpPlayerAtLevel(1)
         self:SetLevel(self.level + levelUpPlayer)
