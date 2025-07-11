@@ -651,7 +651,7 @@ function Level:AddPlayer(player)
                 skill = skill.skillType.name,
                 level = skill.level,
                 slot = skill.slot,
-                star_level = 1
+                star_level = 0
             })
             player.equippedSkills[skill.slot] = skill.skillType.name
         end

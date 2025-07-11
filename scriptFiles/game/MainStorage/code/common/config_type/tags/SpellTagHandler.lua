@@ -131,7 +131,7 @@ function SpellTag:TriggerReal(caster, target, castParam, param, log)
     end
     
     -- 处理修改数值
-    for _, modifier in ipairs(self["修改数值"]) do
+    for _, modifier in ipairs(self["修改数值"] or {}) do
         if modifier.paramName then
             local name
             if not modifier.objectName or modifier.isAlways then
@@ -167,7 +167,7 @@ function SpellTag:TriggerReal(caster, target, castParam, param, log)
     end
     
     -- 处理复写参数
-    for _, modifier in ipairs(self["复写参数"]) do
+    for _, modifier in ipairs(self["复写参数"] or {}) do
         ---@cast modifier OverrideParam
         if modifier.paramName then
             local name
