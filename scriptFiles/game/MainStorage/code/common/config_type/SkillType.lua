@@ -34,6 +34,7 @@ function SkillType:OnInit(data)
     self.category = data["技能分类"]
     self.upgradeCosts = data["升级需求素材"]
     self.oneKeyUpgradeCosts = data["一键强化素材"]
+    self.upgradeStarCosts = data["升星需求素材"]
     self.quality = data["技能品级"] or "R"
     self.battleModel = data["更改模型"]
     self.battleAnimator = data["更改动画"]
@@ -158,7 +159,11 @@ function SkillType:GetMaxGrowthAtLevel(level)
 
     local expr = self.maxGrowthFormula:gsub("LVL", tostring(level))
     local result = self:_evaluateExpression(expr)
-    return result or 100000000  -- 如果计算失败，返回默认值
+    if result then
+        return math.floor(result)  -- 返回整型，去除小数点
+    else
+        return 100000000  -- 如果计算失败，返回默认值
+    end
 end
 
 -- 内部方法：处理包含数学函数的表达式
@@ -266,11 +271,13 @@ function SkillType:_evaluateExpression(expr)
                 for i = 2, #values do
                     funcResult = math.min(funcResult, values[i])
                 end
+                funcResult = math.floor(funcResult)  -- 确保返回整型
             elseif funcName == "max" then
                 funcResult = values[1] or 0
                 for i = 2, #values do
                     funcResult = math.max(funcResult, values[i])
                 end
+                funcResult = math.floor(funcResult)  -- 确保返回整型
             end
             
             -- 替换原字符串中的函数调用
@@ -324,7 +331,9 @@ function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
     for resourceType, costExpr in pairs(self.oneKeyUpgradeCosts) do
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = self:_evaluateExpression(expr)
-        costs[resourceType] = result
+        if result then
+            costs[resourceType] = math.floor(result)  -- 返回整型，去除小数点
+        end
     end
     return costs
 end
@@ -338,7 +347,23 @@ function SkillType:GetCostAtLevel(level)
     for resourceType, costExpr in pairs(self.upgradeCosts) do
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = self:_evaluateExpression(expr)
-        if result and result > 0 then
+        if result then
+            costs[resourceType] = math.floor(result)  -- 只保留正数结果
+        end
+    end
+    return costs
+end
+
+function SkillType:GetStarUpgradeCostAtLevel(level)
+    if not self.upgradeStarCosts then
+        return nil
+    end
+
+    local costs = {}
+    for resourceType, costExpr in pairs(self.upgradeStarCosts) do
+        local expr = costExpr:gsub("LVL", tostring(level))
+        local result = self:_evaluateExpression(expr)
+        if result then
             costs[resourceType] = math.floor(result)  -- 只保留正数结果
         end
     end

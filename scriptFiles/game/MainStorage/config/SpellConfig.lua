@@ -763,7 +763,7 @@ local function LoadConfig()
             },
             {
                 ["_type"] = "SoundGraphic",
-                ["声音资源"] = "sandboxId://soundeffect/splat3击中音效.ogg",
+                ["声音资源"] = "sandboxId://soundeffect/splat[1~3].ogg",
                 ["绑定实体"] = false,
                 ["响度"] = 1,
                 ["音调"] = 1,
@@ -996,7 +996,7 @@ local function LoadConfig()
             },
             {
                 ["_type"] = "SoundGraphic",
-                ["声音资源"] = "sandboxId://soundeffect/splat3击中音效.ogg",
+                ["声音资源"] = "sandboxId://soundeffect/splat[1~3].ogg",
                 ["绑定实体"] = false,
                 ["响度"] = 1,
                 ["音调"] = 1,
@@ -2103,7 +2103,7 @@ local function LoadConfig()
                 ["绑定挂点"] = "",
                 ["偏移"] = {
                     0,
-                    -2,
+                    0,
                     0
                 },
                 ["目标"] = "自己",
@@ -2564,9 +2564,9 @@ local function LoadConfig()
             0,
             0
         },
-        ["速度"] = 200,
+        ["速度"] = 300,
         ["重力"] = 0,
-        ["追踪目标速度"] = 50,
+        ["追踪目标速度"] = 80,
         ["穿过地形"] = false,
         ["结束子魔法"] = {
             {
@@ -2577,7 +2577,7 @@ local function LoadConfig()
         ["对同一目标生效间隔"] = -1,
         ["生效次数"] = 1,
         ["魔法名"] = "副-樱桃炸弹-飞弹",
-        ["打印信息"] = false,
+        ["打印信息"] = true,
         ["显示在指令选单中"] = true,
         ["几率"] = 0,
         ["冷却"] = 5,
@@ -3083,7 +3083,7 @@ local function LoadConfig()
             },
             {
                 ["_type"] = "SoundGraphic",
-                ["声音资源"] = "sandboxId://soundeffect/throw2发射音效.ogg",
+                ["声音资源"] = "sandboxId://soundeffect/throw[1~2].ogg",
                 ["绑定实体"] = false,
                 ["响度"] = 1,
                 ["音调"] = 1,
@@ -3101,7 +3101,7 @@ local function LoadConfig()
             },
             {
                 ["_type"] = "SoundGraphic",
-                ["声音资源"] = "sandboxId://soundeffect/splat2击中音效.ogg",
+                ["声音资源"] = "sandboxId://soundeffect/splat[1~3].ogg",
                 ["绑定实体"] = false,
                 ["响度"] = 1,
                 ["音调"] = 1,
@@ -3739,9 +3739,9 @@ local function LoadConfig()
             234,
             -85
         },
-        ["速度"] = 3000,
+        ["速度"] = 500,
         ["重力"] = 0,
-        ["追踪目标速度"] = 500,
+        ["追踪目标速度"] = 100,
         ["穿过地形"] = false,
         ["结束子魔法"] = {
             {
@@ -4174,7 +4174,7 @@ local function LoadConfig()
             },
             {
                 ["_type"] = "SoundGraphic",
-                ["声音资源"] = "sandboxId://soundeffect/splat2击中音效.ogg",
+                ["声音资源"] = "sandboxId://soundeffect/splat[1~3].ogg",
                 ["绑定实体"] = false,
                 ["响度"] = 1,
                 ["音调"] = 1,
@@ -4614,6 +4614,18 @@ local function LoadConfig()
         ["基础威力"] = 1,
         ["释放给自己"] = true,
         ["延迟"] = 0,
+        ["释放条件"] = Modifiers.New({
+            {
+                ["目标"] = "自己",
+                ["条件类型"] = "VariableCondition",
+                ["条件"] = {
+                    ["名字"] = "特权卡",
+                    ["最小值"] = 0,
+                    ["最大值"] = 999999
+                },
+                ["动作"] = "必须"
+            }
+        }),
         ["宽度倍率"] = 1,
         ["高度倍率"] = 1,
         ["尺寸倍率"] = 1,
@@ -4634,6 +4646,18 @@ local function LoadConfig()
         ["基础威力"] = 1,
         ["释放给自己"] = true,
         ["延迟"] = 0,
+        ["释放条件"] = Modifiers.New({
+            {
+                ["目标"] = "自己",
+                ["条件类型"] = "VariableCondition",
+                ["条件"] = {
+                    ["名字"] = "",
+                    ["最小值"] = 0,
+                    ["最大值"] = 100
+                },
+                ["动作"] = "必须"
+            }
+        }),
         ["宽度倍率"] = 1,
         ["高度倍率"] = 1,
         ["尺寸倍率"] = 1,
@@ -4904,7 +4928,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/sun[1~4].ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 0.46,
+                ["响度"] = 0.2,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,

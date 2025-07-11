@@ -809,6 +809,7 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
     local skillName = evt.skillName
     if not skillName then
         gg.log("技能名称不能为空")
+        player:SendHoverText("升星失败：技能名称不能为空")
         return
     end
 
@@ -816,6 +817,7 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
     local skillType = SkillTypeConfig.Get(skillName)
     if not skillType then
         gg.log("技能配置文件不存在: " .. skillName .. " 玩家: " .. player.name)
+        player:SendHoverText("升星失败：技能配置不存在")
         return
     end
 
@@ -823,30 +825,84 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
     local existingSkill = player.skills and player.skills[skillName]
     if not existingSkill then
         gg.log("玩家不拥有该技能: " .. skillName)
+        player:SendHoverText("升星失败：未学习该技能")
         return
     end
 
-    -- 获取当前星级
+    -- 获取当前星级和等级
     local currentStar = existingSkill.star_level or 0
+    local currentLevel = existingSkill.level or 1
     local maxStar = 7
 
     -- 检查是否已达到最大星级
     if currentStar >= maxStar then
         gg.log("技能已达到最大星级: " .. skillName .. " 当前星级: " .. currentStar)
+        player:SendHoverText("升星失败：已达最大星级")
         return
     end
 
-    -- 执行升星逻辑
+    -- 定义升星等级要求
+    local starLevelRequirements = {
+        [0] = 10,   -- 0星 -> 1星需要10级
+        [1] = 15,   -- 1星 -> 2星需要15级
+        [2] = 25,   -- 2星 -> 3星需要25级
+        [3] = 35,   -- 3星 -> 4星需要35级
+        [4] = 50,   -- 4星 -> 5星需要50级
+        [5] = 70,   -- 5星 -> 6星需要70级
+        [6] = 100   -- 6星 -> 7星需要100级
+    }
+
+    -- 检查等级是否满足升星要求
+    local requiredLevel = starLevelRequirements[currentStar]
+    if not requiredLevel then
+        gg.log("未定义的星级要求:", currentStar)
+        player:SendHoverText("升星失败：未定义的星级要求")
+        return
+    end
+
+    if currentLevel < requiredLevel then
+        gg.log("等级不足，无法升星:", skillName, "当前等级:", currentLevel, "需要等级:", requiredLevel, "当前星级:", currentStar)
+        player:SendHoverText(string.format("升星失败：需要达到%d级才能升到%d星，当前等级：%d", requiredLevel, currentStar + 1, currentLevel))
+        return
+    end
+
+    -- 检查是否配置了升星需求素材
+    local starCosts = skillType:GetStarUpgradeCostAtLevel(existingSkill.level)
+    if not starCosts then
+        gg.log("该技能未配置升星需求素材:", skillName)
+        player:SendHoverText("升星失败：该技能不支持升星")
+        return
+    end
+
+    gg.log("升星素材需求:", starCosts)
+
+    -- 检查玩家资源是否足够
+    if not player.bag:HasItems(starCosts) then
+        player:SendHoverText("升星失败：升星素材不足")
+        return
+    end
+
+    -- 扣除升星素材
+    player.bag:RemoveItems(starCosts)
+
+    -- 执行升星逻辑：升星并重置等级和成长进度
     existingSkill.star_level = currentStar + 1
+    existingSkill.level = 0  -- 重置等级为0
+    existingSkill.growth = 0  -- 重置成长进度为0
+    
     player:saveSkillConfig()
+    player.bag:SyncToClient()
 
-    gg.log("技能升星成功", skillName, "新星级:", existingSkill.star_level)
+    gg.log("技能升星成功", skillName, "新星级:", existingSkill.star_level, "等级重置为:", existingSkill.level, "成长进度重置为:", existingSkill.growth)
 
+    -- 使用 HandleUpgradeSkill 的响应事件格式
     local responseData = {
         skillName = skillName,
-        star_level = existingSkill.star_level,
-        level = existingSkill.level,
-        slot = existingSkill.equipSlot or 0
+        level = existingSkill.level,  -- 重置后的等级（0）
+        slot = existingSkill.equipSlot or 0,
+        maxLevel = skillType.maxLevel,
+        growth = existingSkill.growth,  -- 重置后的成长进度（0）
+        star_level = existingSkill.star_level  -- 新的星级
     }
 
     -- 播放升级音效
@@ -860,8 +916,10 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
     else
         player:PlaySound(misc["次要技能升级音效"])
     end
-    gg.log("发送技能升星响应", responseData)
-    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE_STAR, responseData)
+    
+    gg.log("发送技能升级响应（升星）", responseData)
+    -- 使用 UPGRADE 响应事件而不是 UPGRADE_STAR，这样会触发 HandleUpgradeSkill 的客户端响应处理
+    SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, responseData)
 end
 
 --- 处理销毁技能请求

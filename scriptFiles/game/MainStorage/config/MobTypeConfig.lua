@@ -391,8 +391,8 @@ local function LoadConfig()
         },
         ["offset"] = nil,
         ["闲置音效"] = "sandboxId://soundeffect/groan5_僵尸呻吟.ogg",
-        ["攻击音效"] = "sandboxId://soundeffect/chomp2_僵尸吃3.ogg",
-        ["受击音效"] = "sandboxId://soundeffect/groan_僵尸呻吟.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chomp[1~3]_僵尸吃.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/groan[1~6]_僵尸呻吟.ogg",
         ["死亡音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟.ogg"
     }),
     ["僵尸"] = MobType.New({
@@ -421,7 +421,7 @@ local function LoadConfig()
         ["行为"] = {
             {
                 ["脱战距离"] = 0,
-                ["主动索敌"] = 0,
+                ["主动索敌"] = 1,
                 ["攻击时静止"] = true,
                 ["类型"] = "近战攻击"
             },
@@ -439,8 +439,9 @@ local function LoadConfig()
         ["掉落倍率"] = {
             ["阳光"] = 0
         },
-        ["闲置音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟[1~6].ogg",
-        ["攻击音效"] = "sandboxId://soundeffect/chomp[1~3]_僵尸吃.ogg"
+        ["闲置音效"] = "sandboxId://soundeffect/groan[1~6]_僵尸呻吟.ogg",
+        ["攻击音效"] = "sandboxId://soundeffect/chomp[1~3]_僵尸吃.ogg",
+        ["受击音效"] = "sandboxId://soundeffect/splat[1~3].ogg"
     }),
     ["呆滞僵尸"] = MobType.New({
         ["怪物ID"] = "呆滞僵尸",
@@ -466,7 +467,7 @@ local function LoadConfig()
         ["额外攻击距离"] = 100,
         ["攻击时点"] = 0.5,
         ["offset"] = nil,
-        ["闲置音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟[1~6].ogg",
+        ["闲置音效"] = "sandboxId://soundeffect/groan[1~6]_僵尸呻吟.ogg",
         ["攻击音效"] = "sandboxId://soundeffect/chomp[1~3]_僵尸吃.ogg",
         ["受击音效"] = "sandboxId://soundeffect/splat[1~3].ogg"
     }),
@@ -483,9 +484,9 @@ local function LoadConfig()
         ["是首领"] = true,
         ["基础等级"] = 26,
         ["属性公式"] = {
-            ["攻击"] = "(100+LVL*30+max(0,(LVL-5000)*30)+max(0,(LVL-12000)*60)+max(0,(LVL-16000)*80)+max(0,(LVL-24000)*150)+max(0,(LVL-30000)*300)+max(0,(LVL-35000)*500))/4",
+            ["攻击"] = "(100+LVL*30+max(0,(LVL-5000)*30)+max(0,(LVL-12000)*60)+max(0,(LVL-16000)*80)+max(0,(LVL-24000)*150)+max(0,(LVL-30000)*300)+max(0,(LVL-35000)*500))/3.5",
             ["生命"] = "(100+LVL*30+max(0,(LVL-5000)*30)+max(0,(LVL-12000)*60)+max(0,(LVL-16000)*80)+max(0,(LVL-24000)*150)+max(0,(LVL-30000)*300)+max(0,(LVL-35000)*500))*3/4.5",
-            ["速度"] = "300"
+            ["速度"] = "200"
         },
         ["图鉴击杀数"] = 0,
         ["图鉴完成奖励"] = nil,
@@ -496,7 +497,7 @@ local function LoadConfig()
         ["行为"] = {
             {
                 ["脱战距离"] = 0,
-                ["主动索敌"] = 0,
+                ["主动索敌"] = 10000,
                 ["攻击时静止"] = true,
                 ["类型"] = "近战攻击"
             },
@@ -511,7 +512,7 @@ local function LoadConfig()
             }
         },
         ["offset"] = nil,
-        ["闲置音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟[1~6].ogg",
+        ["闲置音效"] = "sandboxId://soundeffect/groan[1~6]_僵尸呻吟.ogg",
         ["攻击音效"] = "sandboxId://soundeffect/chomp[1~3]_僵尸吃.ogg",
         ["受击音效"] = "sandboxId://soundeffect/splat[1~3].ogg"
     }),
@@ -530,7 +531,7 @@ local function LoadConfig()
         ["属性公式"] = {
             ["生命"] = "(100+LVL*30+max(0,(LVL-5000)*30)+max(0,(LVL-12000)*60)+max(0,(LVL-16000)*80)+max(0,(LVL-24000)*100)+max(0,(LVL-30000)*300)+max(0,(LVL-35000)*500))*2",
             ["攻击"] = "(100+LVL*30+max(0,(LVL-5000)*30)+max(0,(LVL-12000)*60)+max(0,(LVL-16000)*80)+max(0,(LVL-24000)*300)+max(0,(LVL-30000)*500)+max(0,(LVL-35000)*140))/8",
-            ["速度"] = "500"
+            ["速度"] = "300"
         },
         ["图鉴击杀数"] = 0,
         ["图鉴完成奖励"] = nil,
@@ -541,7 +542,7 @@ local function LoadConfig()
         ["行为"] = {
             {
                 ["脱战距离"] = 0,
-                ["主动索敌"] = 0,
+                ["主动索敌"] = 10000,
                 ["攻击时静止"] = true,
                 ["类型"] = "近战攻击"
             },
@@ -556,7 +557,7 @@ local function LoadConfig()
             }
         },
         ["offset"] = nil,
-        ["闲置音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟[1~6].ogg",
+        ["闲置音效"] = "sandboxId://soundeffect/groan[1~6]_僵尸呻吟.ogg",
         ["攻击音效"] = "sandboxId://soundeffect/chomp[1~3]_僵尸吃.ogg",
         ["受击音效"] = "sandboxId://soundeffect/splat[1~3].ogg"
     }),
@@ -575,7 +576,7 @@ local function LoadConfig()
         ["属性公式"] = {
             ["生命"] = "(100+LVL*30+max(0,(LVL-5000)*30)+max(0,(LVL-12000)*60)+max(0,(LVL-16000)*80)+max(0,(LVL-24000)*150)+max(0,(LVL-30000)*300)+max(0,(LVL-35000)*500))",
             ["攻击"] = "(100+LVL*30+max(0,(LVL-5000)*30)+max(0,(LVL-12000)*60)+max(0,(LVL-16000)*80)+max(0,(LVL-24000)*150)+max(0,(LVL-30000)*300)+max(0,(LVL-35000)*500))/3",
-            ["速度"] = "500"
+            ["速度"] = "350"
         },
         ["图鉴击杀数"] = 0,
         ["图鉴完成奖励"] = nil,
@@ -586,7 +587,7 @@ local function LoadConfig()
         ["行为"] = {
             {
                 ["脱战距离"] = 0,
-                ["主动索敌"] = 0,
+                ["主动索敌"] = 10000,
                 ["攻击时静止"] = true,
                 ["类型"] = "近战攻击"
             },
@@ -601,7 +602,7 @@ local function LoadConfig()
             }
         },
         ["offset"] = nil,
-        ["闲置音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟[1~6].ogg",
+        ["闲置音效"] = "sandboxId://soundeffect/groan[1~6]_僵尸呻吟.ogg",
         ["攻击音效"] = "sandboxId://soundeffect/chomp[1~3]_僵尸吃.ogg",
         ["受击音效"] = "sandboxId://soundeffect/splat[1~3].ogg"
     }),
@@ -620,7 +621,7 @@ local function LoadConfig()
         ["属性公式"] = {
             ["生命"] = "(100+LVL*30+max(0,(LVL-5000)*30)+max(0,(LVL-12000)*60)+max(0,(LVL-16000)*80)+max(0,(LVL-24000)*150)+max(0,(LVL-30000)*300)+max(0,(LVL-35000)*500))*2.5",
             ["攻击"] = "(100+LVL*30+max(0,(LVL-5000)*30)+max(0,(LVL-12000)*60)+max(0,(LVL-16000)*80)+max(0,(LVL-24000)*150)+max(0,(LVL-30000)*300)+max(0,(LVL-35000)*300))/5.5",
-            ["速度"] = "600"
+            ["速度"] = "450"
         },
         ["图鉴击杀数"] = 0,
         ["图鉴完成奖励"] = nil,
@@ -631,7 +632,7 @@ local function LoadConfig()
         ["行为"] = {
             {
                 ["脱战距离"] = 0,
-                ["主动索敌"] = 0,
+                ["主动索敌"] = 10000,
                 ["攻击时静止"] = true,
                 ["类型"] = "近战攻击"
             },
@@ -646,7 +647,7 @@ local function LoadConfig()
             }
         },
         ["offset"] = nil,
-        ["闲置音效"] = "sandboxId://soundeffect/groan2_僵尸呻吟[1~6].ogg",
+        ["闲置音效"] = "sandboxId://soundeffect/groan[1~6]_僵尸呻吟.ogg",
         ["攻击音效"] = "sandboxId://soundeffect/chomp[1~3]_僵尸吃.ogg",
         ["受击音效"] = "sandboxId://soundeffect/splat[1~3].ogg"
     })

@@ -444,9 +444,10 @@ function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
         self:_setButtonVisible(self.SubcardEnhancementButton, showUpgrade, canAffordUpgrade)
         -- === 修复：一键强化按钮：未满级且有配置时显示，始终可点击 ===
         self:_setButtonVisible(self.SubcardAllEnhancementButton, showUpgrade and shouldShowUpgradeAllButton, true)
-        -- 升星按钮：未满星时显示
+        -- 升星按钮：未满星且配置了升星素材时显示
         local showUpgradeStar = currentStar < maxStar
-        -- self:_setButtonVisible(self.SubcardUpgradeStarButton, showUpgradeStar, true)
+        local hasStarUpgradeCosts = skill:GetStarUpgradeCostAtLevel(skillLevel) ~= nil
+        self:_setButtonVisible(self.SubcardUpgradeStarButton, showUpgradeStar and hasStarUpgradeCosts, true)
 
         -- 装备/卸下按钮：只有可装备的技能才显示
         if canEquip then
@@ -461,7 +462,7 @@ function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
         -- 无服务端数据：隐藏所有功能按钮
         self:_setButtonVisible(self.SubcardEnhancementButton, false)
         self:_setButtonVisible(self.SubcardAllEnhancementButton, false)
-        -- self:_setButtonVisible(self.SubcardUpgradeStarButton, false)
+        self:_setButtonVisible(self.SubcardUpgradeStarButton, false)
         self:_setButtonVisible(self.SubcardEquipButton, false)
         self:_setButtonVisible(self.SubcardUnEquipButton, false)
     end
@@ -550,7 +551,7 @@ function CardsGui:OnInit(node, config)
     self.SubcardAllEnhancementButton = self:Get("框体/副卡属性/副卡一键强化", ViewButton) ---@type ViewButton
     self.SubcardEquipButton = self:Get("框体/副卡属性/副卡_装备", ViewButton) ---@type ViewButton
     self.SubcardUnEquipButton = self:Get("框体/副卡属性/副卡_卸下", ViewButton) ---@type ViewButton
-    self.SubcardUpgradeStarButton = self:Get("框体/副卡属性/副卡_升星", ViewButton) ---@type ViewButton
+    self.SubcardUpgradeStarButton = self:Get("框体/副卡/升星", ViewButton) ---@type ViewButton
     self.ConfirmStrengthenUI = self:Get("框体/副卡属性/确认强化", ViewComponent) ---@type ViewComponent
     self.StrengthenProgressUI = self:Get("框体/副卡/强化进度", ViewComponent) ---@type ViewComponent
     self.subCardenhancement = self:Get("框体/副卡/素材需求框", ViewComponent) ---@type ViewComponent
@@ -906,15 +907,44 @@ function CardsGui:RegisterMainCardFunctionButtons()
         end
     end
 
-    -- if self.SubcardUpgradeStarButton then
-    --     self.SubcardUpgradeStarButton.clickCb = function(ui, button)
-    --         local skillName = self.currentSubCardButtonName.extraParams["skillId"]
-    --         gg.network_channel:FireServer({
-    --             cmd = SkillEventConfig.REQUEST.UPGRADE_STAR,
-    --             skillName = skillName
-    --         })
-    --     end
-    -- end
+    if self.SubcardUpgradeStarButton then
+        self.SubcardUpgradeStarButton.clickCb = function(ui, button)
+            local skillName = self.currentSubCardButtonName.extraParams["skillId"]
+            local skillType = SkillTypeConfig.Get(skillName)
+            if not skillType then
+                gg.log("技能配置不存在:", skillName)
+                return
+            end
+
+            -- 检查是否配置了升星需求素材
+            local serverSkill = self.ServerSkills[skillName]
+            if not serverSkill then
+                gg.log("技能数据不存在:", skillName)
+                return
+            end
+
+            local currentStar = serverSkill.star_level or 0
+            local maxStar = 7
+
+            -- 检查是否已达到最大星级
+            if currentStar >= maxStar then
+                gg.log("技能已达到最大星级:", skillName, "当前星级:", currentStar)
+                return
+            end
+
+            local starCosts = skillType:GetStarUpgradeCostAtLevel(serverSkill.level)
+            if not starCosts then
+                gg.log("该技能未配置升星需求素材:", skillName)
+                return
+            end
+
+            gg.log("发送升星请求:", skillName, "当前星级:", currentStar)
+            gg.network_channel:FireServer({
+                cmd = SkillEventConfig.REQUEST.UPGRADE_STAR,
+                skillName = skillName
+            })
+        end
+    end
 
     -- 绑定确认强化相关按钮事件
     if self.ConfirmButton then
@@ -1053,9 +1083,10 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
     local serverlevel = data.level
     local serverslot = data.slot
     local growth = data.growth
+    local starLevel = data.star_level  -- 新增：获取星级信息
 
-    -- 使用工具函数更新技能数据
-    self:_updateSkillData(skillName, serverlevel, serverslot, nil, growth)
+    -- 使用工具函数更新技能数据，包括星级
+    self:_updateSkillData(skillName, serverlevel, serverslot, starLevel, growth)
     local skillType = SkillTypeConfig.Get(skillName)
     if skillType.category==1 then
         -- 副卡升级：更新副卡显示和按钮状态
@@ -1080,6 +1111,15 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
             self:UpdateSubCardAttributePanel(skillType, skillLevel, serverData)
             self:UpdateSubCardLevelDisplay(skillName, skillLevel)
             self:UpdateSubCardProgress(skillType, growth, skillLevel)
+            
+            -- 新增：如果有星级更新，更新星级显示
+            if starLevel then
+                local starContainer = self.subCardComponent.node["星级"]
+                if starContainer then
+                    self:_updateStarDisplay(starContainer, starLevel)
+                    gg.log("副卡升星显示更新:", skillName, "星级:", starLevel)
+                end
+            end
         end
 
     elseif skillType.category==0  then
