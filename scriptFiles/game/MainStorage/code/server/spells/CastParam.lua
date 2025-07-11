@@ -87,9 +87,21 @@ end
 ---@param def T
 ---@return T
 function CastParam:GetParamByName(name, v, def)
-    -- gg.log("GetParamByName", name, v, def)
+    -- 添加调试日志
+    if name == "挂机获得阳光" and v == "基础数量" then
+        gg.log("🔍 GetParamByName调试:", name, v, def)
+        gg.log("🔍 extraParams内容:", gg.printTable(self.extraParams))
+        local fullKey = name .. "." .. v
+        gg.log("🔍 查找键:", fullKey, "值:", self.extraParams[fullKey])
+        gg.log("🔍 备用键:", v, "值:", self.extraParams[v])
+    end
+    
     local value = self.extraParams[name .. "." .. v] or self.extraParams[v]
-    -- gg.log("GetParamByName", name, value, self.extraParams, self.extraParams[name .. "." .. v], self.extraParams[v])
+    
+    if name == "挂机获得阳光" and v == "基础数量" then
+        gg.log("🔍 最终返回值:", value, "默认值:", def)
+    end
+    
     if value == nil then
         return def
     end

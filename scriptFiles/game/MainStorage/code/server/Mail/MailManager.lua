@@ -147,9 +147,9 @@ function MailManager:AddPlayerMail(uin, mailData)
 
     local playerMailContainer = player.mail.playerMail
 
-    -- 为邮件数据补充ID和类型
+    -- 为邮件数据补充ID（保持原有的mail_type不变）
     mailData.id = self:GenerateMailId("mail_p_")
-    mailData.mail_type = self.MAIL_TYPE.PLAYER
+    -- 注意：不再强制设置mail_type，保持调用方传入的值（由发件人类型决定）
 
     -- 使用MailBase来创建和初始化邮件对象
     local mailObject = MailBase.New(mailData)
