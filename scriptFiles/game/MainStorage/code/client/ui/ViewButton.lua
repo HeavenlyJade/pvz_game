@@ -26,9 +26,11 @@ function ViewButton:SetChildIcon(path2Child, icon, hoverIcon)
     if c then
         local childNode = self:Get(path2Child).node
         local clickImg = self.childClickImgs[path2Child]
-        clickImg.normalImg = icon
-        clickImg.hoverImg = hoverIcon
-        clickImg.clickImg = hoverIcon
+        if clickImg then
+            clickImg.normalImg = icon
+            clickImg.hoverImg = hoverIcon
+            clickImg.clickImg = hoverIcon
+        end
         childNode.Icon = icon
     end
 end
@@ -181,6 +183,9 @@ function ViewButton:OnClick(vector2)
     if self.clickCb then
         self.clickCb(self.ui, self)
     end
+    ClientEventManager.Publish("ButtonClicked", {
+        button = self
+    })
 end
 
 --- 重新从节点属性中加载按钮的状态（例如图片和颜色）
@@ -290,15 +295,18 @@ function ViewButton:_BindNodeAndChild(child, isDeep, bindEvents)
         end
         if bindEvents then
             child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
+                print("TouchBegin", self.path)
                 self:OnTouchIn(vector2)
             end)
             child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
+                print("TouchEnd", self.path)
                 self:OnTouchOut()
             end)
             child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
                 self:OnTouchMove(node, isTouchMove, vector2, number)
             end)
             child.Click:Connect(function(node, isClick, vector2, number)
+                print("click", self.path)
                 self:OnClick(vector2)
             end)
         end

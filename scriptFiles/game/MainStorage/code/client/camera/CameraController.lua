@@ -38,7 +38,7 @@ local _lockMouseY = false
 local _invertMouseX = false
 local _invertMouseY = false
 local _mouseXSensitivity = 0.2
-local _mouseYSensitivity = 0.2
+local _mouseYSensitivity = 0.1
 local _wheelSensitivity = 50
 local _mouseXMin = -60.0
 local _mouseXMax = 60.0
@@ -168,13 +168,22 @@ function CameraController.SetActive(active)
                 game.UserInputService.InputChanged:Connect(
                 function(inputObj, gameprocessed)
                     if inputObj.UserInputType == Enum.UserInputType.MouseMovement.Value then
-                        -- 只有在按住鼠标右键时才处理鼠标移动
                         if _isTouching or game.MouseService:IsSight() then
-                            CameraController.OnTouchMoved(
-                                _currentTouchPos.x + inputObj.Delta.x,
-                                _currentTouchPos.y + inputObj.Delta.y,
-                                inputObj.TouchId
-                            )
+                            local currentTime = gg.GetTimeStamp()  -- Use gg.GetTimeStamp() instead of game.TimeService:GetTime()
+                            local elapsedTime = currentTime - _touchStartTime
+                            if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
+                                local deltaY = inputObj.Delta.y
+                                if game.RunService:IsPC() then
+                                    if not game.MouseService:IsSight() then
+                                        deltaY = -deltaY
+                                    end
+                                end
+                                if _alignWhenMoving and _lockedOnTarget then
+                                    CameraController.InputMove(0, deltaY)
+                                else
+                                    CameraController.InputMove(inputObj.Delta.x, deltaY)
+                                end
+                            end
                         end
                     end
                 end
@@ -649,20 +658,10 @@ function CameraController.OnTouchMoved(x, y, touchId)
 
     if _lastTouchPos.x ~= 0 and _lastTouchPos.y ~= 0 then
         local delta = _currentTouchPos - _lastTouchPos
-        local currentTime = gg.GetTimeStamp()  -- Use gg.GetTimeStamp() instead of game.TimeService:GetTime()
-        local elapsedTime = currentTime - _touchStartTime
-        if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
-            local deltaY = delta.y
-            if game.RunService:IsPC() then
-                if not game.MouseService:IsSight() then
-                    deltaY = -deltaY
-                end
-            end
-            if _alignWhenMoving and _lockedOnTarget then
-                CameraController.InputMove(0, deltaY)
-            else
-                CameraController.InputMove(delta.x, deltaY)
-            end
+        if _alignWhenMoving and _lockedOnTarget then
+            CameraController.InputMove(0, delta.y)
+        else
+            CameraController.InputMove(delta.x, delta.y)
         end
     end
 

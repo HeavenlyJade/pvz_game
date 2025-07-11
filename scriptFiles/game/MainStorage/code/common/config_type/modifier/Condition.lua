@@ -16,6 +16,9 @@ function BetweenCondition:OnInit(data)
     self.maxValue = data["最大值"] or 100
 end
 function BetweenCondition:CheckAmount(modifier, amount)
+    if amount == nil then
+        return false
+    end
     return amount >= self.minValue and amount <= self.maxValue
 end
 

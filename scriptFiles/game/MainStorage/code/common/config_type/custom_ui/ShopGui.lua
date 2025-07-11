@@ -13,6 +13,7 @@ local ShopGui = ClassMgr.Class("ShopGui", CustomUI)
 ---@param data table
 function ShopGui:OnInit(data)
     self.otherShops = data["其它页面"] ---@type string[]
+    self.shopGoodsIds = data["商品"]
     self.shopGoods = {} ---@type table<string, ShopGood>
     for _, privilegeType in ipairs(data["商品"]) do
         self.shopGoods[privilegeType] = ShopGoodConfig.Get(privilegeType)
@@ -142,8 +143,9 @@ function ShopGui:C_BuildUI(packet)
     
     local index = 1
     self.goodsList:SetElementSize(0)
-    for privilegeType, shopGood in pairs(self.shopGoods) do
-        self:_UpdateCard(self.goodsList:GetChild(index), shopGood, packet.shopGoods[privilegeType])
+    for _, shopGoodId in ipairs(self.shopGoodsIds) do
+        local shopGood = self.shopGoods[shopGoodId]
+        self:_UpdateCard(self.goodsList:GetChild(index), shopGood, packet.shopGoods[shopGoodId])
         index = index+1
     end
     

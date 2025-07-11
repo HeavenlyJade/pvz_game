@@ -74,7 +74,7 @@ local function ShowWorldText(text, icon, startPos, endPos)
     local node = GetNode()
     
     -- 设置文本
-    node.textLabel.Title = text
+    node.textLabel.Title = tostring(text)
     node.LocalScale = Vector3.New(0.6, 0.6, 0.6)
     node.Position = startPos
 

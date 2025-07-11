@@ -41,6 +41,12 @@ function ClientMain.start_client()
             evt.Return(evt.states)
         end
     end)
+    ClientEventManager.Subscribe("HideTitle", function (evt)
+        local nameTag = game.Players.LocalPlayer.Character["name_level"]
+        if nameTag then
+            nameTag.Visible = false
+        end
+    end)
     if game.RunService:IsPC() then
         game.MouseService:SetMode(1)
     end
@@ -59,6 +65,7 @@ function ClientMain.start_client()
         ViewBase.LockMouseVisible(false)
     end, 1)
     require(MainStorage.code.client.graphic.MiniShopManagerClient)
+    ClientEventManager.SendToServer("PlayerClientInited", {})
     -- ClientEventManager.Subscribe("FetchModelSize", function (evt)
     --     local actor = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast actor Actor
     --     if actor then

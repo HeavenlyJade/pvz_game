@@ -161,12 +161,13 @@ function _M:OnInit(TriggerZone, actor)
             pendingTriggerZones[player.uuid] = nil
         end
     end)
-
-    self:createTitle()
 end
 
 _M.GenerateUUID = function(self)
     self.uuid = gg.create_uuid('u_Zone')
+end
+
+function _M:createTitle()
 end
 
 ---更新NPC状态

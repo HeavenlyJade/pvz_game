@@ -22,10 +22,12 @@ function AfkHud:OnInit(node, config)
     self.escapeButton = self:Get("挂机底图/退出按钮", ViewButton) ---@type ViewButton
     self.escapeButton.clickCb = function (ui, button)
         ClientEventManager.SendToServer("ExitAfkSpot", {})
+        ViewBase.LockMouseVisible(false)
     end
     ClientEventManager.Subscribe("PressKey", function (evt)
         if evt.key == Enum.KeyCode.Space.Value then
             ClientEventManager.SendToServer("ExitAfkSpot", {})
+            ViewBase.LockMouseVisible(false)
         end
     end)
 

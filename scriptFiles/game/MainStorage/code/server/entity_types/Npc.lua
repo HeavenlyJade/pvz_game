@@ -58,7 +58,6 @@ function _M:OnInit(npcData, actor)
     end)
 
     trigger.TouchEnded:Connect(function(node)
-        -- print("TouchEnded", self.name, node.Name)
         if node and node.UserId then
             local player = gg.getPlayerByUin(node.UserId)
             if player then
@@ -122,12 +121,12 @@ end
 
 ---检查附近玩家是否还在交互区域内
 function _M:CheckNearbyPlayers()
-    if not self.actor or not self.actor.LocalPosition then
+    if not self.actor or not self.actor.Position then
         return
     end
 
-    local npcPos = self.actor.LocalPosition
-    local interactionRadius = (math.max(self.extraSize.x + self.actor.Size.x, self.extraSize.y + self.actor.Size.y) / 2)^2
+    local npcPos = self.actor.Position
+    local interactionRadius = (math.max(self.extraSize.x + self.actor.Size.x, self.extraSize.z + self.actor.Size.z) / 2)^2
 
     for playerUuid, player in pairs(self.nearbyPlayers) do
         if player and player:GetPosition() then

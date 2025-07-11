@@ -101,9 +101,11 @@ function _M:OnInit(info_)
             if skill and skill.equipSlot > 0 and skill.skillType.activeSpell then
                 local param = CastParam.New()
                 if evt.targetPos then
-                    param.lookDirection = (evt.targetPos - self:GetCenterPosition()):Normalize()
+                    param.targetPos = evt.targetPos
+                    gg.log("targetPos", self:GetPosition(), evt.targetPos - self:GetPosition(), param.targetPos)
                 else
-                    param.lookDirection = evt.direction
+                    param.targetPos = self:GetPosition() + evt.direction * 1000
+                    gg.log("targetPos", self:GetPosition(), evt.direction, param.targetPos)
                 end
                 local target = nil
                 if skill.skillType.targetMode == "位置" then
@@ -275,6 +277,15 @@ function _M:IsNew(path)
     return true
 end
 
+---@param key string 变量名
+---@return number 变量值
+function _M:GetVariable(key, defaultValue)
+    if key == "online_time" and self.GetOnlineTime then
+        return self:GetOnlineTime()
+    end
+    return Entity.GetVariable(self, key, defaultValue)
+end
+
 function _M:GetOnlineTime()
     return self:GetVariable("daily_onlinetime") + os.time() - self.loginTime
 end
@@ -352,7 +363,10 @@ function _M:setPlayerNetStat(player_net_stat_)
     self.player_net_stat = player_net_stat_
 end
 
-
+function _M:createTitle(name)
+    Entity.createTitle(self, string.format("%s\n%d级", self.name , self.level))
+    self:SendEvent("HideTitle", { })
+end
 
 function _M:DisplayCollectItem(imgIcon, text, position, from)
     local data = {
@@ -374,6 +388,7 @@ function _M:SetLevel(level)
     Entity.SetLevel(self,level)
     self:RefreshStats()
     self:SetVariable("level", level)
+    self:createTitle()
     self:SendEvent("UpdateHud", {
         level = self.level
     })
@@ -410,7 +425,6 @@ function _M:SetModel(model, animator, stateMachine)
 end
 
 function _M:EnterBattle()
-    gg.log("玩家进入战斗:", self.name, "UIN:", self.uin)
     self:showReviveEffect(self:GetPosition())
     local skill = self:GetEquippedSkill(1)
     if skill then
@@ -752,7 +766,7 @@ function _M:LearnSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = 0,
-            star_level = 0
+            star_level = 1
         })
         self:saveSkillConfig()
         return true
@@ -807,7 +821,7 @@ function _M:UpgradeSkill(skillType)
             skill = skillType.name,
             level = 1,
             slot = skillSlot,
-            star_level = 0
+            star_level = 1
         })
         local levelUpPlayer = skillType:GetLevelUpPlayerAtLevel(1)
         self:SetLevel(self.level + levelUpPlayer)
@@ -957,6 +971,7 @@ function _M:AddNearbyNpc(npc)
 end
 
 function _M:SetMoveable(moveable)
+    self._moveable = moveable
     if moveable then
         self:RefreshStats()
     else
@@ -1024,10 +1039,12 @@ function _M:UpdateHud()
     self.bag:SyncToClient()
 
     self.level = self:GetVariable("level", 1)
+    self:createTitle()
     self:SetMoveable(true)
     self:SendEvent("UpdateHud", {
         level = self.level
     })
+    self:SendEvent("HideTitle", { })
 end
 
 -- 同步任务数据到客户端

@@ -124,10 +124,8 @@ function AfkSpot:CanEnter(player)
             return false
         end
     end
-    gg.log("self.interactCondition", self.name, self.interactCondition)
     if not self.interactCondition then return true end
     local param = self.interactCondition:Check(player, self)
-    gg.log("self.interactCondition", param)
     return not param.cancelled
 end
 
@@ -270,9 +268,7 @@ function AfkSpot:CastSpells(player)
         end
     else
         self.occupiedByPlayer = nil -- 非副卡模式下始终为nil
-        for player, _ in pairs(self.activePlayers) do
-            player:ExecuteCommands(self.periodicCommands)
-        end
+        player:ExecuteCommands(self.periodicCommands)
     end
 end
 

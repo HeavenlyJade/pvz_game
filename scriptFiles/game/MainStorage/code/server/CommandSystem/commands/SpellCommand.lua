@@ -136,15 +136,15 @@ function SpellCommand.var(params, player)
     local changes = {}
     
     if action == "增加" then
-        local oldValue = vars[varName] or 0
+        local oldValue = targetPlayer:GetVariable(varName) or 0
         vars[varName] = oldValue + value
         table.insert(changes, string.format("%s的变量[%s]从%d改为%d", player.name, varName, oldValue, vars[varName]))
     elseif action == "减少" then
-        local oldValue = vars[varName] or 0
+        local oldValue = targetPlayer:GetVariable(varName) or 0
         vars[varName] = oldValue - value
         table.insert(changes, string.format("%s的变量[%s]从%d改为%d", player.name, varName, oldValue, vars[varName]))
     elseif action == "改为" then
-        local oldValue = vars[varName] or 0
+        local oldValue = targetPlayer:GetVariable(varName) or 0
         vars[varName] = value
         table.insert(changes, string.format("%s的变量[%s]从%d改为%d", player.name, varName, oldValue, vars[varName]))
     elseif action == "全部增加" then

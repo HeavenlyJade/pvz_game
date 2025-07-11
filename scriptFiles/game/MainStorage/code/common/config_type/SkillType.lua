@@ -174,7 +174,7 @@ function SkillType:_evaluateExpression(expr)
     local function processFunction(str, funcName)
         local hasMatch = false
         local result = str
-        
+
         -- 手动查找函数调用并处理括号平衡
         local searchPos = 1
         while true do
@@ -182,19 +182,19 @@ function SkillType:_evaluateExpression(expr)
             if not startPos then
                 break
             end
-            
+
             -- 找到函数名和开括号的位置
             local funcStart = startPos
             local parenStart = string.find(result, "%(", startPos)
             if not parenStart then
                 break
             end
-            
+
             -- 使用括号计数器找到匹配的右括号
             local parenCount = 1
             local pos = parenStart + 1
             local parenEnd = nil
-            
+
             while pos <= #result and parenCount > 0 do
                 local char = string.sub(result, pos, pos)
                 if char == "(" then
@@ -208,21 +208,21 @@ function SkillType:_evaluateExpression(expr)
                 end
                 pos = pos + 1
             end
-            
+
             if not parenEnd then
                 gg.log("警告: 找不到匹配的右括号，表达式:", result)
                 break
             end
-            
+
             -- 提取函数参数
             local args = string.sub(result, parenStart + 1, parenEnd - 1)
             hasMatch = true
-            
+
             -- 分割参数（处理嵌套括号）
             local params = {}
             local depth = 0
             local currentParam = ""
-            
+
             for i = 1, #args do
                 local char = args:sub(i, i)
                 if char == "(" then
@@ -241,7 +241,7 @@ function SkillType:_evaluateExpression(expr)
             if currentParam ~= "" then
                 table.insert(params, currentParam:match("^%s*(.-)%s*$"))
             end
-            
+
             -- 计算每个参数的值（递归处理可能包含的数学函数）
             local values = {}
             for _, param in ipairs(params) do
@@ -254,7 +254,7 @@ function SkillType:_evaluateExpression(expr)
                     -- 简单表达式，直接计算
                     value = gg.eval(param)
                 end
-                
+
                 if value then
                     table.insert(values, value)
                 else
@@ -263,7 +263,7 @@ function SkillType:_evaluateExpression(expr)
                     break
                 end
             end
-            
+
             -- 根据函数名计算结果
             local funcResult = 0
             if funcName == "min" then
@@ -279,47 +279,47 @@ function SkillType:_evaluateExpression(expr)
                 end
                 funcResult = math.floor(funcResult)  -- 确保返回整型
             end
-            
+
             -- 替换原字符串中的函数调用
             local funcCall = string.sub(result, funcStart, parenEnd)
             result = string.sub(result, 1, funcStart - 1) .. tostring(funcResult) .. string.sub(result, parenEnd + 1)
-            
+
             -- 从替换后的位置继续搜索
             searchPos = funcStart + string.len(tostring(funcResult))
         end
-        
+
         return result, hasMatch
     end
-    
+
     -- 处理嵌套的min和max函数（从内向外处理）
     local maxIterations = 10  -- 防止无限循环
     local iteration = 0
-    
+
     while iteration < maxIterations do
         iteration = iteration + 1
         local originalExpr = expr
         local hasMinMatch, hasMaxMatch = false, false
-        
+
         -- 处理最内层的函数
         expr, hasMaxMatch = processFunction(expr, "max")
         expr, hasMinMatch = processFunction(expr, "min")
-        
+
         -- 如果没有更多的函数需要处理，退出循环
         if not hasMinMatch and not hasMaxMatch then
             break
         end
-        
+
         -- 如果表达式没有变化，也退出循环（防止死循环）
         if expr == originalExpr then
             gg.log("警告: 数学函数处理可能陷入死循环，表达式:", expr)
             break
         end
     end
-    
+
     if iteration >= maxIterations then
         gg.log("警告: 数学函数处理达到最大迭代次数，表达式:", expr)
     end
-    
+
     return gg.eval(expr)
 end
 

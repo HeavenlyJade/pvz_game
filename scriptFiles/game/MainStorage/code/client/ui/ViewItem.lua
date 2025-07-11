@@ -52,7 +52,7 @@ function ViewItem:SetItem(item)
     end
     self._itemCache = item
     if self.node["ItemIcon"] then
-        self.node["ItemIcon"].Icon = itemType.icon
+        self:SetChildIcon("ItemIcon", itemType.icon)
         self.node.Icon = itemType.rank.normalImgBg
         self.normalImg = itemType.rank.normalImgBg
         self.hoverImg = itemType.rank.hoverImgBg
@@ -81,7 +81,7 @@ end
 ---@param item ItemType
 function ViewItem:SetItemCost(itemType, amountHas, cost)
     self._itemCache = itemType:ToItem(cost)
-    self.node["ItemIcon"].Icon = itemType.icon
+    self:SetChildIcon("ItemIcon", itemType.icon)
     self:SetChildIcon("Frame", itemType.rank.normalImgFrame, itemType.rank.hoverImgFrame)
     self.node.Icon = itemType.rank.normalImgBg
     self.normalImg = itemType.rank.normalImgBg

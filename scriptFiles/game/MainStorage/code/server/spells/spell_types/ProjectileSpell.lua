@@ -110,29 +110,29 @@ function ProjectileSpell:ReturnProjectileToPool(actor)
 end
 
 --- 生成飞弹
----@param position Vec3 生成位置
----@param direction Vec3 飞行方向
----@param baseDirection Vec3 基础方向
+---@param position Vec3 施法者/发射点位置
+---@param targetPos Vec3 目标点
+---@param currentAngle number 当前散射角度（度）
 ---@param caster Entity 施法者
 ---@param param CastParam 参数
 ---@param delay number 延迟时间
-function ProjectileSpell:SpawnProjectile(position, direction, baseDirection, caster, param, delay)
+function ProjectileSpell:SpawnProjectile(position, targetPos, currentAngle, caster, param, delay)
     if delay and delay > 0 then
         ServerScheduler.add(function()
-            self:CreateProjectile(position, direction, baseDirection, caster, param)
+            self:CreateProjectile(position, targetPos, currentAngle, caster, param)
         end, delay)
     else
-        self:CreateProjectile(position, direction, baseDirection, caster, param)
+        self:CreateProjectile(position, targetPos, currentAngle, caster, param)
     end
 end
 
 --- 创建飞弹
----@param position Vec3 生成位置
----@param direction Vec3 飞行方向
----@param baseDirection Vec3 基础方向
+---@param position Vec3 施法者/发射点位置
+---@param targetPos Vec3 目标点
+---@param currentAngle number 当前散射角度（度）
 ---@param caster Entity 施法者
 ---@param param CastParam 参数
-function ProjectileSpell:CreateProjectile(position, direction, baseDirection, caster, param)
+function ProjectileSpell:CreateProjectile(position, targetPos, currentAngle, caster, param)
     -- 从对象池获取或创建新的飞弹Actor
     local actor = self:GetProjectileFromPool()
     if not actor then
@@ -147,6 +147,7 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
             return
         end
         actor = originalActor:Clone()
+        self._actorOffset = actor.LocalPosition
         if self.printInfo then
             print(string.format("%s: 创建新的飞弹Actor", self.spellName))
         end
@@ -160,7 +161,49 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
     actor.Enabled = true
     actor.Visible = false  -- 初始设置为不可见
     actor.CollideGroupID = 9
-    
+
+    -- 计算最终launchPos（包括所有偏移/修正）
+    local launchPos = Vec3.new(position)
+    local launchOffset = self._actorOffset
+    if self.launchOffset and not self.launchOffset:IsZero() then
+        launchOffset = self.launchOffset
+    end
+    -- 以目标点为方向
+    local forward
+    if targetPos then
+        forward = (gg.Vec3.new(targetPos) - launchPos):Normalized()
+    else
+        forward = gg.Vec3.new(caster:GetDirection()):Normalized()
+    end
+    local right = Vec3.up():Cross(forward):Normalized()
+    local up = forward:Cross(right):Normalized()
+    -- 在局部坐标系中应用偏移
+    launchPos = launchPos + 
+        right * launchOffset.x + 
+        up * launchOffset.y + 
+        forward * -launchOffset.z
+
+    local size = Vec3.new(actor.Size) * Vec3.new(actor.LocalScale)
+    local pos = launchPos + Vec3.new(0, -size.y/2, 0)
+    actor.Position = pos:ToVector3()
+
+    -- direction始终基于launchPos指向targetPos
+    local direction
+    if targetPos then
+        direction = (gg.Vec3.new(targetPos) - launchPos):Normalized()
+    else
+        direction = gg.Vec3.new(caster:GetDirection()):Normalized()
+    end
+    -- 应用散射角度
+    if currentAngle and currentAngle ~= 0 then
+        local angleRad = math.rad(currentAngle)
+        direction = gg.Vec3.new(
+            direction.x * math.cos(angleRad) - direction.z * math.sin(angleRad),
+            direction.y,
+            direction.x * math.sin(angleRad) + direction.z * math.cos(angleRad)
+        )
+    end
+    -- initialAngleOffset
     if self.initialAngleOffset.x ~= 0 then
         direction.y = direction.y + self.initialAngleOffset.x / 90
     end
@@ -168,37 +211,21 @@ function ProjectileSpell:CreateProjectile(position, direction, baseDirection, ca
         direction = direction:rotateAroundY(self.initialAngleOffset.y)
     end
 
-    local launchPos = Vec3.new(position)
-    local launchOffset = actor.LocalPosition
-    if self.launchOffset and not self.launchOffset:IsZero() then
-        launchOffset = self.launchOffset
-    end
-    local forward = baseDirection:Normalized()
-    local right = Vec3.up():Cross(forward):Normalized()
-    local up = forward:Cross(right):Normalized()
-    
-    -- 在局部坐标系中应用偏移
-    launchPos = launchPos + 
-        right * launchOffset.x + 
-        up * launchOffset.y + 
-        forward * -launchOffset.z
-
     local item = {
         actor = actor,
         caster = caster,
         direction = direction,
-        baseDirection = Vec3.new(baseDirection),
+        baseDirection = direction,
         param = param,
         hitTargets = {},
         lastHitTimes = {},
         remainingHits = param:GetValue(self, "生效次数", self.maxHits),
         startTime = os.time(),
-        size = Vec3.new(actor.Size) * Vec3.new(actor.LocalScale),
+        size = size,
         updateCount = 0,  -- 添加更新计数器
         velocity = direction * self.speed,  -- 初始速度
-        target = param.realTarget  -- 保存追踪目标
+        target = param.realTarget,  -- 保存追踪目标
     }
-    local pos = launchPos + Vec3.new(0, -item.size.y/2, 0)
     actor.Position = pos:ToVector3()
 
     -- 注册飞弹
@@ -447,27 +474,20 @@ function ProjectileSpell:CastReal(caster, target, param)
             print(string.format("%s: 在施法者位置生成飞弹", self.spellName))
         end
     else
-        if not target then
+        if not target and not (param and param.targetPos) then
             if self.printInfo then
                 print(string.format("%s: 没有目标，无法生成飞弹", self.spellName))
             end
             return false
         end
-        position = target:GetPosition()
+        if param and param.targetPos then
+            position = caster:GetPosition()
+        else
+            position = target:GetPosition()
+        end
         if self.printInfo then
             print(string.format("%s: 在目标位置生成飞弹", self.spellName))
         end
-    end
-
-    local baseDirection
-    if not target then
-        if param.lookDirection then
-            baseDirection = param.lookDirection
-        else
-            baseDirection = caster:GetDirection()
-        end
-    else
-        baseDirection = (self:GetPosition(target) - self:GetPosition(caster)):Normalize()
     end
     param.realTarget = target
     
@@ -476,9 +496,11 @@ function ProjectileSpell:CastReal(caster, target, param)
     local shootAngle = param:GetValue(self, "散射角度", self.scatterAngle)
     local shootDelay = param:GetValue(self, "散射延迟", self.scatterDelay)
     
+    local targetPos = param and param.targetPos and gg.Vec3.new(param.targetPos) or nil
+    
     -- 如果只有一发，直接生成
     if shootCount <= 1 then
-        self:SpawnProjectile(Vec3.new(position), Vec3.new(baseDirection), Vec3.new(baseDirection), caster, param, 0)
+        self:SpawnProjectile(Vec3.new(position), targetPos, 0, caster, param, 0)
         return true
     end
     
@@ -500,14 +522,8 @@ function ProjectileSpell:CastReal(caster, target, param)
     -- 生成所有散射
     for i = 1, shootCount do
         local currentAngle = startAngle + (angleStep * (i - 1))
-        local angleRad = math.rad(currentAngle)
-        local currentDirection = Vec3.new(
-            baseDirection.x * math.cos(angleRad) - baseDirection.z * math.sin(angleRad),
-            baseDirection.y,
-            baseDirection.x * math.sin(angleRad) + baseDirection.z * math.cos(angleRad)
-        )
         local delay = shootDelay * (i - 1)
-        self:SpawnProjectile(Vec3.new(position), currentDirection, Vec3.new(baseDirection), caster, param, delay)
+        self:SpawnProjectile(Vec3.new(position), targetPos, currentAngle, caster, param, delay)
     end
     
     return true

@@ -37,7 +37,6 @@ function CommandSpell:CastReal(caster, target, param)
     local anySucceed = false
     for i, command in ipairs(self.commands) do
         -- 执行指令
-        print("command", command)
         local success = caster:ExecuteCommand(command, target, param)
         if self.printInfo then
             print(string.format("CommandSpell[%s] 执行第 %d 个指令: %s, 结果: %s", 

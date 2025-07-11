@@ -16,7 +16,9 @@ local TRIGGER_STAT_TYPES = {
         creature:SetMaxHealth(value)
     end,
     ["速度"] = function(creature, value)
+        if creature._moveable then
         creature.actor.Movespeed = value
+        end
     end
 }
 
@@ -43,6 +45,7 @@ _M.TRIGGER_STAT_TYPES = TRIGGER_STAT_TYPES
 -- 新增属性
 function _M:OnInit(info_)
     self.spawnPos = info_.position
+    self._moveable = true
     self.name = nil
     self.isDestroyed = false
     self:GenerateUUID()
@@ -119,14 +122,16 @@ function _M:SubscribeEvent(eventType, listener, priority)
     ServerEventManager.Subscribe(eventType, listener, priority, self.uuid)
 end
 
-function _M:ExecuteCommand(command, castParam, silent)
+function _M:ExecuteCommand(command, target, silent)
     local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager)  ---@type CommandManager
+    command = gg.ProcessVariables(command, self, target)
     CommandManager.ExecuteCommand(command, self, silent)
 end
 
-function _M:ExecuteCommands(commands, castParam, silent)
+function _M:ExecuteCommands(commands, target, silent)
+    target = target or self
     for _, command in ipairs(commands) do
-        local success, result = pcall(self.ExecuteCommand, self, command, castParam, silent)
+        local success, result = pcall(self.ExecuteCommand, self, command, target, silent)
         if not success then
             gg.log("命令执行错误: " .. command .. ", " .. tostring(result))
             return false
@@ -447,7 +452,6 @@ end
 ---@return number 变量值
 function _M:GetVariable(key, defaultValue)
     defaultValue = defaultValue or 0
-    -- 检查是否是特殊格式的变量名（category#variable）
     if string.find(key, "#") then
         local parts = {}
         for part in string.gmatch(key, "[^#]+") do
@@ -822,9 +826,11 @@ function _M:createTitle(nameOverride, scale)
         number_level.ShadowOffset = Vector2.New(3, 3)
         number_level.FontSize = number_level.FontSize / self.actor.LocalScale.y
 
-        if (self.level or 1) > 50 then
-            number_level.TitleColor = ColorQuad.New(255, 0, 0, 255)
-            number_level.ShadowColor = ColorQuad.New(0, 0, 0, 255)
+        if self.isPlayer then
+            number_level.TitleColor = ColorQuad.New(255, 255, 255, 255)
+            number_level.OutlineEnable = true
+            number_level.OutlineColor = ColorQuad.New(0, 0, 0, 255)
+            number_level.OutlineSize = 3
         else
             number_level.TitleColor = ColorQuad.New(255, 255, 0, 255)
             number_level.ShadowColor = ColorQuad.New(0, 0, 0, 255)

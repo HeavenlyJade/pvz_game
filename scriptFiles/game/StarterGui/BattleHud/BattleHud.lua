@@ -392,8 +392,9 @@ function BattleHud:OnInit(node, config)
             previousWavesMobCount = previousWavesMobCount + self.waveMobCounts[i]
         end
         previousWavesMobCount = previousWavesMobCount / self.totalMobCount
-        gg.log("WaveHealthUpdate", previousWavesMobCount, data.healthPercent, self.waveMobCounts[data.waveIndex], self.totalMobCount)
-        self.progress.node["进度条"].FillAmount = previousWavesMobCount + data.healthPercent * (self.waveMobCounts[data.waveIndex] / self.totalMobCount)
+        local percent = previousWavesMobCount + data.healthPercent * (self.waveMobCounts[data.waveIndex] / self.totalMobCount)
+        self.progress.node["装饰图"].Position = Vector2.New(self.progress.node.Size.x * percent, 0)
+        self.progress.node["进度条"].FillAmount = 1 - percent
     end)
 
     -- 注册战斗结束事件监听

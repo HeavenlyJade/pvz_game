@@ -80,7 +80,6 @@ end
 
 
 function MainServer.initModule()
-    gg.log("初始化模块")
     -- local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
     local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
     local BagEventManager = require(MainStorage.code.server.bag.BagEventManager) ---@type BagEventManager
@@ -91,7 +90,9 @@ function MainServer.initModule()
     gg.log("背包事件管理")
     BagEventManager:Init()
     gg.log("事件初始化完成")
-
+    ServerEventManager.Subscribe("PlayerClientInited", function (evt)
+        evt.player:UpdateHud()
+    end)
 
 end
 
@@ -216,7 +217,6 @@ function MainServer.player_enter_game(player)
     player_.inited = true
     ServerEventManager.Publish("PlayerInited", {player = player_})
 
-    -- 主动推送邮件列表到客户端
     MailManager:SendMailListToClient(uin_)
 end
 

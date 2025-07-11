@@ -445,7 +445,20 @@ function gg.ProcessVariables(formula, caster, target)
             print(debug.traceback())
             return varName
         end
-        local value = target:GetVariable(varName)
+        local useCaster = target ---@type Entity
+        local realVarName = varName
+        if varName:sub(1,2) == "c:" then
+            useCaster = caster
+            realVarName = varName:sub(3)
+        end
+        if realVarName == "UIN" then
+            return useCaster.uin
+        end
+        if realVarName == "NAME" then
+            return useCaster.name
+        end
+        local value
+        value = useCaster and useCaster:GetVariable(realVarName) or nil
         return tostring(value)
     end)
     return processedFormula
@@ -1235,7 +1248,8 @@ function gg.createTextLabel(root_, title_)
     textLabel_.Size = Vector2.New(1500, 800)
     textLabel_.Pivot = Vector2.New(0.5, 0.5)
 
-    textLabel_.FontSize = 120
+    textLabel_.FontSize = 30
+    textLabel_.Scale = Vector2.New(5,5)
 
     textLabel_.TitleColor = ColorQuad.New(255, 255, 255, 255)
     textLabel_.FillColor = ColorQuad.New(0, 0, 0, 0)

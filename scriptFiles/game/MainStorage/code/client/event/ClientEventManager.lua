@@ -39,7 +39,6 @@ end
 ---@param priority? number 优先级，默认为10
 ---@param key? string 记录ID
 function ClientEventManager.Subscribe(eventType, listener, priority, key)
-    -- 参数验证
     if not eventType then
         gg.log("错误：eventType 不能为 nil",eventType,listener)
         return
@@ -118,6 +117,8 @@ function ClientEventManager.Publish(eventType, eventData)
                 gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
             end
         end
+    -- else
+    --     gg.log("Publish", eventType, ClientEventManager._eventDictionary[eventType])
     end
 end
 

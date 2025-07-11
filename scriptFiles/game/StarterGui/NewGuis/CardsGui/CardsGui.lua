@@ -1111,7 +1111,7 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
             self:UpdateSubCardAttributePanel(skillType, skillLevel, serverData)
             self:UpdateSubCardLevelDisplay(skillName, skillLevel)
             self:UpdateSubCardProgress(skillType, growth, skillLevel)
-            
+
             -- 新增：如果有星级更新，更新星级显示
             if starLevel then
                 local starContainer = self.subCardComponent.node["星级"]

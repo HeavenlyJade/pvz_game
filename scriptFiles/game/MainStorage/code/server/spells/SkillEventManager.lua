@@ -250,7 +250,7 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         player:SendHoverText("技能升级失败：未知的技能类型")
         return
     end
-    
+
     -- if existingSkill and existingSkill.growth < existingSkill.skillType:GetMaxGrowthAtLevel(existingSkill.level+1) then
     --     player:SendHoverText("技能升级失败：成长值不足，快去花圃挂机培养副卡吧")
     --     return
@@ -375,7 +375,7 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
     -- 检查是否有实际的资源消耗
     local hasActualResourceCost = false
     local processedCost = {}
-    
+
     for resourceName, amount in pairs(nextLevelCost) do
         local consumeAmount = math.abs(amount)
         if consumeAmount > 0 then
@@ -383,7 +383,7 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
             processedCost[resourceName] = consumeAmount
         end
     end
-    
+
     if not hasActualResourceCost then
         local displayName = skillType.displayName or skillName
         player:SendHoverText(string.format("【%s】一键强化配置无实际资源消耗，请使用单次强化按钮", displayName))
@@ -459,7 +459,7 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
     player.bag:SyncToClient()
 
     gg.log("一键强化成功", skillName, "原等级:", currentLevel, "最终等级:", targetLevel)
-    
+
     -- 播放升级音效
     local misc = MiscConfig.Get("总控")
     if skillType.category == 0 then
@@ -471,7 +471,7 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
     else
         player:PlaySound(misc["次要技能升级音效"])
     end
-    
+
     -- 发送响应
     local responseData = {
         skillName = skillName,
@@ -524,7 +524,7 @@ function SkillEventManager.PerformUpgradeAll(player, skillType, skill)
     -- 检查是否有实际的资源消耗
     local hasActualResourceCost = false
     local processedCost = {}
-    
+
     for resourceName, amount in pairs(nextLevelCost) do
         local consumeAmount = math.abs(amount)
         if consumeAmount > 0 then
@@ -532,7 +532,7 @@ function SkillEventManager.PerformUpgradeAll(player, skillType, skill)
             processedCost[resourceName] = consumeAmount
         end
     end
-    
+
     if not hasActualResourceCost then
         gg.log("❌ PerformUpgradeAll检查：技能配置了一键强化但无实际资源消耗:", skillType.name, "等级:", nextLevel)
         return {
@@ -830,8 +830,8 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
     end
 
     -- 获取当前星级和等级
-    local currentStar = existingSkill.star_level or 0
-    local currentLevel = existingSkill.level or 1
+    local currentStar = existingSkill.star_level
+    local currentLevel = existingSkill.level
     local maxStar = 7
 
     -- 检查是否已达到最大星级
@@ -889,7 +889,7 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
     existingSkill.star_level = currentStar + 1
     existingSkill.level = 0  -- 重置等级为0
     existingSkill.growth = 0  -- 重置成长进度为0
-    
+
     player:saveSkillConfig()
     player.bag:SyncToClient()
 
@@ -916,7 +916,7 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
     else
         player:PlaySound(misc["次要技能升级音效"])
     end
-    
+
     gg.log("发送技能升级响应（升星）", responseData)
     -- 使用 UPGRADE 响应事件而不是 UPGRADE_STAR，这样会触发 HandleUpgradeSkill 的客户端响应处理
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.UPGRADE, responseData)

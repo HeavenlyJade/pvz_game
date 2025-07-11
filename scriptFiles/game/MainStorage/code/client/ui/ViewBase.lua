@@ -13,6 +13,7 @@ local hiddenHuds = {} -- 记录被隐藏的layer=0界面
 ---@field layer number 0=主界面Hud， >1=GUI界面。 GUI在打开时关闭其他同layer的GUI
 ---@field closeHuds boolean
 ---@field mouseVisible boolean
+---@field closeHideMouse boolean
 
 ---@class ViewBase:Class
 ---@field New fun(node: SandboxNode, config: ViewConfig): ViewBase
@@ -130,6 +131,10 @@ function ViewBase:OnInit(node, config)
     self.layer = config.layer == nil and 1 or config.layer
     self.closeHuds = config.closeHuds
     self.mouseVisible = config.mouseVisible or self.layer > 0
+    self.closeHideMouse = config.closeHideMouse
+    if self.closeHideMouse == nil then
+        self.closeHideMouse = self.mouseVisible
+    end
     if self.closeHuds == nil then
         self.closeHuds = self.layer >= 1
     end
@@ -176,7 +181,7 @@ function ViewBase:Close()
             soundAssetId = self.closeSound
         })
     end
-    if self.mouseVisible then
+    if self.closeHideMouse then
         -- 只有没有任何layer>=1的界面显示时才隐藏鼠标
         local hasOtherLayerUI = false
         for _, ui in pairs(ViewBase.allUI) do

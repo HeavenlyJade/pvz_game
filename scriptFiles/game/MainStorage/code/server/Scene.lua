@@ -81,19 +81,12 @@ function _M:initNpcs()
             local sceneNode = self.node["NPC"]
             gg.log("初始化NPC：", npc_name, "场景：", npc_data["场景"], "节点名：", npc_data["节点名"])
 
-            if sceneNode and sceneNode[npc_data["节点名"]] then
-                local actor = sceneNode[npc_data["节点名"]]
-                gg.log("找到NPC节点：", npc_name, "节点类型：", actor.ClassName, "节点名：", actor.Name)
-
-                local npc = Npc.New(npc_data, actor)
-                self.uuid2Entity[actor] = npc
-                self.npcs[npc.uuid] = npc
-                npc:ChangeScene(self)
-
-                gg.log("NPC创建成功：", npc_name, "UUID：", npc.uuid)
+            if not sceneNode then
+                gg.log("错误：场景中没有NPC节点容器")
             else
-                gg.log("错误：找不到NPC节点：", npc_name, "节点名：", npc_data["节点名"])
-                if sceneNode then
+                local actor = gg.GetChild(sceneNode, npc_data["节点名"])
+                if not actor then
+                    gg.log("错误：找不到NPC节点：", npc_name, "节点名：", npc_data["节点名"])
                     -- 安全地获取子节点信息
                     local children = {}
                     if sceneNode.Children then
@@ -105,7 +98,14 @@ function _M:initNpcs()
                     end
                     gg.log("可用的NPC节点：", table.concat(children, ", "))
                 else
-                    gg.log("错误：场景中没有NPC节点容器")
+                    gg.log("找到NPC节点：", npc_name, "节点类型：", actor.ClassName, "节点名：", actor.Name)
+
+                    local npc = Npc.New(npc_data, actor)
+                    self.uuid2Entity[actor] = npc
+                    self.npcs[npc.uuid] = npc
+                    npc:ChangeScene(self)
+
+                    gg.log("NPC创建成功：", npc_name, "UUID：", npc.uuid)
                 end
             end
         end
@@ -145,15 +145,32 @@ function _M:initAfkSpots()
     for afk_name, afk_data in pairs(all_afk_spots) do
         if afk_data["场景"] == self.name then
             local sceneNode = self.node["挂机点"]
-            if sceneNode then
+            gg.log("初始化挂机点：", afk_name, "场景：", afk_data["场景"], "节点名：", afk_data["节点名"])
+            if not sceneNode then
+                gg.log("错误：场景中没有挂机点节点容器")
+            else
                 for _, node_name in ipairs(afk_data["节点名"]) do
-                    if sceneNode[node_name] then
-                        local actor = sceneNode[node_name]
+                    local actor = gg.GetChild(sceneNode, node_name)
+                    if not actor then
+                        gg.log("错误：找不到挂机点节点：", afk_name, "节点名：", node_name)
+                        -- 安全地获取子节点信息
+                        local children = {}
+                        if sceneNode.Children then
+                            for _, child in ipairs(sceneNode.Children) do
+                                if child and child.Name then
+                                    table.insert(children, child.Name)
+                                end
+                            end
+                        end
+                        gg.log("可用的挂机点节点：", table.concat(children, ", "))
+                    else
+                        gg.log("找到挂机点节点：", afk_name, "节点类型：", actor.ClassName, "节点名：", actor.Name)
                         local afk_spot = AfkSpot.New(afk_data, actor)
                         afk_spot.scene = self
                         self.uuid2Entity[actor] = afk_spot
                         self.npcs[afk_spot.uuid] = afk_spot
                         afk_spot:ChangeScene(self)
+                        gg.log("挂机点创建成功：", afk_name, "UUID：", afk_spot.uuid)
                     end
                 end
             end
@@ -163,15 +180,31 @@ function _M:initAfkSpots()
     for afk_name, afk_data in pairs(all_afk_spots) do
         if afk_data["场景"] == self.name then
             local sceneNode = self.node["挂机点"]
-            if sceneNode then
+            gg.log("初始化触发挂机点：", afk_name, "场景：", afk_data["场景"], "节点名：", afk_data["节点名"])
+            if not sceneNode then
+                gg.log("错误：场景中没有挂机点节点容器")
+            else
                 for _, node_name in ipairs(afk_data["节点名"]) do
-                    if sceneNode[node_name] then
-                        local actor = sceneNode[node_name]
+                    local actor = sceneNode[node_name]
+                    if not actor then
+                        gg.log("错误：找不到挂机点节点：", afk_name, "节点名：", node_name)
+                        local children = {}
+                        if sceneNode.Children then
+                            for _, child in ipairs(sceneNode.Children) do
+                                if child and child.Name then
+                                    table.insert(children, child.Name)
+                                end
+                            end
+                        end
+                        gg.log("可用的挂机点节点：", table.concat(children, ", "))
+                    else
+                        gg.log("找到挂机点节点：", afk_name, "节点类型：", actor.ClassName, "节点名：", actor.Name)
                         local afk_spot = TriggerZone.New(afk_data, actor)
                         afk_spot.scene = self
                         self.uuid2Entity[actor] = afk_spot
                         self.npcs[afk_spot.uuid] = afk_spot
                         afk_spot:ChangeScene(self)
+                        gg.log("触发挂机点创建成功：", afk_name, "UUID：", afk_spot.uuid)
                     end
                 end
             end

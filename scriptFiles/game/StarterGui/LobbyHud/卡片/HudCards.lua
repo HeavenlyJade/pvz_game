@@ -275,7 +275,6 @@ function HudCards:UpdateMainCardDisplay()
         local icon = mainCardSkill.skillType.icon
         if icon  and icon ~= "" then
             self.mainCardButton.node["框体"]["主卡图标"].Icon =icon
-
         end
 
         if self.mainCardButton.node["Title"] then
