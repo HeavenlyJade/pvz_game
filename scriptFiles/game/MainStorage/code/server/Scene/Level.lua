@@ -109,29 +109,29 @@ function Level:OnInit(levelType, scene, index)
 
                     -- 优先使用波次级别的掉落物配置
                     local dropItems = self.currentWave and self.currentWave.dropItems
-                    gg.log("dropItems", self.currentWave, dropItems)
+                    -- gg.log("dropItems", self.currentWave, dropItems)
                     if dropItems and #dropItems > 0 then
                         for _, item in ipairs(dropItems) do
                             local chance = tonumber(item["几率"]) or 0
-                            print(string.format("[掉落物] 配置: 物品=%s, 几率=%s, 数量公式=%s", tostring(item["物品"]), tostring(item["几率"]), tostring(item["数量"])))
+                            -- print(string.format("[掉落物] 配置: 物品=%s, 几率=%s, 数量公式=%s", tostring(item["物品"]), tostring(item["几率"]), tostring(item["数量"])))
                             local roll = math.random(0, 99)
-                            print(string.format("[掉落物] 掷骰: %d < %d ? %s", roll, chance, tostring(roll < chance)))
+                            -- print(string.format("[掉落物] 掷骰: %d < %d ? %s", roll, chance, tostring(roll < chance)))
                             if roll < chance then
                                 local baseCount = gg.ProcessFormula(item["数量"]:gsub("LVL", tostring(data.mob.level)), topDamager, topDamager)
-                                print(string.format("[掉落物] 公式结果: %s", tostring(baseCount)))
+                                -- print(string.format("[掉落物] 公式结果: %s", tostring(baseCount)))
                                 if self.levelType.dropModifier then
                                     local castParam = self.levelType.dropModifier:Check(topDamager, topDamager)
-                                    print(string.format("[掉落物] dropModifier: cancelled=%s, power=%s", tostring(castParam.cancelled), tostring(castParam.power)))
+                                    -- print(string.format("[掉落物] dropModifier: cancelled=%s, power=%s", tostring(castParam.cancelled), tostring(castParam.power)))
                                     if castParam.cancelled then
                                         baseCount = 0
                                     else
                                         baseCount = baseCount * castParam.power
                                     end
                                 end
-                                print(string.format("[掉落物] 最终数量: %s", tostring(baseCount)))
+                                -- print(string.format("[掉落物] 最终数量: %s", tostring(baseCount)))
                                 if baseCount > 0 then
                                     local itemName = item["物品"]
-                                    print(string.format("[掉落物] 发放: %s x %s 给玩家 %s", tostring(itemName), tostring(baseCount), tostring(topDamager.name)))
+                                    -- print(string.format("[掉落物] 发放: %s x %s 给玩家 %s", tostring(itemName), tostring(baseCount), tostring(topDamager.name)))
                                     self.playerStats[uin].rewards[itemName] = (self.playerStats[uin].rewards[itemName] or 0) + baseCount
                                     topDamager.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(baseCount))
                                 end
@@ -261,7 +261,7 @@ function Level:StartWave()
         -- 延迟一段时间再完成关卡，确保所有玩家都已经变身
         ServerScheduler.add(function()
             self:OnLevelComplete()
-        end, 5)  -- 延迟5秒，确保玩家变身完成
+        end, 1)  -- 延迟5秒，确保玩家变身完成
         return
     end
 
@@ -431,40 +431,12 @@ end
 
 ---关卡完成
 function Level:OnLevelComplete()
-
-
-    -- 记录每个玩家的状态
-    for uin, player in pairs(self.players) do
+    for _, player in pairs(self.players) do
+        player:ProcessQuestEvent("level_".. self.levelType.levelId, 1)
+        if self.levelType.completeCommands then
+            player:ExecuteCommands(self.levelType.completeCommands)
+        end
     end
-
-    -- 计算星级
-    local star = 1
-    -- if self.levelType.twoStarConditions then
-    --     local param = self.levelType.twoStarConditions:Check()
-    --     if param.cancelled then star = star + 1 end
-    -- else
-    --     star = star + 1
-    -- end
-
-    -- if self.levelType.threeStarConditions then
-    --     local param = CastParam.New()
-    --     for _, condition in ipairs(self.levelType.threeStarConditions) do
-    --         local stop = condition:Check(self.players[1], self.players[1], param)
-    --         if stop then break end
-    --     end
-    --     if param.cancelled then star = star + 1 end
-    -- else
-    --     star = star + 1
-    -- end
-
-    -- -- 通知服务器
-    -- gg.network_channel:fireServer("level", "finish", {
-    --     id = self.levelType.levelId,
-    --     stars = star,
-    --     mobCount = self.mobCount
-    -- })
-
-    -- 结束关卡
     self:End(true)
 end
 
@@ -592,7 +564,6 @@ function Level:End(success)
         end
         local originalPos = self.playerOriginalPositions[player.uin]
         if player.actor and originalPos then
-            player:ProcessQuestEvent("level_".. self.levelType.levelId, 1)
             player.actor.Position = originalPos.position
             player.actor.Euler = originalPos.euler
             player:SetCameraView(originalPos.euler)

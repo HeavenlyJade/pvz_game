@@ -73,7 +73,7 @@ function MonthlyRewards:_UpdateCard(node, shopGood, status)
     local purchaseButton = node:Get("续费", ViewButton)
     purchaseButton:SetTouchEnable(status.affordable)
     if status.days > 0 then
-        purchaseButton:Get("价格").node.Title = string.format("续费\n%d", status.days)
+        purchaseButton:Get("价格").node.Title = string.format("续费\n%d", status.price)
     else
         purchaseButton:Get("价格").node.Title = tostring(status.price)
     end

@@ -267,6 +267,7 @@ function LevelType:OnInit(data)
     self.level = data["等级"] or 1 ---@type number
     self.dropModifier = Modifiers.New(data["掉落物数量修改"]) ---@type Modifiers
     self.disableCompleteView = data["关闭结算界面"]
+    self.completeCommands = data["完成指令"] or nil
     
     self.tempSkill = {} ---@type TempSkill[]
     if data["临时装备技能"] then

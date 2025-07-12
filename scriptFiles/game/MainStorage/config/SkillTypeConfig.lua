@@ -1266,7 +1266,6 @@ local function LoadConfig()
         ["技能名"] = "三头豌豆",
         ["显示名"] = "三头豌豆",
         ["最大等级"] = 2,
-        ["实际描述"] = nil,
         ["技能图标"] = "sandboxId://textures/plants/Tex_三线射手_BaseColor.png",
         ["技能品级"] = "SR",
         ["是入口技能"] = false,
@@ -1579,7 +1578,6 @@ local function LoadConfig()
         ["技能名"] = "双头豌豆",
         ["显示名"] = "双头豌豆",
         ["最大等级"] = 1,
-        ["实际描述"] = nil,
         ["技能详细"] = "击中伤害： [双头豌豆-伤害.属性增伤.1]",
         ["技能图标"] = "sandboxId://textures/plants/Tex_裂荚射手_BaseColor.png",
         ["技能品级"] = "UR",
@@ -1744,7 +1742,6 @@ local function LoadConfig()
         ["技能名"] = "豌豆射手",
         ["显示名"] = "豌豆射手",
         ["最大等级"] = 1,
-        ["实际描述"] = nil,
         ["技能详细"] = "击中伤害： [豌豆射手-伤害.属性增伤.1]",
         ["技能图标"] = "sandboxId://textures/plants/Tex_豌豆射手_BaseColor.png",
         ["技能品级"] = "R",
@@ -1804,7 +1801,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["地刺碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["地刺碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -1844,7 +1841,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["坚果碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["坚果碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -1892,7 +1889,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["樱桃炸弹碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["樱桃炸弹碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -1940,7 +1937,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["菜问碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["菜问碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -1988,7 +1985,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "0.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["豌豆射手碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["豌豆射手碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "10*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2036,7 +2033,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300",
         ["一键强化素材"] = {
-            ["仙人掌碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["仙人掌碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2076,7 +2073,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "1*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["椰子炮碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["椰子炮碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2125,7 +2122,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "1*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["火爆辣椒碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["火爆辣椒碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2174,7 +2171,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "1*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["辣椒投手碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["辣椒投手碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2223,7 +2220,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "1*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["钢铁地刺碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["钢铁地刺碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "20*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2263,7 +2260,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "1.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["星星果碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["星星果碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "30*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2303,7 +2300,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "1.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["窝瓜碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["窝瓜碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "30*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",
@@ -2352,7 +2349,7 @@ local function LoadConfig()
         },
         ["最大经验"] = "1.5*(100*(1+LVL)+max(0,LVL-10)*200+max(0,LVL-25)*300+max(0,LVL-35)*300-max(0,LVL-70)*300)",
         ["一键强化素材"] = {
-            ["魅惑菇碎片"] = "clamp(1, 1, min(10, LVL)) + clamp(2, 2, min(10, max(0, LVL-10))) + clamp(3, 3, min(10, max(0, LVL-20))) + min(4, max(0, (clamp(30, 70, LVL)-30)/5)) + min(8, max(0, 2*(clamp(50, 70, LVL)-50)/5)) + max(0, LVL-70)"
+            ["魅惑菇碎片"] = "(1+max(0,min(1,LVL-9))+max(0,min(1,LVL-19))+max(0,min(1,LVL-29))+max(0,min(1,LVL-34))+max(0,min(1,LVL-39))+max(0,min(1,LVL-44))+max(0,min(1,LVL-49))+max(0,min(2,2*LVL-2*54))+max(0,min(2,2*LVL-2*59))+max(0,min(2,2*LVL-2*64))+max(0,min(2,2*LVL-2*69))+max(0,LVL-70))"
         },
         ["升级需求素材"] = {
             ["阳光"] = "30*(180+120*LVL+max(0,LVL-10)*240+max(0,LVL-15)*180-max(0,LVL-25)*60-max(0,LVL-50)*60-max(0,LVL-70)*60)",

@@ -83,11 +83,11 @@ end
 ---@param isCrit boolean
 ---@param position Vector3
 local function ShowDamage(node, amount, isCrit, position)
-    -- 确保amount是有效的数字
     amount = tonumber(amount) or 0
     -- 将数字转换为字符串
     local amountStr = tostring(math.floor(amount))
     local digitCount = #amountStr
+    print("ShowDamage", amount, amountStr, digitCount)
     
     -- 计算起始位置，使数字居中显示
     local startIndex = math.floor((5 - digitCount) / 2) + 1

@@ -261,17 +261,6 @@ local function LoadConfig()
         ["掉落物数量修改"] = {
             {
                 ["目标"] = "自己",
-                ["条件类型"] = "WorldTimeCondition",
-                ["条件"] = {
-                    ["最小值"] = 6,
-                    ["最大值"] = 18
-                },
-                ["反转"] = true,
-                ["动作"] = "威力乘以",
-                ["数量"] = "0.5"
-            },
-            {
-                ["目标"] = "自己",
                 ["条件类型"] = "VariableCondition",
                 ["条件"] = {
                     ["名字"] = "online_time",
@@ -827,17 +816,6 @@ local function LoadConfig()
                 },
                 ["动作"] = "威力乘以",
                 ["数量"] = "0.5"
-            },
-            {
-                ["目标"] = "自己",
-                ["条件类型"] = "WorldTimeCondition",
-                ["条件"] = {
-                    ["最小值"] = 6,
-                    ["最大值"] = 18
-                },
-                ["反转"] = true,
-                ["动作"] = "威力乘以",
-                ["数量"] = "0.5"
             }
         },
         ["排名掉落物"] = {
@@ -902,6 +880,7 @@ local function LoadConfig()
                 }
             }
         },
+        ["完成指令"] = nil,
         ["关闭结算界面"] = false
     }),
     ["1-3（2000级+）"] = LevelType.New({
@@ -1464,17 +1443,6 @@ local function LoadConfig()
         ["掉落物数量修改"] = {
             {
                 ["目标"] = "自己",
-                ["条件类型"] = "WorldTimeCondition",
-                ["条件"] = {
-                    ["最小值"] = 6,
-                    ["最大值"] = 18
-                },
-                ["反转"] = true,
-                ["动作"] = "威力乘以",
-                ["数量"] = "0.5"
-            },
-            {
-                ["目标"] = "自己",
                 ["条件类型"] = "VariableCondition",
                 ["条件"] = {
                     ["名字"] = "online_time",
@@ -1580,6 +1548,7 @@ local function LoadConfig()
                 }
             }
         },
+        ["完成指令"] = nil,
         ["关闭结算界面"] = false
     }),
     ["1-4（20000级+）"] = LevelType.New({
@@ -1941,17 +1910,6 @@ local function LoadConfig()
         ["掉落物数量修改"] = {
             {
                 ["目标"] = "自己",
-                ["条件类型"] = "WorldTimeCondition",
-                ["条件"] = {
-                    ["最小值"] = 6,
-                    ["最大值"] = 18
-                },
-                ["反转"] = true,
-                ["动作"] = "威力乘以",
-                ["数量"] = "0.5"
-            },
-            {
-                ["目标"] = "自己",
                 ["条件类型"] = "VariableCondition",
                 ["条件"] = {
                     ["名字"] = "online_time",
@@ -2047,6 +2005,7 @@ local function LoadConfig()
                 }
             }
         },
+        ["完成指令"] = nil,
         ["关闭结算界面"] = false
     }),
     ["测试关卡"] = LevelType.New({
@@ -2121,6 +2080,7 @@ local function LoadConfig()
         ["掉落物数量修改"] = nil,
         ["排名掉落物"] = nil,
         ["首通奖励"] = nil,
+        ["完成指令"] = nil,
         ["临时装备技能"] = nil,
         ["关闭结算界面"] = false,
         ["胜利音效"] = nil,

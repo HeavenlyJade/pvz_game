@@ -1087,8 +1087,7 @@ local function LoadConfig()
                     }
                 }
             }
-        },
-        ["各级描述"] = nil
+        }
     }),
     ["射速1_词条_三头豌豆"] = TagType.New({
         ["名字"] = "射速1_词条_三头豌豆",
@@ -1173,8 +1172,7 @@ local function LoadConfig()
                     }
                 }
             }
-        },
-        ["各级描述"] = nil
+        }
     }),
     ["射速1_词条_高速加特林"] = TagType.New({
         ["名字"] = "射速1_词条_高速加特林",
@@ -1259,8 +1257,7 @@ local function LoadConfig()
                     }
                 }
             }
-        },
-        ["各级描述"] = nil
+        }
     }),
     ["攻击1_词条_双头豌豆"] = TagType.New({
         ["名字"] = "攻击1_词条_双头豌豆",
@@ -1292,8 +1289,7 @@ local function LoadConfig()
                     }
                 }
             }
-        },
-        ["各级描述"] = nil
+        }
     }),
     ["射速1_词条_豌豆射手"] = TagType.New({
         ["名字"] = "射速1_词条_豌豆射手",
@@ -1335,8 +1331,7 @@ local function LoadConfig()
                     }
                 }
             }
-        },
-        ["各级描述"] = nil
+        }
     }),
     ["攻击1_词条_豌豆射手"] = TagType.New({
         ["名字"] = "攻击1_词条_豌豆射手",
@@ -1375,8 +1370,7 @@ local function LoadConfig()
                     }
                 }
             }
-        },
-        ["各级描述"] = nil
+        }
     }),
     ["生命1_词条_豌豆射手"] = TagType.New({
         ["名字"] = "生命1_词条_豌豆射手",
@@ -1402,8 +1396,7 @@ local function LoadConfig()
                     }
                 }
             }
-        },
-        ["各级描述"] = nil
+        }
     }),
     ["副-地刺-词条"] = TagType.New({
         ["名字"] = "副-地刺-词条",

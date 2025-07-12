@@ -19,6 +19,12 @@ function LevelCommand.enter(params, player)
 
     -- 根据操作类型执行不同的逻辑
     if action == "进入" then
+        -- 如果玩家已经在关卡中，直接返回
+        local currentLevel = Level.GetCurrentLevel(player)
+        if currentLevel then
+            player:SendChatText("你已经在关卡中")
+            return false
+        end
         -- 获取关卡类型
         local levelType = LevelConfig.Get(params["关卡"])
         if not levelType then
@@ -32,7 +38,6 @@ function LevelCommand.enter(params, player)
             levelType.playerCount = levelType.playerCount + 1
             levelType:StartLevel()
         else
-            -- 加入匹配队列
             levelType:Queue(player)
         end
     elseif action == "暂停" then

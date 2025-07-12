@@ -93,7 +93,7 @@ function MainServer.initModule()
     gg.log("事件初始化完成")
     ServerEventManager.Subscribe("PlayerClientInited", function (evt)
         evt.player:UpdateHud()
-    end)    
+    end)
 
 end
 
@@ -219,6 +219,7 @@ function MainServer.player_enter_game(player)
     player_.inited = true
     ServerEventManager.Publish("PlayerInited", {player = player_})
 
+    gg.log("🚀 玩家登陆完成，发送邮件列表和状态通知", uin_)
     MailManager:SendMailListToClient(uin_)
 end
 
@@ -249,6 +250,9 @@ function MainServer.OnServerNotify(uin_, args)
     if not args.cmd then return end
 
     local player_ = gg.getPlayerByUin(uin_)
+    if not player_ then
+        return
+    end
     args.player = player_
     if args.__cb then
         args.Return = function(returnData)
@@ -259,8 +263,6 @@ function MainServer.OnServerNotify(uin_, args)
         end
     end
     ServerEventManager.Publish(args.cmd, args)
-    return
-
 end
 
 --开启update

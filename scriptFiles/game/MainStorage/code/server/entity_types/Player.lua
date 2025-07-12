@@ -102,10 +102,10 @@ function _M:OnInit(info_)
                 local param = CastParam.New()
                 if evt.targetPos then
                     param.targetPos = evt.targetPos
-                    gg.log("targetPos", self:GetPosition(), evt.targetPos - self:GetPosition(), param.targetPos)
+                    -- gg.log("targetPos", self:GetPosition(), evt.targetPos - self:GetPosition(), param.targetPos)
                 else
                     param.targetPos = self:GetPosition() + evt.direction * 1000
-                    gg.log("targetPos", self:GetPosition(), evt.direction, param.targetPos)
+                    -- gg.log("targetPos", self:GetPosition(), evt.direction, param.targetPos)
                 end
                 local target = nil
                 if skill.skillType.targetMode == "位置" then
