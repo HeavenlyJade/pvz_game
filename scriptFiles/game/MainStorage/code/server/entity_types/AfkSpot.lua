@@ -54,7 +54,7 @@ function AfkSpot:OnInit(data, actor)
     end)
 
     self:SubscribeEvent("PlayerLeaveGameEvent", function (evt)
-        if evt.player == self.occupiedByPlayer then
+        if evt.player == self.occupiedByPlayer or self.activePlayers[evt.player] then
             self:OnPlayerExit(evt.player)
         end
     end)
@@ -190,21 +190,26 @@ function AfkSpot:OnPlayerExit(player)
     if timerId then
         ServerScheduler.cancel(timerId)
         self.activePlayers[player] = nil
-        if self.occupiedByPlayer then
+
+        -- 如果退出的玩家是占用了该位置的玩家（副卡模式），则清理占用状态
+        if self.occupiedByPlayer == player then
             local skill = self.occupiedByPlayer.skills[self.selectedSkill]
+            if skill then
+                skill.afking = false
+            end
             self.occupiedByPlayer = nil
-            skill.afking = false
+
+            if self.occupiedEntity then
+                self.occupiedEntity:Destroy()
+                self.occupiedEntity = nil
+            end
+            self:createTitle("")
+            player:UpdateNearbyNpcsToClient()
         end
-        if self.occupiedEntity then
-            self.occupiedEntity:Destroy()
-            self.occupiedEntity = nil
-        end
-        self:createTitle("")
-        player:UpdateNearbyNpcsToClient()
+
         if self.leaveCommands then
             player:ExecuteCommands(self.leaveCommands)
         end
-        self.activePlayers[player] = nil
     end
 end
 

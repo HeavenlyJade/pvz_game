@@ -439,7 +439,7 @@ function gg.ProcessVariables(formula, caster, target)
         return nil
     end
     target = target or caster
-    local processedFormula = formula:gsub("%【(.-)%】", function(varName)
+    local processedFormula = formula:gsub("%<(.-)%>", function(varName)
         if not target then
             gg.log("解析公式%s时出错：target不存在！")
             print(debug.traceback())
