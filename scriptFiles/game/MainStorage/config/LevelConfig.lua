@@ -123,6 +123,7 @@ local function LoadConfig()
         ["增加额外玩家时间"] = 1,
         ["最大玩家数"] = 1,
         ["每个玩家增加数量倍率"] = 0,
+        ["完成指令"] = nil,
         ["临时装备技能"] = {
             {
                 ["技能类型"] = "火焰豌豆",
@@ -880,7 +881,6 @@ local function LoadConfig()
                 }
             }
         },
-        ["完成指令"] = nil,
         ["关闭结算界面"] = false
     }),
     ["1-3（2000级+）"] = LevelType.New({
@@ -1548,7 +1548,6 @@ local function LoadConfig()
                 }
             }
         },
-        ["完成指令"] = nil,
         ["关闭结算界面"] = false
     }),
     ["1-4（20000级+）"] = LevelType.New({
@@ -2005,12 +2004,10 @@ local function LoadConfig()
                 }
             }
         },
-        ["完成指令"] = nil,
         ["关闭结算界面"] = false
     }),
     ["测试关卡"] = LevelType.New({
         ["关卡ID"] = "测试关卡",
-        ["描述"] = nil,
         ["前置关卡"] = nil,
         ["关卡波次"] = {
             {
@@ -2077,14 +2074,7 @@ local function LoadConfig()
                 ["动作"] = "必须"
             }
         }),
-        ["掉落物数量修改"] = nil,
-        ["排名掉落物"] = nil,
-        ["首通奖励"] = nil,
-        ["完成指令"] = nil,
-        ["临时装备技能"] = nil,
-        ["关闭结算界面"] = false,
-        ["胜利音效"] = nil,
-        ["失败音效"] = nil
+        ["关闭结算界面"] = false
     })
 }loaded = true
 end

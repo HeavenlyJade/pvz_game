@@ -54,6 +54,7 @@ local function LoadConfig()
         ["战力倍率"] = 0,
         ["优先级"] = 3,
         ["玩家基础值"] = 0,
+        ["玩家每级成长"] = nil,
         ["图标"] = nil
     }),
     ["暴率"] = StatType.New({
@@ -63,6 +64,7 @@ local function LoadConfig()
         ["战力倍率"] = 0,
         ["优先级"] = 4,
         ["玩家基础值"] = 0,
+        ["玩家每级成长"] = nil,
         ["图标"] = nil
     }),
     ["生命"] = StatType.New({
@@ -91,6 +93,7 @@ local function LoadConfig()
         ["战力倍率"] = 0.8,
         ["优先级"] = 2,
         ["玩家基础值"] = 0,
+        ["玩家每级成长"] = nil,
         ["图标"] = "fight_deactive"
     })
 }loaded = true
