@@ -18,6 +18,7 @@ MailEventConfig.REQUEST = {
     BATCH_CLAIM = "MailRequest_BatchClaim",     -- 一键领取邮件
     DELETE_MAIL = "MailRequest_DeleteMail",     -- 删除邮件
     DELETE_READ_MAILS = "MailRequest_DeleteRead", -- 删除已读邮件
+    MARK_READ = "MailRequest_MarkRead",         -- 标记邮件为已读
 }
 
 -- 服务器响应事件
@@ -62,13 +63,14 @@ MailEventConfig.MAIL_TYPE = {
 MailEventConfig.STATUS = {
     UNREAD = 0,          -- 未读 (附件未领取)
     CLAIMED = 1,         -- 已领取附件
-    DELETED = 2          -- 已删除
+    DELETED = 2,         -- 已删除
+    READ = 3             -- 已读
 }
 
 --- 邮件操作类型枚举
 MailEventConfig.MAIL_OPERATION = {
-    CLAIM_ATTACHMENT = 2, -- 领取附件
-    DELETE = 3           -- 删除邮件
+    CLAIM_ATTACHMENT = 1, -- 领取附件
+    DELETE = 2           -- 删除邮件
 }
 
 --- 邮件来源枚举

@@ -68,13 +68,13 @@ end
 --- 检查邮件是否已领取附件
 ---@return boolean 是否已领取附件
 function _MailBase:IsClaimed()
-    return self.status >= _MailBase.STATUS.CLAIMED
+    return self.status == _MailBase.STATUS.CLAIMED
 end
 
 --- 检查邮件是否已删除
 ---@return boolean 是否已删除
 function _MailBase:IsDeleted()
-    return self.status >= _MailBase.STATUS.DELETED
+    return self.status == _MailBase.STATUS.DELETED
 end
 
 --- 检查邮件是否有效（未过期且未删除）
@@ -144,7 +144,7 @@ end
 
 --- 标记为已领取附件
 function _MailBase:MarkAsClaimed()
-    if self.has_attachment and self.status < _MailBase.STATUS.CLAIMED then
+    if self.has_attachment and (self.status == _MailBase.STATUS.UNREAD or self.status == _MailBase.STATUS.READ) then
         self.status = _MailBase.STATUS.CLAIMED
         gg.log("邮件附件已领取", self.id)
         return true
@@ -154,7 +154,7 @@ end
 
 --- 标记为已删除
 function _MailBase:MarkAsDeleted()
-    if self.status < _MailBase.STATUS.DELETED then
+    if self.status ~= _MailBase.STATUS.DELETED then
         self.status = _MailBase.STATUS.DELETED
         gg.log("邮件标记为已删除", self.id)
         return true

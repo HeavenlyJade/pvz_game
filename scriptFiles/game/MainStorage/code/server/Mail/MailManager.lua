@@ -73,6 +73,10 @@ function MailManager:RegisterNetworkHandlers()
         self:HandleDeleteReadMails(event)
     end)
 
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.MARK_READ, function(event)
+        self:HandleMarkAsRead(event)
+    end)
+
     -- 处理邮件状态更新请求（用于GameSystem邮件提示）
     ServerEventManager.Subscribe("RequestMailStatusUpdate", function(event)
         self:HandleMailStatusUpdateRequest(event)
@@ -356,7 +360,7 @@ function MailManager:_handleClaimMail( event)
 
     -- 参数校验
     if not mailId then
-        self:SendClaimResponse(uin, false, nil, "无效的邮件ID", self.ERROR_CODE.INVALID_PARAMS)
+        self:SendClaimResponse(uin, false, nil, "无效的邮件ID", self.ERROR_CODE.INVALID_PARAMS, nil)
         return
     end
 
@@ -370,6 +374,17 @@ function MailManager:_handleClaimMail( event)
         success, message, attachments, errorCode = self:ClaimPersonalMail(player, mailId)
     end
 
+    -- 获取邮件当前状态的辅助函数
+    local function getCurrentMailStatus()
+        if isGlobal then
+            local playerStatus = player.mail.globalMailStatus.statuses[mailId]
+            return playerStatus and playerStatus.status or nil
+        else
+            local mailData = player.mail.playerMail.mails[mailId]
+            return mailData and mailData.status or nil
+        end
+    end
+
     if success then
         gg.log("附件领取成功，开始分发物品", player.name, mailId)
         -- 分发附件
@@ -380,8 +395,8 @@ function MailManager:_handleClaimMail( event)
             self:SavePlayerMails(player)
                 gg.log("玩家邮件数据已保存", player.uin)
 
-            -- 发送成功响应
-            self:SendClaimResponse(uin, true, mailId, "分发成功")
+            -- 发送成功响应（此时状态已变为CLAIMED）
+            self:SendClaimResponse(uin, true, mailId, "分发成功", self.ERROR_CODE.SUCCESS, self.MAIL_STATUS.CLAIMED)
 
             -- 发送邮件状态更新通知
             self:SendMailStatusUpdate(uin)
@@ -389,13 +404,57 @@ function MailManager:_handleClaimMail( event)
             -- 物品分发失败，理论上需要回滚邮件状态，但目前简化处理
             gg.log("附件分发失败，回滚状态（暂未实现）", player.uin, mailId)
             -- 注意：这里的错误处理可能需要更复杂的逻辑，例如事务回滚
-            self:SendClaimResponse(uin, false, mailId, "分发失败", self.ERROR_CODE.INSUFFICIENT_BAG_SPACE)
+            local currentStatus = getCurrentMailStatus()
+            self:SendClaimResponse(uin, false, mailId, "分发失败", self.ERROR_CODE.INSUFFICIENT_BAG_SPACE, currentStatus)
         end
     else
         -- 领取失败
         gg.log("附件领取失败", player.name, mailId, message)
-        self:SendClaimResponse(uin, false, mailId, message, errorCode)
+        local currentStatus = getCurrentMailStatus()
+        self:SendClaimResponse(uin, false, mailId, message, errorCode, currentStatus)
     end
+end
+
+--- 处理标记邮件为已读请求
+---@param event table 事件数据 {player, mail_id, is_global}
+function MailManager:HandleMarkAsRead(event)
+    local player = event.player
+    local mailId = event.mail_id
+    local isGlobal = event.is_global
+    
+    if not player or not mailId or not player.mail then
+        return
+    end
+    
+    if isGlobal then
+        -- 处理全服邮件
+        local playerStatus = player.mail.globalMailStatus.statuses[mailId]
+        if not playerStatus then
+            player.mail.globalMailStatus.statuses[mailId] = {
+                status = self.MAIL_STATUS.READ,
+                is_claimed = false
+            }
+        elseif playerStatus.status == self.MAIL_STATUS.UNREAD then
+            playerStatus.status = self.MAIL_STATUS.READ
+        end
+        player.mail.globalMailStatus.last_update = os.time()
+    else
+        -- 处理个人邮件
+        local mailData = player.mail.playerMail.mails[mailId]
+        if mailData and mailData.status == self.MAIL_STATUS.UNREAD then
+            mailData.status = self.MAIL_STATUS.READ
+            player.mail.playerMail.last_update = os.time()
+        end
+    end
+    
+    -- 保存数据
+    self:SavePlayerMails(player)
+    
+    -- 复用领取附件的响应格式（此时状态已变为READ）
+    self:SendClaimResponse(player.uin, true, mailId, "标记已读成功", self.ERROR_CODE.SUCCESS, self.MAIL_STATUS.READ)
+    
+    -- 发送状态更新
+    self:SendMailStatusUpdate(player.uin)
 end
 
 --- 处理删除邮件请求（带容错机制）
@@ -812,14 +871,16 @@ end
 ---@param mailId string 邮件ID
 ---@param message string 消息
 ---@param errorCode number|nil 错误码
-function MailManager:SendClaimResponse(uin, success, mailId, message, errorCode)
-    gg.log("发送领取附件响应到", uin, "结果:", success)
+---@param mailStatus number|nil 邮件当前状态
+function MailManager:SendClaimResponse(uin, success, mailId, message, errorCode, mailStatus)
+    gg.log("发送领取附件响应到", uin, "结果:", success, "邮件状态:", mailStatus)
     gg.network_channel:fireClient(uin, {
         cmd = MailEventConfig.RESPONSE.CLAIM_RESPONSE,
         success = success,
         mail_id = mailId,
         error = message,
-        error_code = errorCode or self.ERROR_CODE.SUCCESS
+        error_code = errorCode or self.ERROR_CODE.SUCCESS,
+        mail_status = mailStatus  -- 新增：邮件当前状态
     })
 end
 

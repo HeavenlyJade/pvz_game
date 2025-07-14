@@ -396,6 +396,9 @@ end
 function MailGui:OnMailItemClick(mailId, mailInfo)
     gg.log("点击邮件项", mailId, mailInfo.title)
 
+    -- 检查邮件状态，如果是未读状态则发送已读请求
+    self:SendMarkAsReadIfNeeded(mailId, mailInfo)
+
     -- 更新当前选中邮件
     self.currentSelectedMail = {
         id = mailId,
@@ -786,6 +789,28 @@ function MailGui:SendClaimRequest(mailId, isGlobal)
     })
 end
 
+-- 检查并发送标记已读请求
+function MailGui:SendMarkAsReadIfNeeded(mailId, mailInfo)
+    -- 邮件状态：UNREAD = 0, CLAIMED = 1, DELETED = 2, READ = 3
+    -- 只有未读状态的邮件才需要发送已读请求
+    if mailInfo.status ~= MailEventConfig.STATUS.UNREAD then
+        gg.log("邮件不是未读状态，跳过发送已读请求", mailId, "当前状态:", mailInfo.status)
+        return
+    end
+
+    -- 判断是个人邮件还是全服邮件
+    local isGlobal = mailInfo.is_global_mail or false
+    
+    gg.log("发送邮件已读请求", mailId, "is_global:", isGlobal)
+    
+    -- 发送已读请求
+    gg.network_channel:FireServer({
+        cmd = MailEventConfig.REQUEST.MARK_READ,
+        mail_id = mailId,
+        is_global = isGlobal
+    })
+end
+
 -- 处理删除响应
 function MailGui:HandleDeleteResponse(data)
     gg.log("收到删除响应", data)
@@ -826,18 +851,41 @@ end
 -- 处理领取响应
 function MailGui:HandleClaimResponse(data)
     gg.log("收到领取响应", data)
-
+    local mailInfo = {}
     if data.success and data.mail_id then
         local mailIdStr = tostring(data.mail_id)
 
-        -- 1. 更新本地数据
-        local mailInfo
-        if self.playerMails[mailIdStr] then
-            self.playerMails[mailIdStr].is_claimed = true
-            mailInfo = self.playerMails[mailIdStr]
-        elseif self.systemMails[mailIdStr] then
-            self.systemMails[mailIdStr].is_claimed = true
-            mailInfo = self.systemMails[mailIdStr]
+        -- 根据响应中的邮件状态判断操作类型
+        if data.mail_status == MailEventConfig.STATUS.READ then  -- READ状态
+            -- 处理已读响应
+            self:HandleMarkAsReadResponse(data)
+            return
+        elseif data.mail_status == MailEventConfig.STATUS.CLAIMED then  -- CLAIMED状态
+            -- 处理领取附件响应
+            -- 1. 更新本地数据 (领取附件)
+    
+            if self.playerMails[mailIdStr] then
+                self.playerMails[mailIdStr].is_claimed = true
+                self.playerMails[mailIdStr].status = data.mail_status  -- 更新状态
+                mailInfo = self.playerMails[mailIdStr]
+            elseif self.systemMails[mailIdStr] then
+                self.systemMails[mailIdStr].is_claimed = true
+                self.systemMails[mailIdStr].status = data.mail_status  -- 更新状态
+                mailInfo = self.systemMails[mailIdStr]
+            end
+        else
+            -- 其他状态或错误情况，保持原有逻辑
+            if self.playerMails[mailIdStr] then
+                if data.mail_status then
+                    self.playerMails[mailIdStr].status = data.mail_status
+                end
+                mailInfo = self.playerMails[mailIdStr]
+            elseif self.systemMails[mailIdStr] then
+                if data.mail_status then
+                    self.systemMails[mailIdStr].status = data.mail_status
+                end
+                mailInfo = self.systemMails[mailIdStr]
+            end
         end
 
         -- 2. 更新对应的邮件项UI显示（直接更新，无需重建列表）
@@ -864,6 +912,35 @@ function MailGui:HandleClaimResponse(data)
         gg.log("附件领取成功", data.mail_id)
     else
         gg.log("附件领取失败", data.error or "未知错误")
+    end
+end
+
+-- 处理已读标记响应
+function MailGui:HandleMarkAsReadResponse(data)
+    gg.log("收到已读标记响应", data)
+    local mailInfo ={}
+
+    if data.success and data.mail_id then
+        local mailIdStr = tostring(data.mail_id)
+
+        -- 1. 更新本地数据的邮件状态为已读 (READ = 3)
+        local newStatus = data.mail_status or MailEventConfig.STATUS.READ  -- 使用服务端返回的状态，默认为READ状态
+        if self.playerMails[mailIdStr] then
+            self.playerMails[mailIdStr].status = newStatus
+            mailInfo = self.playerMails[mailIdStr]
+        elseif self.systemMails[mailIdStr] then
+            self.systemMails[mailIdStr].status = newStatus
+            mailInfo = self.systemMails[mailIdStr]
+        end
+
+        -- 2. 更新当前选中邮件的状态
+        if self.currentSelectedMail and tostring(self.currentSelectedMail.id) == mailIdStr then
+            self.currentSelectedMail.data.status = newStatus
+        end
+
+        gg.log("邮件标记为已读成功", data.mail_id)
+    else
+        gg.log("邮件标记为已读失败", data.error or "未知错误")
     end
 end
 
