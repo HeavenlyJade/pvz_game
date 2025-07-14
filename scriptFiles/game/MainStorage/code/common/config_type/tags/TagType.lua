@@ -16,11 +16,26 @@ function TagType:OnInit(data)
     -- self.description = data["描述"]
     self.description = data["详细属性"]
     self.level2Description = data["各级描述"]
+    self.autoEquip = data["自动装备"]
+    self.autoEquipCondition = data["自动装备条件"] ---@type Modifiers
     self.functions = {}
     for _, tagHandler in ipairs(data["功能"]) do
         local tagHandlerClass = require(MainStorage.code.common.config_type.tags[tagHandler["类型"]])
         table.insert(self.functions, tagHandlerClass.New(tagHandler))
     end
+end
+
+function TagType:CanAutoEquip(player)
+    if not self.autoEquip then
+        return 0
+    end
+    if self.autoEquipCondition then
+        local param = self.autoEquipCondition:Check(player, player)
+        if not param.cancelled then
+            return param.power
+        end
+    end
+    return 1
 end
 
 function TagType:GetDescription(level)

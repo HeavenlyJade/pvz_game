@@ -13,6 +13,8 @@ local LevelSelect = ClassMgr.Class("LevelSelect", CustomUI)
 ---@param data table
 function LevelSelect:OnInit(data)
     self.levelTypes = {} ---@type LevelType[]
+    self.autoReQueueVar = data["解锁自动重新匹配变量"] or "可自动重匹配"
+    self.lockedMessage = data["未解锁重新匹配信息"] or "尚未解锁重新匹配功能！"
     for i, levelTypeId in ipairs(data["关卡"]) do
         local levelType = LevelConfig.Get(levelTypeId)
         if levelType then
@@ -24,13 +26,19 @@ end
 ---@param player Player
 function LevelSelect:S_BuildPacket(player, packet)
     packet.levels = {}
+    packet.requeueable = player:GetVariable(self.autoReQueueVar) > 0
+    packet.requeueing = player:GetVariable("自动重匹配中") > 0
+    if packet.requeueing and not packet.requeueable then
+        packet.requeueing = false
+        player:SetVariable("自动重匹配中", 0)
+    end
     for _, levelType in ipairs(self.levelTypes) do
         local suc, reason = levelType:CanJoin(player)
         packet.levels[levelType.levelId] = {
             desc = gg.ProcessVariables(levelType.description, player, player),
             enterable = suc,
             cleared = levelType.firstClearReward and player:GetVariable("levelcleared_".. levelType.levelId) > 0,
-            claimed = player:GetVariable("levelclaimed_".. levelType.levelId) > 0
+            claimed = player:GetVariable("levelclaimed_".. levelType.levelId) > 0,
         }
     end
 end
@@ -64,6 +72,7 @@ function LevelSelect:onEnterDungeon(player, args)
         return
     end
     levelType:Queue(player)
+    player:SetVariable("自动重匹配中", args.requeueing and 1 or 0)
 end
 
 -----------------------客户端---------------------------
@@ -87,20 +96,33 @@ function LevelSelect:_claimFirstClearedItem(levelType)
     })
 end
 
+
 ---@param levelType LevelType
 function LevelSelect:_viewLevelType(levelType)
-    local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
-    local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
     local ViewItem = require(MainStorage.code.client.ui.ViewItem) ---@type ViewItem
     local ui = self.view
-    local selectConfirm = ui:Get("SelectConfirm")
+    local selectConfirm = ui:GetComponent("SelectConfirm")
     selectConfirm.node.Visible = true
-    selectConfirm:Get("关卡背景/关卡名字").node.Title = levelType.levelId
-    selectConfirm:Get("关闭按钮", ViewButton).clickCb = function (ui, button)
+    selectConfirm:GetComponent("关卡背景/关卡名字").node.Title = levelType.levelId
+    local toggle = selectConfirm:GetToggle("自动重新匹配")
+    toggle.clickCb = function (ui, button)
+        if not self.packet.requeueable then
+            self:SendHoverText(self.lockedMessage)
+            return false
+        end
+    end
+    local levelInfo = self._levels[levelType.levelId]
+
+    if self.packet.requeueable then
+        toggle:SetOn(self.packet.requeueing)
+    else
+        toggle:SetOn(false)
+    end
+    selectConfirm:GetButton("关闭按钮").clickCb = function (ui, button)
         selectConfirm.node.Visible = false
     end
     if not self.selectConfirmDropsList then
-        self.selectConfirmDropsList = selectConfirm:Get("奖励列表", ViewList, function (child, childPath)
+        self.selectConfirmDropsList = selectConfirm:GetList("奖励列表", function (child, childPath)
             local c = ViewItem.New(child, ui, childPath)
             return c
         end) ---@type ViewList
@@ -111,20 +133,26 @@ function LevelSelect:_viewLevelType(levelType)
         child:SetItem(dropIcon)
     end
     if not self._joinButton then
-        self._joinButton = selectConfirm:Get("确认按钮", ViewButton)
+        self._joinButton = selectConfirm:GetButton("确认按钮")
         self._joinButton.clickCb = function (ui, button)
+            local requeueing = false
+            if self.packet.requeueable then
+                requeueing = toggle.isOn
+            end
+            gg.log("requeueing", requeueing, self.packet.requeueable, toggle.isOn)
             self:C_SendEvent("onEnterDungeon", {
-                levelType = levelType.levelId
+                levelType = levelType.levelId,
+                requeueing = requeueing
             })
             ui:Close()
         end
     end
-    local levelInfo = self._levels[levelType.levelId]
     self._joinButton:SetTouchEnable(levelInfo.enterable)
 end
 
 function LevelSelect:C_BuildUI(packet)
     local levels = packet.levels
+    self.packet = packet
     self._levels = levels
 
     local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
@@ -137,7 +165,6 @@ function LevelSelect:C_BuildUI(packet)
     self.levelSelectList = ui:Get("背景/关卡列表", ViewList, function (child, childPath)
         local c = ViewComponent.New(child, ui, childPath)
         c:Get("确认按钮", ViewButton).clickCb = function (ui, button)
-            print("self.levelTypes", self.levelTypes[c.index],  c.index)
             self:_viewLevelType(self.levelTypes[c.index])
         end
         return c

@@ -11,6 +11,7 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 ---@class ServerEventManager
 local ServerEventManager = {
     _eventDictionary = {}, -- @type table<string, ServerEventListener[]>
+    _localListeners = {}, -- @type table<number, table<string, fun(evt: table)[]>>
     _callbackMap = {}, -- @type table<string, table<uin, fun(data: table)>> 按uin存储回调函数
     _callbackCounter = 0, -- 用于生成唯一ID
     _callbackTimeout = 2 -- 回调超时时间（秒）
@@ -52,7 +53,7 @@ local function CleanupCallback(callbackId, uin)
         -- 清理所有玩家的回调
         ServerEventManager._callbackMap[callbackId] = nil
     end
-    
+
     ServerEventManager.Unsubscribe(callbackId .. "_Return", nil, nil, callbackId)
 end
 
@@ -88,20 +89,24 @@ function ServerEventManager.Subscribe(eventType, listener, priority, key)
     end)
 end
 
--- -- 监听怪物死亡事件
--- ServerEventManager.Subscribe("MobDeadEvent", function(evt)
---     ---@type MobDeadEvent
---     local mobDeadEvent = evt
---     mobDeadEvent.
---     print("怪物死亡:", mobDeadEvent.mob)
--- end)
--- -- 监听战斗前事件
--- ServerEventManager.Subscribe("PreBattleEvent", function(evt)
---     ---@type PreBattleEvent
---     local preBattleEvent = evt
---     print("战斗开始:", preBattleEvent.battle)
--- end)
-
+--- 订阅指定玩家的事件
+---@param player Player 目标玩家
+---@param eventType string 事件类型
+---@param listener fun(evt: table) 事件回调函数
+---@param key? string 记录ID
+function ServerEventManager.SubscribeToPlayer(player, eventType, listener, key)
+    local uin = player.uin
+    if not ServerEventManager._localListeners[uin] then
+        ServerEventManager._localListeners[uin] = {}
+    end
+    if not ServerEventManager._localListeners[uin][eventType] then
+        ServerEventManager._localListeners[uin][eventType] = {}
+    end
+    table.insert(ServerEventManager._localListeners[uin][eventType], {
+        key = key,
+        cb = listener
+    })
+end
 
 --- 取消订阅事件
 ---@param eventType string 事件类型
@@ -112,8 +117,26 @@ function ServerEventManager.Unsubscribe(eventType, listener, priority, key)
     if ServerEventManager._eventDictionary[eventType] then
         local list = ServerEventManager._eventDictionary[eventType]
         for i = #list, 1, -1 do
-            if (not listener or list[i].cb == listener) and 
+            if (not listener or list[i].cb == listener) and
                (not priority or list[i].priority == priority) and
+               (not key or list[i].key == key) then
+                table.remove(list, i)
+            end
+        end
+    end
+end
+
+--- 取消订阅指定玩家的事件
+---@param player Player 目标玩家
+---@param eventType string 事件类型
+---@param listener? fun(evt: table) 要取消的事件回调函数
+---@param key? string 记录ID
+function ServerEventManager.UnsubscribeFromPlayer(player, eventType, listener, key)
+    local uin = player.uin
+    if ServerEventManager._localListeners[uin] and ServerEventManager._localListeners[uin][eventType] then
+        local list = ServerEventManager._localListeners[uin][eventType]
+        for i = #list, 1, -1 do
+            if (not listener or list[i].cb == listener) and
                (not key or list[i].key == key) then
                 table.remove(list, i)
             end
@@ -131,6 +154,16 @@ function ServerEventManager.UnsubscribeByKey(key)
             end
         end
     end
+    -- 同时清理本地事件
+    for uin, eventTypes in pairs(ServerEventManager._localListeners) do
+        for eventType, listeners in pairs(eventTypes) do
+            for i = #listeners, 1, -1 do
+                if listeners[i].key == key then
+                    table.remove(listeners, i)
+                end
+            end
+        end
+    end
 end
 
 --- 发布事件
@@ -140,7 +173,7 @@ end
 function ServerEventManager.Publish(eventType, eventData, callback)
     eventData.__class = eventType
     if ServerEventManager._eventDictionary[eventType] then
-        for _, item in ipairs(ServerEventManager._eventDictionary[eventType]) do
+        for i, item in ipairs(ServerEventManager._eventDictionary[eventType]) do
             local success, err = pcall(item.cb, eventData)
             if not success then
                 gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
@@ -162,7 +195,7 @@ function ServerEventManager.SendToClient(uin, eventType, eventData, callback)
             ServerEventManager._callbackMap[callbackId] = {}
         end
         ServerEventManager._callbackMap[callbackId][uin] = callback
-        
+
         -- 监听客户端返回的事件
         ServerEventManager.Subscribe(callbackId .. "_Return", function(returnData)
             local callbacks = ServerEventManager._callbackMap[callbackId]
@@ -173,6 +206,34 @@ function ServerEventManager.SendToClient(uin, eventType, eventData, callback)
         end, 0, callbackId)
     end
     gg.network_channel:fireClient(uin, eventData)
+end
+
+--- 向指定玩家发布本地事件
+---@param player Player 目标玩家
+---@param eventType string 事件类型
+---@param eventData table 事件数据
+function ServerEventManager.PublishToPlayer(player, eventType, eventData)
+    local uin = player.uin
+    if ServerEventManager._localListeners[uin] and ServerEventManager._localListeners[uin][eventType] then
+        for _, item in ipairs(ServerEventManager._localListeners[uin][eventType]) do
+            local success, err = pcall(item.cb, eventData)
+            if not success then
+                gg.log(string.format("向玩家 %d 发布本地事件 %s 执行失败\n%s", uin, eventType, err, debug.traceback()))
+            end
+        end
+    end
+end
+
+--- 检查指定玩家是否订阅了某个本地事件
+---@param player Player 目标玩家
+---@param eventType string 事件类型
+---@return boolean
+function ServerEventManager.HasLocalSubscription(player, eventType)
+    local uin = player.uin
+    if ServerEventManager._localListeners[uin] and ServerEventManager._localListeners[uin][eventType] and #ServerEventManager._localListeners[uin][eventType] > 0 then
+        return true
+    end
+    return false
 end
 
 return ServerEventManager

@@ -424,6 +424,11 @@ end
 ---@param silent? boolean true时，不弹出左下角的提示
 ---@return boolean
 function Bag:GiveItem(item, silent)
+    local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
+    local param = CastParam.New()
+    param.power = item.amount
+    self.player:TriggerTags("获得物品时", self.player, param, item)
+    item.amount = math.floor(param.power)
     if item.itemType.gainCommands then
         self.player:ExecuteCommands(item.itemType.gainCommands)
     end

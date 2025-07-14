@@ -133,7 +133,7 @@ function MailGui:RegisterButtonEvents()
     self.mailSystemButtom.clickCb = function()self:SwitchCategory("系统邮件")end
     self.mailPlayerButtom.clickCb = function()self:SwitchCategory("玩家邮件")end
     self.deleteButton.clickCb = function()self:OnDeleteReadMails()  end
-
+    
 end
 
 -- 注册服务端事件
@@ -227,7 +227,7 @@ function MailGui:HandleNewMailNotification(data)
     gg.log("收到新邮件通知", data)
 
     local mailInfo = data and data.mail_info
-
+  
     gg.log("收到新邮件数据:", mailInfo.title, mailInfo.id)
 
     -- 1. 根据邮件类型，将新邮件添加到对应的本地数据表中
@@ -240,13 +240,13 @@ function MailGui:HandleNewMailNotification(data)
         targetDataList = self.systemMails
         targetViewList = self.mailSystemList
     end
-
+    
     -- 检查邮件是否已存在，避免重复添加
     if targetDataList[mailInfo.id] then
         gg.log("⚠️ 邮件已存在，跳过添加:", mailInfo.id)
         return
     end
-
+    
     targetDataList[mailInfo.id] = mailInfo
 
     -- 构造正确格式的 mailItemData
@@ -258,7 +258,7 @@ function MailGui:HandleNewMailNotification(data)
         self:CreateAttachmentListForMail(mailInfo.id, mailInfo)
     end
     targetViewList:_refreshLayout()
-
+    
 end
 
 -- 获取邮件总数
@@ -307,7 +307,7 @@ end
 function MailGui:_sortMailComparator(a, b)
     local aClaimed = a.data.is_claimed or false
     local bClaimed = b.data.is_claimed or false
-
+    
     -- 优先级1: 未领取的在前面
     if not aClaimed and bClaimed then
         return true
@@ -350,19 +350,19 @@ end
 ---@param index number 要插入的位置
 function MailGui:_createMailListItem(targetList, mailItemData, index)
     local mailIdStr = tostring(mailItemData.id)
-
+    
     -- 检查UI中是否已存在相同ID的邮件项
     if targetList:GetChildByName(mailIdStr) then
         gg.log("⚠️ UI中已存在相同ID的邮件项，跳过创建:", mailIdStr)
         return
     end
-
+    
     -- 检查按钮缓存中是否已存在
     if self.mailButtons[mailIdStr] then
         gg.log("⚠️ 按钮缓存中已存在相同ID的邮件，跳过创建:", mailIdStr)
         return
     end
-
+    
     local itemNode = self.mailItemTemplate.node:Clone()
     itemNode.Visible = true
     itemNode.Name = mailIdStr
@@ -488,15 +488,15 @@ function MailGui:CreateAttachmentListForMail(mailId, mailInfo)
         gg.log("❌ 奖励列表模板、项目模板或容器未找到，无法为邮件创建附件列表:", mailId)
         return
     end
-
+    
     local str_mailid = tostring(mailId)
-
+    
     -- 检查是否已存在该邮件的附件列表
     if self.attachmentLists[str_mailid] then
         gg.log("⚠️ 邮件附件列表已存在，跳过创建:", str_mailid)
         return
     end
-
+    
     -- 1. 克隆列表容器节点
     local newListContainerNode = self.rewardListTemplate.node:Clone()
     newListContainerNode.Parent = self.rewardDisplay.node
@@ -504,7 +504,7 @@ function MailGui:CreateAttachmentListForMail(mailId, mailInfo)
 
     -- 2. 处理奖励数据
     local rewardItems = self:ProcessRewardData(mailInfo.attachments)
-
+    
     -- 3. 创建ViewList实例来管理附件列表
     local rewardDisplayNode = ViewList.New(newListContainerNode, self, "邮箱背景/邮件内容/附件/" .. str_mailid, function(itemNode, childPath)
         -- 为每个附件项创建ViewComponent
@@ -707,67 +707,43 @@ function MailGui:OnBatchClaim()
     })
 end
 
---- 智能分类邮件ID（根据前缀判断真实类型）
----@param mailIds table 邮件ID列表
----@return table, table 重新分类后的个人邮件ID和全服邮件ID
-function MailGui:ReclassifyMailIdsByPrefix(mailIds)
-    local personalIds = {}
-    local globalIds = {}
-
-    for _, mailId in ipairs(mailIds) do
-        if string.find(mailId, "^mail_p_") then
-            -- 以 mail_p_ 开头的是个人邮件
-            table.insert(personalIds, mailId)
-        elseif string.find(mailId, "^mail_g_") then
-            -- 以 mail_g_ 开头的是全服邮件
-            table.insert(globalIds, mailId)
-        else
-            gg.log("⚠️ 未知邮件ID格式:", mailId, "默认作为个人邮件处理")
-            table.insert(personalIds, mailId)
-        end
-    end
-
-    gg.log("📧 邮件重分类结果 - 个人:", #personalIds, "全服:", #globalIds)
-    return personalIds, globalIds
-end
-
--- 新增：删除已读邮件（带智能邮件分类）
+-- 新增：删除已读邮件
 function MailGui:OnDeleteReadMails()
-    gg.log("🗑️ 请求删除当前分类下的已读邮件:", self.currentCategory)
+    gg.log("请求删除当前分类下的已读邮件:", self.currentCategory)
 
     local mailListToScan = {}
+    local isGlobalCategory = false
     if self.currentCategory == "系统邮件" then
         mailListToScan = self.systemMails
+        isGlobalCategory = true
     else
         mailListToScan = self.playerMails
     end
 
-    local allMailIdsToDelete = {}
+    local personalMailIdsToDelete = {}
+    local globalMailIdsToDelete = {}
 
-    -- 收集所有符合删除条件的邮件ID
     for mailId, mailInfo in pairs(mailListToScan) do
         -- 已读条件：没有附件，或者有附件但已领取
         if not mailInfo.has_attachment or mailInfo.is_claimed then
-            table.insert(allMailIdsToDelete, mailId)
-            gg.log("📝 符合删除条件的邮件:", mailId, mailInfo.title, "有附件:", mailInfo.has_attachment, "已领取:", mailInfo.is_claimed)
+            if isGlobalCategory then
+                table.insert(globalMailIdsToDelete, mailId)
+            else
+                table.insert(personalMailIdsToDelete, mailId)
+            end
         end
     end
 
-    if #allMailIdsToDelete == 0 then
-        gg.log("📭 没有可删除的已读邮件")
+    if #personalMailIdsToDelete == 0 and #globalMailIdsToDelete == 0 then
+        gg.log("没有可删除的已读邮件")
         -- 可以在这里给玩家一个提示
         return
     end
 
-    -- 根据邮件ID前缀重新分类（这是关键修复）
-    local personalMailIds, globalMailIds = self:ReclassifyMailIdsByPrefix(allMailIdsToDelete)
-
-    gg.log("🎯 最终发送给服务端 - 个人邮件:", personalMailIds, "全服邮件:", globalMailIds)
-
     gg.network_channel:FireServer({
         cmd = MailEventConfig.REQUEST.DELETE_READ_MAILS,
-        personalMailIds = personalMailIds,
-        globalMailIds = globalMailIds
+        personalMailIds = personalMailIdsToDelete,
+        globalMailIds = globalMailIdsToDelete
     })
 end
 
@@ -954,7 +930,7 @@ function MailGui:HandleBatchClaimResponse(data)
             local mailIdStr = tostring(claimedMail.id)
             ---@type MailData
             local mailInfo
-
+            
             if self.playerMails[mailIdStr] then
                 mailInfo = self.playerMails[mailIdStr]
             elseif self.systemMails[mailIdStr] then
@@ -963,13 +939,13 @@ function MailGui:HandleBatchClaimResponse(data)
 
             if mailInfo then
                 mailInfo.is_claimed = true
-
+                
                 -- 更新UI项
                 local mailItemComponent = self.mailButtons[mailIdStr]
                 if mailItemComponent then
                     self:SetupMailItemDisplay(mailItemComponent.node, mailInfo)
                 end
-
+                
                 -- 如果是当前选中的邮件，也更新详情面板
                 if self.currentSelectedMail and tostring(self.currentSelectedMail.id) == mailIdStr then
                     self.currentSelectedMail.data.is_claimed = true
@@ -978,7 +954,7 @@ function MailGui:HandleBatchClaimResponse(data)
                 end
             end
         end
-
+        
         -- 更新一键领取按钮状态
         self:UpdateDetailButtons(self.currentSelectedMail and self.currentSelectedMail.data or {})
 
@@ -1038,16 +1014,6 @@ function MailGui:OnOpen()
     -- 请求服务端同步邮件数据
     gg.network_channel:FireServer({
         cmd = MailEventConfig.REQUEST.GET_LIST
-    })
-end
-
---- 关闭界面时请求邮件状态更新
-function MailGui:OnClose()
-    gg.log("MailGui关闭，请求邮件状态更新")
-
-    -- 请求服务端发送最新的邮件状态通知给GameSystem
-    gg.network_channel:FireServer({
-        cmd = "RequestMailStatusUpdate"
     })
 end
 

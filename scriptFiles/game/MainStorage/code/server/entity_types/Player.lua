@@ -70,7 +70,7 @@ function _M:OnInit(info_)
         end
     end)
 
-    self:SubscribeEvent("ClickQuest", function (evt)
+    ServerEventManager.SubscribeToPlayer(self, "ClickQuest", function (evt)
         local quest = self.quests[evt.name]
         if not quest then
             self:SendHoverText("不存在的任务 %s", evt.name)
@@ -81,7 +81,7 @@ function _M:OnInit(info_)
         else
             quest.quest:OnClick(self)
         end
-    end)
+    end, self.uuid)
 
     self:SubscribeEvent("NavigateReached", function()
         print("NavigateReached", self.navigateCb)
@@ -561,6 +561,7 @@ end
 function _M:RefreshStats()
     -- 先重置装备属性
     self:ResetStats("EQUIP")
+    self:RemoveTagHandler("AUTOEQUIP-")
     self:RemoveTagHandler("EQUIP-")
     self:RemoveTagHandler("SKILL-")
 
@@ -595,8 +596,7 @@ function _M:RefreshStats()
         self:AddStat(statName, amount ,"EQUIP", false)
     end
 
-    -- 直接遍历bag_items，跳过c =0
-    if  self.bag then
+    if self.bag then
         for category, items in pairs(self.bag.bag_items) do
             if category > 0 then
                 for slot, item in pairs(items) do
@@ -611,6 +611,14 @@ function _M:RefreshStats()
                     end
                 end
             end
+        end
+    end
+
+    for _, value in pairs(TagTypeConfig.autoEquipTag) do
+        local level = value:CanAutoEquip(self)
+        if level > 0 then
+            local handler = value:FactoryEquipingTag("AUTOEQUIP-", level)
+            self:AddTagHandler(handler)
         end
     end
 
@@ -1152,28 +1160,49 @@ function _M:SetCameraView(euler)
     })
 end
 
--- 重载SetVariable，变量变动后刷新相关任务进度
-function _M:SetVariable(key, value)
-    Entity.SetVariable(self, key, value)
+---@private
+function _M:_onVariableChanged(key)
     if self.questKey and self.questKey[key] then
         self:UpdateQuestsData()
     end
+    if TagTypeConfig.autoEquipTagByVars[key] then
+        for _, value in ipairs(TagTypeConfig.autoEquipTagByVars[key]) do
+            local currentTag = self:GetTag(value.id)
+            local currentLevel = 0
+            if currentTag then
+                currentLevel = currentTag.level
+            end
+            local level = value:CanAutoEquip(self)
+            if level ~= currentLevel then
+                if level <= 0 then
+                    self:RemoveTagHandler(value.id)
+                elseif currentTag then
+                    currentTag.level = currentLevel
+                elseif not currentTag then
+                    local handler = value:FactoryEquipingTag("AUTOEQUIP-", level)
+                    self:AddTagHandler(handler)
+                end
+            end
+        end
+    end
+end
+
+-- 重载SetVariable，变量变动后刷新相关任务进度
+function _M:SetVariable(key, value)
+    Entity.SetVariable(self, key, value)
+    self:_onVariableChanged(key)
 end
 
 -- 重载AddVariable，变量变动后刷新相关任务进度
 function _M:AddVariable(key, value)
     Entity.AddVariable(self, key, value)
-    if self.questKey and self.questKey[key] then
-        self:UpdateQuestsData()
-    end
+    self:_onVariableChanged(key)
 end
 
 -- 重载RemoveVariable，变量移除后刷新相关任务进度（设为0）
 function _M:RemoveVariable(key)
     Entity.RemoveVariable(self, key)
-    if self.questKey and self.questKey[key] then
-        self:UpdateQuestsData()
-    end
+    self:_onVariableChanged(key)
 end
 
 return _M

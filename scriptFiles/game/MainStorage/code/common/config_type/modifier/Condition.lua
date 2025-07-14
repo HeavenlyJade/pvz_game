@@ -162,7 +162,6 @@ function QuestCondition:Check(modifier, caster, target)
         -- 检查是否已领取任务
         return player.quests[self.quest] ~= nil
     elseif self.conditionType == QuestConditionType.FINISHED then
-        gg.log("QuestCondition", self.quest, player.acceptedQuestIds, player.acceptedQuestIds[self.quest], player.quests[self.quest], player.quests)
         if player.acceptedQuestIds[self.quest] == 1 then
             return true
         end
@@ -170,7 +169,6 @@ function QuestCondition:Check(modifier, caster, target)
         if not q then
             return false
         end
-        gg.log("IsCompleted", q, q:IsCompleted())
         return q:IsCompleted()
     elseif self.conditionType == QuestConditionType.COMPLETED then
         -- 检查任务是否已完成

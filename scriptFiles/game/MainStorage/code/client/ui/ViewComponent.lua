@@ -41,6 +41,35 @@ function ViewComponent:GetToStringParams()
     }
 end
 
+---@return ViewComponent
+function ViewComponent:GetComponent(path)
+    return self:Get(path)
+end
+
+---@return ViewItem
+function ViewComponent:GetItem(path)
+    local ViewItem = require(MainStorage.code.client.ui.ViewItem) ---@type ViewItem
+    return self:Get(path, ViewItem)
+end
+
+---@return ViewToggle
+function ViewComponent:GetToggle(path)
+    local ViewToggle = require(MainStorage.code.client.ui.ViewToggle) ---@type ViewToggle
+    return self:Get(path, ViewToggle)
+end
+
+---@return ViewList
+function ViewComponent:GetList(path, onAddElementCb)
+    local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
+    return self:Get(path, ViewList, onAddElementCb)
+end
+
+---@return ViewButton
+function ViewComponent:GetButton(path)
+    local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
+    return self:Get(path, ViewButton)
+end
+
 ---@generic T : ViewComponent
 ---@param path string 相对路径
 ---@param type? T 组件类型

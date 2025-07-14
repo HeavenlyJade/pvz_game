@@ -2,6 +2,7 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
+local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
 local Battle = require(MainStorage.code.server.Battle) ---@type Battle
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
@@ -111,6 +112,13 @@ function _M:OnInit(info_)
     }
     self.modelPlayer = nil  ---@type ModelPlayer
     self.outlineTimer = nil
+
+    self.timers = {} -- 存储定时器key
+
+    if self.actor then
+        self.actor.Entity = self
+        self.actor:SetCollisionGroup("entity")
+    end
 end
 
 ---@protected
@@ -314,11 +322,13 @@ end
 
 --- 触发词条
 ---@param key string 触发键
----@param target SpellTarget 目标
+---@param target Entity 目标
 ---@param castParam CastParam|nil 施法参数
 ---@param ... any 额外参数
 function _M:TriggerTags(key, target, castParam, ...)
-    -- 处理动态词条
+    if not castParam then
+        castParam = CastParam.New()
+    end
     local args = {...}
     if castParam and castParam.dynamicTags and castParam.dynamicTags[key] then
         for _, equipingTag in ipairs(castParam.dynamicTags[key]) do
@@ -709,6 +719,11 @@ function _M:DestroyObject()
         self.actor = nil
     end
     ServerEventManager.UnsubscribeByKey(self.uuid)
+
+    for k, v in pairs(self.timers) do
+        ServerScheduler.cancel(v)
+    end
+    self.timers = {}
 end
 
 function _M:SetLevel(level)
@@ -924,12 +939,12 @@ function _M:ChangeScene(new_scene)
     if self.scene then
         -- 从旧场景的注册表中移除
         self.scene.uuid2Entity[self.uuid] = nil
-        
+
         -- 如果是玩家，还需要从玩家列表中移除
         if self.isPlayer then---@cast self Player
             self.scene:player_leave(self)
         end
-        
+
         -- 如果是怪物，还需要从怪物列表中移除
         if not self.isPlayer then
             self.scene.monsters[self.uuid] = nil
@@ -939,7 +954,7 @@ function _M:ChangeScene(new_scene)
     -- 进入新场景
     self.scene = new_scene
     self.scene.uuid2Entity[self.uuid] = self
-    
+
     -- 如果是玩家，还需要添加到玩家列表中
     if self.isPlayer then
         ---@cast self Player

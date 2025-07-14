@@ -384,6 +384,7 @@ local function LoadConfig()
                 }
             }
         },
+        ["完成指令"] = nil,
         ["关闭结算界面"] = false,
         ["胜利音效"] = "sandboxId://soundeffect/winmusic胜利音效.ogg",
         ["失败音效"] = "sandboxId://soundeffect/brain_eaten.ogg"

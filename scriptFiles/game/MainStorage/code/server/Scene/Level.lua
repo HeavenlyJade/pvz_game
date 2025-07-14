@@ -584,6 +584,9 @@ function Level:End(success)
             stars = self.currentStars,
             duration = self.endTime - self.startTime
         })
+        if player:GetVariable("自动重匹配中") == 1 then
+            self.levelType:Queue(player)
+        end
         player:ExitBattle()
         player:ResetTempSkill()
     end
@@ -724,6 +727,9 @@ function Level:RemovePlayer(player, success, reason)
             stars = self.currentStars,
             duration = self.endTime - self.startTime
         })
+        if player:GetVariable("自动重匹配中") == 1 then
+            self.levelType:Queue(player)
+        end
         player:ExitBattle()
     end
 

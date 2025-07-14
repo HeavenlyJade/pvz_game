@@ -68,6 +68,34 @@ if game.RunService:IsPC() then
     end)
 end
 
+---@return ViewComponent
+function ViewBase:GetComponent(path)
+    return self:Get(path)
+end
+
+---@return ViewItem
+function ViewBase:GetItem(path)
+    local ViewItem = require(MainStorage.code.client.ui.ViewItem) ---@type ViewItem
+    return self:Get(path, ViewItem)
+end
+
+---@return ViewToggle
+function ViewBase:GetToggle(path)
+    local ViewToggle = require(MainStorage.code.client.ui.ViewToggle) ---@type ViewToggle
+    return self:Get(path, ViewToggle)
+end
+
+---@return ViewList
+function ViewBase:GetList(path, onAddElementCb)
+    local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
+    return self:Get(path, ViewList, onAddElementCb)
+end
+
+---@return ViewButton
+function ViewBase:GetButton(path)
+    local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
+    return self:Get(path, ViewButton)
+end
 
 ---@generic T : ViewComponent
 ---@param path string 组件路径

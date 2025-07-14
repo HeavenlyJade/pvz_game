@@ -234,7 +234,7 @@ end
 ---@param img UIImage 按钮图片组件
 function ViewButton:InitButtonProperties(img)
     img.ClickPass = false
-    self.clickCb = nil ---@type fun(ui:ViewBase, button:ViewButton)
+    self.clickCb = nil ---@type fun(ui:ViewBase, button:ViewButton):boolean|nil
     self.touchBeginCb = nil ---@type fun(ui:ViewBase, button:ViewButton, pos:Vector2)
     self.touchMoveCb = nil ---@type fun(ui:ViewBase, button:ViewButton, pos:Vector2)
     self.touchEndCb = nil ---@type fun(ui:ViewBase, button:ViewButton, pos:Vector2)
@@ -330,16 +330,12 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     end
     local img = self.img
 
-
-
-self:InitButtonProperties(img)
-
-    if img["pc_hint"] then
-        img["pc_hint"].Visible = game.RunService:IsPC()
+    self:InitButtonProperties(img)
+        if img["pc_hint"] then
+            img["pc_hint"].Visible = game.RunService:IsPC()
+        end
+        self.isHover = false
     end
-
-    self.isHover = false
-end
 
 -- === 新增：重新绑定到新的UI节点 ===
 -- 用于在按钮复用时重新绑定到新的UI节点，重新设置所有事件监听器和属性
