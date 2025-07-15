@@ -82,26 +82,11 @@ end
 function ForceClickHud:OnClickAnywhere()
     if self.allowClickAnywhere then
         self.allowClickAnywhere = false
-        -- 延迟检查，以确保按钮点击事件（如有）能够先执行完毕
-        ClientScheduler.add(function ()
-            -- 如果引导流程已经被中断，则不执行任何操作
-            if not self.focusingChain or not self.focusingNode then
-                return
-            end
-
-            -- 如果目标节点在点击后被隐藏了（可能打开了新窗口），则终止引导
-            if not self.focusingNode.Visible then
-                self:Close()
-                return
-            end
-
-            -- 正常推进
-            self:FocusOnNextNode()
-            if self.nodePressCb then
-                self.nodePressCb:Disconnect()
-                self.nodePressCb = nil
-            end
-        end, 0.2)
+        self:FocusOnNextNode()
+        if self.nodePressCb then
+            self.nodePressCb:Disconnect()
+            self.nodePressCb = nil
+        end
     end
 end
 
@@ -137,17 +122,12 @@ function ForceClickHud:FocusOnNextNode()
         print(string.format("配置错误: UI %s 的节点 %s 不存在!", focus["UI名"], focus["控件路径"]))
         return
     end
-    self:FocusOnNode(node.node, focus["提示文本"], focus["可点击任意位置"], focus["可点击蒙版取消"])
+    self:FocusOnNode(node.node, focus["提示文本"], focus["可点击任意位置"])
 end
 
 ---@param node UIComponent
----@param text string
----@param allowClickAnywhere boolean
----@param canClickMaskToCancel boolean
-function ForceClickHud:FocusOnNode(node, text, allowClickAnywhere, canClickMaskToCancel)
+function ForceClickHud:FocusOnNode(node, text, allowClickAnywhere)
     self.allowClickAnywhere = allowClickAnywhere or false
-    self.canClickMaskToCancel = canClickMaskToCancel or false
-    self.focusingNode = node
     local size = node.Size
     local pos = node:GetGlobalPos() - Vector2.New(node.Pivot.x * size.x, node.Pivot.y * size.y)
     if self.nodePressCb then
@@ -182,18 +162,6 @@ function ForceClickHud:FocusOnNode(node, text, allowClickAnywhere, canClickMaskT
         self.nodePressCb:Disconnect()
         self.nodePressCb = nil
     end)
-end
-
-function ForceClickHud:Close()
-    ViewBase.Close(self)
-    -- self.skipButton.node.Visible = false
-    self.focusingChain = nil
-    self.focusingNode = nil
-    self.index = 0
-    if self.nodePressCb then
-        self.nodePressCb:Disconnect()
-        self.nodePressCb = nil
-    end
 end
 
 return ForceClickHud.New(script.Parent, uiConfig)

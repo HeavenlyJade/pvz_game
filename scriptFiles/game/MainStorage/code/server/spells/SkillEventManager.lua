@@ -264,20 +264,9 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         gg.log("升级成本", cost)
     end
     -- 检查玩家资源是否足够
-    if cost and next(cost) then
+    if cost then
         if not player.bag:HasItems(cost) then
-            local shortageInfo = player.bag:GetResourceShortageInfo(cost)
-            if shortageInfo then
-                local messages = {}
-                for _, resource in ipairs(shortageInfo) do
-                    if resource.isMoney then
-                        table.insert(messages, string.format("【%s】缺少%d", resource.displayName, resource.missing))
-                    else
-                        table.insert(messages, string.format("【%s】缺少%d个", resource.displayName, resource.missing))
-                    end
-                end
-                player:SendHoverText("技能升级失败：" .. table.concat(messages, "，"))
-            end
+            player:SendHoverText("技能升级失败：资源不足")
             return
         end
         player.bag:RemoveItems(cost)
@@ -889,16 +878,7 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
 
     -- 检查玩家资源是否足够
     if not player.bag:HasItems(starCosts) then
-        local shortageInfo = player.bag:GetResourceShortageInfo(starCosts)
-        if shortageInfo then
-            local messages = {}
-            for _, resource in ipairs(shortageInfo) do
-  
-                table.insert(messages, string.format("【%s】缺少%d", resource.displayName, resource.missing))
-              
-            end
-            player:SendHoverText("升星失败：" .. table.concat(messages, "，"))
-        end
+        player:SendHoverText("升星失败：升星素材不足")
         return
     end
 
