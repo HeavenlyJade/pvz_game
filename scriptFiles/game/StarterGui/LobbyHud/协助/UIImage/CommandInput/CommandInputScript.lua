@@ -1,14 +1,24 @@
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
-local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
 
 local commandInput = script.Parent ---@type UITextInput
-commandInput.Visible = gg.opUin[game.Players.LocalPlayer.UserId]
+local uiImage = commandInput.Parent ---@type UIImage
+local localPlayer = game.Players.LocalPlayer
+
+if not gg.opUin[localPlayer.UserId] then
+    commandInput.Visible = false
+    uiImage.Visible = false
+    return
+else
+    commandInput.Visible = true
+    uiImage.Visible = true
+end
+
+local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
+local UserInputService = game:GetService("UserInputService") ---@type UserInputService
 
 local commandHistory = {}
 local commandHistoryIndex = 1
-
-local UserInputService = game:GetService("UserInputService") ---@type UserInputService
 
 local function inputBegan( inputObj, bGameProcessd )
 	if inputObj.UserInputType == Enum.UserInputType.Keyboard.Value then

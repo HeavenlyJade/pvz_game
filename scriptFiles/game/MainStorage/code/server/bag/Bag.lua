@@ -703,5 +703,65 @@ function Bag:GetMoneyAmount(moneyId)
     return self:GetItemAmount(itemType)
 end
 
+--- 私有方法：递归计算玩家持有的货币总价值（换算成当前货币单位）
+---@param itemType ItemType 货币类型
+---@return number 货币总价值
+function Bag:_GetTotalMoneyValue(itemType)
+    local ownAmount = self:GetItemAmount(itemType, false) or 0
+    if itemType.upperPrice and itemType.upperPriceAmount and itemType.upperPriceAmount > 0 then
+        -- 递归获取更高面额货币的价值并换算
+        ownAmount = ownAmount + self:_GetTotalMoneyValue(itemType.upperPrice) * itemType.upperPriceAmount
+    end
+    return ownAmount
+end
+
+--- 检查并返回资源不足的信息
+---@param costs table<string|ItemType, number> 消耗表
+---@return table|nil 不足的资源列表，如果没有不足则返回nil
+function Bag:GetResourceShortageInfo(costs)
+    if not costs or not next(costs) then
+        return nil
+    end
+
+    local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig)
+    local insufficientResources = {}
+
+    for itemOrName, requiredAmount in pairs(costs) do
+        local itemType
+        if type(itemOrName) == "string" then
+            itemType = ItemTypeConfig.Get(itemOrName)
+        else
+            itemType = itemOrName
+        end
+
+        if itemType then
+            if itemType.isMoney then
+                local haveAmount = self:_GetTotalMoneyValue(itemType)
+                if haveAmount < requiredAmount then
+                    table.insert(insufficientResources, {
+                        displayName = itemType.displayName or itemType.name,
+                        isMoney = true,
+                        missing = requiredAmount - haveAmount
+                    })
+                end
+            else
+                local haveAmount = self:GetItemAmount(itemType, false)
+                if haveAmount < requiredAmount then
+                    table.insert(insufficientResources, {
+                        displayName = itemType.displayName or itemType.name,
+                        missing = requiredAmount - haveAmount
+                    })
+                end
+            end
+        end
+    end
+
+    if #insufficientResources > 0 then
+        return insufficientResources
+    end
+
+    return nil
+end
+
 return Bag
 

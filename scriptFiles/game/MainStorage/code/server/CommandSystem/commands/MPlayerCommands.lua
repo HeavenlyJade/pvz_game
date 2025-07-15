@@ -1,185 +1,120 @@
---- 玩家属性相关命令处理器
---- V109 miniw-haima
+--- 玩家数据相关命令处理器
 
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
-local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr)  ---@type MCloudDataMgr
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCloudDataMgr
 
 ---@class PlayerCommands
 local PlayerCommands = {}
 
--- 命令执行器工厂
-local CommandExecutors = {}
+--- 清空玩家指定数据
+--- @param clearOptions table 允许通过 { "背包" = true, "技能" = true, "任务" = true, "等级" = true } 来指定要清除的数据，若不指定则全部清除
+--- @param targetPlayer Player
+function PlayerCommands.clearData(clearOptions, targetPlayer)
+    local clearedItems = {}
+    clearOptions = clearOptions or {} -- 如果 "操作内容" 不存在，则创建一个空表，以触发 shouldClearAll
 
--- 设置玩家属性执行器
-function CommandExecutors.SetPlayerAttribute(params, player)
-    if params.category == "等级" then
-        -- 设置玩家等级
-        local level = tonumber(params.value)
-        
-        -- 限制等级范围
-        level = math.max(1, math.min(level, 100))
-        
-        player.level = level
-        player:resetBattleData(true)
-        player:rsyncData(1)
-        
-        -- 保存到云端
-        cloudDataMgr.savePlayerData(player.uin, true)
-        
-        -- 通知客户端
-        gg.network_channel:fireClient(player.uin, {
-            cmd = "cmd_client_show_msg",
-            txt = "等级已设置为 " .. level,
-            color = ColorQuad.New(0, 255, 0, 255)
-        })
-        
-        return true
-    elseif params.category == "经验" then
-        -- 设置玩家经验值
-        local exp = tonumber(params.value)
-        player.exp = exp
-        player:rsyncData(2)
-        
-        -- 保存到云端
-        cloudDataMgr.savePlayerData(player.uin, true)
-        
-        return true
-    elseif params.category == "声望" then
-        -- 设置玩家声望
-        local faction = params.subcategory
-        local value = tonumber(params.value)
-        
-        player:SetReputation(faction, value)
-        
-        return true
-    elseif params.category == "属性" then
-        -- 设置玩家属性值
-        local attrName = params.subcategory
-        local value = tonumber(params.value)
-        
-        if player.battle_data[attrName] ~= nil then
-            player.battle_data[attrName] = value
-            player:rsyncData(1)
-            return true
-        else
-            gg.log("未知属性名: " .. attrName)
+    -- 检查是否指定了要清除的特定数据，如果没有，则默认全部清除
+    local shouldClearAll = not clearOptions["背包"] and not clearOptions["技能"] and not clearOptions["任务"] and not clearOptions["等级"]
+
+    -- 1. 清空背包数据
+    if clearOptions["背包"] or shouldClearAll then
+        if targetPlayer.bag then
+            targetPlayer.bag.bag_items = {}
+            targetPlayer.bag.bag_index = {}
+            targetPlayer.bag:MarkDirty(true) -- 标记为需要同步和保存
+            table.insert(clearedItems, "背包")
+        end
+    end
+
+    -- 2. 清空技能数据
+    if clearOptions["技能"] or shouldClearAll then
+        targetPlayer.skills = {}
+        targetPlayer.equippedSkills = {}
+        targetPlayer.tempSkills = {}
+        targetPlayer.variables = {} -- 清空所有变量
+        targetPlayer:SetLevel(1)
+        targetPlayer.exp = 0
+        targetPlayer:rsyncData(2)
+        table.insert(clearedItems, "等级")
+        table.insert(clearedItems, "技能")
+        table.insert(clearedItems, "变量")
+    end
+
+    -- 3. 清空任务数据
+    if clearOptions["任务"] or shouldClearAll then
+        targetPlayer.quests = {}
+        targetPlayer.acceptedQuestIds = {}
+        targetPlayer.questKey = {}
+        table.insert(clearedItems, "任务")
+    end
+
+    -- 4. 清空等级数据
+
+
+
+    -- 5. 保存所有变更到云端
+    targetPlayer:Save()
+
+    -- 6. 刷新玩家状态并同步到客户端
+    targetPlayer:RefreshStats()       -- 移除技能后需要刷新属性
+    targetPlayer:UpdateQuestsData()   -- 同步空的任务列表
+    targetPlayer:syncSkillData()      -- 同步空的技能列表
+    if targetPlayer.bag then
+        targetPlayer.bag:SyncToClient() -- 同步空的背包
+    end
+
+    local message = "玩家 " .. targetPlayer.name .. " 的数据已清空: " .. table.concat(clearedItems, ", ")
+    gg.log(message)
+
+    return message -- 返回成功信息
+end
+
+--- 命令分发器
+--- @param params table
+--- @param executor Player 指令执行者
+function PlayerCommands.main(params, executor)
+    local targetPlayer
+    local uin = params["uin"]
+    local playerName = params["玩家"]
+
+    if uin then
+        targetPlayer = gg.getPlayerByUin(uin)
+        if not targetPlayer then
+            executor:SendHoverText("通过 UIN 未找到玩家: " .. tostring(uin))
             return false
         end
-    end
-    
-    return false
-end
 
--- 增加玩家属性执行器
-function CommandExecutors.AddPlayerAttribute(params, player)
-    if params.category == "经验" then
-        -- 增加经验值
-        local exp = tonumber(params.value)
-        player:addExp(exp)
-        
-        -- 通知客户端
-        gg.network_channel:fireClient(player.uin, {
-            cmd = "cmd_client_show_msg",
-            txt = "获得经验值 +" .. exp,
-            color = ColorQuad.New(0, 255, 0, 255)
-        })
-        
-        return true
-    elseif params.category == "金币" then
-        -- 增加金币
-        local gold = tonumber(params.value)
-        player:AddGold(gold)
-        
-        -- 通知客户端
-        gg.network_channel:fireClient(player.uin, {
-            cmd = "cmd_client_show_msg",
-            txt = "获得金币 +" .. gold,
-            color = ColorQuad.New(255, 215, 0, 255)
-        })
-        
-        return true
-    end
-    
-    return false
-end
-
--- 修改玩家属性执行器
-function CommandExecutors.ModifyPlayerAttribute(params, player)
-    if params.category == "属性" then
-        local attrName = params.subcategory
-        local value = params.value
-        
-        -- 支持增加/减少语法
-        if string.sub(value, 1, 1) == "+" then
-            local amount = tonumber(string.sub(value, 2))
-            if player.battle_data[attrName] ~= nil then
-                player.battle_data[attrName] = player.battle_data[attrName] + amount
-                player:rsyncData(1)
-                
-                -- 通知客户端
-                gg.network_channel:fireClient(player.uin, {
-                    cmd = "cmd_client_show_msg",
-                    txt = attrName .. " +" .. amount,
-                    color = ColorQuad.New(0, 255, 0, 255)
-                })
-                
-                return true
-            end
-        elseif string.sub(value, 1, 1) == "-" then
-            local amount = tonumber(string.sub(value, 2))
-            if player.battle_data[attrName] ~= nil then
-                player.battle_data[attrName] = player.battle_data[attrName] - amount
-                player:rsyncData(1)
-                
-                -- 通知客户端
-                gg.network_channel:fireClient(player.uin, {
-                    cmd = "cmd_client_show_msg",
-                    txt = attrName .. " -" .. amount,
-                    color = ColorQuad.New(255, 0, 0, 255)
-                })
-                
-                return true
-            end
-        else
-            -- 设置为特定值
-            local amount = tonumber(value)
-            if player.battle_data[attrName] ~= nil then
-                player.battle_data[attrName] = amount
-                player:rsyncData(1)
-                return true
-            end
+        if targetPlayer.name ~= playerName then
+            gg.log(string.format("指令安全校验失败: UIN %s 对应的玩家是 '%s', 但指令提供的玩家名是 '%s'。", uin, targetPlayer.name, playerName))
+            executor:SendHoverText("UIN 和玩家名不匹配，操作已取消。")
+            return false
         end
-        
-        gg.log("未知属性名: " .. attrName)
+    else
+        executor:SendHoverText("指令错误: 必须提供 'uin' 或 '玩家' 字段来指定目标玩家。")
         return false
     end
-    
-    return false
-end
 
--- 命令映射表
-local CommandMapping = {
-    ["设置"] = CommandExecutors.SetPlayerAttribute,
-    ["增加"] = CommandExecutors.AddPlayerAttribute,
-    ["修改"] = CommandExecutors.ModifyPlayerAttribute,
-}
-
--- 命令执行函数
-function PlayerCommands.Execute(command, params, player)
-    local executor = CommandMapping[command]
-    if not executor then
-        gg.log("未知玩家命令: " .. command)
+    -- 校验通过，执行后续操作
+    local action = params["操作"]
+    if not action then
+        executor:SendHoverText("玩家命令错误: 缺少 '操作' 参数。")
         return false
     end
-    
-    return executor(params, player)
-end
 
--- 兼容旧版接口
-PlayerCommands.handlers = {}
-for command, executor in pairs(CommandMapping) do
-    PlayerCommands.handlers[command] = executor
+    if action == "清空数据" then
+        local clearOptions = params["操作内容"]
+        local successMessage = PlayerCommands.clearData(clearOptions, targetPlayer)
+        -- 将成功信息反馈给执行者
+        if successMessage then
+            executor:SendHoverText(successMessage)
+            return true
+        end
+        return false
+    else
+        executor:SendHoverText("玩家命令错误: 未知的操作 -> " .. action)
+        return false
+    end
 end
 
 return PlayerCommands
