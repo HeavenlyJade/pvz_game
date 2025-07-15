@@ -606,8 +606,10 @@ function _M:RefreshStats()
                         for statName, amount in pairs(item:GetStat()) do
                             self:AddStat(statName, amount, "EQUIP", false)
                         end
-                        for _, tag in ipairs(item.itemType.boundTags) do
-                            self:AddTagHandler(TagTypeConfig.Get(tag):FactoryEquipingTag("EQUIP-", 1.0))
+                        if item.itemType.boundTags then
+                            for _, tag in ipairs(item.itemType.boundTags) do
+                                self:AddTagHandler(TagTypeConfig.Get(tag):FactoryEquipingTag("EQUIP-", 1.0))
+                            end
                         end
                     end
                 end
@@ -615,7 +617,7 @@ function _M:RefreshStats()
         end
     end
 
-    for _, value in pairs(TagTypeConfig.autoEquipTag) do
+    for _, value in pairs(TagTypeConfig.GetAutoEquipTags()) do
         local level = value:CanAutoEquip(self)
         if level > 0 then
             local handler = value:FactoryEquipingTag("AUTOEQUIP-", level)

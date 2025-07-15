@@ -4196,4 +4196,13 @@ function TagTypeConfig.GetAll()
     end
     return TagTypeConfig.config
 end
+
+---@return table<string, TagType>
+function TagTypeConfig.GetAutoEquipTags()
+    if not loaded then
+        LoadConfig()
+    end
+    return TagTypeConfig.autoEquipTag
+end
+
 return TagTypeConfig

@@ -8,6 +8,7 @@ local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@t
 local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
 local cloudMailData = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailDataAccessor
 local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
+local TransmitEvent = require(MainStorage.code.server.Transmit.TransmitEvent) ---@type TransmitEvent
 
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
@@ -88,6 +89,7 @@ function MainServer.initModule()
     -- gg.cloudMailData = cloudMailData:Init()
     SkillEventManager.Init()
     MailManager:Init()
+    TransmitEvent.Init()
     gg.log("背包事件管理")
     BagEventManager:Init()
     gg.log("事件初始化完成")

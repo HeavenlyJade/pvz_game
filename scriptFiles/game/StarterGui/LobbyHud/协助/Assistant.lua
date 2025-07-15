@@ -62,7 +62,7 @@ function Assistant:RegisterEventFunction()
     -- "确认传送"按钮事件
     if self.confirmTeleportButton then
         self.confirmTeleportButton.clickCb = function(ui, button)
-            self:_DoTeleport()
+            gg.network_channel:FireServer({ cmd = "RequestPlayerTeleport" })
             self.confirmTeleportUI:SetVisible(false)
         end
     end
@@ -72,42 +72,6 @@ function Assistant:RegisterEventFunction()
         self.cancelTeleportButton.clickCb = function(ui, button)
             self.confirmTeleportUI:SetVisible(false)
         end
-    end
-end
-
--- 执行传送
-function Assistant:_DoTeleport()
-    gg.log("确认传送")
-    local teleportPointId = "g0"
-    local teleportPath = MConfig.TeleportPoints[teleportPointId]
-
-    if not teleportPath then
-        gg.log("错误: 在MConfig中未找到传送点配置: " .. teleportPointId)
-        return
-    end
-
-    -- 移除路径开头的 "/"
-    if teleportPath:sub(1, 1) == "/" then
-        teleportPath = teleportPath:sub(2)
-    end
-
-    local teleportNode = gg.GetChild(game.WorkSpace, teleportPath)
-
-    if not teleportNode then
-        gg.log("错误: 在场景中未找到传送节点: " .. teleportPath)
-        return
-    end
-
-    local TeleportService = game:GetService('TeleportService')
-    local playerActor = gg.getClientLocalPlayer()
-    local respawnPos = teleportNode.Position
-
-    if playerActor then
-        gg.log("正在尝试将玩家传送到: ", respawnPos)
-        TeleportService:Teleport(playerActor, respawnPos)
-        -- UIBase.GetUI("ToastHud"):Show("已将您传送至安全区域。")
-    else
-        gg.log("错误: 找不到本地玩家实体。")
     end
 end
 
