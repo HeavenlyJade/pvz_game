@@ -38,6 +38,7 @@ CommandManager.handlers = {
     ["quest"] = QuestCommand.main,
     ["level"] = LevelCommand.enter,
     ["var"] = SpellCommand.var,
+    ["navigate"] = SpellCommand.navigate,
     ["afk"] = SkillCommands.afk,
     ["graphic"] = SpellCommand.graphic,
     ["lottery"] = ItemCommands.lottery,

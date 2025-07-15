@@ -290,11 +290,12 @@ function _M:GetOnlineTime()
     return self:GetVariable("daily_onlinetime") + os.time() - self.loginTime
 end
 
-function _M:NavigateTo(position, stopRange, cb)
+function _M:NavigateTo(position, stopRange, cb, text)
     self.navigateCb = cb
     self:SendEvent("NavigateTo", {
         pos = {position.x, position.y, position.z},
         range = stopRange,
+        text = text
     })
 end
 
@@ -834,6 +835,9 @@ function _M:UpgradeSkill(skillType)
         local levelUpPlayer = skillType:GetLevelUpPlayerAtLevel(1)
         self:SetLevel(self.level + levelUpPlayer)
         self:saveSkillConfig()
+        self:SetVariable("skill_".. skillType.name, 1)
+        self:SetVariable("skill_enhance_".. skillType.category, 1)
+        self:RefreshStats()
         return true
     end
 

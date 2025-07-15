@@ -34,6 +34,7 @@ function ForceClickHud:OnInit(node, config)
     self.down = self:Get("下").node
     self.left = self:Get("左").node
     self.right = self:Get("右").node
+    self.skipButton = self:Get("跳过引导", ViewButton) ---@type ViewButton
     self.focusingChain = nil ---@type FocusChain
     self.index = 0
     self.lastFocusTime = 0 ---@type number
@@ -57,6 +58,20 @@ function ForceClickHud:OnInit(node, config)
         end
     end)
     
+    if self.skipButton then
+        self.skipButton.clickCb = function(ui, button)
+            gg.log("引导被跳过")
+            if self.focusingChain then
+                -- 将索引设置到末尾，以触发结束逻辑
+                self.index = #self.focusingChain["聚焦UI"]
+                self:FocusOnNextNode()
+            else
+                -- 如果没有引导在进行，直接关闭
+                self:Close()
+            end
+        end
+    end
+
     if game.UserInputService.TouchEnabled then -- 触摸设备
         game.UserInputService.TouchStarted:Connect(
             function(inputObj, gameprocessed)

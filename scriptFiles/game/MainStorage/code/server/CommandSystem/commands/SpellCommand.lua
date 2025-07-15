@@ -6,10 +6,47 @@ local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSp
 local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig) ---@type SkillTypeConfig
 local Graphics = require(MainStorage.code.server.graphic.Graphics) ---@type Graphics
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
-
+local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
 
 ---@class SpellCommand
 local SpellCommand = {}
+
+---@param player Player
+function SpellCommand.navigate(params, player)
+    local scene = player.scene
+    if params["场景"] then
+        scene = gg.server_scene_list[params["场景"]]
+        if not scene then
+            gg.log("导航场景不存在：%s", params["场景"])
+            return
+        end
+    end
+    local node = scene:Get(params["场景节点"]) ---@type Actor
+    if not node then
+        gg.log("导航场景%s有不存在的节点%s", scene.name, params["场景节点"])
+        return
+    end
+    local cb = nil
+    local e = Entity.node2Entity[node] ---@cast e Npc
+    if ClassMgr.Is(e, "Npc") then
+        cb = function ()
+            e:HandleInteraction(player)
+        end
+    end
+    local range = 300
+    if node:IsA("Actor") then
+        range = range + math.max(node.Size.x, node.Size.z)
+    end
+    if params["不强制移动过去"] then
+        player:SendEvent("ShowPointerTo", {
+            pos = node.Position,
+            text = params["提示文字"],
+            distance = params["解除距离"]
+        })
+    else
+        player:NavigateTo(node.Position, range, cb, params["提示文字"])
+    end
+end
 
 ---@param player Player
 function SpellCommand.cast(params, player)

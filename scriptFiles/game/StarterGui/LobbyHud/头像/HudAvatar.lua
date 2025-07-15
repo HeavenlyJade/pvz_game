@@ -57,6 +57,9 @@ function HudAvatar:OnInit(node, config)
             end
             ele:Get("任务标题").node.Title = child.description
             ele:Get("任务数量").node.Title = string.format("%d/%d", child.count, child.countMax)
+            if i == 1 and child.targetLoc then
+                self:NavigateTo(gg.Vec3.new(child.targetLoc), child.description)
+            end
         end
     end)
     ClientEventManager.Subscribe("UpdateHud", function(data)
@@ -68,6 +71,7 @@ function HudAvatar:OnInit(node, config)
         local vec = Vector3.New(data.pos[1], data.pos[2], data.pos[3])
         self.targetPos = vec
         Players.LocalPlayer.Character:NavigateTo(vec)
+        self:NavigateTo(gg.Vec3.new(vec), data.text or "")
         
         -- 取消之前的检查任务（如果存在）
         if self.navigationCheckTaskId then
@@ -82,7 +86,6 @@ function HudAvatar:OnInit(node, config)
             local currentPos = character.Position
             local distance = gg.vec.DistanceSq3(currentPos, self.targetPos)
             
-            print("distance", distance, stopRange, data.range)
             if distance <= stopRange then
                 character:StopNavigate()
                 gg.network_channel:FireServer({
@@ -95,6 +98,49 @@ function HudAvatar:OnInit(node, config)
             end
         end, 1, 1) -- 每秒检查一次
     end)
+    ClientEventManager.Subscribe("ShowPointerTo", function(data)
+        if data.pos then
+            -- 将数组格式的位置转换为Vec3对象
+            local targetPos = gg.Vec3.new(data.pos)
+            self:NavigateTo(targetPos, data.text)
+            
+            -- 处理靠近目标后解除的逻辑
+            if data.distance > 0 then
+                self.checkTask = ClientScheduler.add(function()
+                    local character = Players.LocalPlayer.Character
+                    if character and targetPos:DistanceSq(character.Position) < data.distance * data.distance then
+                        self:NavigateTo(nil)  -- 关闭指针
+                        ClientScheduler.cancel(self.checkTask)
+                    end
+                end, 1, 1)
+            end
+        end
+    end)
+end
+
+function HudAvatar:NavigateTo(pos, text)
+    if not self._pointer then
+        self._pointer = MainStorage["特效"]["导航指针"]:Clone() ---@type Model
+        self._pointer.Parent = game.WorkSpace
+        if self._pointerUpdateTaskId then
+            self._pointerUpdateTaskId:Disconnect()
+            self._pointerUpdateTaskId = nil
+        end
+    end
+    if not pos then
+        self._pointer.Visible = false
+    else
+        self._pointer.Visible = true
+        if text then
+            self._pointer["UIRoot3D"]["导航文本"].Title = text
+        end
+        self._pointerUpdateTaskId = game.RunService.RenderStepped:Connect(function ()
+            local delta = pos - gg.Vec3.new(Players.LocalPlayer.Character.Position)
+            local rot = delta:GetRotation()
+            self._pointer.Euler = rot:ToVector3()
+            self._pointer.Position = Players.LocalPlayer.Character.Position
+        end)
+    end
 end
 
 return HudAvatar.New(script.Parent, uiConfig)

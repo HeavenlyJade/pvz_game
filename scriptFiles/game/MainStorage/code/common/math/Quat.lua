@@ -198,7 +198,7 @@ function Quat:FromLookRotation(direction, upDirection)
     local forward = direction:Normalized()
 
     local v = forward:Cross(upDirection)
-    if v:SqrMagnitude() >= MathDefines.M_EPSILON then
+    if v:MagnitudeSq() >= MathDefines.M_EPSILON then
         v:Normalize()
         local up = v:Cross(forward)
         local right = up:Cross(forward)

@@ -34,6 +34,12 @@ local SlotToCardWithKeyMapping = {
 -- 固定的卡片名称列表（按顺序对应数字键1-4）
 local FixedCardNames = {"卡片_1", "卡片_2", "卡片_3", "卡片_4"}
 
+-- 传送点配置，键为传送点ID，值为场景中对应节点的绝对路径
+local TeleportPoints = {
+    ["g0"] = "Ground/g0/传送点/传送",
+
+}
+
 --所有配置( 其他所有的配置文件将汇总到这里， 游戏逻辑代码只需要require这个文件即可 )
 ---@class common_config
 local common_config = {
@@ -41,6 +47,7 @@ local common_config = {
     SlotToCardMapping = SlotToCardMapping,
     SlotToCardWithKeyMapping = SlotToCardWithKeyMapping,
     FixedCardNames = FixedCardNames,
+    TeleportPoints = TeleportPoints,
 }
 
 

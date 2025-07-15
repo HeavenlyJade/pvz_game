@@ -48,7 +48,7 @@ function AfkSpot:OnInit(data, actor)
     self.occupiedEntity = nil ---@type Actor|nil
 
     self:SubscribeEvent("ExitAfkSpot", function (evt)
-        if evt.player then
+        if evt.player and self.mode ~= "副卡" then
             self:OnPlayerExit(evt.player)
         end
     end)
@@ -74,6 +74,9 @@ function AfkSpot:OnInit(data, actor)
             --玩家副卡挂机
             local skill = evt.player.skills[evt.skillName] ---@type Skill
             skill.afking = true
+            if self.enterCommands then
+                player:ExecuteCommands(self.enterCommands)
+            end
             if skill.skillType.battleModel then
                 self.occupiedEntity = SandboxNode.New("Actor", self.actor) ---@type Actor
                 self.occupiedEntity.EnablePhysics = false

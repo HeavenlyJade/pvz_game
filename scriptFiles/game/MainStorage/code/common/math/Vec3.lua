@@ -38,6 +38,19 @@ function Vec3.new(x, y, z)
     return obj
 end
 
+function Vec3:GetRotation()
+    local normalized = self:Normalized()
+    
+    -- 计算水平偏航角（绕Y轴旋转）
+    local yaw = math.deg(math.atan2(-normalized.x, -normalized.z))
+    
+    -- 计算垂直俯仰角（绕X轴旋转）
+    local pitch = math.deg(math.asin(normalized.y))
+    
+    return Vec3.new(pitch, yaw, 0)
+end
+
+
 function Vec3:FindClosestPlayer(range)
     local gg = require(MainStorage.code.common.MGlobal) ---@type gg
     local closestPlayer = nil
@@ -45,7 +58,7 @@ function Vec3:FindClosestPlayer(range)
     
     for _, player in pairs(gg.server_players_list) do
         local pos = player:GetPosition()
-        local distSq = (self - pos):SqrMagnitude()
+        local distSq = (self - pos):MagnitudeSq()
         if distSq < minDistSq then
             minDistSq = distSq
             closestPlayer = player
@@ -213,7 +226,7 @@ function Vec3:Magnitude()
     return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
 end
 
-function Vec3:SqrMagnitude()
+function Vec3:MagnitudeSq()
     return self.x * self.x + self.y * self.y + self.z * self.z
 end
 
@@ -314,6 +327,9 @@ end
 function Vec3:Distance(to)
     return (self - to):Magnitude()
 end
+function Vec3:DistanceSq(to)
+    return (self - to):MagnitudeSq()
+end
 
 --取反
 function Vec3:Negate()
@@ -323,7 +339,7 @@ end
 --移动向量
 function Vec3:MoveTowards(target, maxDistanceDelta)
     local delta = target - self
-    local sqrDelta = delta:SqrMagnitude()
+    local sqrDelta = delta:MagnitudeSq()
     local sqrDistance = maxDistanceDelta * maxDistanceDelta
     if sqrDelta > sqrDistance then
         local magnitude = math.sqrt(sqrDelta)
@@ -339,7 +355,7 @@ end
 function Vec3:DistanceToLine(startPos, endPos)
     local line = endPos - startPos
     local pointToStart = self - startPos
-    local projection = pointToStart:Dot(line) / line:SqrMagnitude()
+    local projection = pointToStart:Dot(line) / line:MagnitudeSq()
     if projection < 0 then
         return pointToStart:Magnitude()
     end
