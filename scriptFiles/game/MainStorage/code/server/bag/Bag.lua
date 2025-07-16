@@ -537,6 +537,57 @@ function Bag:_RemoveMoney(itemType, amount)
     return false
 end
 
+
+--- 检查并返回资源不足的信息
+---@param costs table<string|ItemType, number> 消耗表
+---@return table|nil 不足的资源列表，如果没有不足则返回nil
+function Bag:GetResourceShortageInfo(costs)
+    if not costs or not next(costs) then
+        return nil
+    end
+
+    local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig)
+    local insufficientResources = {}
+
+    for itemOrName, requiredAmount in pairs(costs) do
+        local itemType
+        if type(itemOrName) == "string" then
+            itemType = ItemTypeConfig.Get(itemOrName)
+        else
+            itemType = itemOrName
+        end
+
+        if itemType then
+            if itemType.isMoney then
+                if not self:_HasMoneyMulti(itemType, requiredAmount) then
+                    local haveAmount = self:GetItemAmount(itemType, true)
+                    table.insert(insufficientResources, {
+                        displayName = itemType.displayName or itemType.name,
+                        isMoney = true,
+                        missing = requiredAmount - haveAmount
+                    })
+                end
+            else
+                local haveAmount = self:GetItemAmount(itemType, false)
+                if haveAmount < requiredAmount then
+                    table.insert(insufficientResources, {
+                        displayName = itemType.displayName or itemType.name,
+                        missing = requiredAmount - haveAmount
+                    })
+                end
+            end
+        end
+    end
+
+    if #insufficientResources > 0 then
+        return insufficientResources
+    end
+
+    return nil
+end
+
+
+
 -- 修改HasItems，支持货币多层进位递归判断，避免大数溢出
 function Bag:HasItems(items)
     if not items then

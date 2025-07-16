@@ -263,10 +263,17 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         cost = skillType:GetCostAtLevel(1)
         gg.log("升级成本", cost)
     end
-    -- 检查玩家资源是否足够
-    if cost then
+     -- 检查玩家资源是否足够
+    if cost and next(cost) then
         if not player.bag:HasItems(cost) then
-            player:SendHoverText("技能升级失败：资源不足")
+            local shortageInfo = player.bag:GetResourceShortageInfo(cost)
+            if shortageInfo then
+                local messages = {}
+                for _, resource in ipairs(shortageInfo) do
+                    table.insert(messages, string.format("【%s】缺少%d个", resource.displayName, resource.missing))
+                end
+                player:SendHoverText("技能升级失败：" .. table.concat(messages, "，"))
+            end
             return
         end
         player.bag:RemoveItems(cost)

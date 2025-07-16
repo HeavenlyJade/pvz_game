@@ -234,7 +234,7 @@ function AfkSpot:StartSpellTimer(player)
     -- 创建新的定时器
     local timerId = ServerScheduler.add(function()
         self:CastSpells(player)
-    end, 0, self.interval) -- 立即开始，每隔interval秒执行一次
+    end, self.interval, self.interval) -- 立即开始，每隔interval秒执行一次
 
     -- 保存定时器ID
     self.activePlayers[player] = timerId

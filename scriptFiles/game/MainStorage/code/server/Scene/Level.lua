@@ -422,7 +422,7 @@ function Level:Update()
     end
 
     -- 检查当前波次是否结束
-    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 then
+    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 and (#self.allWaves >= 0 or self.remainingMobCount == 0) then
         self:OnWaveEnd()
     end
 

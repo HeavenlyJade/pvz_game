@@ -180,6 +180,8 @@ function QuestCondition:Check(modifier, caster, target)
     
     return false
 end
+---@class QuestStringCondition:Condition
+local QuestStringCondition = ClassMgr.Class("QuestStringCondition", QuestCondition)
 
 ---@class WorldTimeCondition:BetweenCondition
 local WorldTimeCondition = ClassMgr.Class("WorldTimeCondition", BetweenCondition)
@@ -187,6 +189,7 @@ function WorldTimeCondition:Check(modifier, caster, target)
     local Scene = require(MainStorage.code.server.Scene)         ---@type Scene
     return self:CheckAmount(modifier, Scene.worldTime)
 end
+
 
 return {
     Condition = Condition,
@@ -200,5 +203,6 @@ return {
     TagLevelCondition = TagLevelCondition,
     ShieldCondition = ShieldCondition,
     QuestCondition = QuestCondition,
+    QuestStringCondition = QuestStringCondition,
     WorldTimeCondition = WorldTimeCondition
 }
