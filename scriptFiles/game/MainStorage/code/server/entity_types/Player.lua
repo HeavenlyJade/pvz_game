@@ -787,82 +787,136 @@ function _M:LearnSkill(skillType)
     return false
 end
 
--- 修改升级技能函数，添加词条更新
+-- 自动装备技能到合适的槽位
+---@param skillName string 技能名称
+---@return boolean 装备是否成功
+function _M:AutoEquipSkill(skillName)
+    local skill = self.skills[skillName]
+    if not skill then
+        return false
+    end
+    
+    -- 获取技能类型配置
+    local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig)
+    local skillType = SkillTypeConfig.Get(skillName)
+    if not skillType then
+        return false
+    end
+    
+    -- 检查技能是否可装备
+    if not skillType.isEquipable then
+        return false
+    end
+    
+    -- 如果技能已经装备，跳过
+    if skill.equipSlot and skill.equipSlot > 0 then
+        return true
+    end
+    
+    -- 根据技能类型从配置获取槽位范围
+    local common_config = require(MainStorage.code.common.MConfig)
+    local slotsToCheck = {}
+
+    if skillType.category == 0 then
+        -- 主卡技能：从主卡配置获取槽位
+        local mainCardConfig = common_config.EquipmentSlot["主卡"]
+        if mainCardConfig then
+            for slotId, _ in pairs(mainCardConfig) do
+                table.insert(slotsToCheck, slotId)
+            end
+        end
+    elseif skillType.category == 1 then
+        -- 副卡技能：从副卡配置获取槽位
+        local subCardConfig = common_config.EquipmentSlot["副卡"]
+        if subCardConfig then
+            for slotId, _ in pairs(subCardConfig) do
+                table.insert(slotsToCheck, slotId)
+            end
+        end
+    end
+
+    if #slotsToCheck == 0 then
+        return false
+    end
+
+    -- 按槽位ID排序（优先使用较小的槽位）
+    table.sort(slotsToCheck)
+    
+
+    -- 查找第一个空的槽位并装备
+    for _, slotId in ipairs(slotsToCheck) do
+        if not self.equippedSkills[slotId] then
+            
+            -- 使用标准装备方法
+            local success = self:EquipSkill(skillName, slotId)
+            if success then
+                return true
+            else
+                return false
+            end
+        end
+    end
+    
+    return false
+end
+
+-- 修改后的升级技能函数，使用独立的自动装备函数
 function _M:UpgradeSkill(skillType)
     -- 查找玩家是否已拥有该技能
     local foundSkill = self.skills[skillType.name]
-    -- 如果技能不存在
+    
+    -- 如果技能不存在，创建新技能
     if not foundSkill then
-        -- 创建新技能
-        local skillSlot = 0
-
-        -- 根据技能类型从配置获取槽位范围
-        local common_config = require(MainStorage.code.common.MConfig)
-        local slotsToCheck = {}
-
-        if skillType.category == 0 then
-            -- 主卡技能：从主卡配置获取槽位
-            local mainCardConfig = common_config.EquipmentSlot["主卡"]
-            if mainCardConfig then
-                for slotId, _ in pairs(mainCardConfig) do
-                    table.insert(slotsToCheck, slotId)
-                end
-            end
-        elseif skillType.category == 1 then
-            -- 副卡技能：从副卡配置获取槽位
-            local subCardConfig = common_config.EquipmentSlot["副卡"]
-            if subCardConfig then
-                for slotId, _ in pairs(subCardConfig) do
-                    table.insert(slotsToCheck, slotId)
-                end
-            end
-        end
-
-        -- 按槽位ID排序（优先使用较小的槽位）
-        table.sort(slotsToCheck)
-
-        -- 查找第一个空的槽位
-        for _, slotId in ipairs(slotsToCheck) do
-            if not self.equippedSkills[slotId] then
-                skillSlot = slotId
-                break
-            end
-        end
-
+        gg.log("创建新技能:", skillType.name, "类型:", skillType.category)
+        
+        -- 先创建技能对象（不设置槽位）
         local skillId = skillType.name
         self.skills[skillId] = Skill.New(self, {
             skill = skillType.name,
             level = 1,
-            slot = skillSlot,
+            slot = 0,  -- 初始化为未装备状态
             star_level = 0
         })
+        
+        -- 尝试自动装备
+        self:AutoEquipSkill(skillType.name)
+        
+        -- 设置玩家等级和变量
         local levelUpPlayer = skillType:GetLevelUpPlayerAtLevel(1)
         self:SetLevel(self.level + levelUpPlayer)
-        self:saveSkillConfig()
         self:SetVariable("skill_".. skillType.name, 1)
         self:SetVariable("skill_enhance_".. skillType.category, 1)
+        
+        -- 保存配置并刷新属性
+        self:saveSkillConfig()
         self:RefreshStats()
         return true
+    else
+        -- 技能已存在，检查是否可以升级
+        if foundSkill.level >= skillType.maxLevel then
+            gg.log("技能已达最大等级:", skillType.name, "当前等级:", foundSkill.level, "最大等级:", skillType.maxLevel)
+            return false
+        end
+
+        -- 升级技能
+        foundSkill.level = foundSkill.level + 1
+        gg.log("技能升级:", skillType.name, "新等级:", foundSkill.level)
+        
+        local setlevel = foundSkill.skillType:GetLevelUpPlayerAtLevel(foundSkill.level)
+        self:SetLevel(self.level + setlevel)
+        self:SetVariable("skill_".. foundSkill.skillName, foundSkill.level)
+        self:SetVariable("skill_enhance_".. foundSkill.skillType.category, foundSkill.level)
+        
+        -- 如果技能已装备，刷新属性
+        if foundSkill.equipSlot > 0 then
+            self:RefreshStats()
+        end
+
+        -- 保存配置
+        self:saveSkillConfig()
+        return true
     end
-
-    -- 如果技能已存在，检查是否可以升级
-    if foundSkill.level >= skillType.maxLevel then
-        return false
-    end
-
-    -- 升级技能
-    foundSkill.level = foundSkill.level + 1
-    local setlevel = foundSkill.skillType:GetLevelUpPlayerAtLevel(foundSkill.level)
-    self:SetLevel(self.level + setlevel)
-    self:SetVariable("skill_".. foundSkill.skillName, foundSkill.level)
-    self:SetVariable("skill_enhance_".. foundSkill.skillType.category, foundSkill.level)
-    self:RefreshStats()
-
-    -- 保存配置
-    self:saveSkillConfig()
-    return true
 end
-
 --------------------------------------------------
 -- 玩家同步与更新方法
 --------------------------------------------------
