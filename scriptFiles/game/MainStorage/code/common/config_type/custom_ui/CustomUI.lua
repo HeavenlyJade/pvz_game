@@ -63,13 +63,10 @@ end
 
 ---@param player Player
 function CustomUI:S_Open(player)
-    print("S_Open", self.id, self._serverInited)
     if not self._serverInited then
         self._serverInited = true
         local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-        print(self.className, "CustomUIEvent_".. self.id)
         ServerEventManager.Subscribe("CustomUIEvent_".. self.id, function (evt)
-            print("CustomUIEvent_", evt.__func)
             if evt.__func then
                 self[evt.__func](self, evt.player, evt)
             end

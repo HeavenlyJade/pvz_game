@@ -39,6 +39,7 @@ function HudAvatar:OnInit(node, config)
     ClientEventManager.Subscribe("UpdateQuestsData", function(evt)
         local evt = evt ---@type QuestsUpdate
         self.questList:SetElementSize(#evt.quests)
+        self:NavigateTo(nil, "")
         for i, child in ipairs(evt.quests) do
             local ele = self.questList:GetChild(i) ---@cast ele ViewButton
             ele.extraParams = {
@@ -122,13 +123,15 @@ function HudAvatar:NavigateTo(pos, text)
     if not self._pointer then
         self._pointer = MainStorage["特效"]["导航指针"]:Clone() ---@type Model
         self._pointer.Parent = game.WorkSpace
+        self._pointer.Visible = false
+    end
+    if not pos then
+        self._pointer["UIRoot3D"]["导航文本"].Title = ""
+        self._pointer.Visible = false
         if self._pointerUpdateTaskId then
             self._pointerUpdateTaskId:Disconnect()
             self._pointerUpdateTaskId = nil
         end
-    end
-    if not pos then
-        self._pointer.Visible = false
     else
         self._pointer.Visible = true
         if text then

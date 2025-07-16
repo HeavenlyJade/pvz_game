@@ -132,20 +132,17 @@ function LevelSelect:_viewLevelType(levelType)
         local child = self.selectConfirmDropsList:GetChild(i)
         child:SetItem(dropIcon)
     end
-    if not self._joinButton then
-        self._joinButton = selectConfirm:GetButton("确认按钮")
-        self._joinButton.clickCb = function (ui, button)
-            local requeueing = false
-            if self.packet.requeueable then
-                requeueing = toggle.isOn
-            end
-            gg.log("requeueing", requeueing, self.packet.requeueable, toggle.isOn)
-            self:C_SendEvent("onEnterDungeon", {
-                levelType = levelType.levelId,
-                requeueing = requeueing
-            })
-            ui:Close()
+    self._joinButton = selectConfirm:GetButton("确认按钮")
+    self._joinButton.clickCb = function (ui, button)
+        local requeueing = false
+        if self.packet.requeueable then
+            requeueing = toggle.isOn
         end
+        self:C_SendEvent("onEnterDungeon", {
+            levelType = levelType.levelId,
+            requeueing = requeueing
+        })
+        ui:Close()
     end
     self._joinButton:SetTouchEnable(levelInfo.enterable)
 end
@@ -165,6 +162,7 @@ function LevelSelect:C_BuildUI(packet)
     self.levelSelectList = ui:Get("背景/关卡列表", ViewList, function (child, childPath)
         local c = ViewComponent.New(child, ui, childPath)
         c:Get("确认按钮", ViewButton).clickCb = function (ui, button)
+            gg.log("index", c.index)
             self:_viewLevelType(self.levelTypes[c.index])
         end
         return c

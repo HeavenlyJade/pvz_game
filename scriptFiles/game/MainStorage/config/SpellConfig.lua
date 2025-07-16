@@ -384,7 +384,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/kernelpult_豌豆击中.ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 1,
+                ["响度"] = 3,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,
@@ -765,7 +765,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/splat[1~3].ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 1,
+                ["响度"] = 3,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,
@@ -998,7 +998,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/splat[1~3].ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 1,
+                ["响度"] = 3,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,
@@ -1211,7 +1211,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/ignite2_燃烧植物击中.ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 1,
+                ["响度"] = 3,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,
@@ -1435,7 +1435,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/kernelpult2_豌豆击中2.ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 1,
+                ["响度"] = 3,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,
@@ -1615,7 +1615,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/kernelpult2_豌豆击中2.ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 1,
+                ["响度"] = 3,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,
@@ -1806,7 +1806,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/kernelpult2_豌豆击中2.ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 1,
+                ["响度"] = 3,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,
@@ -1986,7 +1986,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/kernelpult2_豌豆击中2.ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 1,
+                ["响度"] = 3,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,
@@ -2166,7 +2166,7 @@ local function LoadConfig()
                 ["_type"] = "SoundGraphic",
                 ["声音资源"] = "sandboxId://soundeffect/kernelpult2_豌豆击中2.ogg",
                 ["绑定实体"] = false,
-                ["响度"] = 1,
+                ["响度"] = 3,
                 ["音调"] = 1,
                 ["距离"] = {
                     600,

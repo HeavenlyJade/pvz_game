@@ -46,6 +46,22 @@ function HudCards:SetFov(fov)
     self.cameraTween:Play()
 end
 
+function HudCards:AutoBattleTick(target)
+    if not target or not target.Position then return false end
+    for slotId, skill in pairs(self.subCardData) do
+        if skill and skill.skillType then
+            local isOnCooldown = self:CheckSkillCooldown(skill)
+            if not isOnCooldown then
+                -- 释放技能，传入目标位置
+                if self:CastSkill(skill, target.Position) then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
 -- 更新冷却显示
 function HudCards:UpdateCooldownDisplay()
     if not self.cardsList then return end
@@ -719,7 +735,8 @@ end
 
 ---释放技能
 ---@param skill Skill 要释放的技能
-function HudCards:CastSkill(skill)
+---@param targetPos? Vector3 目标位置（可选，自动战斗用）
+function HudCards:CastSkill(skill, targetPos)
     if decal then
         decal.Visible = false
     end
@@ -736,15 +753,19 @@ function HudCards:CastSkill(skill)
 
     -- 获取目标位置和方向
     local direction = CameraController.GetForward()
-    local targetPos, targetObj = CameraController.RaytraceScene({1, 2, 3})
+    local finalTargetPos = targetPos
+    if not finalTargetPos then
+        local rayPos, _ = CameraController.RaytraceScene({1, 2, 3})
+        finalTargetPos = rayPos
+    end
 
     -- 检查技能范围
     local indicatorRange = skill.skillType.indicatorRange
-    if indicatorRange and indicatorRange > 0 then
-        local distance = gg.vec.Distance3(targetPos, localPlayer.Position)
+    if indicatorRange and indicatorRange > 0 and finalTargetPos then
+        local distance = gg.vec.Distance3(finalTargetPos, localPlayer.Position)
         if distance > indicatorRange then
-            local direction = (targetPos - localPlayer.Position) / distance
-            targetPos = localPlayer.Position + direction * indicatorRange
+            local dir = (finalTargetPos - localPlayer.Position) / distance
+            finalTargetPos = localPlayer.Position + dir * indicatorRange
         end
     end
 
@@ -755,7 +776,7 @@ function HudCards:CastSkill(skill)
     gg.network_channel:FireServer({
         cmd = "CastSpell",
         skill = skill.skillType.name,
-        targetPos = targetPos,
+        targetPos = finalTargetPos,
         direction = direction
     })
 

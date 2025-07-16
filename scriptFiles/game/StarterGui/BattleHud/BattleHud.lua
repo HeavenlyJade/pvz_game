@@ -232,24 +232,6 @@ function BattleHud:OnEquipSkillCooldownUpdate(data)
     skill.cooldownCache = data.cooldown
 end
 
--- 发送施法事件
----@param skillId string 技能ID
-function BattleHud:SendCastSpellEvent(skillId)
-    local camera = game.WorkSpace.CurrentCamera
-    local direction = CameraController.GetForward()
-    local targetPos, _ = CameraController.RaytraceScene({1, 2, 3})
-    gg.network_channel:FireServer({
-        cmd = "CastSpell",
-        skill = skillId,
-        direction = direction,
-        targetPos = targetPos
-    })
-    localPlayer.Euler = Vector3.New(0, camera.Euler.y + 180, 0)
-    if recoil then
-        self:CalculateRecoil()
-    end
-    lastShotTime = gg.GetTimeStamp()  -- 更新最后射击时间
-end
 -- 抽离开火相关逻辑为函数
 function BattleHud:onFireBegin(vector2)
     local postProcessing = game.WorkSpace["Environment"].PostProcessing
@@ -452,5 +434,86 @@ function BattleHud:PlayWaveApproaching(waveImg)
         end)
     end)
 end
+
+BattleHud.autoBattle = false
+BattleHud.autoBattleTaskId = nil
+
+function BattleHud:ToggleAutoBattle()
+    self.autoBattle = not self.autoBattle
+    if self.autoBattle then
+        self.autoBattleTaskId = ClientScheduler.add(function()
+            self:AutoBattleTick()
+        end, 0, 0.1)
+    else
+        if self.autoBattleTaskId then
+            ClientScheduler.cancel(self.autoBattleTaskId)
+            self.autoBattleTaskId = nil
+        end
+    end
+end
+
+function BattleHud:AutoBattleTick()
+    local myPos = game.Players.LocalPlayer.Character.Position
+    local results = game.WorldService:OverlapSphere(6000, myPos, false, {3})
+    local nearestEnemy = nil
+    local minDist = math.huge
+    for _, v in ipairs(results) do
+        local obj = v.obj
+        if obj and obj.Position then
+            local dist = gg.vec.Distance3(obj.Position, myPos)
+            if dist < minDist then
+                minDist = dist
+                nearestEnemy = obj
+            end
+        end
+    end
+    if not nearestEnemy then return end
+
+    if ViewBase.GetUI("HudCards"):AutoBattleTick(nearestEnemy) then
+        return
+    end
+
+    local skillId = equippedSkills[1]
+    local skill = skills[skillId]
+    local currentTime = gg.GetTimeStamp()
+    local elapsedTime = currentTime - lastCastTime
+    local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
+    -- 如果正在持续施法且冷却结束
+    if remainingTime <= 0 then
+        local rot = gg.Vec3.new(nearestEnemy.Position - myPos):GetRotation()
+        CameraController.RotateTo(rot.x, rot.y)
+        self:SendCastSpellEvent(skillId, nearestEnemy.Position + nearestEnemy.Size / 2)
+    end
+end
+
+function BattleHud:SendCastSpellEvent(skillId, targetPos)
+    local camera = game.WorkSpace.CurrentCamera
+    local direction = CameraController.GetForward()
+    if not targetPos then
+        targetPos = CameraController.RaytraceScene({1, 2, 3})
+    end
+    gg.network_channel:FireServer({
+        cmd = "CastSpell",
+        skill = skillId,
+        direction = direction,
+        targetPos = targetPos
+    })
+    localPlayer.Euler = Vector3.New(0, camera.Euler.y + 180, 0)
+    if recoil then
+        self:CalculateRecoil()
+    end
+    lastShotTime = gg.GetTimeStamp()  -- 更新最后射击时间
+end
+
+ClientEventManager.Subscribe("PressKey", function (evt)
+    if evt.isDown and evt.key == Enum.KeyCode.F6.Value then
+        BattleHud:ToggleAutoBattle()
+        if BattleHud.autoBattle then
+            gg.log("自动战斗已开启")
+        else
+            gg.log("自动战斗已关闭")
+        end
+    end
+end)
 
 return BattleHud.New(script.Parent, uiConfig)

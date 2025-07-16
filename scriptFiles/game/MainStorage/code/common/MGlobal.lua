@@ -1245,7 +1245,7 @@ gg.thread_call = coroutine.work
 ---@return UITextLabel 创建的文本标签
 function gg.createTextLabel(root_, title_)
     local textLabel_ = SandboxNode.new('UITextLabel', root_)
-    textLabel_.Size = Vector2.New(1500, 800)
+    textLabel_.Size = Vector2.New(3000, 800)
     textLabel_.Pivot = Vector2.New(0.5, 0.5)
 
     textLabel_.FontSize = 30

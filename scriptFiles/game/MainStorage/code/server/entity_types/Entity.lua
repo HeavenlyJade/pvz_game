@@ -983,14 +983,27 @@ function _M:setSkillCastTime(skill_uuid_, cast_time_)
 end
 
 -- 展示复活特效
-function _M:showReviveEffect(pos_)
-    local expl = SandboxNode.new('DefaultEffect', self.actor)
-    expl.AssetID = 'sandboxSysId://particles/item_137_red.ent'
+local reviveEffectPool = {}
 
+function _M:showReviveEffect(pos_)
+    local expl
+    -- 取对象池
+    if #reviveEffectPool > 0 then
+        expl = table.remove(reviveEffectPool)
+        expl.Parent = self.actor
+        expl.Visible = true
+        expl.Enabled = true
+    else
+        expl = SandboxNode.new('DefaultEffect', self.actor)
+        expl.AssetID = 'sandboxSysId://particles/item_137_red.ent'
+    end
     expl.Position = Vector3.New(pos_.x, pos_.y, pos_.z)
     expl.LocalScale = Vector3.New(3, 3, 3)
     ServerScheduler.add(function()
-        expl:Destroy()
+        expl.Visible = false
+        expl.Enabled = false
+        expl.Parent = nil
+        table.insert(reviveEffectPool, expl)
     end, 1.5)
 end
 

@@ -617,11 +617,13 @@ function _M:RefreshStats()
         end
     end
 
-    for _, value in pairs(TagTypeConfig.GetAutoEquipTags()) do
-        local level = value:CanAutoEquip(self)
-        if level > 0 then
-            local handler = value:FactoryEquipingTag("AUTOEQUIP-", level)
-            self:AddTagHandler(handler)
+    if TagTypeConfig.autoEquipTag then
+        for _, value in pairs(TagTypeConfig.autoEquipTag) do
+            local level = value:CanAutoEquip(self)
+            if level > 0 then
+                local handler = value:FactoryEquipingTag("AUTOEQUIP-", level)
+                self:AddTagHandler(handler)
+            end
         end
     end
 
@@ -1171,7 +1173,7 @@ function _M:_onVariableChanged(key)
     if self.questKey and self.questKey[key] then
         self:UpdateQuestsData()
     end
-    if TagTypeConfig.autoEquipTagByVars[key] then
+    if TagTypeConfig.autoEquipTagByVars and TagTypeConfig.autoEquipTagByVars[key] then
         for _, value in ipairs(TagTypeConfig.autoEquipTagByVars[key]) do
             local currentTag = self:GetTag(value.id)
             local currentLevel = 0

@@ -109,12 +109,16 @@ local _lastDeltaY = 0
 
 ClientEventManager.Subscribe("UpdateCameraView", function(data)
     if data.x then
-        _rawMouseY = data.x
-        _rawMouseX = data.y + 180
+        CameraController.RotateTo(data.x, data.y)
     end
 end)
 -- 在 CameraController.lua 中，替换 SetActive 函数中的鼠标处理部分：
 local touchCameraId = nil
+
+function CameraController.RotateTo(x, y)
+    _rawMouseY = x
+    _rawMouseX = y + 180
+end
 function CameraController.SetActive(active)
     local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
     _owner = Players.LocalPlayer

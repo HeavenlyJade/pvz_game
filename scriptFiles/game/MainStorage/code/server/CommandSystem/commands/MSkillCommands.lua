@@ -235,11 +235,6 @@ function SkillCommands.afk(params, player)
         player:SendEvent("AfkSpotUpdate", {enter = true})
         player:EnterBattle()
     elseif action == "离开挂机" then
-        -- 如果玩家在关卡中，不执行离开挂机操作
-        if currentLevel and currentLevel.isActive then
-            gg.log("玩家在关卡中，跳过离开挂机操作 - 玩家:", player.name, "关卡:", currentLevel.levelType.levelId)
-            return
-        end
         player:SendEvent("AfkSpotUpdate", {enter = false})
         player:ExitBattle()
     end

@@ -96,6 +96,12 @@ function AfkSpot:OnInit(data, actor)
             player:UpdateNearbyNpcsToClient()
         end
     end)
+
+    self:SubscribeEvent("PlayerLeaveSceneEvent", function (evt)
+        if self.mode ~= "副卡" and evt.player and self.activePlayers[evt.player] then
+            self:OnPlayerExit(evt.player)
+        end
+    end)
 end
 
 --- 副卡的挂机的进度

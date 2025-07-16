@@ -4,6 +4,7 @@
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local json = require(MainStorage.code.common.json)
 
 ---@class TransmitEvent
 local TransmitEvent = {}
@@ -38,19 +39,40 @@ function TransmitEvent.HandlePlayerTeleport(evt)
 
     local Level = require(MainStorage.code.server.Scene.Level)
     local MConfig = require(MainStorage.code.common.MConfig)
+    local AfkSpot = require(MainStorage.code.server.entity_types.AfkSpot) ---@type AfkSpot
 
     local currentLevel = Level.GetCurrentLevel(player)
     if currentLevel and currentLevel.isActive then
         -- 场景一：玩家在关卡中，执行离开关卡的操作
         currentLevel:RemovePlayer(player, false, "脱离卡死")
+        player:ExitBattle()
+        player:SendEvent("AfkSpotUpdate", {enter = false})
         player:SendChatText("已成功将您脱离当前关卡。")
         gg.log("玩家 " .. player.name .. " 在关卡中，已执行离开关卡操作。")
     else
-        -- 场景二：玩家不在关卡中，执行标准的安全点传送
+        -- 场景二：玩家不在关卡中，先处理退出挂机点的逻辑
+        local playerAfkSpot = nil ---@type AfkSpot
+        for _, scene in pairs(gg.server_scene_list) do
+            if scene.npcs then
+                for _, npc in pairs(scene.npcs) do
+                    -- 检查是否为AfkSpot并且玩家在该挂机点的激活列表中
+                    if npc.activePlayers and npc.activePlayers[player] then
+                        playerAfkSpot = npc
+                        break
+                    end
+                end
+            end
+            if playerAfkSpot then break end
+        end
+
+        if playerAfkSpot then
+            gg.log("脱离卡死：找到玩家所在的挂机点 " .. playerAfkSpot.name .. ", 执行离开逻辑。")
+            playerAfkSpot:OnPlayerExit(player)
+        end
+
+        -- 再执行标准的安全点传送
         local teleportPointId = "g0"
         local teleportPath = MConfig.TeleportPoints[teleportPointId]
-        player:SendEvent("AfkSpotUpdate", {enter = false})
-        player:ExitBattle()
         if not teleportPath then
             gg.log("错误: 在MConfig中未找到传送点配置: " .. teleportPointId)
             player:SendChatText("错误: 未找到安全传送点，请联系管理员。")

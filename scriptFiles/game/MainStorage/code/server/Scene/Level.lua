@@ -63,6 +63,9 @@ function Level:OnInit(levelType, scene, index)
     self.mobCount = {} ---@type table<string, number>
     self.waveSpawnedCounts = {} ---@type table<SpawningWave, number>
     self.updateTask = nil ---@type number
+    
+    -- 新增：怪物自动分配目标定时任务
+    self.assignTargetTask = nil ---@type number
 
     -- 怪物相关
     self.activeMobs = {} ---@type table<string, Monster>
@@ -300,6 +303,12 @@ function Level:StartWave()
         })
         player:PlaySound(self.currentWave and self.currentWave.waveSound)
     end
+
+    -- 新一波开始时，取消自动分配目标定时任务
+    if self.assignTargetTask then
+        ServerScheduler.cancel(self.assignTargetTask)
+        self.assignTargetTask = nil
+    end
 end
 
 ---启动更新任务
@@ -413,8 +422,41 @@ function Level:Update()
     end
 
     -- 检查当前波次是否结束
-    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 and self.remainingMobCount == 0 then
+    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 then
         self:OnWaveEnd()
+    end
+
+    -- 检查当前是否为最后一波且所有刷怪波次已完成
+    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 and self.remainingMobCount > 0 then
+        -- 判断是否最后一波
+        if #self.allWaves == 0 and not self.assignTargetTask then
+            -- 启动定时任务，每秒分配目标
+            self.assignTargetTask = ServerScheduler.add(function()
+                -- 只在关卡激活且还有怪物时执行
+                if not self.isActive or not self.currentWave or self.remainingMobCount == 0 then
+                    if self.assignTargetTask then
+                        ServerScheduler.cancel(self.assignTargetTask)
+                        self.assignTargetTask = nil
+                    end
+                    return
+                end
+                -- 收集存活玩家
+                local alivePlayers = {}
+                for _, player in pairs(self.players) do
+                    if not player.isDead then
+                        table.insert(alivePlayers, player)
+                    end
+                end
+                if #alivePlayers == 0 then return end
+                -- 遍历所有怪物，分配目标
+                for _, mob in pairs(self.activeMobs) do
+                    if mob and mob.target == nil then
+                        local randomPlayer = alivePlayers[math.random(1, #alivePlayers)]
+                        mob:SetTarget(randomPlayer)
+                    end
+                end
+            end, 0, 1.0)
+        end
     end
 
     self.timeElapsed = newTimeElapsed
@@ -500,6 +542,12 @@ function Level:End(success)
     if self.updateTask then
         ServerScheduler.cancel(self.updateTask)
         self.updateTask = nil
+    end
+
+    -- 结束关卡时，取消自动分配目标定时任务
+    if self.assignTargetTask then
+        ServerScheduler.cancel(self.assignTargetTask)
+        self.assignTargetTask = nil
     end
 
     -- 处理排名掉落物
