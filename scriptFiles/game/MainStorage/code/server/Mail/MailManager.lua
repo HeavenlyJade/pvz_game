@@ -77,10 +77,7 @@ function MailManager:RegisterNetworkHandlers()
         self:HandleMarkAsRead(event)
     end)
 
-    -- 处理邮件状态更新请求（用于GameSystem邮件提示）
-    ServerEventManager.Subscribe("RequestMailStatusUpdate", function(event)
-        self:HandleMailStatusUpdateRequest(event)
-    end)
+
 
     gg.log("邮件网络消息处理函数注册完成")
 end
@@ -378,9 +375,6 @@ function MailManager:_handleClaimMail( event)
 
             -- 发送成功响应（此时状态已变为CLAIMED）
             self:SendClaimResponse(uin, true, mailId, "分发成功", self.ERROR_CODE.SUCCESS, self.MAIL_STATUS.CLAIMED)
-
-            -- 发送邮件状态更新通知
-            self:SendMailStatusUpdate(uin)
         else
             -- 物品分发失败，理论上需要回滚邮件状态，但目前简化处理
             gg.log("附件分发失败，回滚状态（暂未实现）", player.uin, mailId)
@@ -434,8 +428,6 @@ function MailManager:HandleMarkAsRead(event)
     -- 复用领取附件的响应格式（此时状态已变为READ）
     self:SendClaimResponse(player.uin, true, mailId, "标记已读成功", self.ERROR_CODE.SUCCESS, self.MAIL_STATUS.READ)
     
-    -- 发送状态更新
-    self:SendMailStatusUpdate(player.uin)
 end
 
 --- 处理删除邮件请求（带容错机制）
