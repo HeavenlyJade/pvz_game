@@ -50,7 +50,9 @@ function _M:OnInit(info_)
     self.name = nil
     self.isDestroyed = false
     self:GenerateUUID()
+    self._nameTemplate = ""
     self.isEntity = true
+    self.showHealthBar = false
     self.isPlayer = false
     self.uin = info_.uin
     self.scene = nil ---@type Scene
@@ -649,6 +651,12 @@ end
 function _M:SetHealth(health)
     self.health = health
     self.actor.Health = health
+    if self.hp_bar then
+        self.hp_bar.FillAmount = math.min(1, self.health / self.maxHealth)
+    end
+    if self.hp_bar_text then
+        self.hp_bar_text.Title = string.format("%d/%d", math.ceil(self.health), math.ceil(self.maxHealth))
+    end
 end
 
 --- 添加护盾
@@ -716,6 +724,10 @@ end
 
 function _M:SetLevel(level)
     self.level = level
+    self:SetVariable("level", level)
+    if self.name_level_billboard then
+    self:CreateTitle()
+    end
 end
 
 --- 设置最大生命值
@@ -733,6 +745,12 @@ function _M:SetMaxHealth(amount)
     if self.actor then
         self.actor.MaxHealth = self.maxHealth
         self.actor.Health = self.health
+    end
+    if self.hp_bar then
+        self.hp_bar.FillAmount = math.min(1, self.health / self.maxHealth)
+    end
+    if self.hp_bar_text then
+        self.hp_bar_text.Title = string.format("%d/%d", math.ceil(self.health), math.ceil(self.maxHealth))
     end
 end
 
@@ -811,44 +829,58 @@ function _M:IsNear(loc, dist)
     return gg.vec.DistanceSq3(loc, self:GetPosition()) < dist ^ 2
 end
 
-function _M:createTitle(nameOverride, scale)
+function _M:CreateTitle(nameOverride, scale, barNameOverride)
     scale = scale or 1
     nameOverride = nameOverride or self.name
-    if not self.bb_title then
-        local name_level_billboard = SandboxNode.new('UIBillboard', self.actor)
-        name_level_billboard.Name = 'name_level'
-        name_level_billboard.Billboard = true
-        name_level_billboard.CanCollide = false -- 避免产生物理碰撞
-
-        name_level_billboard.LocalPosition = Vector3.New(0, self.actor.Size.y + 100 / self.actor.LocalScale.y, 0)
-        name_level_billboard.ResolutionLevel = Enum.ResolutionLevel.R4X
-        name_level_billboard.LocalScale = Vector3.New(scale, 0.6 * scale, scale)
-
-        local number_level = gg.createTextLabel(name_level_billboard, nameOverride)
-        number_level.ShadowEnable = true
-        number_level.ShadowOffset = Vector2.New(3, 3)
-        number_level.FontSize = number_level.FontSize / self.actor.LocalScale.y
-
-        if self.isPlayer then
-            number_level.TitleColor = ColorQuad.New(255, 255, 255, 255)
-            number_level.OutlineEnable = true
-            number_level.OutlineColor = ColorQuad.New(0, 0, 0, 255)
-            number_level.OutlineSize = 3
-        else
-            number_level.TitleColor = ColorQuad.New(255, 255, 0, 255)
-            number_level.ShadowColor = ColorQuad.New(0, 0, 0, 255)
+    local name_level_billboard = self.name_level_billboard
+    if not self.name_level_billboard then
+        if self._initedTitle then
+            return
         end
-
+        self._initedTitle = true
+        local number_level = nil
+        local title = MainStorage["特效"]["名字"]
+        if title then
+            if not barNameOverride then
+                barNameOverride = self.className
+            end
+            local template = title[barNameOverride]
+            if not template then
+                template = title["默认"]
+            end
+            if template then
+                name_level_billboard = template:Clone()
+                self.name_level_billboard = name_level_billboard
+                name_level_billboard.Parent = self.actor
+                name_level_billboard.LocalPosition = template.LocalPosition + Vector3.New(0, self.actor.Size.y + 100 / self.actor.LocalScale.y, 0)
+                name_level_billboard.Name = "name_level"
+                number_level = name_level_billboard["名字"]
+                self._nameTemplate = number_level.Title
+            end
+        end
+        
         self.bb_title = number_level
-        self:createHpBar(name_level_billboard)
-    else
-        self.bb_title.Title = nameOverride
+    end
+    if name_level_billboard and name_level_billboard["血条"] then
+        if not self.showHealthBar then
+            name_level_billboard["血条"].Visible = false
+        else
+            name_level_billboard["血条"].Visible = true
+            self.hp_bar = name_level_billboard["血条"]["进度条"]
+            self.hp_bar_text = name_level_billboard["血条"]["生命值"]
+            if self.hp_bar then
+                self.hp_bar.FillAmount = math.min(1, self.health / self.maxHealth)
+            end
+            if self.hp_bar_text then
+                self.hp_bar_text.Title = string.format("%d/%d", math.ceil(self.health), math.ceil(self.maxHealth))
+            end
+        end
+    end
+    if self.bb_title then
+        self.bb_title.Title = gg.ProcessVariables(self._nameTemplate:gsub("<NAME>", nameOverride), self, self)
     end
 end
 
--- 血条
-function _M:createHpBar(root_)
-end
 
 -- 显示伤害飘字，闪避，升级
 function _M:showDamage(number_, eff_, victim)

@@ -159,6 +159,12 @@ function CloudMailDataAccessor:SavePlayerGlobalMailData(uin, data)
     end)
 end
 
+---------------------------
+-- 批量数据获取
+---------------------------
+
+
+
 --- 批量加载玩家邮件数据（个人邮件 + 全服邮件状态）
 --- 一次性获取玩家的个人邮件和全服邮件状态，减少数据库调用
 ---@param uin number 玩家ID

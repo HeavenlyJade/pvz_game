@@ -32,9 +32,9 @@ function SkillType:OnInit(data)
     self.prerequisite = {} ---@type SkillType[]
     self.targetMode = data["目标模式"]
     self.category = data["技能分类"]
-    self.upgradeCosts = data["升级需求素材"]
-    self.oneKeyUpgradeCosts = data["一键强化素材"]
-    self.upgradeStarCosts = data["升星需求素材"]
+    self.upgradeCosts = data["素材_升级需求"]
+    self.oneKeyUpgradeCosts = data["素材_一键强化"]
+    self.upgradeStarCosts = data["素材_升星需求"]
     self.quality = data["技能品级"] or "R"
     self.battleModel = data["更改模型"]
     self.battleAnimator = data["更改动画"]
@@ -327,8 +327,18 @@ function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
     if not self.oneKeyUpgradeCosts then
         return {}
     end
+    local d = self.oneKeyUpgradeCosts[1] ---@type table
+    for i, value in ipairs(self.oneKeyUpgradeCosts) do
+        if value["起始等级"] > level then
+            d = self.oneKeyUpgradeCosts[i-1]
+            break
+        end
+    end
+    if not d or not d["素材"] then
+        return {}
+    end
     local costs = {}
-    for resourceType, costExpr in pairs(self.oneKeyUpgradeCosts) do
+    for resourceType, costExpr in pairs(d["素材"]) do
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = self:_evaluateExpression(expr)
         if result then
@@ -343,8 +353,18 @@ function SkillType:GetCostAtLevel(level)
         return {}
     end
 
+    local d = self.upgradeCosts[1] ---@type table
+    for i, value in ipairs(self.upgradeCosts) do
+        if value["起始等级"] > level then
+            d = self.upgradeCosts[i-1]
+            break
+        end
+    end
+    if not d or not d["素材"] then
+        return {}
+    end
     local costs = {}
-    for resourceType, costExpr in pairs(self.upgradeCosts) do
+    for resourceType, costExpr in pairs(d["素材"]) do
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = self:_evaluateExpression(expr)
         if result then
@@ -359,8 +379,18 @@ function SkillType:GetStarUpgradeCostAtLevel(level)
         return nil
     end
 
+    local d = self.upgradeStarCosts[1] ---@type table
+    for i, value in ipairs(self.upgradeStarCosts) do
+        if value["起始等级"] > level then
+            d = self.upgradeStarCosts[i-1]
+            break
+        end
+    end
+    if not d or not d["素材"] then
+        return {}
+    end
     local costs = {}
-    for resourceType, costExpr in pairs(self.upgradeStarCosts) do
+    for resourceType, costExpr in pairs(d["素材"]) do
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = self:_evaluateExpression(expr)
         if result then

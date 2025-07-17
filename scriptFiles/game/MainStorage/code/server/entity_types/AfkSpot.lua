@@ -12,7 +12,7 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@field spells table 定时释放魔法列表
 ---@field lastCastTime number 上次释放时间
 ---@field activePlayers table<Player, number> 当前激活的玩家及其定时器ID
----@field occupiedByPlayer Player|nil 当前占用的玩家
+---@field owner Player|nil 当前占用的玩家
 ---@field occupiedEntity Actor|nil 占用的实体
 local AfkSpot = ClassMgr.Class("AfkSpot", Npc)
 
@@ -28,8 +28,38 @@ local function GetPlayerAfkCount(player)
     return count
 end
 
-function AfkSpot:createTitle(name)
-    Entity.createTitle(self, name, self.nameSize)
+function AfkSpot:CreateTitle(name)
+    if self.mode == "副卡" then
+        if self.owner then
+            local skill = self.owner.skills[self.selectedSkill]
+            self.name = skill.skillType.name
+            local maxGrowth = skill.skillType:GetMaxGrowthAtLevel(skill.level)
+            local growth = skill.growth
+            self.showHealthBar = true
+            self.maxHealth = maxGrowth
+            self.health = growth
+            self.level = skill.level
+            self:SetVariable("level", skill.level)
+            Entity.CreateTitle(self, name, self.nameSize, "AfkSpot")
+            if not self._titleRankStar and self.name_level_billboard["星级"] then
+                local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
+                self._titleRankStar = ViewList.New(self.name_level_billboard["星级"]["星级"])
+            end
+            self._titleRankStar:SetElementSize(skill.star_level)
+            for key, value in pairs(self.name_level_billboard.Children) do
+                value.Visible = true
+            end
+        else
+            self.showHealthBar = false
+            self.bb_title.Title = ""
+            for key, value in pairs(self.name_level_billboard.Children) do
+                value.Visible = false
+            end
+        end
+    else
+        self.showHealthBar = false
+        Entity.CreateTitle(self, name, self.nameSize)
+    end
 end
 
 function AfkSpot:OnInit(data, actor)
@@ -43,7 +73,6 @@ function AfkSpot:OnInit(data, actor)
     self.growthMultVar = data["额外成长倍率变量"] or nil
     self.lastCastTime = 0
     self.activePlayers = {}
-    self.occupiedByPlayer = nil ---@type Player
     self.selectedSkill = nil ---@type string
     self.occupiedEntity = nil ---@type Actor|nil
 
@@ -54,7 +83,7 @@ function AfkSpot:OnInit(data, actor)
     end)
 
     self:SubscribeEvent("PlayerLeaveGameEvent", function (evt)
-        if evt.player == self.occupiedByPlayer or self.activePlayers[evt.player] then
+        if evt.player == self.owner or self.activePlayers[evt.player] then
             self:OnPlayerExit(evt.player)
         end
     end)
@@ -62,7 +91,7 @@ function AfkSpot:OnInit(data, actor)
     self:SubscribeEvent("AfkSelectSkill", function (evt)
         if evt.npcId == self.uuid then
             local player = evt.player ---@type Player
-            if self.occupiedByPlayer or self.occupiedEntity then
+            if self.owner or self.occupiedEntity then
                 player:SendHoverText("此位置已有别人在挂机,换一个吧!")
                 return
             end
@@ -89,10 +118,10 @@ function AfkSpot:OnInit(data, actor)
                 --     self.occupiedEntity.LocalScale = Vector3.New(selfSize.x / modelSize[1], selfSize.y / modelSize[2], selfSize.z / modelSize[3])
                 -- end)
             end
-            self.occupiedByPlayer = player
+            self.owner = player
             self.selectedSkill = skill.skillType.name
             self:StartSpellTimer(player)
-            self:RefreshTitle()
+            self:CreateTitle()
             player:UpdateNearbyNpcsToClient()
         end
     end)
@@ -104,29 +133,14 @@ function AfkSpot:OnInit(data, actor)
     end)
 end
 
---- 副卡的挂机的进度
-function AfkSpot:RefreshTitle()
-    if self.mode ~= "副卡" or not self.occupiedByPlayer then return end
-    local skill = self.occupiedByPlayer.skills[self.selectedSkill]
-    local maxGrowth = skill.skillType:GetMaxGrowthAtLevel(skill.level)
-    local growth = skill.growth
-    if growth >= maxGrowth then
-        self:createTitle(string.format("%s的%s\n%s级\n进度已满，可升级",
-            self.occupiedByPlayer.name, skill.skillType.displayName, skill.level))
-    else
-        self:createTitle(string.format("%s的%s\n%s级\n进度%s/%s",
-            self.occupiedByPlayer.name, skill.skillType.displayName, skill.level, growth, maxGrowth))
-    end
-end
-
 
 --- 检查是否可以进入挂机点
 ---@param player Player 玩家
 ---@return boolean 是否可以进入
 function AfkSpot:CanEnter(player)
     if self.mode == "副卡" then
-        if self.occupiedByPlayer then
-            return self.occupiedByPlayer == player
+        if self.owner then
+            return self.owner == player
         end
         if GetPlayerAfkCount(player) >= (player:GetVariable("最大副卡挂机数")+1) then
             player:SendHoverText("副卡挂机已达上限!")
@@ -142,8 +156,8 @@ end
 ---@param player Player 玩家
 function AfkSpot:OnPlayerEnter(player)
     if self.mode == "副卡" then
-        if self.occupiedByPlayer then
-            if self.occupiedByPlayer == player then
+        if self.owner then
+            if self.owner == player then
                 self:OnPlayerExit(player)
             end
         else
@@ -162,7 +176,7 @@ function AfkSpot:OnPlayerEnter(player)
         if self.enterCommands then
             player:ExecuteCommands(self.enterCommands)
         end
-        self.occupiedByPlayer = nil -- 非副卡模式下始终为nil
+        self.owner = nil -- 非副卡模式下始终为nil
         player:SetMoveable(false)
         self:StartSpellTimer(player)
     end
@@ -171,10 +185,10 @@ end
 ---@param player Player
 function AfkSpot:GetInteractName(player)
     if self.mode == "副卡" then
-        if self.occupiedByPlayer then
+        if self.owner then
             --已有玩家在挂机
-            if player == self.occupiedByPlayer then
-                local skill = self.occupiedByPlayer.skills[self.selectedSkill]
+            if player == self.owner then
+                local skill = self.owner.skills[self.selectedSkill]
                 return string.format("取消:%s", skill.skillType.displayName)
             else
                 return nil
@@ -201,18 +215,18 @@ function AfkSpot:OnPlayerExit(player)
         self.activePlayers[player] = nil
 
         -- 如果退出的玩家是占用了该位置的玩家（副卡模式），则清理占用状态
-        if self.occupiedByPlayer == player then
-            local skill = self.occupiedByPlayer.skills[self.selectedSkill]
+        if self.owner == player then
+            local skill = self.owner.skills[self.selectedSkill]
             if skill then
                 skill.afking = false
             end
-            self.occupiedByPlayer = nil
+            self.owner = nil
 
             if self.occupiedEntity then
                 self.occupiedEntity:Destroy()
                 self.occupiedEntity = nil
             end
-            self:createTitle("")
+            self:CreateTitle("")
             player:UpdateNearbyNpcsToClient()
         end
 
@@ -244,24 +258,31 @@ end
 ---@param player Player 玩家
 function AfkSpot:CastSpells(player)
     if self.mode == "副卡" then
-        if not self.occupiedByPlayer or self.occupiedByPlayer.isDestroyed then
-            if self.occupiedByPlayer then
-                self:OnPlayerExit(self.occupiedByPlayer)
+        if not self.owner or self.owner.isDestroyed then
+            if self.owner then
+                self:OnPlayerExit(self.owner)
             end
             return
         end
-        local skill = self.occupiedByPlayer.skills[self.selectedSkill]
+        local skill = self.owner.skills[self.selectedSkill]
         if skill.equipSlot == 0 then
-            self:OnPlayerExit(self.occupiedByPlayer)
+            self:OnPlayerExit(self.owner)
+            return
+        end
+        local maxGrowth = skill.skillType:GetMaxGrowthAtLevel(skill.level)
+        if skill.growth >= maxGrowth and player:GetVariable("成长可溢出") == 0 then
             return
         end
         local mult = 0
         if self.growthMultVar then
-            mult = self.occupiedByPlayer:GetVariable(self.growthMultVar)
+            mult = self.owner:GetVariable(self.growthMultVar)
         end
         local amount = (1+mult) * self.growthPerSecond
-        skill.growth = amount + skill.growth
-        self:RefreshTitle()
+        skill.growth = amount + skill.growth 
+        if player:GetVariable("成长可溢出") == 0 then
+            skill.growth = math.min(skill.growth, maxGrowth)
+        end
+        self:CreateTitle()
         
         if player:IsNear(self:GetPosition(), 1000) then
             local loc = self:GetPosition()
@@ -270,7 +291,7 @@ function AfkSpot:CastSpells(player)
                 text = "+"..tostring(amount)
             })
             local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
-            self.occupiedByPlayer:SendEvent(SkillEventConfig.RESPONSE.SET_LEVEL, {
+            self.owner:SendEvent(SkillEventConfig.RESPONSE.SET_LEVEL, {
                 data = {
                     skillName = skill.skillName,
                     level = skill.level,
@@ -281,7 +302,7 @@ function AfkSpot:CastSpells(player)
             })
         end
     else
-        self.occupiedByPlayer = nil -- 非副卡模式下始终为nil
+        self.owner = nil -- 非副卡模式下始终为nil
         player:ExecuteCommands(self.periodicCommands)
     end
 end

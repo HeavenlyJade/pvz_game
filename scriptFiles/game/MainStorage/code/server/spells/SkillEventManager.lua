@@ -278,6 +278,9 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         end
         player.bag:RemoveItems(cost)
     end
+    if existingSkill then
+        existingSkill.growth = math.max(0, existingSkill.growth - existingSkill.skillType:GetMaxGrowthAtLevel(existingSkill.level))
+    end
     -- 执行技能升级
     local success = player:UpgradeSkill(skillType)
     if not success then
@@ -286,11 +289,6 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         return
     end
     local upgradedSkill = player.skills[skillName]
-    -- 新增：如果是副卡，升级后重置强化进度
-    if skillType.category == 1 then
-        upgradedSkill.growth = 0
-        gg.log("副卡升级后，重置强化进度为0: " .. skillName)
-    end
     player:saveSkillConfig()
     player.bag:SyncToClient()
     gg.log("技能升级成功", skillName, "新等级:", upgradedSkill.level, "装备槽:", upgradedSkill.equipSlot)
@@ -875,9 +873,9 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
 
     -- 检查是否配置了升星需求素材
     local starCosts = skillType:GetStarUpgradeCostAtLevel(existingSkill.level)
-    if not starCosts then
-        gg.log("该技能未配置升星需求素材:", skillName)
-        player:SendHoverText("升星失败：该技能不支持升星")
+    if not starCosts or not next(starCosts) then
+        gg.log("该技能未配置升星需求素材 (nil 或空表):", skillName,starCosts)
+        player:SendHoverText("升星失败：该技能未配置升星需求")
         return
     end
 

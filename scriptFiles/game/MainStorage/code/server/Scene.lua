@@ -141,11 +141,9 @@ end
 ---初始化场景中的挂机点
 function _M:initAfkSpots()
     local all_afk_spots = AfkSpotConfig.GetAll()
-    gg.log("初始化挂机点", all_afk_spots)
     for afk_name, afk_data in pairs(all_afk_spots) do
         if afk_data["场景"] == self.name then
             local sceneNode = self.node["挂机点"]
-            gg.log("初始化挂机点：", afk_name, "场景：", afk_data["场景"], "节点名：", afk_data["节点名"])
             if not sceneNode then
                 gg.log("错误：场景中没有挂机点节点容器")
             else
@@ -164,13 +162,11 @@ function _M:initAfkSpots()
                         end
                         gg.log("可用的挂机点节点：", table.concat(children, ", "))
                     else
-                        gg.log("找到挂机点节点：", afk_name, "节点类型：", actor.ClassName, "节点名：", actor.Name)
                         local afk_spot = AfkSpot.New(afk_data, actor)
                         afk_spot.scene = self
                         self.uuid2Entity[actor] = afk_spot
                         self.npcs[afk_spot.uuid] = afk_spot
                         afk_spot:ChangeScene(self)
-                        gg.log("挂机点创建成功：", afk_name, "UUID：", afk_spot.uuid)
                     end
                 end
             end
@@ -180,7 +176,6 @@ function _M:initAfkSpots()
     for afk_name, afk_data in pairs(all_afk_spots) do
         if afk_data["场景"] == self.name then
             local sceneNode = self.node["挂机点"]
-            gg.log("初始化触发挂机点：", afk_name, "场景：", afk_data["场景"], "节点名：", afk_data["节点名"])
             if not sceneNode then
                 gg.log("错误：场景中没有挂机点节点容器")
             else
@@ -198,13 +193,11 @@ function _M:initAfkSpots()
                         end
                         gg.log("可用的挂机点节点：", table.concat(children, ", "))
                     else
-                        gg.log("找到挂机点节点：", afk_name, "节点类型：", actor.ClassName, "节点名：", actor.Name)
                         local afk_spot = TriggerZone.New(afk_data, actor)
                         afk_spot.scene = self
                         self.uuid2Entity[actor] = afk_spot
                         self.npcs[afk_spot.uuid] = afk_spot
                         afk_spot:ChangeScene(self)
-                        gg.log("触发挂机点创建成功：", afk_name, "UUID：", afk_spot.uuid)
                     end
                 end
             end

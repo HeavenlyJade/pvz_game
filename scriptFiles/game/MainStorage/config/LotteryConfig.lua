@@ -98,8 +98,8 @@ local function LoadConfig()
             {
                 ["itemType"] = "阳光",
                 ["weight"] = 20,
-                ["itemCountMin"] = 100,
-                ["itemCountMax"] = 1000
+                ["itemCountMin"] = 500,
+                ["itemCountMax"] = 5000
             }
         },
         ["稀有品级"] = {

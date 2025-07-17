@@ -45,9 +45,7 @@ function Level:OnInit(levelType, scene, index)
 
     -- 运行时状态
     self.players = {} ---@type table<string, Player>
-    self.playerCount = 0 ---@type number
     self.playerOriginalPositions = {} ---@type table<string, {position:Vector3, euler:Vector3}>
-    self.isActive = false
     self.startTime = 0
     self.endTime = 0
     self.currentStars = 0
@@ -77,9 +75,8 @@ function Level:OnInit(levelType, scene, index)
 
     -- 监听怪物死亡事件
     ServerEventManager.Subscribe("MobDeadEvent", function(data)
-        if self.isActive and data.mob and self.activeMobs[data.mob.uuid] then
+        if self:IsActive() and data.mob and self.activeMobs[data.mob.uuid] then
 
-            -- 减少剩余怪物数量
             self.remainingMobCount = math.max(0, self.remainingMobCount - 1)
 
             -- 计算并同步剩余怪物百分比
@@ -164,7 +161,7 @@ function Level:OnInit(levelType, scene, index)
 
     -- 监听玩家死亡事件
     ServerEventManager.Subscribe("PlayerDeadEvent", function(data)
-        if self.isActive and data.player and self.players[data.player.uin] then
+        if self:IsActive() and data.player and self.players[data.player.uin] then
 
             -- 播放失败音效
             if self.levelType.loseSound then
@@ -205,10 +202,9 @@ end
 
 ---开始关卡
 function Level:Start()
-    if self.isActive then
+    if self:IsActive() then
         return
     end
-    self.isActive = true
     self.startTime = os.time()
     self.currentStars = 0
 
@@ -275,9 +271,9 @@ function Level:StartWave()
 
     -- 计算当前波次的怪物总数，考虑玩家数量倍率
     local baseMobCount = self.currentWave:CalculateMobCount()
-    local multiplier = self.levelType:GetScaledMultiplier(1, self.playerCount)
+    local multiplier = self.levelType:GetScaledMultiplier(1, self:GetPlayerCount())
     self.currentWaveMobCount = math.floor(baseMobCount * multiplier)
-    self.remainingMobCount = self.currentWaveMobCount
+    self.remainingMobCount = self.remainingMobCount + self.currentWaveMobCount
 
 
     -- 初始化未开始的刷怪波次
@@ -322,9 +318,14 @@ function Level:StartUpdateTask()
     end, 0, 1.0) -- 立即开始，每秒执行一次
 end
 
+function Level:IsActive()
+    -- 只要 updateTask 存在且 currentWave 不为 nil，认为关卡活跃
+    return self.updateTask ~= nil and self.currentWave ~= nil
+end
+
 ---更新关卡状态
 function Level:Update()
-    if not self.isActive or not self.currentWave then return end
+    if not self:IsActive() or not self.currentWave then return end
 
     -- 检查是否还有存活的玩家
     local alivePlayerCount = 0
@@ -397,7 +398,7 @@ function Level:Update()
             end
 
             for attrName, baseMultiplier in pairs(self.levelType.playerAttributeMultiplier) do
-                local mult = baseMultiplier * (self.playerCount - 1)
+                local mult = baseMultiplier * (self:GetPlayerCount() - 1)
                 mob:AddStat(attrName, mult * mob:GetStat(attrName), "BASE", true)
             end
 
@@ -422,8 +423,11 @@ function Level:Update()
     end
 
     -- 检查当前波次是否结束
-    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 and (#self.allWaves >= 0 or self.remainingMobCount == 0) then
-        self:OnWaveEnd()
+    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 then
+        gg.log("self.allWaves", #self.allWaves, self.remainingMobCount)
+        if (#self.allWaves > 0 or self.remainingMobCount == 0) then
+            self:OnWaveEnd()
+        end
     end
 
     -- 检查当前是否为最后一波且所有刷怪波次已完成
@@ -433,7 +437,7 @@ function Level:Update()
             -- 启动定时任务，每秒分配目标
             self.assignTargetTask = ServerScheduler.add(function()
                 -- 只在关卡激活且还有怪物时执行
-                if not self.isActive or not self.currentWave or self.remainingMobCount == 0 then
+                if not self:IsActive() or not self.currentWave or self.remainingMobCount == 0 then
                     if self.assignTargetTask then
                         ServerScheduler.cancel(self.assignTargetTask)
                         self.assignTargetTask = nil
@@ -484,12 +488,11 @@ end
 
 ---清理场景
 function Level:Cleanup()
-    -- 正确计算activeMobs数量
+    print(debug.traceback("Cleanup"))
     local activeMobCount = 0
     for _ in pairs(self.activeMobs) do
         activeMobCount = activeMobCount + 1
     end
-    self.isActive = false
     self.startTime = 0
     self.endTime = 0
     self.currentStars = 0
@@ -530,10 +533,9 @@ end
 ---@param success boolean 是否成功完成
 function Level:End(success)
 
-    if not self.isActive then
+    if not self:IsActive() then
         return
     end
-    self.isActive = false
     self.endTime = os.time()
 
     -- 从活跃关卡列表中移除
@@ -646,7 +648,7 @@ end
 ---添加玩家
 ---@param player Player
 function Level:AddPlayer(player)
-    if self.playerCount >= self.levelType.maxPlayers then
+    if self:GetPlayerCount() >= self.levelType.maxPlayers then
         return false
     end
     -- 如果玩家已在关卡则不重复添加
@@ -654,7 +656,6 @@ function Level:AddPlayer(player)
         return true
     end
     self.players[player.uin] = player
-    self.playerCount = self.playerCount + 1
 
     -- 保存玩家原始位置
     if player.actor then
@@ -681,7 +682,7 @@ function Level:AddPlayer(player)
     end
 
     -- 获取进入点位置
-    local playerIndex = self.playerCount
+    local playerIndex = self:GetPlayerCount()
     local entryPoint = self.entries[playerIndex]
     if not entryPoint then
         playerIndex = 1
@@ -701,6 +702,8 @@ function Level:AddPlayer(player)
         local oldGrav = player.actor.Gravity
         if oldGrav > 0 then
             player.actor.Gravity = 0
+            player.actor.Movespeed = 0
+            player.actor.JumpBaseSpeed = 0
             ServerScheduler.add(function ()
                 if currentPlayer.actor then
                     currentPlayer.actor.Gravity = oldGrav
@@ -709,7 +712,7 @@ function Level:AddPlayer(player)
         end
         ServerScheduler.add(function ()
             currentPlayer._levelTeleporting = nil
-            if not self.isActive then return end
+            if not self:IsActive() then return end
             if not self.players[currentUin] then return end
             if currentPlayer.actor then
                 currentPlayer.actor.Position = currentEntryPoint.Position
@@ -754,7 +757,6 @@ function Level:RemovePlayer(player, success, reason)
                 end
             end
         end
-        self.playerCount = math.max(0, self.playerCount - 1)
         player:ResetTempSkill()
 
         local originalPos = self.playerOriginalPositions[player.uin]
@@ -781,7 +783,7 @@ function Level:RemovePlayer(player, success, reason)
         player:ExitBattle()
     end
 
-    if self.playerCount == 0 then
+    if self:GetPlayerCount() == 0 then
         self:End(false)
     end
 end
@@ -804,7 +806,7 @@ end
 
 ---暂停关卡
 function Level:Pause()
-    if not self.isActive then return end
+    if not self:IsActive() then return end
 
     -- 取消更新任务
     if self.updateTask then
@@ -823,7 +825,7 @@ end
 
 ---恢复关卡
 function Level:Resume()
-    if not self.isActive then return end
+    if not self:IsActive() then return end
 
     -- 计算暂停时长
     local pauseDuration = os.time() - (self.pauseTime or os.time())
@@ -839,6 +841,12 @@ function Level:Resume()
     for _, player in pairs(self.players) do
         player:SendChatText("关卡已继续")
     end
+end
+
+function Level:GetPlayerCount()
+    local count = 0
+    for _, _ in pairs(self.players) do count = count + 1 end
+    return count
 end
 
 return Level

@@ -8,7 +8,6 @@ local localPlayer = game.Players.LocalPlayer
 if not gg.opUin[localPlayer.UserId] then
     commandInput.Visible = false
     uiImage.Visible = false
-    return
 else
     commandInput.Visible = true
     uiImage.Visible = true

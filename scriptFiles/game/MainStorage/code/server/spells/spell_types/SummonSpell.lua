@@ -288,9 +288,9 @@ function SummonSpell:CastReal(caster, target, param)
         summoned.actor.Rotation = casterRot
         summoned:SetOwner(caster)
         self:AddSummon(caster, summoned)
-        caster:TriggerTags("召唤时", summoned, param, summoned)
         -- 应用额外召唤物属性
         self:ApplyExtraAttributes(caster, summoned, param.power)
+        caster:TriggerTags("召唤时", summoned, param, summoned)
         -- 打印召唤物属性
         if self.printInfo then
             printSummonedStats(summoned)

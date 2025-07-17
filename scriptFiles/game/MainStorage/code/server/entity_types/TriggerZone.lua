@@ -167,7 +167,7 @@ _M.GenerateUUID = function(self)
     self.uuid = gg.create_uuid('u_Zone')
 end
 
-function _M:createTitle()
+function _M:CreateTitle()
 end
 
 ---更新NPC状态

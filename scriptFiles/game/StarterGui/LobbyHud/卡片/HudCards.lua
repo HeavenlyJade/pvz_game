@@ -189,8 +189,7 @@ function HudCards:SetSubCardQualityIcons(cardButton, skillType)
     if not cardNode then return end
 
     local quality = skillType.quality or "N"  -- 默认为N品质
-    
-    gg.log(string.format("--- [HudCards] SetSubCardQualityIcons for Node: %s, Quality: %s ---", cardButton.node.Name, quality))
+
 
     -- === 设置主节点的品质图标 ===
     -- 如果是ViewButton，直接使用ViewButton的方法

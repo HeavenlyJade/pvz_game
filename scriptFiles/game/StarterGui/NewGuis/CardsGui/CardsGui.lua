@@ -446,7 +446,8 @@ function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
         self:_setButtonVisible(self.SubcardAllEnhancementButton, showUpgrade and shouldShowUpgradeAllButton, true)
         -- 升星按钮：未满星且配置了升星素材时显示
         local showUpgradeStar = currentStar < maxStar
-        local hasStarUpgradeCosts = skill:GetStarUpgradeCostAtLevel(skillLevel) ~= nil
+        local starCosts = skill:GetStarUpgradeCostAtLevel(skillLevel)
+        local hasStarUpgradeCosts = starCosts and next(starCosts) -- 检查返回的是否为非空表
         self:_setButtonVisible(self.SubcardUpgradeStarButton, showUpgradeStar and hasStarUpgradeCosts, true)
 
         -- 装备/卸下按钮：只有可装备的技能才显示
@@ -933,7 +934,7 @@ function CardsGui:RegisterMainCardFunctionButtons()
             end
 
             local starCosts = skillType:GetStarUpgradeCostAtLevel(serverSkill.level)
-            if not starCosts then
+            if not starCosts or not next(starCosts) then
                 gg.log("该技能未配置升星需求素材:", skillName)
                 return
             end
@@ -1077,7 +1078,6 @@ end
 
 --- 处理技能学习/升级响应
 function CardsGui:OnSkillLearnUpgradeResponse(response)
-    gg.log("OnSkillLearnUpgradeResponse", response)
     local data = response.data
     local skillName = data.skillName
     local serverlevel = data.level
@@ -1822,7 +1822,6 @@ function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
     local severSkill = self.ServerSkills[skill.name]
     local skillLevel = severSkill and severSkill.level or 0
     local star_level = severSkill and severSkill.star_level or 0
-    local growth = severSkill and severSkill.growth or 0
 
     -- 使用工具函数设置等级
     cardFrame["强化等级"].Title = "强化等级:" .. skillLevel
@@ -1956,12 +1955,7 @@ function CardsGui:UpdateSubCardProgressInAttributePanel(attributePanel, skill, g
 
     -- 当前经验直接用于进度计算: 当前经验/当前等级最大经验
     local currentLevelProgress = growth
-    if currentLevelProgress > maxGrowthThisLevel then
-        currentLevelProgress = maxGrowthThisLevel
-    end
-
-    -- 计算进度百分比: 当前经验/当前等级最大经验
-    local progressPercent = currentLevelProgress / maxGrowthThisLevel
+    local progressPercent = math.min(1, currentLevelProgress / maxGrowthThisLevel)
 
     -- 更新进度条 - 使用FillAmount，不修改节点大小
     if progressBar then
@@ -2993,6 +2987,7 @@ end
 -- === 背包库存处理方法 ===
 -- 处理背包库存同步事件
 function CardsGui:HandleInventorySync(data)
+    -- gg.log("背包库存同步",data)
     if not data then
         return
     end
@@ -3000,44 +2995,35 @@ function CardsGui:HandleInventorySync(data)
     local items = data.items or {}
     local moneys = data.moneys or {}
 
-    -- 创建整合后的库存数据
-    local inventory = {}
+    -- 如果是首次加载（self.playerInventory为空），则进行初始化
+    if not self.playerInventory then
+        self.playerInventory = {}
+    end
 
-    -- 处理普通物品数据
+    -- 创建一个临时的、基于物品名称的库存快照，用于聚合服务器发来的数据
+    local newInventorySnapshot = {}
+
+    -- 首先，处理普通物品数据
     for slot, itemData in pairs(items) do
         if itemData and itemData.itype and itemData.amount then
             local itemName = itemData.itype
             local amount = itemData.amount or 0
-
-            -- 如果物品已存在，累加数量
-            if inventory[itemName] then
-                inventory[itemName] = inventory[itemName] + amount
-            else
-                inventory[itemName] = amount
-            end
+            -- 在快照中累加数量
+            newInventorySnapshot[itemName] = (newInventorySnapshot[itemName] or 0) + amount
         end
     end
-
-    -- 处理货币数据
+    for itemName, totalAmount in pairs(newInventorySnapshot) do
+        self.playerInventory[itemName] = totalAmount
+    end
     for _, moneyData in ipairs(moneys) do
         if moneyData and moneyData.it and moneyData.a then
             local moneyName = moneyData.it
             local amount = moneyData.a or 0
-
-            -- 货币直接设置（不累加，因为货币数据本身就是总数）
-            inventory[moneyName] = amount
+            -- 直接覆盖总金额
+            self.playerInventory[moneyName] = amount
         end
     end
 
-    -- 保存到本地库存数据中
-    self.playerInventory = inventory
-
-
-    -- 打印整合后的库存数据
-    local sortedItems = {}
-    for itemName, amount in pairs(inventory) do
-        table.insert(sortedItems, {name = itemName, amount = amount})
-    end
 end
 
 

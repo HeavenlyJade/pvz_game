@@ -41,6 +41,7 @@ game:GetService("PhysXService"):SetCollideInfo(2, 2, false)
 function _M:OnInit(info_)
     -- 设置怪物类型和等级
     self.mobType = info_.mobType ---@type MobType
+    self.showHealthBar = self.mobType.data["显示血条"]
     self.level = info_.level or self.mobType.data["基础等级"] or 1
 
     for statName, _ in pairs(self.mobType.data["属性公式"]) do
@@ -142,8 +143,11 @@ function _M:CreateModel(scene)
 
     -- 加载完成事件处理
     actor_monster.LoadFinish:connect(function(ret)
-        -- 创建头顶标题
-        self:createTitle()
+        local barNameOverride = self.className
+        if self.owner then
+            barNameOverride = "Minion"
+        end
+        self:CreateTitle(nil, nil, barNameOverride)
     end)
     self:SetHealth(self:GetStat("生命"))
     if self.mobType.data["状态机"] then
@@ -256,10 +260,6 @@ function _M:Hurt(amount, damager, isCrit)
     if not self.target then
         self:SetTarget(damager)
     end
-    -- 更新血条
-    if self.hp_bar then
-        self.hp_bar.FillAmount = self.health / self.maxHealth
-    end
 end
 
 --------------------------------------------------
@@ -293,38 +293,6 @@ function _M:spawnRandomPos(rangeX, rangeY, rangeZ)
         self.spawnPos.z + randomOffset.z)
 end
 
----@override
-function _M:createHpBar(root_)
-    if self.mobType.data["显示血条"] then
-        local bg_ = SandboxNode.new("UIImage", root_)
-        local bar_ = SandboxNode.new("UIImage", root_)
-
-        bg_.Name = 'spell_bg'
-        bar_.Name = 'spell_bar'
-
-        bg_.Icon = "RainbowId&filetype=5://246821862532780032"
-        bar_.Icon = "RainbowId&filetype=5://246821862532780032"
-
-        bg_.FillColor = ColorQuad.New(255, 255, 255, 255)
-        bar_.FillColor = ColorQuad.New(255, 0, 0, 255)
-
-        bg_.LayoutHRelation = Enum.LayoutHRelation.Middle
-        bg_.LayoutVRelation = Enum.LayoutVRelation.Bottom
-
-        bar_.LayoutHRelation = Enum.LayoutHRelation.Middle
-        bar_.LayoutVRelation = Enum.LayoutVRelation.Bottom
-
-        bg_.Size = Vector2.New(330, 28)
-        bar_.Size = Vector2.New(330, 28)
-
-        bg_.Pivot = Vector2.New(0.5, -1.5)
-        bar_.Pivot = Vector2.New(0.5, -1.5)
-
-        bar_.FillMethod = Enum.FillMethod.Horizontal
-        bar_.FillAmount = 1
-        self.hp_bar = bar_
-    end
-end
 
 -- 主更新函数
 function _M:update_monster()

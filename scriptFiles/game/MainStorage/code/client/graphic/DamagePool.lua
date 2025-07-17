@@ -87,7 +87,6 @@ local function ShowDamage(node, amount, isCrit, position)
     -- 将数字转换为字符串
     local amountStr = tostring(math.floor(amount))
     local digitCount = #amountStr
-    print("ShowDamage", amount, amountStr, digitCount)
     
     -- 计算起始位置，使数字居中显示
     local startIndex = math.floor((5 - digitCount) / 2) + 1

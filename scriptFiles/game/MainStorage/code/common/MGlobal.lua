@@ -457,6 +457,13 @@ function gg.ProcessVariables(formula, caster, target)
         if realVarName == "NAME" then
             return useCaster.name
         end
+        if realVarName == "OWNER" then
+            if useCaster.owner then
+                return useCaster.owner.name
+            else
+                return ""
+            end
+        end
         local value
         value = useCaster and useCaster:GetVariable(realVarName) or nil
         return tostring(value)

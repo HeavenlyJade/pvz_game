@@ -148,22 +148,46 @@ function ShopGui:C_BuildUI(packet)
         self:_UpdateCard(self.goodsList:GetChild(index), shopGood, packet.shopGoods[shopGoodId])
         index = index+1
     end
-    
-    -- 优先显示当前记录的物品，如果没有则显示第一个
-    if self.currentDisplayGood and self.shopGoods[self.currentDisplayGood.name] then
-        self:_ShowGood(self.currentDisplayGood)
-    else
-        -- 显示第一个物品
-        local firstGood = nil
-        for privilegeType, shopGood in pairs(self.shopGoods) do
-            firstGood = shopGood
+    local show_money_item = false
+    for i = 1, 4 do
+        if _G['商城点击_货币' .. i] then
+            show_money_item = true
+            _G['商城点击_货币' .. i] = false
+            print('触发事件:' .. '商城点击_货币' .. i)
+            if i == 1 then
+                self:_ShowGood(ShopGoodConfig.Get("新手大礼包"))
+            elseif i == 2 then
+                self:_ShowGood(ShopGoodConfig.Get("新手大礼包"))
+            elseif i == 3 then
+                self:_ShowGood(ShopGoodConfig.Get("能量豆补给包"))
+            elseif i == 4 then
+                self:_ShowGood(ShopGoodConfig.Get("水晶x10"))
+            end
             break
         end
-        if firstGood then
-            self:_ShowGood(firstGood)
+    end
+    if show_money_item then
+        -- 优先显示当前记录的物品，如果没有则显示第一个
+        if self.currentDisplayGood and self.shopGoods[self.currentDisplayGood.name] then
+            self:_ShowGood(self.currentDisplayGood)
+        else
+            -- 显示第一个物品
+            local firstGood = nil
+            for privilegeType, shopGood in pairs(self.shopGoods) do
+                firstGood = shopGood
+                break
+            end
+            if firstGood then
+                self:_ShowGood(firstGood)
+            end
         end
     end
     self.view:Open()
+    for i = 1, 4 do
+        if _G['商城点击_货币' .. i] then
+            _G['商城点击_货币' .. i] = false
+        end
+    end
 end
 
 

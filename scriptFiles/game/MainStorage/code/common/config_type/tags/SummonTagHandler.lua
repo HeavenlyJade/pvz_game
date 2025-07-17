@@ -106,7 +106,10 @@ function SummonTag:TriggerReal(caster, target, castParam, param, log)
             end
         end
     end
-    
+    monster.level = castParam.power
+    monster:SetLevel(castParam.power)
+    -- local StatCommand = require(MainStorage.code.server.CommandSystem.commands.StatCommand)   ---@type StatCommand
+    -- gg.log("castParam", castParam.power, monster.level, StatCommand.showStat({}, monster))
     return true
 end
 

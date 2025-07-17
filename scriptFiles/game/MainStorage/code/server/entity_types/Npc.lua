@@ -43,7 +43,7 @@ function _M:OnInit(npcData, actor)
             self:SetAnimationController(npcData["状态机"])
         end
         npcSize = actor.Size
-        self:createTitle()
+        self:CreateTitle()
     end
     local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox
     trigger.LocalPosition = Vector3.New(0,0,0)
@@ -107,8 +107,8 @@ function _M:SetTarget(target)
     self.target = target
 end
 
-function _M:createTitle(name)
-    Entity.createTitle(self, self.displayName, self.nameSize)
+function _M:CreateTitle(name)
+    Entity.CreateTitle(self, self.displayName, self.nameSize)
 end
 
 ---更新NPC状态

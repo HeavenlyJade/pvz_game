@@ -21,7 +21,7 @@ function ViewComponent:OnInit(node, ui, path)
     self.defaultRotation = self.node.Rotation
     self.ui = ui ---@type ViewBase
     self.index = 0
-    self.path = path
+    self.path = path or ""
     self.extraParams = {} -- 可在此存储任意与该按钮相关的数据
 end
 

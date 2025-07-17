@@ -54,8 +54,27 @@ end
 function OnMoneyClick(ui, viewButton)
 end
 
+function HudMoney:RegisterEventFunction()
+    for i = 1, 4 do
+        local button = self["moneyButton_" .. i]
+        if button then
+            button.clickCb = function(ui, button)
+                _G['商城点击_货币' .. i] = true
+                --       _G['商城点击_货币' .. i] = true
+                ClientEventManager.SendToServer("ClickMenu", {
+                    menu = "商城购买_货币" .. i
+                })
+            end
+        end
+    end
+end
+
 function HudMoney:OnInit(node, config)
     gg.log("菜单按钮HudMoney初始化")
+    for i = 1, 4 do
+        self["moneyButton_" .. i] = self:Get("货币/货币/货币_" .. i, ViewButton) ---@type ViewButton
+    end
+    self:RegisterEventFunction()
     self.selectingCard = 0
     -- 初始化对象池
     MoneyAddPool.template = self:Get("货币增加").node ---@type UITextLabel

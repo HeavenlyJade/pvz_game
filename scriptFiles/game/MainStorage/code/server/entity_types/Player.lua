@@ -364,8 +364,8 @@ function _M:setPlayerNetStat(player_net_stat_)
     self.player_net_stat = player_net_stat_
 end
 
-function _M:createTitle(name)
-    Entity.createTitle(self, string.format("%s\n%d级", self.name , self.level))
+function _M:CreateTitle(name)
+    Entity.CreateTitle(self, string.format("%s\n%d级", self.name , self.level))
     self:SendEvent("HideTitle", { })
 end
 
@@ -388,8 +388,7 @@ end
 function _M:SetLevel(level)
     Entity.SetLevel(self,level)
     self:RefreshStats()
-    self:SetVariable("level", level)
-    self:createTitle()
+    self:CreateTitle()
     self:SendEvent("UpdateHud", {
         level = self.level
     })
@@ -1044,8 +1043,10 @@ function _M:SetMoveable(moveable)
     self._moveable = moveable
     if moveable then
         self:RefreshStats()
+        self.actor.JumpBaseSpeed = 400
     else
         self.actor.Movespeed = 0
+        self.actor.JumpBaseSpeed = 0
     end
 end
 
@@ -1109,7 +1110,7 @@ function _M:UpdateHud()
     self.bag:SyncToClient()
 
     self.level = self:GetVariable("level", 1)
-    self:createTitle()
+    self:CreateTitle()
     self:SetMoveable(true)
     self:SendEvent("UpdateHud", {
         level = self.level

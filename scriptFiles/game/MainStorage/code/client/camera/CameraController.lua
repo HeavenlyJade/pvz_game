@@ -304,10 +304,22 @@ function CameraController.SetAlignWhenMoving(aligh)
     _alignWhenMoving = aligh
 end
 
+local function fixMouseXJump()
+    local diff = _mouseX - _mouseXSmooth
+    if math.abs(diff) > 180 then
+        if _mouseX > _mouseXSmooth then
+            _mouseXSmooth = _mouseXSmooth + 360
+        else
+            _mouseXSmooth = _mouseXSmooth - 360
+        end
+    end
+end
+
 --第三人称摄像机更新
 function CameraController.ThirdPersonUpdate(dt)
     -- 设置鼠标平滑时间为默认值
     CameraController.SetMouseSmoothTime(_mouseSmoothTime)
+    fixMouseXJump()
 
     -- 使用SmoothDamp平滑处理鼠标X轴和Y轴的旋转
     _mouseXSmooth, _mouseXCurrentVelocity =

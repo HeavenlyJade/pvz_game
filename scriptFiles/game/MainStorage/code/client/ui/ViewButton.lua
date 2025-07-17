@@ -295,18 +295,15 @@ function ViewButton:_BindNodeAndChild(child, isDeep, bindEvents)
         end
         if bindEvents then
             child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-                print("TouchBegin", self.path)
                 self:OnTouchIn(vector2)
             end)
             child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
-                print("TouchEnd", self.path)
                 self:OnTouchOut()
             end)
             child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
                 self:OnTouchMove(node, isTouchMove, vector2, number)
             end)
             child.Click:Connect(function(node, isClick, vector2, number)
-                print("click", self.path)
                 self:OnClick(vector2)
             end)
         end

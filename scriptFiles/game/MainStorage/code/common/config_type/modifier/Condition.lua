@@ -12,14 +12,26 @@ end
 ---@class BetweenCondition:Condition
 local BetweenCondition = ClassMgr.Class("BetweenCondition", Condition)
 function BetweenCondition:OnInit(data)
-    self.minValue = data["最小值"] or 0
-    self.maxValue = data["最大值"] or 100
+    self.minValue = data["最小"] or "0"
+    self.maxValue = data["最大"] or "100"
 end
-function BetweenCondition:CheckAmount(modifier, amount)
+function BetweenCondition:CheckAmount(modifier, amount, caster, target)
     if amount == nil then
         return false
     end
-    return amount >= self.minValue and amount <= self.maxValue
+    if self.minValue ~= "X" then
+        local minValue = gg.ProcessFormula(self.minValue, caster, target)
+        if amount < minValue then
+            return false
+        end
+    end
+    if self.maxValue ~= "X" then
+        local maxValue = gg.ProcessFormula(self.maxValue, caster, target)
+        if amount > maxValue then
+            return false
+        end
+    end
+    return true
 end
 
 ---@class HealthCondition:BetweenCondition
@@ -35,7 +47,7 @@ function HealthCondition:Check(modifier, caster, target)
     else
         amount = target.health
     end
-    return self:CheckAmount(modifier, amount)
+    return self:CheckAmount(modifier, amount, caster, target)
 end
 
 ---@class VariableCondition:BetweenCondition
@@ -47,7 +59,7 @@ function VariableCondition:Check(modifier, caster, target)
     if not target.isEntity then return false end
     local creature = target ---@cast creature Entity
     local amount = creature:GetVariable(self.name)
-    return self:CheckAmount(modifier, amount)
+    return self:CheckAmount(modifier, amount, caster, target)
 end
 
 ---@class StatCondition:BetweenCondition
@@ -57,7 +69,7 @@ function StatCondition:OnInit(data)
 end
 function StatCondition:Check(modifier, caster, target)
     local amount = target:GetStat(self.name)
-    return self:CheckAmount(modifier, amount)
+    return self:CheckAmount(modifier, amount, caster, target)
 end
 
 ---@class PositionCondition:BetweenCondition
@@ -90,7 +102,7 @@ function BuffActiveCondition:Check(modifier, caster, target)
         for _, buff in pairs(creature.activeBuffs) do
             totalStacks = totalStacks + buff.stack
         end
-        return self:CheckAmount(modifier, totalStacks)
+        return self:CheckAmount(modifier, totalStacks, caster, target)
     end
 
     local stacks = 0
@@ -99,7 +111,7 @@ function BuffActiveCondition:Check(modifier, caster, target)
             stacks = stacks + buff.stack
         end
     end
-    return self:CheckAmount(modifier, stacks)
+    return self:CheckAmount(modifier, stacks, caster, target)
 end
 
 ---@class TagLevelCondition:BetweenCondition
@@ -110,11 +122,9 @@ end
 function TagLevelCondition:Check(modifier, caster, target)
     if target == nil or not target.isEntity then return false end
     local targetCreature = target ---@cast creature Entity
-    print(string.format("TagLevelCondition %s %s %s", targetCreature.name, self.tagName, table.concat(targetCreature.tagIds, ",")))
     local tag = targetCreature:GetTag(self.tagName)
     if tag ~= nil then
-        print(string.format("TagLevelCondition %s %d", self.tagName, tag.level))
-        return self:CheckAmount(modifier, tag.level)
+        return self:CheckAmount(modifier, tag.level, caster, target)
     end
     return false
 end
@@ -135,7 +145,7 @@ function ShieldCondition:Check(modifier, caster, target)
     else
         amount = creature.shield
     end
-    return self:CheckAmount(modifier, amount)
+    return self:CheckAmount(modifier, amount, caster, target)
 end
 
 ---@class QuestConditionType
@@ -187,7 +197,7 @@ local QuestStringCondition = ClassMgr.Class("QuestStringCondition", QuestConditi
 local WorldTimeCondition = ClassMgr.Class("WorldTimeCondition", BetweenCondition)
 function WorldTimeCondition:Check(modifier, caster, target)
     local Scene = require(MainStorage.code.server.Scene)         ---@type Scene
-    return self:CheckAmount(modifier, Scene.worldTime)
+    return self:CheckAmount(modifier, Scene.worldTime, caster, target)
 end
 
 

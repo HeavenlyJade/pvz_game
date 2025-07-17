@@ -414,7 +414,6 @@ end
 ---@param player Player
 ---@return boolean 成功进入
 function LevelType:Queue(player)
-    -- 使用CanJoin统一判断
     local canJoin, reason = self:CanJoin(player)
     if not canJoin then
         player:SendChatText(reason or "无法加入匹配队列")
@@ -435,7 +434,8 @@ function LevelType:Queue(player)
 
     -- 首先检查是否有可用的关卡实例
     for _, level in ipairs(self.levels) do
-        if level.isActive and level.playerCount < level.levelType.maxPlayers then
+        gg.log("level", level.scene.node.Name, level:IsActive(), level:GetPlayerCount(), level.levelType.maxPlayers)
+        if level:IsActive() and level:GetPlayerCount() < level.levelType.maxPlayers then
             -- 找到有位置的关卡，直接加入
             if level:AddPlayer(player) then
                 player:SendChatText("已加入进行中的关卡")
@@ -484,9 +484,10 @@ function LevelType:StartLevel()
     
     -- 遍历所有关卡实例，找到没有玩家的场景
     for _, level in ipairs(self.levels) do
-        if not level.isActive then
+        gg.log("StartLevel", level.scene.node.Name, level:IsActive(), level:GetPlayerCount())
+        if not level:IsActive() then
             -- 检查场景中是否有玩家
-            if level.playerCount == 0 then
+            if level:GetPlayerCount() == 0 then
                 availableLevel = level
                 break
             end
