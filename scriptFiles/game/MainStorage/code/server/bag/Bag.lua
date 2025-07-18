@@ -31,6 +31,8 @@ function Bag:OnInit(player)
     self.dirtySyncSlots = {}
     self.dirtySave = false
     self.dirtySyncAll = false
+
+    self.removedItems = {} ---@type table<string, boolean> 记录本次被移除的物品
 end
 
 ---@param data table 背包数据
@@ -163,24 +165,37 @@ function Bag:SyncToClient()
             end
         end
     end
+    -- 新增：同步被移除的物品名列表
+    local removedItems = {}
+    if self.removedItems then
+        for itemName, _ in pairs(self.removedItems) do
+            table.insert(removedItems, itemName)
+        end
+        self.removedItems = {} -- 清空
+    end
     self.dirtySyncAll = false
     self.dirtySyncSlots = {}
 
     local ret = {
         cmd = BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS,
         items = syncItems,
-        moneys = moneys
+        moneys = moneys,
+        removed = removedItems
     }
     -- gg.log("背包数据同步",ret)
     gg.network_channel:fireClient(self.player.uin, ret)
 end
 
 function Bag:SetItemAmount(slot, amount)
+    local item = self:GetItem(slot)
+
     if amount <= 0 then
         self:SetItem(slot, nil)
+        if item then
+            self.removedItems[item.itemType.name] = true
+        end
         return
     end
-    local item = self:GetItem(slot)
     if not item then
         return
     end

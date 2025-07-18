@@ -2987,7 +2987,7 @@ end
 -- === 背包库存处理方法 ===
 -- 处理背包库存同步事件
 function CardsGui:HandleInventorySync(data)
-    -- gg.log("背包库存同步",data)
+    gg.log("背包库存同步",data)
     if not data then
         return
     end
@@ -3023,7 +3023,12 @@ function CardsGui:HandleInventorySync(data)
             self.playerInventory[moneyName] = amount
         end
     end
-
+    -- 新增：处理被移除的物品
+    if data.removed then
+        for _, itemName in ipairs(data.removed) do
+            self.playerInventory[itemName] = 0 -- 或者 = 0，根据UI需求
+        end
+    end
 end
 
 

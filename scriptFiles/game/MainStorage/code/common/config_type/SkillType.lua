@@ -341,7 +341,7 @@ function SkillType:GetOneKeyUpgradeCostsAtLevel(level)
     for resourceType, costExpr in pairs(d["素材"]) do
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = self:_evaluateExpression(expr)
-        if result then
+        if result and result>0 then
             costs[resourceType] = math.floor(result)  -- 返回整型，去除小数点
         end
     end
@@ -367,7 +367,7 @@ function SkillType:GetCostAtLevel(level)
     for resourceType, costExpr in pairs(d["素材"]) do
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = self:_evaluateExpression(expr)
-        if result then
+        if result and result>0 then
             costs[resourceType] = math.floor(result)  -- 只保留正数结果
         end
     end
@@ -393,7 +393,7 @@ function SkillType:GetStarUpgradeCostAtLevel(level)
     for resourceType, costExpr in pairs(d["素材"]) do
         local expr = costExpr:gsub("LVL", tostring(level))
         local result = self:_evaluateExpression(expr)
-        if result then
+        if result and result>0 then
             costs[resourceType] = math.floor(result)  -- 只保留正数结果
         end
     end
