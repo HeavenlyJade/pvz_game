@@ -263,7 +263,11 @@ local function LoadConfig()
                 ["类型"] = "静止"
             }
         },
-        ["offset"] = nil
+        ["offset"] = nil,
+        ["闲置音效"] = nil,
+        ["攻击音效"] = nil,
+        ["受击音效"] = nil,
+        ["死亡音效"] = nil
     }),
     ["副-召唤物-星星果"] = MobType.New({
         ["怪物ID"] = "副-召唤物-星星果",

@@ -98,6 +98,13 @@ end
 
 ---@param visible boolean
 function ViewComponent:SetVisible(visible)
+    if type(visible) ~= "boolean" then
+        if type(visible) == "nil" then
+            visible = false
+        else
+            visible = true
+        end
+    end
     self.node.Visible = visible
     self.node.Enabled = visible
 end

@@ -269,6 +269,29 @@ function HudCards:UpdateCardsDisplay()
     self:UpdateSubCardDisplay()
 end
 
+-- === 新增：处理技能升级响应 ===
+---@param data table 技能升级响应数据
+function HudCards:OnSkillUpgradeResponse(data)
+    if not data or not data.data then return end
+
+    local responseData = data.data
+    local skillName = responseData.skillName
+
+    -- 1. 在本地缓存中查找技能
+    local skill = skills[skillName]
+
+    -- 2. 只更新存在于本地（即已装备）的技能
+    if not skill then
+        return
+    end
+
+    -- 3. 更新技能等级
+    skill.level = responseData.level
+
+    -- 4. 刷新HUD显示，让等级变化体现在UI上
+    self:UpdateCardsDisplay()
+end
+
 -- 更新主卡显示
 function HudCards:UpdateMainCardDisplay()
     if not self.mainCardButton then return end
@@ -516,6 +539,11 @@ function HudCards:OnInit(node, config)
     -- 注册技能同步事件监听
     ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.SYNC_SKILLS, function(data)
         self:OnSyncPlayerSkills(data)
+    end)
+
+    -- === 新增：监听技能升级响应 ===
+    ClientEventManager.Subscribe(SkillEventConfig.RESPONSE.UPGRADE, function(data)
+        self:OnSkillUpgradeResponse(data)
     end)
 
     -- 监听按键事件

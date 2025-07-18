@@ -447,7 +447,7 @@ function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
         -- 升星按钮：未满星且配置了升星素材时显示
         local showUpgradeStar = currentStar < maxStar
         local starCosts = skill:GetStarUpgradeCostAtLevel(skillLevel)
-        local hasStarUpgradeCosts = starCosts and next(starCosts) -- 检查返回的是否为非空表
+        local hasStarUpgradeCosts = not not (starCosts and next(starCosts)) -- 检查返回的是否为非空表
         self:_setButtonVisible(self.SubcardUpgradeStarButton, showUpgradeStar and hasStarUpgradeCosts, true)
 
         -- 装备/卸下按钮：只有可装备的技能才显示

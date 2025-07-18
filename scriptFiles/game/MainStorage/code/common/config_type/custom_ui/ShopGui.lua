@@ -18,7 +18,8 @@ function ShopGui:OnInit(data)
     for _, privilegeType in ipairs(data["商品"]) do
         self.shopGoods[privilegeType] = ShopGoodConfig.Get(privilegeType)
     end
-    self.currentDisplayGood = nil ---@type ShopGood|nil 当前显示的物品
+    self.currentDisplayGoodIndex = 1 -- 记录当前显示物品的序号，1为第一个
+    self.lastShopId = nil -- 记录上一次的shop id
 end
 
 ---@param player Player
@@ -66,6 +67,7 @@ function ShopGui:_UpdateCard(node, shopGood, status)
     node:Get(self.paths.Price).node.Title = tostring(status.price)
     node:Get(self.paths.CurrencyIcon).node.Icon = shopGood.price.priceType.icon
     node.clickCb = function (ui, button)
+        self.currentDisplayGoodIndex = button.index
         self:_ShowGood(shopGood)
     end
 end
@@ -95,8 +97,6 @@ function ShopGui:_ShowGood(shopGood)
             shopGood = shopGood.name
         })
     end
-    -- 记录当前显示的物品
-    self.currentDisplayGood = shopGood
 end
 
 local store = game:GetService("DeveloperStoreService")
@@ -148,38 +148,22 @@ function ShopGui:C_BuildUI(packet)
         self:_UpdateCard(self.goodsList:GetChild(index), shopGood, packet.shopGoods[shopGoodId])
         index = index+1
     end
-    local show_money_item = false
-    for i = 1, 4 do
-        if _G['商城点击_货币' .. i] then
-            show_money_item = true
-            _G['商城点击_货币' .. i] = false
-            print('触发事件:' .. '商城点击_货币' .. i)
-            if i == 1 then
-                self:_ShowGood(ShopGoodConfig.Get("新手大礼包"))
-            elseif i == 2 then
-                self:_ShowGood(ShopGoodConfig.Get("新手大礼包"))
-            elseif i == 3 then
-                self:_ShowGood(ShopGoodConfig.Get("能量豆补给包"))
-            elseif i == 4 then
-                self:_ShowGood(ShopGoodConfig.Get("水晶x10"))
-            end
-            break
-        end
+    -- 检查shop id是否变化，变化则重置index
+    if self.lastShopId ~= self.id then
+        self.currentDisplayGoodIndex = 1
+        self.lastShopId = self.id
     end
-    if show_money_item then
-        -- 优先显示当前记录的物品，如果没有则显示第一个
-        if self.currentDisplayGood and self.shopGoods[self.currentDisplayGood.name] then
-            self:_ShowGood(self.currentDisplayGood)
-        else
-            -- 显示第一个物品
-            local firstGood = nil
-            for privilegeType, shopGood in pairs(self.shopGoods) do
-                firstGood = shopGood
-                break
-            end
-            if firstGood then
-                self:_ShowGood(firstGood)
-            end
+    -- 优先显示当前记录的物品序号，如果没有则显示第一个
+    local idx = self.currentDisplayGoodIndex or 1
+    local goodId = self.shopGoodsIds[idx]
+    local good = goodId and self.shopGoods[goodId]
+    if good then
+        self:_ShowGood(good)
+    else
+        -- 显示第一个物品
+        local firstGoodId = self.shopGoodsIds[1]
+        if firstGoodId then
+            self:_ShowGood(self.shopGoods[firstGoodId])
         end
     end
     self.view:Open()
