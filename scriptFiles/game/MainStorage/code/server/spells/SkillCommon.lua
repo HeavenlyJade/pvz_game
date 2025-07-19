@@ -281,8 +281,9 @@ end
 ---@param skillName string 技能名称
 ---@param level number 目标等级
 ---@param growth number|nil 目标经验值（可选，默认为0）
+---@param star number|nil 目标星级（可选，默认为不变）
 ---@return table 操作结果 {success, errorCode, skillData}
-function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
+function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth, star)
     growth = growth or 0
 
     -- 验证技能配置
@@ -305,30 +306,30 @@ function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
         }
     end
 
-
     -- 检查玩家是否拥有该技能
     local existingSkill = player.skills[skillName]
-
     if not existingSkill then
         return {
-                success = false,
-                errorCode = SkillEventConfig.ERROR_CODES.SKILL_NOT_OWNED,
-                skillData = nil
-            }
-
+            success = false,
+            errorCode = SkillEventConfig.ERROR_CODES.SKILL_NOT_OWNED,
+            skillData = nil
+        }
     end
 
     -- 记录原始数据
     local originalLevel = existingSkill.level
     local originalGrowth = existingSkill.growth
-    -- 设置新的等级和经验
+    local originalStar = existingSkill.star_level 
+    -- 设置新的等级、经验和星级
     if level and level > 0 then
         existingSkill.level = level
     end
     if growth and growth > 0 then
         existingSkill.growth = growth
     end
-
+    if star and star >= 0 then
+        existingSkill.star_level = star
+    end
 
     -- 保存玩家数据
     player:saveSkillConfig()
@@ -343,7 +344,9 @@ function SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
             slot = existingSkill and existingSkill.equipSlot or 0,
             maxLevel = maxLevel,
             originalLevel = originalLevel,
-            originalGrowth = originalGrowth
+            originalGrowth = originalGrowth,
+            star_level = existingSkill and existingSkill.star_level or 0,
+            originalStar = originalStar
         }
     }
 end

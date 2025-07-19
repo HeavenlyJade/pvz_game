@@ -96,13 +96,14 @@ function SkillCommands.setLevel(params, player)
     local skillName = params["skillName"]
     local level = params["level"] or -1
     local growth = params["growth"] or -1
+    local star = params["star"] or -1
 
-    -- 使用SkillCommon的公共方法设置技能等级和经验
-    local result = SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth)
+    -- 使用SkillCommon的公共方法设置技能等级、经验和星级
+    local result = SkillCommon.SetSkillLevelAndGrowth(player, skillName, level, growth, star)
 
     if not result.success then
         local errorMsg = SkillCommon.FormatErrorMessage(
-            "设置技能等级失败: " .. SkillEventConfig.GetErrorMessage(result.errorCode),
+            "设置技能等级/星级失败: " .. SkillEventConfig.GetErrorMessage(result.errorCode),
             player,
             skillName
         )
@@ -114,10 +115,13 @@ function SkillCommands.setLevel(params, player)
 
     -- 生成成功消息
     local successMsg
-
     successMsg = SkillCommon.FormatSuccessMessage(
-        string.format("技能等级和经验设置成功：%d级→%d级，经验 %d→%d",
-            skillData.originalLevel, skillData.level, skillData.originalGrowth, skillData.growth),
+        string.format(
+            "技能等级、经验、星级设置成功：%d级→%d级，经验 %d→%d，星级 %d→%d",
+            skillData.originalLevel, skillData.level,
+            skillData.originalGrowth, skillData.growth,
+            skillData.originalStar or 0, skillData.star_level or 0
+        ),
         player,
         skillName
     )
@@ -248,6 +252,7 @@ function SkillCommands.main(params, player)
     local skillName = params["技能"]
     local level = params["等级"]
     local growth = params["经验"]
+    local star = params["星级"] or params["star"]
     local optype = params["类型"]
 
     if not player then
@@ -265,7 +270,7 @@ function SkillCommands.main(params, player)
         local args = {}
         SkillCommands.destroyAll(args, player)
     elseif optype == "设置等级" then
-        local args = {skillName = skillName, level = level, growth = growth}
+        local args = {skillName = skillName, level = level, growth = growth, star = star}
         SkillCommands.setLevel(args, player)
     -- elseif optype == "装载" then
     --     player:LoadingConfSkills(args)

@@ -30,6 +30,15 @@ SkillEventManager.SLOT_TO_CARD_MAPPING = {
     [5] = "卡片_4"   -- 副卡4对应卡片_4
 }
 
+SkillEventManager.StarLevelRequirements = {
+    [0] = 10,   -- 0星 -> 1星需要10级
+    [1] = 15,   -- 1星 -> 2星需要15级
+    [2] = 25,   -- 2星 -> 3星需要25级
+    [3] = 35,   -- 3星 -> 4星需要35级
+    [4] = 50,   -- 4星 -> 5星需要50级
+    [5] = 70,   -- 5星 -> 6星需要70级
+    [6] = 100   -- 6星 -> 7星需要100级
+}
 --[[
 ===================================
 初始化和基础功能
@@ -178,6 +187,28 @@ function SkillEventManager.HandleLearnSkill(evt)
     SkillEventManager.SendSuccessResponse(evt, SkillEventManager.RESPONSE.LEARN, responseData)
 end
 
+-- 星级等级上限校验函数
+--- 检查技能是否超过当前星级允许的最大等级
+---@param skill table 技能实例
+---@param skillType table 技能类型配置
+---@param addLevel number|nil 升级增量，默认为1
+---@return table 校验结果
+function SkillEventManager.CheckStarLevelLimit(skill, skillType, addLevel)
+    addLevel = addLevel or 1
+    local currentStar = skill.star_level or 0
+    local currentLevel = skill.level or 0
+    local maxLevel = skillType.maxLevel or 1
+    local starLevelLimit = SkillEventManager.StarLevelRequirements[currentStar] or maxLevel
+    local overLimit = (currentLevel + addLevel) > starLevelLimit
+    return {
+        overLimit = overLimit,
+        currentStar = currentStar,
+        starLevelLimit = starLevelLimit,
+        currentLevel = currentLevel,
+        addLevel = addLevel
+    }
+end
+
 --- 处理技能升级请求
 ---@param evt table 事件数据 {uin, skillName}
 function SkillEventManager.HandleUpgradeSkill(evt)
@@ -251,10 +282,17 @@ function SkillEventManager.HandleUpgradeSkill(evt)
         return
     end
 
-    -- if existingSkill and existingSkill.growth < existingSkill.skillType:GetMaxGrowthAtLevel(existingSkill.level+1) then
-    --     player:SendHoverText("技能升级失败：成长值不足，快去花圃挂机培养副卡吧")
-    --     return
-    -- end
+    -- 星级等级上限校验
+    if existingSkill then
+        local check = SkillEventManager.CheckStarLevelLimit(existingSkill, skillType, 1)
+        if check.overLimit then
+            local displayName = skillType.displayName or skillName
+            player:SendHoverText(string.format("%s当前星级上限强化等级为%d级，请先升星", displayName, check.starLevelLimit))
+            gg.log("技能升级失败：超过当前星级等级上限", skillName, "当前星级：", check.currentStar, "最大等级：", check.starLevelLimit)
+            return
+        end
+    end
+
     local cost = nil
     if existingSkill then
         cost = skillType:GetCostAtLevel(existingSkill.level+1)
@@ -353,6 +391,16 @@ function SkillEventManager.HandleUpgradeAllSkill(evt)
     local currentLevel = existingSkill.level
     local maxLevel = skillType.maxLevel or 1
     local nextLevel = currentLevel + 1
+
+    -- 新增：星级等级上限校验
+    local check = SkillEventManager.CheckStarLevelLimit(existingSkill, skillType, 1)
+    gg.log("nextLevel", nextLevel, check.starLevelLimit)
+    if check.overLimit then
+        local displayName = skillType.displayName or skillName
+        player:SendHoverText(string.format("%s当前星级上限强化等级为%d级，请先升星", displayName, check.starLevelLimit))
+        gg.log("技能强化失败：超过当前星级等级上限", skillName, "当前星级：", check.currentStar, "最大等级：", check.starLevelLimit)
+        return
+    end
 
     -- 验证目标等级（现在只处理下一级）
     if currentLevel >= maxLevel then
@@ -705,19 +753,10 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
         return
     end
 
-    -- 定义升星等级要求
-    local starLevelRequirements = {
-        [0] = 10,   -- 0星 -> 1星需要10级
-        [1] = 15,   -- 1星 -> 2星需要15级
-        [2] = 25,   -- 2星 -> 3星需要25级
-        [3] = 35,   -- 3星 -> 4星需要35级
-        [4] = 50,   -- 4星 -> 5星需要50级
-        [5] = 70,   -- 5星 -> 6星需要70级
-        [6] = 100   -- 6星 -> 7星需要100级
-    }
+
 
     -- 检查等级是否满足升星要求
-    local requiredLevel = starLevelRequirements[currentStar]
+    local requiredLevel = SkillEventManager.StarLevelRequirements[currentStar]
     if not requiredLevel then
         gg.log("未定义的星级要求:", currentStar)
         player:SendHoverText("升星失败：未定义的星级要求")
@@ -742,7 +781,16 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
 
     -- 检查玩家资源是否足够
     if not player.bag:HasItems(starCosts) then
-        player:SendHoverText("升星失败：升星素材不足")
+        local shortageInfo = player.bag:GetResourceShortageInfo(starCosts)
+        if shortageInfo then
+            local messages = {}
+            for _, resource in ipairs(shortageInfo) do
+                table.insert(messages, string.format("【%s】缺少%d个", resource.displayName, resource.missing))
+            end
+            player:SendHoverText("升星失败：升星素材不足，" .. table.concat(messages, "，"))
+        else
+            player:SendHoverText("升星失败：升星素材不足")
+        end
         return
     end
 
