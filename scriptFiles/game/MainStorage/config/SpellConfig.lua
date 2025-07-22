@@ -3684,7 +3684,7 @@ local function LoadConfig()
     }),
     ["钢铁地刺_dot"] = Spell.Load({
         ["类型"] = "DOTBuffSpell",
-        ["基础伤害"] = 0,
+        ["基础伤害"] = 1,
         ["基础倍率"] = 1,
         ["属性增伤"] = {
             {
