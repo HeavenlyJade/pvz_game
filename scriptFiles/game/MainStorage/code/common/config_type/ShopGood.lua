@@ -143,7 +143,7 @@ function ShopGood:Give(player)
     for itemName, amount in pairs(self.rewards) do
         local itemType = ItemTypeConfig.Get(itemName)
         if itemType then
-            player.bag:GiveItem(itemType:ToItem(amount))
+            player.bag:GiveItem(itemType:ToItem(amount), "商品_" .. self.name)
             table.insert(rewardItems, string.format("%s x%d", itemType.name, amount))
         end
     end

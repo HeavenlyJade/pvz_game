@@ -57,14 +57,14 @@ end
 ---@param status ShopGoodStatus
 function ShopGui:_UpdateCard(node, shopGood, status)
     node:SetChildIcon("图标", shopGood:GetIcon())
-    node:Get(self.paths.IconAmount).node.Title = tostring(shopGood:GetIconAmount())
+    node:Get(self.paths.IconAmount).node.Title = gg.FormatLargeNumber(shopGood:GetIconAmount())
     node:Get(self.paths.HotSale).node.Visible = shopGood.isSale
     node:Get(self.paths.Limited).node.Visible = shopGood.isLimited
     if not shopGood.price or not shopGood.price.priceType then
         gg.log("警告： 商品没有配置价格： ", shopGood.name)
         return
     end
-    node:Get(self.paths.Price).node.Title = tostring(status.price)
+    node:Get(self.paths.Price).node.Title = gg.FormatLargeNumber(status.price)
     node:Get(self.paths.CurrencyIcon).node.Icon = shopGood.price.priceType.icon
     node.clickCb = function (ui, button)
         self.currentDisplayGoodIndex = button.index
@@ -77,14 +77,14 @@ function ShopGui:_ShowGood(shopGood)
     local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
     local ui = self.view
     ui:Get(self.paths.BigIcon).node.Icon = shopGood:GetIcon()
-    ui:Get(self.paths.BigIconAmount).node.Title = tostring(shopGood:GetIconAmount())
+    ui:Get(self.paths.BigIconAmount).node.Title = gg.FormatLargeNumber(shopGood:GetIconAmount())
     ui:Get(self.paths.Name).node.Title = shopGood.name
     ui:Get(self.paths.Desc).node.Title = shopGood.description
     local status = self.packet.shopGoods[shopGood.name] ---@type ShopGoodStatus
     local purchaseButton = ui:Get(self.paths.BuyBtn, ViewButton)
     ui:Get(self.paths.PriceIcon).node.Icon = shopGood.price.priceType.icon
     if shopGood.miniShopId then
-        ui:Get(self.paths.PriceInfo).node.Title = tostring(gg.FormatLargeNumber(status.price))
+        ui:Get(self.paths.PriceInfo).node.Title = gg.FormatLargeNumber(status.price)
         purchaseButton:SetTouchEnable(true)
     else
         ui:Get(self.paths.PriceInfo).node.Title = string.format("%s/%s",  

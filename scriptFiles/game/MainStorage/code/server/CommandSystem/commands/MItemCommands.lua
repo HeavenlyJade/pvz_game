@@ -58,7 +58,7 @@ function ItemCommands.give(params, player)
     if not item then
         return
     end
-    player.bag:GiveItem(item)
+    player.bag:GiveItem(item, params["渠道"])
     player.bag:Save()
     return true
 end

@@ -53,7 +53,7 @@ function OnlineRewardsUI:OnClickReward(player, packet)
         return
     end
     player:SetVariable(string.format(self.var, index), 1)
-    player.bag:GiveItem(self.itemRewards[index].item)
+    player.bag:GiveItem(self.itemRewards[index].item, "在线奖励_" .. tostring(index))
     self:S_Open(player)
 end
 

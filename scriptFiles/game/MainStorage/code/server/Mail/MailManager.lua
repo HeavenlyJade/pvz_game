@@ -820,7 +820,7 @@ function MailManager:_grantAttachmentsToPlayer(player, attachments)
             local itemType = ItemTypeConfig.Get(itemData.type)
             if itemType then
                 local item = itemType:ToItem(itemData.amount)
-                player.bag:GiveItem(item)
+                player.bag:GiveItem(item, "邮件")
                 gg.log(string.format("授予玩家 %s 物品: %s, 数量: %d", player.uin, itemData.type, itemData.amount))
             else
                 gg.log("Error: 找不到物品配置:", itemData.type, " for player:", player.uin)

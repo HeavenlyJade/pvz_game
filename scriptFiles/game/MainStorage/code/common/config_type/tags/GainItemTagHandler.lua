@@ -6,7 +6,7 @@ local TagHandler = require(MainStorage.code.common.config_type.tags.TagHandler) 
 local GainItemTagHandler = ClassMgr.Class("GainItemTagHandler", TagHandler)
 
 function GainItemTagHandler:OnInit(data)
-    -- 影响物品相关
+    self["渠道"] = data["渠道"] ---@type string[]|nil
     self["影响物品"] = data["影响物品"] or {} ---@type string[]
     self["影响关键字"] = data["影响关键字"] or "" ---@type string
     self["取消获得"] = data["取消获得"] or false ---@type boolean
@@ -19,7 +19,25 @@ end
 
 function GainItemTagHandler:CanTriggerReal(caster, target, castParam, param, log)
     local item = param[1] ---@type Item
+    local source = param[2]
     local amount = param.power
+    if self["渠道"] and #self["渠道"] > 0 then
+        local found = false
+        for _, keyword in ipairs(self["渠道"]) do
+            if source and string.find(source, keyword, 1, true) then
+                found = true
+                break
+            end
+        end
+        if not found then
+            if self.printMessage then
+                table.insert(log, string.format("%s.%s触发失败：source(%s)不包含渠道关键词(%s)",
+                    self.m_tagType.id, self.m_tagIndex, tostring(source), table.concat(self["渠道"], ", ")))
+            end
+            return false
+        end
+    end
+
     if self["影响关键字"] ~= "" then
         if not string.find(item.name, self["影响关键字"]) then
             if self.printMessage then 
@@ -120,5 +138,4 @@ function GainItemTagHandler:TriggerReal(caster, target, castParam, param, log)
     end
     return true
 end
-
 return GainItemTagHandler

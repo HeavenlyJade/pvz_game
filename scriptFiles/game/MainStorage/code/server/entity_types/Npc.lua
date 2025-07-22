@@ -46,7 +46,7 @@ function _M:OnInit(npcData, actor)
         self:CreateTitle()
     end
     local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox
-    trigger.LocalPosition = Vector3.New(0,0,0)
+    trigger.LocalPosition = self.actor.Center
     trigger.Size = Vector3.New(self.extraSize.x + npcSize.x, self.extraSize.y + npcSize.y, self.extraSize.z + npcSize.z)                                                               -- 扩展范围
     trigger.Touched:Connect(function(node)
         if node and node.UserId then

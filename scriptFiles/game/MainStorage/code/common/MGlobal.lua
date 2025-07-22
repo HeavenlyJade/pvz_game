@@ -3,6 +3,7 @@ local Vec2 = require(MainStorage.code.common.math.Vec2)
 local Vec3 = require(MainStorage.code.common.math.Vec3)
 local Vec4 = require(MainStorage.code.common.math.Vec4)
 local Quat = require(MainStorage.code.common.math.Quat)
+local Dict = require(MainStorage.code.common.func_utils.Dict)
 
 local inputservice = game:GetService("UserInputService")
 local Players = game:GetService('Players')
@@ -358,6 +359,7 @@ local gg = {
     Vec2 = Vec2, ---@type Vec2
     Vec3 = Vec3, ---@type Vec3
     Vec4 = Vec4, ---@type Vec4
+    Dict = Dict, ---@type Dict
     Quat = Quat, ---@type Quat
     noise = require(script.Parent.math.PerlinNoise),
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+

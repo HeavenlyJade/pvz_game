@@ -99,7 +99,7 @@ function Lottery:Draw(player, count, giveLater, playAnim)
                     end
                     table.insert(self.giveLaters[player], item)
                 else
-                    player.bag:GiveItem(item)
+                    player.bag:GiveItem(item, "抽奖_" .. self.poolName)
                 end
                 player:AddVariable("rarity_".. rarity, 1)
                 if not totalRewards[reward.itemType] then
@@ -122,7 +122,7 @@ function Lottery:Draw(player, count, giveLater, playAnim)
             if self.giveLaters[player] then
                 player:AddVariable("lottery_".. self.poolName, count)
                 for _, item in ipairs(self.giveLaters[player]) do
-                    player.bag:GiveItem(item)
+                    player.bag:GiveItem(item, "抽奖_" .. self.poolName)
                 end
                 self.giveLaters[player] = nil
             end

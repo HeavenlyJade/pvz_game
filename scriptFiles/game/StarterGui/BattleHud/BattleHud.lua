@@ -450,6 +450,9 @@ function BattleHud:ToggleAutoBattle()
             self.autoBattleTaskId = nil
         end
     end
+    ClientEventManager.SendToServer("ToggleAutoBattle", {
+        autoBattle = self.autoBattle
+    })
 end
 
 function BattleHud:AutoBattleTick()

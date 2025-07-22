@@ -116,7 +116,7 @@ local function LoadConfig()
                 ["itemCountMax"] = 1
             },
             {
-                ["itemType"] = "椰子炮碎片",
+                ["itemType"] = nil,
                 ["weight"] = 80,
                 ["itemCountMin"] = 1,
                 ["itemCountMax"] = 1

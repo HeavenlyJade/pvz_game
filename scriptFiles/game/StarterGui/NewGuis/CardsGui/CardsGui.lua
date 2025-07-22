@@ -2987,7 +2987,7 @@ end
 -- === 背包库存处理方法 ===
 -- 处理背包库存同步事件
 function CardsGui:HandleInventorySync(data)
-    gg.log("背包库存同步",data)
+    -- gg.log("背包库存同步",data)
     if not data then
         return
     end

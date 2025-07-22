@@ -37,7 +37,7 @@ local _lockMouseX = false
 local _lockMouseY = false
 local _invertMouseX = false
 local _invertMouseY = false
-local _mouseXSensitivity = 0.2
+local _mouseXSensitivity = 0.1
 local _mouseYSensitivity = 0.1
 local _wheelSensitivity = 50
 local _mouseXMin = -60.0
@@ -54,7 +54,7 @@ local _minAlignDistance = 5
 
 local _mouseX = 10
 local _mouseY = 0
-local _distance = 200
+local _distance = 600
 
 local _rawMouseX = _mouseX  -- 记录未经抖动修改的原始mouseX
 local _rawMouseY = _mouseY  -- 记录未经抖动修改的原始mouseY
@@ -107,6 +107,13 @@ local _pendingExtremeInputBlockDuration = nil -- 新增：待激活保护时长
 local _lastDeltaX = 0
 local _lastDeltaY = 0
 
+-- 监听服务器发送的摄像机距离调整事件
+ClientEventManager.Subscribe("SetCameraDistance", function(data)
+    if data and data.distance then
+        CameraController.SetDistance(data.distance)
+    end
+end)
+
 ClientEventManager.Subscribe("UpdateCameraView", function(data)
     if data.x then
         CameraController.RotateTo(data.x, data.y)
@@ -119,6 +126,14 @@ function CameraController.RotateTo(x, y)
     _rawMouseY = x
     _rawMouseX = y + 180
 end
+
+--- 设置摄像机距离
+---@param newDistance number 新的摄像机距离
+function CameraController.SetDistance(newDistance)
+    -- 我们直接修改目标距离 _distance，然后平滑系统会在Update中处理
+    _distance = math.clamp(newDistance, _minDistance, _maxDistance)
+end
+
 function CameraController.SetActive(active)
     local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
     _owner = Players.LocalPlayer

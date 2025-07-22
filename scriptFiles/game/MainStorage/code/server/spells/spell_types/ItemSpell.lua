@@ -94,7 +94,7 @@ function ItemSpell:CastReal(caster, target, param)
     end
     
     local finalAmount = math.floor(battle:GetFinalDamage() + 0.5) -- 四舍五入
-    target.bag:GiveItem(self.itemType:ToItem(math.floor(finalAmount)))
+    target.bag:GiveItem(self.itemType:ToItem(math.floor(finalAmount)), "魔法_"..self.spellName)
     self:PlayEffect(self.castEffects, caster, target, param)
     if self.broadcastGained then
         local targetPos = target:GetPosition()

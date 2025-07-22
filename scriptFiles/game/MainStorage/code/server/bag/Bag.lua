@@ -436,13 +436,14 @@ function Bag:DecomposeAllLowQualityItems(rank)
 end
 
 ---@param item Item 物品信息
+---@param source? string 获得渠道，会在GainItem词条中判断。新增了渠道后要记得在Unity的GainItemTag的注释里面注明哦
 ---@param silent? boolean true时，不弹出左下角的提示
 ---@return boolean
-function Bag:GiveItem(item, silent)
+function Bag:GiveItem(item, source, silent)
     local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
     local param = CastParam.New()
     param.power = item.amount
-    self.player:TriggerTags("获得物品时", self.player, param, item)
+    self.player:TriggerTags("获得物品时", self.player, param, item, source)
     item.amount = math.floor(param.power)
     if item.itemType.gainCommands then
         self.player:ExecuteCommands(item.itemType.gainCommands)

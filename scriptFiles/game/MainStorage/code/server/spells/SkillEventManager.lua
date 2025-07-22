@@ -781,16 +781,7 @@ function SkillEventManager.HandleUpgradeStarSkill(evt)
 
     -- 检查玩家资源是否足够
     if not player.bag:HasItems(starCosts) then
-        local shortageInfo = player.bag:GetResourceShortageInfo(starCosts)
-        if shortageInfo then
-            local messages = {}
-            for _, resource in ipairs(shortageInfo) do
-                table.insert(messages, string.format("【%s】缺少%d个", resource.displayName, resource.missing))
-            end
-            player:SendHoverText("升星失败：升星素材不足，" .. table.concat(messages, "，"))
-        else
-            player:SendHoverText("升星失败：升星素材不足")
-        end
+        player:SendHoverText("升星失败：升星素材不足")
         return
     end
 

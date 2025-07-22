@@ -39,6 +39,8 @@ function _M:OnInit(info_)
     self.inited = false
     self.name = info_.nickname
     self.isPlayer = true
+    self._levelTeleporting = false
+    self.isAutoFighting = false
     self.bag = nil ---@type Bag
     self.mail = nil ---@type PlayerMailBundle
     self.auto_attack      = 0                                   -- 自动攻击技能ID
@@ -69,8 +71,11 @@ function _M:OnInit(info_)
             self.focusOnCommandsCb = nil
         end
     end)
+    self:SubscribeEvent("ToggleAutoBattle", function (evt)
+        self.isAutoFighting = evt.autoBattle
+    end)
 
-    ServerEventManager.SubscribeToPlayer(self, "ClickQuest", function (evt)
+    self:SubscribeEvent("ClickQuest", function (evt)
         local quest = self.quests[evt.name]
         if not quest then
             self:SendHoverText("不存在的任务 %s", evt.name)
@@ -81,10 +86,9 @@ function _M:OnInit(info_)
         else
             quest.quest:OnClick(self)
         end
-    end, self.uuid)
+    end)
 
     self:SubscribeEvent("NavigateReached", function()
-        print("NavigateReached", self.navigateCb)
         if self.navigateCb then
             self.navigateCb()
             self.navigateCb = nil
@@ -131,6 +135,10 @@ function _M:OnInit(info_)
     -- 启动技能可释放状态检查任务
     self:StartSkillCastabilityCheck()
     self.loginTime = os.time()
+end
+
+function _M:SubscribeEvent(eventType, listener, priority)
+    ServerEventManager.SubscribeToPlayer(self, eventType, listener, self.uuid)
 end
 
 function _M:GetSkill(skillName)
@@ -365,7 +373,7 @@ function _M:setPlayerNetStat(player_net_stat_)
 end
 
 function _M:CreateTitle(name)
-    Entity.CreateTitle(self, string.format("%s\n%d级", self.name , self.level))
+    Entity.CreateTitle(self, name)
     self:SendEvent("HideTitle", { })
 end
 
@@ -388,7 +396,6 @@ end
 function _M:SetLevel(level)
     Entity.SetLevel(self,level)
     self:RefreshStats()
-    self:CreateTitle()
     self:SendEvent("UpdateHud", {
         level = self.level
     })
@@ -442,6 +449,9 @@ function _M:EnterBattle()
         gg.log("警告: 玩家", self.name, "没有装备第一个技能")
     end
 
+    -- 设置摄像机距离
+    self:SendEvent("SetCameraDistance", { distance = 200 })
+
     -- 清理所有召唤物
     local SummonSpell = require(MainStorage.code.server.spells.spell_types.SummonSpell) ---@type SummonSpell
     if SummonSpell.summonerSummons[self] then
@@ -460,6 +470,9 @@ function _M:ExitBattle()
     self.actor.LocalScale = Vector3.New(1, 1, 1)
     self:SetMoveable(true)  -- 确保玩家退出战斗后可以移动
     self:RefreshStats()
+
+    -- 恢复默认摄像机距离
+    self:SendEvent("SetCameraDistance", { distance = 600 })
 
     -- 清理所有召唤物
     local SummonSpell = require(MainStorage.code.server.spells.spell_types.SummonSpell) ---@type SummonSpell
@@ -525,11 +538,11 @@ function _M:DestroyObject()
 end
 
 function _M:OnLeaveGame()
-    ServerEventManager.Publish("PlayerLeaveGameEvent", { player = self })
+    self.isDestroyed = true
     if not self.isDead then
         self:Die()
     end
-    self.isDestroyed = true
+    ServerEventManager.Publish("PlayerLeaveGameEvent", { player = self })
     if self.actor then
         _M.node2Entity[self.actor] = nil
         self.actor = nil
@@ -574,14 +587,18 @@ function _M:RefreshStats()
     for slot, _ in pairs(slotSet) do
         local skill = self:GetEquippedSkill(slot)
         if skill then
-            -- 检查技能是否应该生效
-            local shouldBeEffective = skill.equipSlot > 0 or skill.skillType.effectiveWithoutEquip
-            if shouldBeEffective then
-                -- 添加被动词条
-                for _, tagType in ipairs(skill.skillType.passiveTags) do
-                    local tag = tagType:FactoryEquipingTag("SKILL-" .. (skill.skillName or skill.skillType.name), skill.level)
-                    self:AddTagHandler(tag)
-                end
+            for _, tagType in ipairs(skill.skillType.passiveTags) do
+                local tag = tagType:FactoryEquipingTag("SKILL-" .. (skill.skillName or skill.skillType.name), skill.level)
+                self:AddTagHandler(tag)
+            end
+        end
+    end
+    for key, skill in pairs(self.skills) do
+        if skill.skillType.effectiveWithoutEquip and not slotSet[skill.equipSlot] then
+            -- 添加被动词条
+            for _, tagType in ipairs(skill.skillType.passiveTags) do
+                local tag = tagType:FactoryEquipingTag("SKILL-" .. (skill.skillName or skill.skillType.name), skill.level)
+                self:AddTagHandler(tag)
             end
         end
     end

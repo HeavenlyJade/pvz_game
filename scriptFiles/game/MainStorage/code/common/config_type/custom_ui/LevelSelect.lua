@@ -26,12 +26,6 @@ end
 ---@param player Player
 function LevelSelect:S_BuildPacket(player, packet)
     packet.levels = {}
-    packet.requeueable = player:GetVariable(self.autoReQueueVar) > 0
-    packet.requeueing = player:GetVariable("自动重匹配中") > 0
-    if packet.requeueing and not packet.requeueable then
-        packet.requeueing = false
-        player:SetVariable("自动重匹配中", 0)
-    end
     for _, levelType in ipairs(self.levelTypes) do
         local suc, reason = levelType:CanJoin(player)
         packet.levels[levelType.levelId] = {
@@ -60,7 +54,7 @@ function LevelSelect:onClaimFirstClearedItem(player, args)
         return
     end
     player:SetVariable("levelclaimed_".. levelType.levelId, 1)
-    player.bag:GiveItem(levelType.firstClearReward)
+    player.bag:GiveItem(levelType.firstClearReward, "关卡首通_" .. levelType.levelId)
 end
 
 ---@param player Player
@@ -72,7 +66,6 @@ function LevelSelect:onEnterDungeon(player, args)
         return
     end
     levelType:Queue(player)
-    player:SetVariable("自动重匹配中", args.requeueing and 1 or 0)
 end
 
 -----------------------客户端---------------------------
@@ -104,20 +97,7 @@ function LevelSelect:_viewLevelType(levelType)
     local selectConfirm = ui:GetComponent("SelectConfirm")
     selectConfirm.node.Visible = true
     selectConfirm:GetComponent("关卡背景/关卡名字").node.Title = levelType.levelId
-    local toggle = selectConfirm:GetToggle("自动重新匹配")
-    toggle.clickCb = function (ui, button)
-        if not self.packet.requeueable then
-            self:SendHoverText(self.lockedMessage)
-            return false
-        end
-    end
     local levelInfo = self._levels[levelType.levelId]
-
-    if self.packet.requeueable then
-        toggle:SetOn(self.packet.requeueing)
-    else
-        toggle:SetOn(false)
-    end
     selectConfirm:GetButton("关闭按钮").clickCb = function (ui, button)
         selectConfirm.node.Visible = false
     end
@@ -134,13 +114,8 @@ function LevelSelect:_viewLevelType(levelType)
     end
     self._joinButton = selectConfirm:GetButton("确认按钮")
     self._joinButton.clickCb = function (ui, button)
-        local requeueing = false
-        if self.packet.requeueable then
-            requeueing = toggle.isOn
-        end
         self:C_SendEvent("onEnterDungeon", {
-            levelType = levelType.levelId,
-            requeueing = requeueing
+            levelType = levelType.levelId
         })
         ui:Close()
     end

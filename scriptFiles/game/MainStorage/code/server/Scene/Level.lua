@@ -66,29 +66,16 @@ function Level:OnInit(levelType, scene, index)
     self.assignTargetTask = nil ---@type number
 
     -- 怪物相关
-    self.activeMobs = {} ---@type table<string, Monster>
+    self.activeMobs = gg.Dict.New() ---@type Dict<string, Monster>
     self.currentWaveMobCount = 0 ---@type number
-    self.remainingMobCount = 0 ---@type number
-
-    -- 新增
     self.playerStats = {} ---@type table<string, {kills: table<string, number>, rewards: table<string, number>}>
 
     -- 监听怪物死亡事件
     ServerEventManager.Subscribe("MobDeadEvent", function(data)
-        if self:IsActive() and data.mob and self.activeMobs[data.mob.uuid] then
-
-            self.remainingMobCount = math.max(0, self.remainingMobCount - 1)
-
-            -- 计算并同步剩余怪物百分比
-            local mobPercent = self.currentWaveMobCount > 0 and (self.remainingMobCount / self.currentWaveMobCount) or 0
-            local waveIndex = math.max(1, math.min(self.waveCount, #self.waveMobCounts or {}))
-            for _, player in pairs(self.players) do
-                player:SendEvent("WaveHealthUpdate", {
-                    waveIndex = waveIndex,
-                    healthPercent = mobPercent
-                })
-            end
-
+        if self:IsActive() then
+            gg.log("MobDeadEvent", self.activeMobs:Count(), self.activeMobs)
+        end
+        if self:IsActive() and data.mob and self.activeMobs:ContainsKey(data.mob.uuid) then
             -- 处理击杀奖励
             if data.damageRecords then
                 local topDamager = nil
@@ -133,7 +120,7 @@ function Level:OnInit(levelType, scene, index)
                                     local itemName = item["物品"]
                                     -- print(string.format("[掉落物] 发放: %s x %s 给玩家 %s", tostring(itemName), tostring(baseCount), tostring(topDamager.name)))
                                     self.playerStats[uin].rewards[itemName] = (self.playerStats[uin].rewards[itemName] or 0) + baseCount
-                                    topDamager.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(baseCount))
+                                    topDamager.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(baseCount), "关卡掉落_"..self.levelType.levelId)
                                 end
                             end
                         end
@@ -141,17 +128,11 @@ function Level:OnInit(levelType, scene, index)
                 end
             end
 
-            self.activeMobs[data.mob.uuid] = nil
-            -- 正确计算activeMobs数量
-            local activeMobCount = 0
-            for _ in pairs(self.activeMobs) do
-                activeMobCount = activeMobCount + 1
-            end
-
+            self.activeMobs:Remove(data.mob.uuid)
             -- 检查波次是否结束
             local spawningCount = #self.spawningWaves
             local notSpawningCount = #self.notSpawningWaves
-            if self.remainingMobCount == 0 and spawningCount == 0 and notSpawningCount == 0 then
+            if self.activeMobs:Count() == 0 and spawningCount == 0 and notSpawningCount == 0 then
                 self:OnWaveEnd()
             else
             end
@@ -273,7 +254,7 @@ function Level:StartWave()
     local baseMobCount = self.currentWave:CalculateMobCount()
     local multiplier = self.levelType:GetScaledMultiplier(1, self:GetPlayerCount())
     self.currentWaveMobCount = math.floor(baseMobCount * multiplier)
-    self.remainingMobCount = self.remainingMobCount + self.currentWaveMobCount
+    -- self.remainingMobCount = self.remainingMobCount + self.currentWaveMobCount
 
 
     -- 初始化未开始的刷怪波次
@@ -390,13 +371,7 @@ function Level:Update()
         -- 处理生成的怪物
         for _, mob in ipairs(spawnedMobs) do
             -- 缓存怪物实例
-            self.activeMobs[mob.uuid] = mob
-            -- 正确计算activeMobs数量
-            local activeMobCount = 0
-            for _ in pairs(self.activeMobs) do
-                activeMobCount = activeMobCount + 1
-            end
-
+            self.activeMobs:Add(mob.uuid, mob)
             for attrName, baseMultiplier in pairs(self.levelType.playerAttributeMultiplier) do
                 local mult = baseMultiplier * (self:GetPlayerCount() - 1)
                 mob:AddStat(attrName, mult * mob:GetStat(attrName), "BASE", true)
@@ -416,6 +391,23 @@ function Level:Update()
             end
         end
 
+        -- 新增：怪物生成时同步进度条
+        if spawnedMobs and #spawnedMobs > 0 then
+            local spawnedSoFar = 0
+            for _, count in pairs(self.waveSpawnedCounts) do
+                spawnedSoFar = spawnedSoFar + count
+            end
+            local waveIndex = math.max(1, math.min(self.waveCount, #self.waveMobCounts or {}))
+            local mobPercent = self.currentWaveMobCount > 0 and (spawnedSoFar / self.currentWaveMobCount) or 0
+            for _, player in pairs(self.players) do
+                player:SendEvent("WaveHealthUpdate", {
+                    waveIndex = waveIndex,
+                    healthPercent = mobPercent,
+                    waveImg = self.currentWave and self.currentWave.waveImg or nil
+                })
+            end
+        end
+
         if isComplete then
             table.remove(self.spawningWaves, i)
             self.waveSpawnedCounts[wave] = nil
@@ -424,20 +416,20 @@ function Level:Update()
 
     -- 检查当前波次是否结束
     if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 then
-        gg.log("self.allWaves", #self.allWaves, self.remainingMobCount)
-        if (#self.allWaves > 0 or self.remainingMobCount == 0) then
+        gg.log("self.allWaves", #self.allWaves, self.activeMobs:Count())
+        if (#self.allWaves > 0 and self.activeMobs:Count() == 0) then
             self:OnWaveEnd()
         end
     end
 
     -- 检查当前是否为最后一波且所有刷怪波次已完成
-    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 and self.remainingMobCount > 0 then
+    if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 and self.activeMobs:Count() > 0 then
         -- 判断是否最后一波
         if #self.allWaves == 0 and not self.assignTargetTask then
             -- 启动定时任务，每秒分配目标
             self.assignTargetTask = ServerScheduler.add(function()
                 -- 只在关卡激活且还有怪物时执行
-                if not self:IsActive() or not self.currentWave or self.remainingMobCount == 0 then
+                if not self:IsActive() or not self.currentWave or self.activeMobs:Count() == 0 then
                     if self.assignTargetTask then
                         ServerScheduler.cancel(self.assignTargetTask)
                         self.assignTargetTask = nil
@@ -452,13 +444,12 @@ function Level:Update()
                     end
                 end
                 if #alivePlayers == 0 then return end
-                -- 遍历所有怪物，分配目标
-                for _, mob in pairs(self.activeMobs) do
+                self.activeMobs:ForEach(function (_, mob)
                     if mob and mob.target == nil then
                         local randomPlayer = alivePlayers[math.random(1, #alivePlayers)]
                         mob:SetTarget(randomPlayer)
                     end
-                end
+                end)
             end, 0, 1.0)
         end
     end
@@ -489,10 +480,6 @@ end
 ---清理场景
 function Level:Cleanup()
     print(debug.traceback("Cleanup"))
-    local activeMobCount = 0
-    for _ in pairs(self.activeMobs) do
-        activeMobCount = activeMobCount + 1
-    end
     self.startTime = 0
     self.endTime = 0
     self.currentStars = 0
@@ -505,13 +492,12 @@ function Level:Cleanup()
     self.waveCount = 0
     self.mobCount = {}
     self.currentWaveMobCount = 0
-    self.remainingMobCount = 0
     self.waveSpawnedCounts = {}
 
     local destroyedCount = 0
     local failedCount = 0
 
-    for uuid, mob in pairs(self.activeMobs) do
+    self.activeMobs:ForEach(function (_, mob)
         if mob and mob.isEntity then
             local success, err = pcall(function()
                 mob:DestroyObject()
@@ -524,9 +510,8 @@ function Level:Cleanup()
         else
             failedCount = failedCount + 1
         end
-    end
-
-    self.activeMobs = {}
+    end)
+    self.activeMobs = gg.Dict.New()
 end
 
 ---结束关卡
@@ -589,7 +574,7 @@ function Level:End(success)
                     local player = ranking.player
                     if player then
                         for itemName, count in pairs(rankReward["物品"]) do
-                            player.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(count))
+                            player.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(count), "关卡排名_"..self.levelType.levelId)
                             -- 记录排名奖励
                             self.playerStats[player.uin] = self.playerStats[player.uin] or {kills = {}, rewards = {}}
                             self.playerStats[player.uin].rewards[itemName] = (self.playerStats[player.uin].rewards[itemName] or 0) + count
@@ -634,7 +619,7 @@ function Level:End(success)
             stars = self.currentStars,
             duration = self.endTime - self.startTime
         })
-        if player:GetVariable("自动重匹配中") == 1 then
+        if player.isAutoFighting and not player.isDestroyed then
             self.levelType:Queue(player)
         end
         player:ExitBattle()
@@ -734,7 +719,7 @@ end
 
 ---移除玩家
 ---@param player Player
----@param success boolean
+---@param success boolean|nil
 ---@param reason string 移除原因
 function Level:RemovePlayer(player, success, reason)
     if self.players[player.uin] then
@@ -747,7 +732,7 @@ function Level:RemovePlayer(player, success, reason)
         for uin, p in pairs(self.players) do
             table.insert(playersList, p)
         end
-        for _, mob in pairs(self.activeMobs) do
+        self.activeMobs:ForEach(function (_, mob)
             if mob.target == player then
                 if #playersList > 0 then
                     local newTarget = playersList[math.random(1, #playersList)]
@@ -756,7 +741,7 @@ function Level:RemovePlayer(player, success, reason)
                     mob:SetTarget(nil)
                 end
             end
-        end
+        end)
         player:ResetTempSkill()
 
         local originalPos = self.playerOriginalPositions[player.uin]
@@ -777,7 +762,7 @@ function Level:RemovePlayer(player, success, reason)
             stars = self.currentStars,
             duration = self.endTime - self.startTime
         })
-        if player:GetVariable("自动重匹配中") == 1 then
+        if player.isAutoFighting and not player.isDestroyed then
             self.levelType:Queue(player)
         end
         player:ExitBattle()
