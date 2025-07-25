@@ -1718,7 +1718,7 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
         end
 
         if levelNode then
-            levelNode.Title = string.format("%d/%d", skillLevel, maxLevel)
+            levelNode.Title = string.format("%s/%s", gg.FormatLargeNumber(skillLevel), gg.FormatLargeNumber(maxLevel))
         end
     else
         -- 服务端无数据：隐藏所有功能按钮
@@ -1733,7 +1733,7 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
         -- 显示等级0
         local levelNode = cardFrame["等级"]
         if levelNode then
-            levelNode.Title = string.format("0/%d", skill.maxLevel or 1)
+            levelNode.Title = string.format("0/%s", gg.FormatLargeNumber(skill.maxLevel or 1))
         end
     end
 
@@ -1824,7 +1824,7 @@ function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
     local star_level = severSkill and severSkill.star_level or 0
 
     -- 使用工具函数设置等级
-    cardFrame["强化等级"].Title = "强化等级:" .. skillLevel
+    cardFrame["强化等级"].Title = "强化等级:" .. gg.FormatLargeNumber(skillLevel)
     -- 使用工具函数设置图标和名称
     local iconResources = { iconPath = skill.icon,iconNodePath = "图标底图/图标"}
     self:_setCardIcon(cardFrame, iconResources)
@@ -1893,7 +1893,7 @@ function CardsGui:UpdateSubCardProgress( skill, growth, skillLevel)
     -- 更新进度文本
     if progressText then
         -- 显示当前经验/当前等级最大经验
-        progressText.Title = string.format("%d/%d", currentLevelProgress, maxGrowthThisLevel)
+        progressText.Title = string.format("%s/%s", gg.FormatLargeNumber(currentLevelProgress), gg.FormatLargeNumber(maxGrowthThisLevel))
     end
 
 
@@ -1978,8 +1978,8 @@ function CardsGui:UpdateSubCardProgressInAttributePanel(attributePanel, skill, g
     -- 更新进度文本
     if progressText then
         -- 显示当前经验/当前等级最大经验和百分比
-        progressText.Title = string.format("强化进度: %d/%d (%.1f%%)",
-            currentLevelProgress, maxGrowthThisLevel, progressPercent * 100)
+        progressText.Title = string.format("强化进度: %s/%s (%.1f%%)",
+            gg.FormatLargeNumber(currentLevelProgress), gg.FormatLargeNumber(maxGrowthThisLevel), progressPercent * 100)
     end
 
 
@@ -3225,11 +3225,11 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
     table.insert(lines, string.format("技能：%s", upgradeData.skillName))
 
     if upgradeData.canFullUpgrade then
-        table.insert(lines, string.format("等级：%d → %d (满级)",
-            upgradeData.currentLevel, upgradeData.nextLevel))
+        table.insert(lines, string.format("等级：%s → %s (满级)",
+            gg.FormatLargeNumber(upgradeData.currentLevel), gg.FormatLargeNumber(upgradeData.nextLevel)))
     else
-        table.insert(lines, string.format("等级：%d → %d",
-            upgradeData.currentLevel, upgradeData.nextLevel))
+        table.insert(lines, string.format("等级：%s → %s",
+            gg.FormatLargeNumber(upgradeData.currentLevel), gg.FormatLargeNumber(upgradeData.nextLevel)))
     end
 
     table.insert(lines, "")
@@ -3239,7 +3239,7 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
         table.insert(lines, "❌ 无法升级到下一级，资源不足")
         if upgradeData.limitingResource then
             local available = upgradeData.availableResources[upgradeData.limitingResource] or 0
-            table.insert(lines, string.format("💰 限制资源：%s (拥有%d)", upgradeData.limitingResource, available))
+            table.insert(lines, string.format("💰 限制资源：%s (拥有%s)", upgradeData.limitingResource, gg.FormatLargeNumber(available)))
         end
         return table.concat(lines, "\n")
     end
@@ -3261,8 +3261,8 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
             local available = upgradeData.availableResources[resource.name] or 0
             local remaining = math.max(0, available - resource.amount)
             local status = available >= resource.amount and "✅" or "❌"
-            table.insert(lines, string.format("%s %s：%d (拥有%d，剩余%d)",
-                status, resource.name, resource.amount, available, remaining))
+            table.insert(lines, string.format("%s %s：%s (拥有%s，剩余%s)",
+                status, resource.name, gg.FormatLargeNumber(resource.amount), gg.FormatLargeNumber(available), gg.FormatLargeNumber(remaining)))
         end
     else
         table.insert(lines, "无需消耗资源")
@@ -3274,7 +3274,7 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
     if upgradeData.canFullUpgrade then
         table.insert(lines, "🎉 升级后将达到满级！")
     else
-        table.insert(lines, string.format("✅ 可以升级到等级%d", upgradeData.nextLevel))
+        table.insert(lines, string.format("✅ 可以升级到等级%s", gg.FormatLargeNumber(upgradeData.nextLevel)))
     end
 
     return table.concat(lines, "\n")
@@ -3371,8 +3371,8 @@ function CardsGui:ShowOneKeyUpgradeInsufficientResourcesMessage(upgradeData)
     table.insert(resourceLines, "")
 
     if upgradeData.currentLevel < upgradeData.maxLevel then
-        table.insert(resourceLines, string.format("升级目标：等级 %d → %d",
-            upgradeData.currentLevel, upgradeData.nextLevel))
+        table.insert(resourceLines, string.format("升级目标：等级 %s → %s",
+            gg.FormatLargeNumber(upgradeData.currentLevel), gg.FormatLargeNumber(upgradeData.nextLevel)))
     else
         table.insert(resourceLines, "技能已达最大等级")
     end
@@ -3392,9 +3392,9 @@ function CardsGui:ShowOneKeyUpgradeInsufficientResourcesMessage(upgradeData)
             local available = upgradeData.availableResources[resource.name] or 0
             local sufficient = available >= resource.amount
             local status = sufficient and "✅" or "❌"
-            table.insert(resourceLines, string.format("%s %s：需要 %d，拥有 %d，缺少 %d",
-                status, resource.name, resource.amount, available,
-                math.max(0, resource.amount - available)))
+            table.insert(resourceLines, string.format("%s %s：需要 %s，拥有 %s，缺少 %s",
+                status, resource.name, gg.FormatLargeNumber(resource.amount), gg.FormatLargeNumber(available),
+                gg.FormatLargeNumber(math.max(0, resource.amount - available))))
         end
     end
 
@@ -3458,7 +3458,7 @@ function CardsGui:OnSubCardButtonClick(ui, button)
         if currentLevelNode then
             if serverData then
                 -- 已解锁：显示当前强化等级
-                currentLevelNode.Title = "当前强化等级: LV" .. skillLevel
+                currentLevelNode.Title = "当前强化等级: LV" .. gg.FormatLargeNumber(skillLevel)
             else
                 -- 未解锁：不显示等级信息
                 currentLevelNode.Title = ""
@@ -3502,7 +3502,7 @@ end
 function CardsGui:GetDescriptions(skill, currentLevel)
     local nextLevel = currentLevel + 1
 
-    local pre = string.format("等级 %d/%d", currentLevel, skill.maxLevel)
+    local pre = string.format("等级 %s/%s", gg.FormatLargeNumber(currentLevel), gg.FormatLargeNumber(skill.maxLevel))
     local descPre = {}
     if currentLevel == 0 then
         table.insert(descPre, "未解锁")
@@ -3514,7 +3514,7 @@ function CardsGui:GetDescriptions(skill, currentLevel)
     local post = ""
     local postD = "已达最大等级"
     if currentLevel < skill.maxLevel then
-        post = string.format("等级 %d/%d", nextLevel, skill.maxLevel)
+        post = string.format("等级 %s/%s", gg.FormatLargeNumber(nextLevel), gg.FormatLargeNumber(skill.maxLevel))
         local descPost = {}
         for _, tag in pairs(skill.passiveTags) do
             table.insert(descPost, tag:GetDescription(nextLevel))
@@ -3524,7 +3524,7 @@ function CardsGui:GetDescriptions(skill, currentLevel)
         end
         local levelUpPlayerValue = skill:GetLevelUpPlayerAtLevel(nextLevel)
         -- gg.log("玩家等级: +%s", levelUpPlayerValue,skill.levelUpPlayer)
-        table.insert(descPost, string.format("\n玩家等级: +%s", levelUpPlayerValue))
+        table.insert(descPost, string.format("\n玩家等级: +%s", gg.FormatLargeNumber(levelUpPlayerValue)))
         postD = table.concat(descPost, "\n")
     end
     return {
@@ -3606,8 +3606,8 @@ function CardsGui:UpdateMainCardResourceCost(attributeButton, skill, currentLeve
             allSufficient = false
         end
         local status = sufficient and "✅" or "❌"
-        local costText = string.format("%s %s: %d/%d",
-            status, resource.name, resource.current, resource.need)
+        local costText = string.format("%s %s: %s/%s",
+            status, resource.name, gg.FormatLargeNumber(resource.current), gg.FormatLargeNumber(resource.need))
         table.insert(costTexts, costText)
 
         -- gg.log("主卡资源消耗:", skill.name, "升级到", nextLevel,
@@ -3628,14 +3628,14 @@ function CardsGui:UpdateSubCardLevelDisplay(skillName, skillLevel)
         return
     end
 
-    -- 更新副卡组件中的强化等级显示
-    local subNode = self.subCardComponent.node
-    if subNode then
-        local currentLevelNode = subNode["主背景"]["主背景强化显示"]["当前强化等级"]
-        if currentLevelNode then
-            currentLevelNode.Title = "当前强化等级: LV" .. skillLevel
+            -- 更新副卡组件中的强化等级显示
+        local subNode = self.subCardComponent.node
+        if subNode then
+            local currentLevelNode = subNode["主背景"]["主背景强化显示"]["当前强化等级"]
+            if currentLevelNode then
+                currentLevelNode.Title = "当前强化等级: LV" .. gg.FormatLargeNumber(skillLevel)
+            end
         end
-    end
 
     -- 更新副卡属性面板中的强化等级显示
     if self.subCardAttributeButton then
@@ -3644,7 +3644,7 @@ function CardsGui:UpdateSubCardLevelDisplay(skillName, skillLevel)
         if descPreTitleNode then
             local skillType = SkillTypeConfig.Get(skillName)
             if skillType then
-                descPreTitleNode.Title = string.format("等级 %d/%d", skillLevel, skillType.maxLevel or 1)
+                descPreTitleNode.Title = string.format("等级 %s/%s", gg.FormatLargeNumber(skillLevel), gg.FormatLargeNumber(skillType.maxLevel or 1))
             end
         end
     end
