@@ -20,6 +20,7 @@ function ItemSpell:OnInit(data)
     self.baseMultiplier = data["基础倍率"] or 1
     self.amountAmplifiers = data["属性增数"] or {}
     self.targetAmountAmplifiers = data["目标属性增数"] or {}
+    self.source = data["渠道"] or ("魔法_"..self.spellName)
 end
 
 --- 实际执行魔法
@@ -59,7 +60,7 @@ function ItemSpell:CastReal(caster, target, param)
     end
     
     -- 打印获得物品信息
-    if self.printInfo then
+    if param.printInfo then
         local log = {}
         table.insert(log, string.format("=== %s 获得物品数量构成 ===", self.spellName))
         
@@ -90,11 +91,11 @@ function ItemSpell:CastReal(caster, target, param)
         table.insert(log, string.format("最终数量: %s", battle:GetFinalDamage()))
         table.insert(log, "=====================")
         
-        print(table.concat(log, "\n"))
+        caster:SendLog(table.concat(log, "\n"))
     end
     
     local finalAmount = math.floor(battle:GetFinalDamage() + 0.5) -- 四舍五入
-    target.bag:GiveItem(self.itemType:ToItem(math.floor(finalAmount)), "魔法_"..self.spellName)
+    target.bag:GiveItem(self.itemType:ToItem(math.floor(finalAmount)), self.source)
     self:PlayEffect(self.castEffects, caster, target, param)
     if self.broadcastGained then
         local targetPos = target:GetPosition()

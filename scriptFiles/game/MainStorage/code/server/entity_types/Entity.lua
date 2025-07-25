@@ -49,6 +49,7 @@ function _M:OnInit(info_)
     self._moveable = true
     self.name = nil
     self.isDestroyed = false
+    self.isInvulnurable = false
     self:GenerateUUID()
     self._nameTemplate = ""
     self.isEntity = true
@@ -450,6 +451,8 @@ end
 ---@param value number 变量值
 function _M:SetVariable(key, value)
     self.variables[key] = value
+    -- 发布变量变化事件
+    ServerEventManager.Publish("VariableChanged", { entity = self, key = key, value = value })
 end
 
 --- 获取变量
@@ -491,6 +494,8 @@ function _M:AddVariable(key, value)
         self.variables[key] = 0
     end
     self.variables[key] = self.variables[key] + value
+    -- 发布变量变化事件
+    ServerEventManager.Publish("VariableChanged", { entity = self, key = key, value = self.variables[key] })
 end
 
 --- 移除变量
@@ -506,6 +511,8 @@ function _M:RemoveVariable(key)
 
     for _, k in ipairs(keysToRemove) do
         self.variables[k] = nil
+        -- 发布变量变化事件
+        ServerEventManager.Publish("VariableChanged", { entity = self, key = k, value = nil })
     end
 end
 
@@ -615,11 +622,10 @@ function _M:Hurt(amount, damager, isCrit)
     -- 扣除生命值
     if amount > 0 then
         self:SetHealth(self.health - amount)
-        -- 进入战斗状态
         self.combatTime = 10 -- 设置战斗时间为10秒
-        -- 显示伤害数字
-        if damager.isPlayer then
-            damager:showDamage(amount, {
+        local player = damager:GetPlayer()
+        if player then
+            player:showDamage(amount, {
                 cr = isCrit and 1 or 0
             }, self)
         end
@@ -639,6 +645,22 @@ function _M:Hurt(amount, damager, isCrit)
     if self.health <= 0 then
         self:Die()
     end
+end
+
+---@param owner Entity
+function _M:SetOwner(owner)
+    self.owner = owner
+    self.actor.CollideGroupID = owner.actor.CollideGroupID
+end
+
+function _M:GetPlayer()
+    if self.isPlayer then
+        return self
+    end
+    if self.owner then
+        return self.owner:GetPlayer()
+    end
+    return nil
 end
 
 --- 治疗

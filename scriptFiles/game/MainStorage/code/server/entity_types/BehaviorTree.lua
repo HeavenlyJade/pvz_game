@@ -134,6 +134,7 @@ function WanderBehavior:OnInit()
     end
 end
 
+
 -- 近战攻击状态
 ---@class MeleeBehavior:MobBehavior
 local MeleeBehavior = ClassMgr.Class("MeleeBehavior", MobBehavior)
@@ -145,7 +146,7 @@ function MeleeBehavior:OnInit()
     ---@return boolean
     self.CanEnter = function(self, entity, behavior)
         if not entity.target or not entity.target:CanBeTargeted() then 
-            local searchRadius = behavior["主动索敌"]
+            local searchRadius = behavior["主动索敌"] + entity:GetSize().x
             if searchRadius and searchRadius > 0 then
                 entity:TryFindTarget(searchRadius) 
                 if not entity.target or not entity.target:CanBeTargeted() then
@@ -156,10 +157,9 @@ function MeleeBehavior:OnInit()
             end
         end
         -- 检查距离
-        local escapeRange = behavior["脱战距离"] or 0
-        if escapeRange > 0 then
+        if behavior["脱战距离"] and behavior["脱战距离"] > 0 then
             local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
-            return distanceSq <= escapeRange ^ 2
+            return distanceSq <= behavior["脱战距离"] + entity:GetSize().x ^ 2
         end
         return true
     end
@@ -204,13 +204,12 @@ function MeleeBehavior:OnInit()
             end
         end
         
+        
         local behavior = entity:GetCurrentBehavior()
         local targetPos = entity.target:GetPosition()
         local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), targetPos)
         
-        -- 如果距离太远，退出战斗
-        local escapeRange = behavior["脱战距离"] or 0
-        if escapeRange > 0 and distanceSq > escapeRange ^ 2 then
+        if behavior["脱战距离"] and behavior["脱战距离"] > 0 then
             entity:SetCurrentBehavior(nil)
             return
         end
@@ -273,10 +272,9 @@ function MeleeBehavior:OnInit()
         end
         
         local behavior = entity:GetCurrentBehavior()
-        local escapeRange = behavior["脱战距离"] or 0
-        if escapeRange > 0 then
+        if behavior["脱战距离"] and behavior["脱战距离"] > 0 then
             local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
-            return distanceSq > escapeRange ^ 2
+            return distanceSq <= behavior["脱战距离"] + entity:GetSize().x ^ 2
         end
         return false
     end

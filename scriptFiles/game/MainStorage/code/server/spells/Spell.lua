@@ -100,6 +100,9 @@ function Spell:Cast(caster, target, param)
     if not param then
         param = CastParam.New()
     end
+    if param.printInfo == nil then
+        param.printInfo = self.printInfo
+    end
     param.realTarget = target
 
     if not caster then
@@ -131,8 +134,8 @@ function Spell:Cast(caster, target, param)
 
     local log = {}
     if not self:CanCast(caster, target, param, log) then
-        if self.printInfo then
-            print(table.concat(log, "\n"))
+        if param.printInfo  then
+            caster:SendLog(table.concat(log, "\n"))
         end
         return false
     end
@@ -149,18 +152,18 @@ function Spell:Cast(caster, target, param)
     
     -- 如果事件被取消，则释放失败
     if castEvent.cancelled then
-        if self.printInfo then
+        if param.printInfo  then
             log[#log + 1] = string.format("%s：魔法释放被取消", self.spellName)
-            print(table.concat(log, "\n"))
+            caster:SendLog(table.concat(log, "\n"))
         end
         return false
     end
 
     caster:TriggerTags("释放魔法时", target, param, self, param)
     if param.cancelled then
-        if self.printInfo then
+        if param.printInfo  then
             log[#log + 1] = string.format("%s：词条【释放魔法时】被取消", self.spellName)
-            print(table.concat(log, "\n"))
+            caster:SendLog(table.concat(log, "\n"))
         end
         return false
     end
@@ -169,9 +172,9 @@ function Spell:Cast(caster, target, param)
         target:TriggerTags("被释放魔法时", caster, param, self, param)
     end
     if param.cancelled then
-        if self.printInfo then
+        if param.printInfo  then
             log[#log + 1] = string.format("%s：词条【被释放魔法时】被取消", self.spellName)
-            print(table.concat(log, "\n"))
+            caster:SendLog(table.concat(log, "\n"))
         end
         return false
     end
@@ -184,7 +187,7 @@ function Spell:Cast(caster, target, param)
     if cd > 0 then
         cd = cd / param:GetValue(self, "冷却加速", self.cooldownSpeed)
         caster:SetCooldown(self.spellName, cd)
-        if self.printInfo then
+        if param.printInfo then
             log[#log + 1] = string.format("%s：设置冷却%.1f秒", self.spellName, cd)
         end
     end
@@ -192,7 +195,7 @@ function Spell:Cast(caster, target, param)
     local targetCd = param:GetValue(self, "各目标冷却", self.targetCooldown)
     if targetCd > 0 and target and target.isEntity then
         caster:SetCooldown(self.spellName, targetCd, target:GetEntity())
-        if self.printInfo then
+        if param.printInfo then
             log[#log + 1] = string.format("%s：设置对该目标冷却%.1f秒", self.spellName, targetCd)
         end
     end
@@ -202,9 +205,9 @@ function Spell:Cast(caster, target, param)
     table.insert(log, string.format("%s: %s对%s释放通过, 威力%s", self.spellName, caster.name, self:GetName(target), param.power))
     local delay = param:GetValue(self, "延迟", self.delay)
     if delay > 0 then
-        if self.printInfo then
+        if param.printInfo  then
             log[#log + 1] = string.format("%s：延迟%.1f秒后释放", self.spellName, delay)
-            print(table.concat(log, "\n"))
+            caster:SendLog(table.concat(log, "\n"))
         end
         ServerScheduler.add(function()
             self:PlayEffect(self.castEffects, caster, target, param)
@@ -212,8 +215,8 @@ function Spell:Cast(caster, target, param)
         end, delay)
         return true
     else
-        if self.printInfo and #log > 0 then
-            print(table.concat(log, "\n"))
+        if param.printInfo  and #log > 0 then
+            caster:SendLog(table.concat(log, "\n"))
         end
         self:PlayEffect(self.castEffects, caster, target, param)
         return self:CastReal(caster, target, param)

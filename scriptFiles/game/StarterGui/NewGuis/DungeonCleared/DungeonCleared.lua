@@ -51,6 +51,11 @@ function DungeonCleared:OnInit(node, config)
         end
         self:Open()
     end)
+    
+    -- 监听CloseDungeonCleared事件，关闭界面
+    ClientEventManager.Subscribe("CloseDungeonCleared", function(evt)
+        self:Close()
+    end)
 end
 
 return DungeonCleared.New(script.Parent, uiConfig)

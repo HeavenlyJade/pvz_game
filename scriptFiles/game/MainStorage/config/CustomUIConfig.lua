@@ -1,7 +1,6 @@
-
 local MainStorage = game:GetService('MainStorage')
-local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local CustomUI      = require(MainStorage.code.common.config_type.custom_ui.CustomUI)    ---@type CustomUI
+local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
+local CustomUI = require(MainStorage.code.common.config_type.custom_ui.CustomUI)    ---@type CustomUI
 
 --- ConfigSection配置文件
 ---@class CustomUIConfig
@@ -138,6 +137,10 @@ local function LoadConfig()
         },
         ["重置周期"] = "每日",
         ["ID"] = "在线奖励"
+    }),
+    ["排行榜页面"] = CustomUI.Load({
+        ["UI名"] = "RankingGui",
+        ["ID"] = "排行榜页面"
     }),
     ["月卡"] = CustomUI.Load({
         ["UI名"] = "MonthlyRewards",

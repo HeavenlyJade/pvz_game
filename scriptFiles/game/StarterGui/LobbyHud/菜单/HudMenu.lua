@@ -36,15 +36,19 @@ function HudMenu:OnInit(node, config)
     self:RegisterMenuButton(self:Get("活动", ViewButton))
     self:RegisterMenuButton(self:Get("图鉴", ViewButton))
 
+    self.menuButtons = {}
     self:Get("菜单/菜单按钮", ViewList, function(n)
         local button = ViewButton.New(n, self)
         self:RegisterMenuButton(button)
+        self.menuButtons[n.Name] = button
         return button
     end) ---@type ViewList<ViewButton>
     
     self.key2Event = {}
     for name, menuConfig in pairs(MiscConfig.Get("总控")["菜单指令"]) do
-        self.key2Event[Enum.KeyCode[menuConfig["按键"]].Value] = name
+        if menuConfig["按键"] and Enum.KeyCode[menuConfig["按键"]] then
+            self.key2Event[Enum.KeyCode[menuConfig["按键"]].Value] = name
+        end
     end
     ClientEventManager.Subscribe("PressKey", function (evt)
         if evt.isDown and not ViewBase.topGui then
@@ -53,6 +57,18 @@ function HudMenu:OnInit(node, config)
                 ClientEventManager.SendToServer("ClickMenu", {
                     menu = menuName
                 })
+            end
+        end
+    end)
+    
+    -- 监听菜单按钮显示状态更新事件
+    ClientEventManager.Subscribe("UpdateMenuButtonVisibility", function(data)
+        if not data or not data.visibility then return end
+        
+        for menuName, isVisible in pairs(data.visibility) do
+            local button = self.menuButtons[menuName]
+            if button and button.node then
+                button.node.Visible = isVisible
             end
         end
     end)

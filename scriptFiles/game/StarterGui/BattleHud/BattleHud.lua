@@ -457,6 +457,7 @@ end
 
 function BattleHud:AutoBattleTick()
     local myPos = game.Players.LocalPlayer.Character.Position
+    local myPosCenter = myPos + Vector3.New(0,100,0)
     local results = game.WorldService:OverlapSphere(6000, myPos, false, {3})
     local nearestEnemy = nil
     local minDist = math.huge
@@ -465,23 +466,35 @@ function BattleHud:AutoBattleTick()
         if obj and obj.Position then
             local dist = gg.vec.Distance3(obj.Position, myPos)
             if dist < minDist then
-                minDist = dist
-                nearestEnemy = obj
+                local deltaDir = obj.Position + Vector3.New(0,100,0) - myPosCenter ---@type Vector3
+                local length = gg.vec.Length3(deltaDir)
+                local result = game.WorldService:RaycastClosest(myPosCenter, deltaDir / length, length, true, {1,2})
+                if not result.isHit then
+                    minDist = dist
+                    nearestEnemy = obj
+                end
             end
         end
     end
     if not nearestEnemy then return end
 
+    -- 先尝试副卡技能
     if ViewBase.GetUI("HudCards"):AutoBattleTick(nearestEnemy) then
         return
     end
 
+    -- 副卡技能都在冷却中，尝试主卡普攻
     local skillId = equippedSkills[1]
+    if not skillId then return end -- 没有装备主卡技能
+    
     local skill = skills[skillId]
+    if not skill then return end -- 技能不存在
+    
     local currentTime = gg.GetTimeStamp()
     local elapsedTime = currentTime - lastCastTime
     local remainingTime = math.max(0, skill.cooldownCache - elapsedTime)
-    -- 如果正在持续施法且冷却结束
+    
+    -- 如果主卡技能冷却结束，进行普攻
     if remainingTime <= 0 then
         local rot = gg.Vec3.new(nearestEnemy.Position - myPos):GetRotation()
         CameraController.RotateTo(rot.x, rot.y)
@@ -501,6 +514,9 @@ function BattleHud:SendCastSpellEvent(skillId, targetPos)
         direction = direction,
         targetPos = targetPos
     })
+    if not localPlayer then
+        localPlayer = game:GetService("Players").LocalPlayer.Character
+    end
     localPlayer.Euler = Vector3.New(0, camera.Euler.y + 180, 0)
     if recoil then
         self:CalculateRecoil()
@@ -515,6 +531,23 @@ ClientEventManager.Subscribe("PressKey", function (evt)
             gg.log("自动战斗已开启")
         else
             gg.log("自动战斗已关闭")
+        end
+    end
+end)
+
+-- 监听服务端发送的自动战斗切换事件
+ClientEventManager.Subscribe("ToggleAutoBattleFromServer", function(data)
+    BattleHud.autoBattle = data.autoBattle
+    if BattleHud.autoBattle then
+        if not BattleHud.autoBattleTaskId then
+            BattleHud.autoBattleTaskId = ClientScheduler.add(function()
+                BattleHud:AutoBattleTick()
+            end, 0, 0.1)
+        end
+    else
+        if BattleHud.autoBattleTaskId then
+            ClientScheduler.cancel(BattleHud.autoBattleTaskId)
+            BattleHud.autoBattleTaskId = nil
         end
     end
 end)

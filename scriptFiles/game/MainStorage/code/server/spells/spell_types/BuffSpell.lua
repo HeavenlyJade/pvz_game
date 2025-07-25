@@ -67,7 +67,7 @@ function ActiveBuff:OnInit(caster, activeOn, spell, param)
     self:RegisterUpdateTask()
     
     if spell.printInfo then
-        print(string.format("%s: Buff初始化 - 目标:%s 威力:%.1f 层数:%d 持续时间:%.1f 剩余次数:%d", 
+        caster:SendLog(string.format("%s: Buff初始化 - 目标:%s 威力:%.1f 层数:%d 持续时间:%.1f 剩余次数:%d", 
             spell.spellName, activeOn.name, self.power, self.stack, 
             spell.durationIndependent and spell.duration or self.duration, self.uses))
     end
@@ -118,8 +118,8 @@ function ActiveBuff:OnTick(deltaTime)
                 if self.stack <= 0 then
                     self:SetDisabled(true)
                 else
-                    if self.spell.printInfo then
-                        print(string.format("%s: Buff层数减少 - 目标:%s 剩余层数:%d", 
+                    if self.param.printInfo then
+                        self.caster:SendLog(string.format("%s: Buff层数减少 - 目标:%s 剩余层数:%d", 
                             self.spell.spellName, self.activeOn.name, self.stack))
                     end
                     self:OnRefresh()
@@ -137,8 +137,8 @@ function ActiveBuff:OnTick(deltaTime)
 end
 
 function ActiveBuff:SetDisabled(disabled)
-    if self.spell.printInfo then
-        print(string.format("%s: Buff移除 - 目标:%s 原因:%s", 
+    if self.param.printInfo then
+        self.caster:SendLog(string.format("%s: Buff移除 - 目标:%s 原因:%s", 
             self.spell.spellName, self.activeOn.name, disabled and "禁用" or "结束"))
     end
     
@@ -187,8 +187,8 @@ function ActiveBuff:CastAgain(param)
         success = true
     end
     
-    if self.spell.printInfo then
-        print(string.format("%s: Buff刷新 - 目标:%s 新威力:%.1f 新层数:%d 持续时间:%.1f", 
+    if self.param.printInfo then
+        self.caster:SendLog(string.format("%s: Buff刷新 - 目标:%s 新威力:%.1f 新层数:%d 持续时间:%.1f", 
             self.spell.spellName, self.activeOn.name, self.power, self.stack,
             self.spell.durationIndependent and self.spell.duration or self.duration))
     end
@@ -222,13 +222,13 @@ function BuffSpell:CastReal(caster, target, param)
     if not target.isEntity then return false end
     
     if target.activeBuffs[self.spellName] then
-        if self.printInfo then
-            print(string.format("%s: 刷新Buff - 施法者:%s 目标:%s", self.spellName, caster.name, target.name))
+        if param.printInfo then
+            caster:SendLog(string.format("%s: 刷新Buff - 施法者:%s 目标:%s", self.spellName, caster.name, target.name))
         end
         return target.activeBuffs[self.spellName]:CastAgain(param)
     else
-        if self.printInfo then
-            print(string.format("%s: 添加新Buff - 施法者:%s 目标:%s", self.spellName, caster.name, target.name))
+        if param.printInfo then
+            caster:SendLog(string.format("%s: 添加新Buff - 施法者:%s 目标:%s", self.spellName, caster.name, target.name))
         end
         local buff = self:BuildBuff(caster, target, param)
         target.activeBuffs[self.spellName] = buff

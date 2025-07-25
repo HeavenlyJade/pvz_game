@@ -53,15 +53,15 @@ function MultiSpell:CastReal(caster, target, param)
         -- 如果当前魔法无法释放，尝试下一个
         for i = 1, #spells do
             local checkParam = CastParam.New()
-            if self.printInfo then
+            if param.printInfo then
                 table.insert(log, string.format("尝试释放魔法：%s，当前索引：%d", 
                     currentSpell.spell.spellName, currentIndex))
             end
             if currentSpell.spell:CanCast(caster, target, checkParam, log) then
-                if self.printInfo and #log > 0 then
+                if param.printInfo and #log > 0 then
                     table.insert(log, string.format("释放组合技成功，释放魔法：%s", 
                         currentSpell.spell.spellName))
-                    print(table.concat(log, "\n"))
+                    caster:SendLog(table.concat(log, "\n"))
                 end
                 currentSpell:Cast(caster, target, subParam)
 
@@ -72,8 +72,8 @@ function MultiSpell:CastReal(caster, target, param)
             currentIndex = (currentIndex + 1) % #spells
             currentSpell = spells[currentIndex + 1]
         end
-        if self.printInfo and #log > 0 then
-            print(table.concat(log, "\n"))
+        if param.printInfo and #log > 0 then
+            caster:SendLog(table.concat(log, "\n"))
         end
     else
         -- 原有的非组合技逻辑

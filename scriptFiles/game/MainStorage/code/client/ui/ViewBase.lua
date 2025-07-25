@@ -107,7 +107,6 @@ function ViewBase:Get(path, type, ...)
     if self.componentCache[cacheKey] then
         return self.componentCache[cacheKey]
     end
-
     local node = self.node
     local fullPath = ""
     local lastPart = ""
@@ -127,7 +126,6 @@ function ViewBase:Get(path, type, ...)
             end
         end
     end
-
     if not node then
         gg.log(string.format("UI[%s]获取路径[%s]失败: 最终节点[%s]不存在", self.className, path, lastPart))
         return nil

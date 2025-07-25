@@ -190,4 +190,5 @@ function MCloudDataMgr.SaveSkillConfig(player)
     cloudService:SetTableAsync( 'sk' .. player.uin, skillData, function ( ret_ )
     end )
 end
+
 return MCloudDataMgr

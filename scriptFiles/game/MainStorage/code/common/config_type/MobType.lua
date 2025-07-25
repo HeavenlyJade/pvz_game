@@ -17,9 +17,7 @@ function MobSkill:OnInit(data, mobType)
     self.timing = data["时机"] or "周期"
     self.defaultTarget = data["默认目标"] or "目标"
     self.spell = SubSpell.New(data["魔法"], mobType)
-    -- self.power = data["power"] or 0
     self.range = data["距离"] or 0
-    
 end
 
 function MobSkill:CanCast(caster, target)
@@ -81,6 +79,7 @@ function MobType:OnInit(data)
     self.hitSound = data["受击音效"]
     self.deadSound = data["死亡音效"]
     self.dropMult = data["掉落倍率"]
+    self.isInvulnurable = data["无敌"]
 
     if data["技能"] then
         for _, skillData in ipairs(data["技能"]) do
@@ -111,6 +110,7 @@ function MobType:Spawn(position, level, scene)
         mobType  = self,
         level = level,
     })
+    monster_.isInvulnurable = self.isInvulnurable
     monster_:CreateModel(scene)
     monster_:ChangeScene(scene)
     scene.monsters[monster_.uuid] = monster_

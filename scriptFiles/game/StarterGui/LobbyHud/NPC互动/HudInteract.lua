@@ -122,7 +122,9 @@ function HudInteract:ShowInteract(interactOptions)
     -- 更新交互选项
     for i, option in ipairs(interactOptions) do
         local button = self.interactList:GetChild(i) ---@cast button ViewButton
-        button:Get("Text").node.Title = option.npcName
+        if option.npcName then
+            button:Get("Text").node.Title = option.npcName
+        end
         if option.icon then
             button:Get("装饰按钮").node.Icon = option.icon 
         end

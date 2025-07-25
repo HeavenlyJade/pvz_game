@@ -56,7 +56,7 @@ function HealSpell:CastReal(caster, target, param)
     end
     
     -- 打印治疗信息
-    if self.printInfo then
+    if param.printInfo then
         local log = {}
         table.insert(log, string.format("=== %s 治疗构成 ===", self.spellName))
         
@@ -87,7 +87,7 @@ function HealSpell:CastReal(caster, target, param)
         table.insert(log, string.format("最终治疗: %s", battle:GetFinalDamage()))
         table.insert(log, "=====================")
         
-        print(table.concat(log, "\n"))
+        caster:SendLog(table.concat(log, "\n"))
     end
     
     target:Heal(battle:GetFinalDamage(), self.spellName)

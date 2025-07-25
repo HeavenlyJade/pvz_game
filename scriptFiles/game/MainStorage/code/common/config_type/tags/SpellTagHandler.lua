@@ -151,14 +151,14 @@ function SpellTag:TriggerReal(caster, target, castParam, param, log)
             if battleObj and battleObj.AddModifier then
                 battleObj:AddModifier(
                     self.m_tagType.id, 
-                    modifier.paramValue.addType, 
-                    modifier.paramValue.multiplier
+                    modifier.paramValue["增加类型"], 
+                    modifier.paramValue["倍率"]
                 )
                 
                 if self.printMessage then
                     table.insert(log, string.format("%s.%s：修改%s的%s为%.2f", 
                         self.m_tagType.id, self.m_tagIndex, 
-                        name, modifier.paramValue.addType, modifier.paramValue.multiplier))
+                        name, modifier.paramValue["增加类型"], modifier.paramValue["倍率"]))
                 end
             else
                 gg.log("错误：Battle对象创建失败或缺少AddModifier方法", name, battleObj)

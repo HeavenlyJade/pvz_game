@@ -922,12 +922,7 @@ function _M:UpgradeSkill(skillType)
         self:SetLevel(self.level + setlevel)
         self:SetVariable("skill_".. foundSkill.skillName, foundSkill.level)
         self:SetVariable("skill_enhance_".. foundSkill.skillType.category, foundSkill.level)
-        
-        -- 如果技能已装备，刷新属性
-        if foundSkill.equipSlot > 0 then
-            self:RefreshStats()
-        end
-
+        self:RefreshStats()
         -- 保存配置
         self:saveSkillConfig()
         return true
@@ -1014,6 +1009,16 @@ function _M:updateBuffs()
     for _, key in ipairs(keys_to_remove) do
         self.buff_instance[key] = nil
     end
+end
+
+function _M:SendLog( text, ... )
+    if ... then
+        text = string.format(text, ...)
+    end
+    self:SendEvent("Log", {
+        text = text,
+        trace = debug.traceback()
+    })
 end
 
 function _M:SendChatText( text, ... )

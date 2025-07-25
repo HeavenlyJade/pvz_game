@@ -141,19 +141,19 @@ function ProjectileSpell:CreateProjectile(position, targetPos, currentAngle, cas
             originalActor = game.WorkSpace["飞弹"][self.projectileModel] ---@type Actor
         end
         if not originalActor then
-            if self.printInfo then
-                print(string.format("%s: 飞弹模型不存在 - %s", self.spellName, self.projectileModel))
+            if param.printInfo then
+                caster:SendLog(string.format("%s: 飞弹模型不存在 - %s", self.spellName, self.projectileModel))
             end
             return
         end
         actor = originalActor:Clone()
         self._actorOffset = actor.LocalPosition
-        if self.printInfo then
-            print(string.format("%s: 创建新的飞弹Actor", self.spellName))
+        if param.printInfo then
+            caster:SendLog(string.format("%s: 创建新的飞弹Actor", self.spellName))
         end
     else
-        if self.printInfo then
-            print(string.format("%s: 从对象池获取飞弹Actor", self.spellName))
+        if param.printInfo then
+            caster:SendLog(string.format("%s: 从对象池获取飞弹Actor", self.spellName))
         end
     end
     
@@ -261,8 +261,8 @@ function ProjectileSpell:UpdateProjectile(id)
         local currentPos = Vec3.new(item.actor.Position)
         local toTarget = (targetPos - currentPos):Normalized()
         item.velocity = item.velocity + toTarget * self.trackingSpeed
-        if self.printInfo and item.updateCount % 60 == 0 then
-            print(string.format("%s: 飞弹正在追踪目标，当前速度: %.1f", self.spellName, item.velocity:Length()))
+        if item.param.printInfo and item.updateCount % 60 == 0 then
+            caster:SendLog(string.format("%s: 飞弹正在追踪目标，当前速度: %.1f", self.spellName, item.velocity:Length()))
         end
     end
     
@@ -340,9 +340,9 @@ function ProjectileSpell:UpdateProjectile(id)
             {1, 2}
         )
         if hitGround and #hitGround > 0 then
-            if self.printInfo then
+            if param.printInfo then
                 for index, value in ipairs(hitGround) do
-                    print(string.format("%s: 飞弹碰撞到了地形 %s", self.spellName, value.Name))
+                    caster:SendLog(string.format("%s: 飞弹碰撞到了地形 %s", self.spellName, value.Name))
                 end
             end
             self:MarkDestroy(item)
@@ -371,14 +371,14 @@ function ProjectileSpell:HandleProjectileHit(id, target)
     
     -- 检查是否可以命中目标
     if not self:CanHitTarget(item, target) then
-        if self.printInfo then
-            print(string.format("%s: 飞弹无法命中目标 %s (已命中或冷却中)", self.spellName, target.name))
+        if param.printInfo then
+            caster:SendLog(string.format("%s: 飞弹无法命中目标 %s (已命中或冷却中)", self.spellName, target.name))
         end
         return
     end
     
-    if self.printInfo then
-        print(string.format("%s: 飞弹命中目标 %s", self.spellName, target.name))
+    if param.printInfo then
+        caster:SendLog(string.format("%s: 飞弹命中目标 %s", self.spellName, target.name))
     end
     
     -- 执行子魔法
@@ -427,8 +427,8 @@ function ProjectileSpell:DestroyProjectile(id)
     local item = self.activeProjectiles[id]
     if not item then return end
 
-    if self.printInfo then
-        print(string.format("%s: 销毁飞弹，剩余飞弹数: %d", self.spellName, self.projectileCount - 1))
+    if param.printInfo then
+        caster:SendLog(string.format("%s: 销毁飞弹，剩余飞弹数: %d", self.spellName, self.projectileCount - 1))
     end
 
     -- 在飞弹消失位置释放结束子魔法
@@ -437,8 +437,8 @@ function ProjectileSpell:DestroyProjectile(id)
         for _, subSpell in ipairs(self.subSpellsOnEnd) do
             subSpell:Cast(item.caster, finalPosition, item.param)
         end
-        if self.printInfo then
-            print(string.format("%s: 释放结束子魔法", self.spellName))
+        if param.printInfo then
+            caster:SendLog(string.format("%s: 释放结束子魔法", self.spellName))
         end
     end
 
@@ -458,8 +458,8 @@ end
 ---@param param CastParam 参数
 ---@return boolean 是否成功释放
 function ProjectileSpell:CastReal(caster, target, param)
-    if self.printInfo then
-        print(string.format([[
+    if param.printInfo then
+        caster:SendLog(string.format([[
 %s: 开始释放飞弹魔法
 - 施法者: %s
 - 目标: %s]], 
@@ -470,13 +470,13 @@ function ProjectileSpell:CastReal(caster, target, param)
     local position
     if self.spawnAtCaster then
         position = caster:GetPosition()
-        if self.printInfo then
-            print(string.format("%s: 在施法者位置生成飞弹", self.spellName))
+        if param.printInfo then
+            caster:SendLog(string.format("%s: 在施法者位置生成飞弹", self.spellName))
         end
     else
         if not target and not (param and param.targetPos) then
-            if self.printInfo then
-                print(string.format("%s: 没有目标，无法生成飞弹", self.spellName))
+            if param.printInfo then
+                caster:SendLog(string.format("%s: 没有目标，无法生成飞弹", self.spellName))
             end
             return false
         end
@@ -485,8 +485,8 @@ function ProjectileSpell:CastReal(caster, target, param)
         else
             position = target:GetPosition()
         end
-        if self.printInfo then
-            print(string.format("%s: 在目标位置生成飞弹", self.spellName))
+        if param.printInfo then
+            caster:SendLog(string.format("%s: 在目标位置生成飞弹", self.spellName))
         end
     end
     param.realTarget = target

@@ -83,9 +83,11 @@ local function RecycleParticle(particleName, fx)
     -- if fx:IsA("EffectObject") then
     --     fx:Stop(0)
     -- end
-    for _, child in ipairs(fx.Children) do
-        child.Visible = false
-        child.Enabled = false
+    if fx:IsA("EffectObject") then
+        for _, child in ipairs(fx.Children) do
+            child.Visible = false
+            child.Enabled = false
+        end
     end
     -- 将对象添加到对象池
     table.insert(particlePools[particleName], fx)

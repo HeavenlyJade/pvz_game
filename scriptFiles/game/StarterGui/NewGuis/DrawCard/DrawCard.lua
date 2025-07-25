@@ -96,6 +96,16 @@ function DrawCard:OnInit(node, config)
             if self.state == 1 and self._dragStartPos and not self._dragCompleted then
                 local deltaX = math.clamp(vector2.x - self._dragStartPos.x, 0, 300)
                 local percent = deltaX / 300
+                
+                -- 检查拖动距离是否达到500以上，自动触发完成
+                local totalDistance = math.abs(vector2.x - self._dragStartPos.x) + math.abs(vector2.y - self._dragStartPos.y)
+                if totalDistance >= 500 and not self._dragCompleted then
+                    self.state = 2
+                    self._dragCompleted = true
+                    self:onDragComplete()
+                    return
+                end
+                
                 if percent > self.maxPercent then
                     if game.RunService:IsMobile() then
                         game:GetService("UtilService"):GameVibrateWithTimeAmplitude(0.1, 0.1)
@@ -128,8 +138,8 @@ function DrawCard:OnInit(node, config)
     modelView.TouchEnd:Connect(
         function(node, isTouchMove, vector2, int)
             if self.state == 1 and self._dragStartPos then
-                local deltaX = math.clamp(vector2.x - self._dragStartPos.x, 0, 300)
-                if deltaX >= 300 then
+                local deltaX = math.clamp(vector2.x - self._dragStartPos.x, 0, 200)
+                if deltaX >= 200 then
                     self.state = 2
                     self._dragCompleted = true
                     self:onDragComplete()

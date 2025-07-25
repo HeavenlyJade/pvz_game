@@ -97,8 +97,8 @@ function DOTBuff:OnRefresh()
     self.damagePerSecond = battle:GetFinalDamage() / (self.spell.duration / self.spell.pulseTime)
     self.isCrit = battle.isCrit
 
-    if self.spell.printInfo then
-        print(string.format("%s: DOT伤害更新 - 目标:%s 每秒伤害:%.1f 是否暴击:%s", 
+    if self.param.printInfo then
+        self.caster:SendLog(string.format("%s: DOT伤害更新 - 目标:%s 每秒伤害:%.1f 是否暴击:%s", 
             self.spell.spellName, self.activeOn.name, self.damagePerSecond, tostring(self.isCrit)))
     end
 end
@@ -112,8 +112,8 @@ function DOTBuff:OnPulse()
     BuffSpell.ActiveBuff.OnPulse(self)
     self.activeOn:Hurt(self.damagePerSecond, self.caster, self.isCrit)
     
-    if self.spell.printInfo then
-        print(string.format("%s: DOT造成伤害 - 目标:%s 伤害:%.1f 是否暴击:%s", 
+    if self.param.printInfo then
+        self.caster:SendLog(string.format("%s: DOT造成伤害 - 目标:%s 伤害:%.1f 是否暴击:%s", 
             self.spell.spellName, self.activeOn.name, self.damagePerSecond, tostring(self.isCrit)))
     end
 end

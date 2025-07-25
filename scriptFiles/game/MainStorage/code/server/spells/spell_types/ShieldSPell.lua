@@ -55,7 +55,7 @@ function ShieldSpell:CastReal(caster, target, param)
     end
     
     -- 打印护盾信息
-    if self.printInfo then
+    if param.printInfo then
         local log = {}
         table.insert(log, string.format("=== %s 护盾构成 ===", self.spellName))
         
@@ -86,7 +86,7 @@ function ShieldSpell:CastReal(caster, target, param)
         table.insert(log, string.format("最终护盾: %s", battle:GetFinalDamage()))
         table.insert(log, "=====================")
         
-        print(table.concat(log, "\n"))
+        caster:SendLog(table.concat(log, "\n"))
     end
     
     target:AddShield(battle:GetFinalDamage(), self.spellName)

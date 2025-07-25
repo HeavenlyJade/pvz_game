@@ -232,6 +232,12 @@ function vec.Distance3(v1, v2)
 end
 
 ---@param v1 Vector3 第一个向量
+---@return number 向量长度
+function vec.Length3(v1)
+    return math.sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z)
+end
+
+---@param v1 Vector3 第一个向量
 ---@param v2 Vector3 第二个向量
 ---@return number 两个向量之间距离的平方
 function vec.DistanceSq3(v1, v2)

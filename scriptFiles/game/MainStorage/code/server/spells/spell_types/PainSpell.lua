@@ -76,14 +76,14 @@ function PainSpell:CastReal(caster, target, param)
     if self.tauntOnly then
         if ClassMgr.Is(target, "Monster") then ---@cast target Monster
             target:AddHatred(battle:GetFinalDamage(), caster)
-            if self.printInfo then
+            if param.printInfo then
                 gg.log(caster, "对", target, "造成了", battle:GetFinalDamage(), "仇恨")
             end
         end
     else
         local attackBattle = caster:Attack(target, battle:GetFinalDamage(), self.spellName)
         -- 打印伤害信息
-        if self.printInfo then
+        if param.printInfo then
             local log = {}
             table.insert(log, string.format("=== %s 伤害构成 ===", self.spellName))
             table.insert(log, "基础伤害修饰器:")
@@ -113,7 +113,7 @@ function PainSpell:CastReal(caster, target, param)
             table.insert(log, string.format("最终伤害: %s", attackBattle:GetFinalDamage()))
             table.insert(log, "=====================")
             
-            print(table.concat(log, "\n"))
+            caster:SendLog(table.concat(log, "\n"))
         end
     end
     -- 重置临时属性

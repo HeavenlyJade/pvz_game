@@ -213,6 +213,7 @@ function _M:OnInit(node)
     _M.sceneId = _M.sceneId + 1
     self.players = {} -- 玩家列表  [uin  = Player]
     self.monsters = {} -- 怪物列表  [uuid = Monster]
+    self.level = nil --使用本场景的关卡
     self.npcs = {} -- NPC列表
     self.monster_spawns = {} -- 刷怪点管理   [ spawn_name = { count, config } ]
     self.npc_spawns = {}

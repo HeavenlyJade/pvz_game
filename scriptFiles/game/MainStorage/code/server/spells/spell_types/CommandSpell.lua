@@ -21,14 +21,14 @@ end
 ---@return boolean 是否成功释放
 function CommandSpell:CastReal(caster, target, param)
     if not self.commands or #self.commands == 0 then
-        if self.printInfo then
-            print(string.format("CommandSpell[%s] 没有可执行的指令", self.spellName))
+        if param.printInfo then
+            caster:SendLog(string.format("CommandSpell[%s] 没有可执行的指令", self.spellName))
         end
         return false
     end
 
-    if self.printInfo then
-        print(string.format("CommandSpell[%s] 开始执行指令，施法者: %s, 目标: %s", 
+    if param.printInfo then
+        caster:SendLog(string.format("CommandSpell[%s] 开始执行指令，施法者: %s, 目标: %s", 
             self.spellName, 
             caster.name or "未知", 
             target and target.name or "无目标"))
@@ -38,8 +38,8 @@ function CommandSpell:CastReal(caster, target, param)
     for i, command in ipairs(self.commands) do
         -- 执行指令
         local success = caster:ExecuteCommand(command, target, param)
-        if self.printInfo then
-            print(string.format("CommandSpell[%s] 执行第 %d 个指令: %s, 结果: %s", 
+        if param.printInfo then
+            caster:SendLog(string.format("CommandSpell[%s] 执行第 %d 个指令: %s, 结果: %s", 
                 self.spellName, 
                 i, 
                 command, 
@@ -48,8 +48,8 @@ function CommandSpell:CastReal(caster, target, param)
         anySucceed = anySucceed or success
     end
 
-    if self.printInfo then
-        print(string.format("CommandSpell[%s] 指令执行完成，总体结果: %s", 
+    if param.printInfo then
+        caster:SendLog(string.format("CommandSpell[%s] 指令执行完成，总体结果: %s", 
             self.spellName, 
             anySucceed and "成功" or "失败"))
     end

@@ -1,7 +1,6 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr      = require(MainStorage.code.common.ClassMgr)    ---@type ClassMgr
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager)
-local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 
 ---@class Battle:Class
 ---@field New fun( attacker:Entity, victim:Entity, source:string, castParam:CastParam|nil ):Battle
@@ -59,6 +58,9 @@ end
 
 -- 添加伤害修饰器
 function Battle:AddDamageModifier(modifier)
+    if not modifier.amount then
+        return
+    end
     local targetList
     if modifier.modifierType == "增加" then
         targetList = self.baseModifiers
@@ -132,21 +134,22 @@ end
 function Battle:GetFinalDamage(baseValue)
     baseValue = baseValue or 0
     local damage = baseValue
+    
     -- 处理基础加成
     for _, item in ipairs(self.baseModifiers) do
-        damage = damage + (item.amount or 0)
+        damage = damage + item.amount
     end
     
     -- 处理倍率加成
     local multiplier = 1.0
     for _, item in ipairs(self.multiplyModifiers) do
-        multiplier = multiplier + (item.amount or 0) / 100.0
+        multiplier = multiplier + item.amount / 100.0
     end
     
     -- 处理最终倍率加成
     local finalMultiplier = 1.0
     for _, item in ipairs(self.finalMultiplyModifiers) do
-        finalMultiplier = finalMultiplier * (1 + (item.amount or 0) / 100.0)
+        finalMultiplier = finalMultiplier * (1 + item.amount / 100.0)
     end
     
     return damage * multiplier * finalMultiplier

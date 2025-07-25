@@ -213,8 +213,8 @@ function SummonSpell:ApplyExtraAttributes(caster, summoned, power)
             elseif attrBuff["增加类型"] == "减少" then
                 summoned:AddStat(extraAttr, -addValue, "SUMMON_EXTRA", false)
             end
-            if self.printInfo then
-                print(string.format("[召唤物加成] 属性: %s, 类型: %s, 基础值: %s, 倍率: %s, 最终加成: %s", tostring(extraAttr), tostring(attrBuff["增加类型"]), tostring(baseValue), tostring(attrBuff["倍率"]), tostring(addValue)))
+            if param.printInfo then
+                caster:SendLog(string.format("[召唤物加成] 属性: %s, 类型: %s, 基础值: %s, 倍率: %s, 最终加成: %s", tostring(extraAttr), tostring(attrBuff["增加类型"]), tostring(baseValue), tostring(attrBuff["倍率"]), tostring(addValue)))
             end
         end
     end
@@ -234,7 +234,7 @@ local function printSummonedStats(summoned)
             end
         end
     end
-    print(statText)
+    caster:SendLog(statText)
 end
 
 --- 实际执行魔法
@@ -284,7 +284,12 @@ function SummonSpell:CastReal(caster, target, param)
     -- 延迟召唤
     local summoned = mobType:Spawn(spawnPos, level, caster.scene)
     if summoned then
-        -- 设置召唤物朝向与施法者相同
+        local sizeScale = param:GetValue(self, "尺寸倍率", 1)
+        local widthScale = param:GetValue(self, "宽度倍率", 1)
+        local heightScale = param:GetValue(self, "高度倍率", 1)
+        local scale = summoned.actor.LocalScale
+        gg.log("summoned", sizeScale, widthScale, heightScale)
+        summoned.actor.LocalScale = Vector3.New(scale.x * sizeScale * widthScale, scale.y * sizeScale * heightScale, scale.z * sizeScale * widthScale)
         summoned.actor.Rotation = casterRot
         summoned:SetOwner(caster)
         self:AddSummon(caster, summoned)
@@ -292,7 +297,7 @@ function SummonSpell:CastReal(caster, target, param)
         self:ApplyExtraAttributes(caster, summoned, param.power)
         caster:TriggerTags("召唤时", summoned, param, summoned)
         -- 打印召唤物属性
-        if self.printInfo then
+        if param.printInfo then
             printSummonedStats(summoned)
         end
     end

@@ -1,16 +1,16 @@
-local MainStorage = game:GetService('MainStorage')
-local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local LevelType = require(MainStorage.code.common.config_type.LevelType) ---@type LevelType
-local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local MainStorage        = game:GetService('MainStorage')
+local gg                 = require(MainStorage.code.common.MGlobal) ---@type gg
+local ClassMgr           = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
+local LevelType          = require(MainStorage.code.common.config_type.LevelType) ---@type LevelType
+local ServerScheduler    = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemTypeConfig     = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 ---@class Level
 ---@field New fun( levelType:LevelType, scene:Scene, index:number ):Level
-local Level = ClassMgr.Class("Level")
+local Level              = ClassMgr.Class("Level")
 
 -- 存储所有活跃的关卡实例
-local activeLevels = {} ---@type table<string, Level>
+local activeLevels       = {} ---@type table<string, Level>
 
 --- 获取玩家当前所在的关卡
 ---@param player Player 玩家对象
@@ -30,6 +30,7 @@ end
 ---@param levelType LevelType
 function Level:OnInit(levelType, scene, index)
     self.scene = scene ---@type Scene
+    self.scene.level = self
     local sceneNode = scene.node
     self.levelType = levelType
 
@@ -61,7 +62,7 @@ function Level:OnInit(levelType, scene, index)
     self.mobCount = {} ---@type table<string, number>
     self.waveSpawnedCounts = {} ---@type table<SpawningWave, number>
     self.updateTask = nil ---@type number
-    
+
     -- 新增：怪物自动分配目标定时任务
     self.assignTargetTask = nil ---@type number
 
@@ -90,7 +91,7 @@ function Level:OnInit(levelType, scene, index)
                 if topDamager then
                     -- 记录击杀
                     local uin = topDamager.uin
-                    self.playerStats[uin] = self.playerStats[uin] or {kills = {}, rewards = {}}
+                    self.playerStats[uin] = self.playerStats[uin] or { kills = {}, rewards = {} }
                     local mobName = data.mob.name or tostring(data.mob.uuid)
                     self.playerStats[uin].kills[mobName] = (self.playerStats[uin].kills[mobName] or 0) + 1
 
@@ -104,7 +105,8 @@ function Level:OnInit(levelType, scene, index)
                             local roll = math.random(0, 99)
                             -- print(string.format("[掉落物] 掷骰: %d < %d ? %s", roll, chance, tostring(roll < chance)))
                             if roll < chance then
-                                local baseCount = gg.ProcessFormula(item["数量"]:gsub("LVL", tostring(data.mob.level)), topDamager, topDamager)
+                                local baseCount = gg.ProcessFormula(item["数量"]:gsub("LVL", tostring(data.mob.level)),
+                                    topDamager, topDamager)
                                 -- print(string.format("[掉落物] 公式结果: %s", tostring(baseCount)))
                                 if self.levelType.dropModifier then
                                     local castParam = self.levelType.dropModifier:Check(topDamager, topDamager)
@@ -119,8 +121,10 @@ function Level:OnInit(levelType, scene, index)
                                 if baseCount > 0 then
                                     local itemName = item["物品"]
                                     -- print(string.format("[掉落物] 发放: %s x %s 给玩家 %s", tostring(itemName), tostring(baseCount), tostring(topDamager.name)))
-                                    self.playerStats[uin].rewards[itemName] = (self.playerStats[uin].rewards[itemName] or 0) + baseCount
-                                    topDamager.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(baseCount), "关卡掉落_"..self.levelType.levelId)
+                                    self.playerStats[uin].rewards[itemName] = (self.playerStats[uin].rewards[itemName] or 0) +
+                                    baseCount
+                                    topDamager.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(baseCount),
+                                        "关卡掉落_" .. self.levelType.levelId)
                                 end
                             end
                         end
@@ -143,7 +147,6 @@ function Level:OnInit(levelType, scene, index)
     -- 监听玩家死亡事件
     ServerEventManager.Subscribe("PlayerDeadEvent", function(data)
         if self:IsActive() and data.player and self.players[data.player.uin] then
-
             -- 播放失败音效
             if self.levelType.loseSound then
                 data.player:PlaySound(self.levelType.loseSound)
@@ -241,7 +244,7 @@ function Level:StartWave()
         -- 延迟一段时间再完成关卡，确保所有玩家都已经变身
         ServerScheduler.add(function()
             self:OnLevelComplete()
-        end, 1)  -- 延迟5秒，确保玩家变身完成
+        end, 1) -- 延迟5秒，确保玩家变身完成
         return
     end
 
@@ -444,7 +447,7 @@ function Level:Update()
                     end
                 end
                 if #alivePlayers == 0 then return end
-                self.activeMobs:ForEach(function (_, mob)
+                self.activeMobs:ForEach(function(_, mob)
                     if mob and mob.target == nil then
                         local randomPlayer = alivePlayers[math.random(1, #alivePlayers)]
                         mob:SetTarget(randomPlayer)
@@ -469,7 +472,7 @@ end
 ---关卡完成
 function Level:OnLevelComplete()
     for _, player in pairs(self.players) do
-        player:ProcessQuestEvent("level_".. self.levelType.levelId, 1)
+        player:ProcessQuestEvent("level_" .. self.levelType.levelId, 1)
         if self.levelType.completeCommands then
             player:ExecuteCommands(self.levelType.completeCommands)
         end
@@ -479,7 +482,6 @@ end
 
 ---清理场景
 function Level:Cleanup()
-    print(debug.traceback("Cleanup"))
     self.startTime = 0
     self.endTime = 0
     self.currentStars = 0
@@ -497,7 +499,7 @@ function Level:Cleanup()
     local destroyedCount = 0
     local failedCount = 0
 
-    self.activeMobs:ForEach(function (_, mob)
+    self.activeMobs:ForEach(function(_, mob)
         if mob and mob.isEntity then
             local success, err = pcall(function()
                 mob:DestroyObject()
@@ -512,12 +514,22 @@ function Level:Cleanup()
         end
     end)
     self.activeMobs = gg.Dict.New()
+    if self.scene and self.scene.node and self.scene.node["怪物"] then
+        local monsterContainer = self.scene.node["怪物"]
+        if monsterContainer.Children then
+            -- 移除所有怪物子节点
+            for _, child in pairs(monsterContainer.Children) do
+                if child then
+                    child:Destroy()
+                end
+            end
+        end
+    end
 end
 
 ---结束关卡
 ---@param success boolean 是否成功完成
 function Level:End(success)
-
     if not self:IsActive() then
         return
     end
@@ -574,10 +586,12 @@ function Level:End(success)
                     local player = ranking.player
                     if player then
                         for itemName, count in pairs(rankReward["物品"]) do
-                            player.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(count), "关卡排名_"..self.levelType.levelId)
+                            player.bag:GiveItem(ItemTypeConfig.Get(itemName):ToItem(count),
+                                "关卡排名_" .. self.levelType.levelId)
                             -- 记录排名奖励
-                            self.playerStats[player.uin] = self.playerStats[player.uin] or {kills = {}, rewards = {}}
-                            self.playerStats[player.uin].rewards[itemName] = (self.playerStats[player.uin].rewards[itemName] or 0) + count
+                            self.playerStats[player.uin] = self.playerStats[player.uin] or { kills = {}, rewards = {} }
+                            self.playerStats[player.uin].rewards[itemName] = (self.playerStats[player.uin].rewards[itemName] or 0) +
+                            count
                         end
                     end
                     break
@@ -605,13 +619,13 @@ function Level:End(success)
             player:SendChatText("已传送回原位置")
         else
         end
-        local stats = self.playerStats[player.uin] or {kills = {}, rewards = {}}
+        local stats = self.playerStats[player.uin] or { kills = {}, rewards = {} }
         if not self.levelType.disableCompleteView then
-        player:SendEvent("DungeonClearedStats", {
-            text = success and "关卡完成！" or "关卡失败！",
-            kills = stats.kills,
-            rewards = stats.rewards
-        })
+            player:SendEvent("DungeonClearedStats", {
+                text = success and "关卡完成！" or "关卡失败！",
+                kills = stats.kills,
+                rewards = stats.rewards
+            })
         end
         player:SendEvent("BattleEndEvent", {
             levelId = self.levelType.levelId,
@@ -644,9 +658,29 @@ function Level:AddPlayer(player)
 
     -- 保存玩家原始位置
     if player.actor then
+        local currentLevel = player.scene.level
+        local originalPosition, originalEuler
+        
+        if currentLevel and currentLevel ~= self then
+            -- 如果玩家在其他关卡中，使用默认出生点
+            local Scene = require(MainStorage.code.server.Scene) ---@type Scene
+            if Scene.spawnScene then
+                originalPosition = Scene.spawnScene.node.Position
+                originalEuler = Vector3.New(0, 0, 0)  -- 默认朝向
+            else
+                -- 如果没有出生场景，使用当前位置作为备选
+                originalPosition = player.actor.Position
+                originalEuler = player.actor.Euler
+            end
+        else
+            -- 玩家不在关卡中，使用当前位置
+            originalPosition = player.actor.Position
+            originalEuler = player.actor.Euler
+        end
+        
         self.playerOriginalPositions[player.uin] = {
-            position = player.actor.Position,
-            euler = player.actor.Euler
+            position = originalPosition,
+            euler = originalEuler
         }
     end
 
@@ -667,13 +701,8 @@ function Level:AddPlayer(player)
     end
 
     -- 获取进入点位置
-    local playerIndex = self:GetPlayerCount()
-    local entryPoint = self.entries[playerIndex]
-    if not entryPoint then
-        playerIndex = 1
-        entryPoint = self.entries[playerIndex]
-    end
-
+    local entryPoint = self:FindAvailableEntryPoint()
+    
     -- 传送玩家
     if player.actor and entryPoint then
         player._levelTeleporting = true
@@ -689,13 +718,13 @@ function Level:AddPlayer(player)
             player.actor.Gravity = 0
             player.actor.Movespeed = 0
             player.actor.JumpBaseSpeed = 0
-            ServerScheduler.add(function ()
+            ServerScheduler.add(function()
                 if currentPlayer.actor then
                     currentPlayer.actor.Gravity = oldGrav
                 end
             end, 3)
         end
-        ServerScheduler.add(function ()
+        ServerScheduler.add(function()
             currentPlayer._levelTeleporting = nil
             if not self:IsActive() then return end
             if not self.players[currentUin] then return end
@@ -708,6 +737,9 @@ function Level:AddPlayer(player)
         end, 3)
     end
 
+    -- 关闭玩家的DungeonCleared界面
+    player:SendEvent("CloseDungeonCleared", {})
+    
     -- 发送战斗开始事件，使用缓存的波次数据
     player:SendEvent("BattleStartEvent", {
         levelId = self.levelType.levelId,
@@ -732,7 +764,7 @@ function Level:RemovePlayer(player, success, reason)
         for uin, p in pairs(self.players) do
             table.insert(playersList, p)
         end
-        self.activeMobs:ForEach(function (_, mob)
+        self.activeMobs:ForEach(function(_, mob)
             if mob.target == player then
                 if #playersList > 0 then
                     local newTarget = playersList[math.random(1, #playersList)]
@@ -750,7 +782,7 @@ function Level:RemovePlayer(player, success, reason)
             player.actor.Euler = originalPos.euler
             player:SetCameraView(originalPos.euler)
         end
-        local stats = self.playerStats[player.uin] or {kills = {}, rewards = {}}
+        local stats = self.playerStats[player.uin] or { kills = {}, rewards = {} }
         player:SendEvent("DungeonClearedStats", {
             text = string.format("成功完成第%d波", self.waveCount),
             kills = stats.kills,
@@ -826,6 +858,45 @@ function Level:Resume()
     for _, player in pairs(self.players) do
         player:SendChatText("关卡已继续")
     end
+end
+
+---查找可用的出生点，确保附近100单位内没有其他玩家
+---@return Transform|nil 可用的出生点，如果都不可用则返回第一个
+function Level:FindAvailableEntryPoint()
+    -- 如果没有出生点，返回nil
+    if not self.entries or #self.entries == 0 then
+        return nil
+    end
+    
+    -- 如果是第一个玩家，直接返回第一个出生点
+    if self:GetPlayerCount() == 0 then
+        return self.entries[1]
+    end
+    
+    -- 遍历所有出生点，找到第一个附近100单位内没有玩家的点
+    for _, entryPoint in ipairs(self.entries) do
+        local hasNearbyPlayer = false
+        local entryPos = entryPoint.Position
+        
+        -- 检查是否有玩家在100单位范围内
+        for _, player in pairs(self.players) do
+            if player.actor and player.actor.Position then
+                local distance = gg.vec.Distance3(entryPos, player.actor.Position)
+                if distance < 100 then
+                    hasNearbyPlayer = true
+                    break
+                end
+            end
+        end
+        
+        -- 如果该出生点附近没有玩家，使用这个点
+        if not hasNearbyPlayer then
+            return entryPoint
+        end
+    end
+    
+    -- 如果所有出生点都有玩家，返回第一个作为备选
+    return self.entries[1]
 end
 
 function Level:GetPlayerCount()

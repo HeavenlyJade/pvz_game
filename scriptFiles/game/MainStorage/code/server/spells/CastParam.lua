@@ -16,6 +16,7 @@ function CastParam:OnInit(...)
     self.extraParams = data.extraParams or {} ---@type table<string, any>
     self.dynamicTags = data.dynamicTags ---@type table<string, EquipingTag[]>|nil
     self.lookDirection = nil --仅限主动释放技能： 释放时玩家的摄像机朝向
+    self.printInfo = data.printInfo or nil ---@type boolean
 end
 
 function CastParam:Clone()
@@ -37,7 +38,8 @@ function CastParam:Clone()
         skipTags = gg.clone(self.skipTags),
         extraModifiers = clonedExtraModifiers,
         extraParams = gg.clone(self.extraParams),
-        dynamicTags = self.dynamicTags and gg.clone(self.dynamicTags) or nil
+        dynamicTags = self.dynamicTags and gg.clone(self.dynamicTags) or nil,
+        printInfo = self.printInfo
     })
     return cloned
 end
@@ -56,15 +58,19 @@ end
 ---@return number
 function CastParam:GetValueByName(name, v, previousValue)
     previousValue = self:GetParamByName(name, v, previousValue)
+    print("GetValueByName", previousValue, name, v)
     local adder1 = 0.0
     local adder2 = 0.0
     
     local value = self.extraModifiers[name .. "." .. v]
+    gg.log("GetValueByName value1", name, v, value, self.extraModifiers)
     if value then
         adder1 = value:GetFinalDamage(previousValue) - previousValue
+        gg.log("GetValueByName adder1", value:GetFinalDamage(previousValue), adder1)
     end
     
     value = self.extraModifiers[v]
+    gg.log("GetValueByName value2", name, v, value, self.extraModifiers)
     if value then
         adder2 = value:GetFinalDamage(previousValue) - previousValue
     end

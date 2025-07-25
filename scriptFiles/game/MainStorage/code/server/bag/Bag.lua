@@ -84,7 +84,6 @@ function Bag:Save()
     local cloudService = game:GetService("CloudService") --- @type CloudService
     cloudService:SetTableAsync('inv' .. self.player.uin, data, function ()
     end)
-
 end
 
 ---@param slot number 格子序号

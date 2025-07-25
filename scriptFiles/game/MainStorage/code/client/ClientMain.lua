@@ -47,6 +47,9 @@ function ClientMain.start_client()
             nameTag.Visible = false
         end
     end)
+    ClientEventManager.Subscribe("Log", function (evt)
+        print(evt.text .. "\n" .. evt.trace)
+    end)
     if game.RunService:IsPC() then
         game.MouseService:SetMode(1)
     end

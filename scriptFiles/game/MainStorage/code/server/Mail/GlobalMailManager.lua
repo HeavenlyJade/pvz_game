@@ -23,7 +23,6 @@ local GlobalMailManager = {
 function GlobalMailManager:Init()
     -- 加载全服邮件到缓存
     self.global_mail_cache = CloudMailDataAccessor:LoadGlobalMail()
-    self:CleanExpiredGlobalMails()
     gg.log("全局邮件管理器初始化完成")
     return self
 end
@@ -195,7 +194,7 @@ function GlobalMailManager:ClaimGlobalMailAttachment(uin, mailId, playerGlobalDa
     local mailStatus = playerGlobalData.statuses[mailId]
 
     -- 检查是否可以领取
-    if not mailStatus or (mailStatus.status ~= MailEventConfig.STATUS.CLAIMED and mailStatus.status ~= MailEventConfig.STATUS.DELETED) then
+    if not mailStatus or mailStatus.status < MailEventConfig.STATUS.CLAIMED then
         -- 更新状态
         if not mailStatus then
             playerGlobalData.statuses[mailId] = {
@@ -276,24 +275,6 @@ function GlobalMailManager:HasUnreadGlobalMail(uin, playerGlobalData)
     end
 
     return false
-end
-
-function GlobalMailManager:CleanExpiredGlobalMails()
-    if not self.global_mail_cache then return end
-    local mails = self.global_mail_cache.mails
-    local changed = false
-    for mailId, mailData in pairs(mails) do
-        local mailObject = MailBase.New(mailData)
-        if mailObject:IsExpired() then
-            mails[mailId] = nil
-            changed = true
-            gg.log("自动清理过期全服邮件", mailId)
-        end
-    end
-    if changed then
-        self.global_mail_cache.last_update = os.time()
-        CloudMailDataAccessor:SaveGlobalMail(self.global_mail_cache)
-    end
 end
 
 return GlobalMailManager

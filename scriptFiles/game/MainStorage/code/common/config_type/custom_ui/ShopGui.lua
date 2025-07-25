@@ -35,6 +35,7 @@ function ShopGui:S_BuildPacket(player, packet)
         }
     end
 end
+
 function ShopGui:onViewCategory(player,evt)
     local CustomUIConfig = require(MainStorage.config.CustomUIConfig) ---@type CustomUIConfig
     local customUI = CustomUIConfig.Get(evt.shop)
@@ -153,12 +154,11 @@ function ShopGui:C_BuildUI(packet)
         self.currentDisplayGoodIndex = 1
         self.lastShopId = self.id
     end
-    -- 优先显示当前记录的物品序号，如果没有则显示第一个
-    local idx = self.currentDisplayGoodIndex or 1
-    local goodId = self.shopGoodsIds[idx]
-    local good = goodId and self.shopGoods[goodId]
-    if good then
-        self:_ShowGood(good)
+    -- 显示指定的物品并且判断物品是否存在
+    local config_item = packet.item_name and ShopGoodConfig.Get(packet.item_name)
+    if config_item then
+        print('显示指定物品')
+        self:_ShowGood(config_item)
     else
         -- 显示第一个物品
         local firstGoodId = self.shopGoodsIds[1]
@@ -166,6 +166,7 @@ function ShopGui:C_BuildUI(packet)
             self:_ShowGood(self.shopGoods[firstGoodId])
         end
     end
+
     self.view:Open()
     for i = 1, 4 do
         if _G['商城点击_货币' .. i] then

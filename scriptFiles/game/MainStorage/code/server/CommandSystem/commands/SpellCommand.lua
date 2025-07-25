@@ -50,16 +50,20 @@ end
 
 ---@param player Player
 function SpellCommand.cast(params, player)
+    local castParam = CastParam.New({
+        printInfo = params["打印信息"] or false
+    })
+    
     if params["复杂魔法"] and params["复杂魔法"]["魔法"] then
         local spell = SubSpell.New(params["复杂魔法"])
-        spell:Cast(player, nil)
+        spell:Cast(player, nil, castParam)
     else
         local spell = SpellConfig.Get(params["魔法名"])
         if not spell then
             player:SendChatText("不存在的魔法", params["魔法名"])
             return false
         end
-        spell:Cast(player, nil)
+        spell:Cast(player, nil, castParam)
     end
     return true
 end

@@ -43,6 +43,7 @@ CommandManager.handlers = {
     ["graphic"] = SpellCommand.graphic,
     ["lottery"] = ItemCommands.lottery,
     ["viewUI"] = MiscCommands.viewUI,
+    ["toggleAutoBattle"] = MiscCommands.toggleAutoBattle,
        -- 邮件相关命令
     ["mail"] = MailCommand.main,
         -- 玩家技能相关命令

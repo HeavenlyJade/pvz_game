@@ -64,14 +64,14 @@ end
 
 ---@param index number
 ---@return ViewComponent
-function ViewList:GetChild(index)
+function ViewList:GetChild(index,num)
     if index <= 0 then
         print(debug.traceback("GetChild".. self.path .. tostring(index) .. " index <= 0!"))
         return nil
     end
     local child = self.childrens[index]
     if not child then
-        self:SetElementSize(index)
+        self:SetElementSize(index,num)
         child = self.childrens[index]
     end
     child.node.Visible = true
@@ -92,13 +92,16 @@ function ViewList:GetChildCount()
 end
 
 ---@param size number
-function ViewList:SetElementSize(size)
+function ViewList:SetElementSize(size,num)
     if size < 0 then
         size = 0
     end
     for i = 1, size do
         if not self.childrens[i] then
             local child = self.childrens[1].node:Clone()
+            if num then
+                child = self.childrens[num].node:Clone()
+            end
             child:SetParent(self.node)
             child.Name = self.childNameTemplate .. i
             if self.onAddElementCb then

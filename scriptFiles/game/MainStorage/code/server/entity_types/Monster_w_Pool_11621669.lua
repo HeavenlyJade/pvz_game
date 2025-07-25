@@ -12,6 +12,7 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local BehaviorTree = require(MainStorage.code.server.entity_types.BehaviorTree) ---@type BehaviorTree
+local MonsterActorPool = require(MainStorage.code.server.entity_types.MonsterActorPool) ---@type MonsterActorPool
 
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
@@ -119,23 +120,22 @@ end
 function _M:CreateModel(scene)
     self.name = self.mobType.data["显示名"]
 
-    -- 创建Actor
-    local container = game.WorkSpace["Ground"][scene.name]["怪物"]
-    local actor_monster = gg.GetChild(MainStorage["怪物模型"], self.mobType.data["模型"]) ---@type Actor
-    actor_monster = actor_monster:Clone()
-    actor_monster:SetParent(container)
-    actor_monster.Enabled = true
-    actor_monster.Visible = true
-    actor_monster.SyncMode = Enum.NodeSyncMode.NORMAL
-    actor_monster.CollideGroupID = MOB_COLLIDE_GROUP
+    local modelName = self.mobType.data["模型"]
+    local actor_monster = MonsterActorPool.GetActor(modelName, scene)
+    
+    if not actor_monster then
+        gg.log("Error: 无法创建怪物模型", modelName)
+        return
+    end
+
+    -- 设置Actor属性
     actor_monster.Name = self.uuid
+    actor_monster.CollideGroupID = MOB_COLLIDE_GROUP
 
     -- 设置初始位置
     if self.spawnPos then
         actor_monster.LocalPosition = self.spawnPos
     end
-
-    -- 关联到对象
     self:setGameActor(actor_monster)
 
     -- 加载完成事件处理
@@ -406,11 +406,20 @@ end
 -- end
 
 function _M:DestroyObject()
-    -- 从场景中移除
+    if not self.isDead then
+        self:Die()
+    end
+    self.isDestroyed = true
     if self.scene then
         self.scene.monsters[self.uuid] = nil
     end
-    Entity.DestroyObject(self)
+    if self.actor then
+        _M.node2Entity[self.actor] = nil
+        local modelName = self.mobType.data["模型"]
+        MonsterActorPool.ReturnActor(self.actor, modelName)
+        self.actor = nil
+    end
+    ServerEventManager.UnsubscribeByKey(self.uuid)
 end
 
 return _M

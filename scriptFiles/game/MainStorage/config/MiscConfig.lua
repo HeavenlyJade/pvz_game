@@ -1,5 +1,6 @@
 local MainStorage = game:GetService('MainStorage')
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
+local Modifiers = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 
 --- MiscConfig配置文件
@@ -12,9 +13,16 @@ local function LoadConfig()
     ["总控"] = {
         ["ID"] = "总控",
         ["菜单指令"] = {
+            ["商城购买_1"] = {
+                ["菜单按钮名"] = "商城购买_1",
+                ["按键"] = "P",
+                ["指令"] = {
+                    [[viewUI {"界面ID":"道具"} ]]
+                }
+            },
             ["每日奖励_2"] = {
                 ["菜单按钮名"] = "每日奖励_2",
-                ["按键"] = "P",
+                ["按键"] = "O",
                 ["指令"] = {
                     [[viewUI {"界面ID":"在线奖励"} ]]
                 }
@@ -26,16 +34,16 @@ local function LoadConfig()
                     [[viewUI {"界面ID":"月卡"} ]]
                 }
             },
-            ["商城购买_1"] = {
-                ["菜单按钮名"] = "商城购买_1",
-                ["按键"] = "O",
+            ["排行榜_5"] = {
+                ["菜单按钮名"] = "排行榜_5",
+                ["按键"] = "U",
                 ["指令"] = {
-                    [[viewUI {"界面ID":"道具"} ]]
+                    [[viewUI {"界面ID":"排行榜页面","参数":{}} ]]
                 }
             },
             ["卡片抽取_4"] = {
                 ["菜单按钮名"] = "卡片抽取_4",
-                ["按键"] = "U",
+                ["按键"] = "Y",
                 ["指令"] = {
                     [[viewUI {"界面ID":"抽卡页面"} ]]
                 }
@@ -44,21 +52,21 @@ local function LoadConfig()
                 ["菜单按钮名"] = "商城购买_货币1",
                 ["按键"] = "",
                 ["指令"] = {
-                    [[viewUI {"界面ID":"水晶"} ]]
+                    [[viewUI {"界面ID":"水晶","参数":{"商品名":"阳光补给包"}} ]]
                 }
             },
             ["商城购买_货币2"] = {
                 ["菜单按钮名"] = "商城购买_货币2",
                 ["按键"] = "",
                 ["指令"] = {
-                    [[viewUI {"界面ID":"水晶"} ]]
+                    [[viewUI {"界面ID":"水晶","参数":{"商品名":"金币补给包"}} ]]
                 }
             },
             ["商城购买_货币3"] = {
                 ["菜单按钮名"] = "商城购买_货币3",
                 ["按键"] = "",
                 ["指令"] = {
-                    [[viewUI {"界面ID":"水晶"} ]]
+                    [[viewUI {"界面ID":"水晶","参数":{"商品名":"能量豆补给包"}} ]]
                 }
             },
             ["商城购买_货币4"] = {
@@ -67,6 +75,27 @@ local function LoadConfig()
                 ["指令"] = {
                     [[viewUI {"界面ID":"水晶","参数":{"商品名":"水晶x10"}} ]]
                 }
+            },
+            ["自动战斗"] = {
+                ["菜单按钮名"] = "自动战斗",
+                ["按键"] = "",
+                ["指令"] = {
+                    [[toggleAutoBattle {"状态":"切换"} ]]
+                },
+                ["显示条件"] = Modifiers.New({
+                    {
+                        ["目标"] = "自己",
+                        ["条件类型"] = "VariableCondition",
+                        ["条件"] = {
+                            ["名字"] = "已解锁自动战斗",
+                            ["最小值"] = 0,
+                            ["最大值"] = 100,
+                            ["最小"] = "1",
+                            ["最大"] = "1"
+                        },
+                        ["动作"] = "必须"
+                    }
+                })
             }
         },
         ["装备类型"] = {
@@ -137,6 +166,16 @@ if gg.isServer then
             evt.player:SendHoverText("尚未开放，敬请期待！")
             return
         end
+        
+        -- 检查显示条件
+        if menuConfig["显示条件"] then
+            local castParam = menuConfig["显示条件"]:Check(evt.player, evt.player)
+            if castParam.cancelled then
+                evt.player:SendHoverText("条件不满足，无法执行！")
+                return
+            end
+        end
+        
         local ok, err = pcall(function()
             evt.player:ExecuteCommands(menuConfig["指令"])
         end)

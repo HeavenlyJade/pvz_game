@@ -62,7 +62,7 @@ function CustomUI:SendHoverText(text, playerIfServer)
 end
 
 ---@param player Player
-function CustomUI:S_Open(player)
+function CustomUI:S_Open(player,item_name)
     if not self._serverInited then
         self._serverInited = true
         local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
@@ -74,7 +74,8 @@ function CustomUI:S_Open(player)
     end
     local packet = {
         id = self.id,
-        uiName = self.uiName
+        uiName = self.uiName,
+        item_name = item_name
     }
     self:S_BuildPacket(player, packet)
     player:SendEvent("ViewCustomUI"..self.uiName, packet)
