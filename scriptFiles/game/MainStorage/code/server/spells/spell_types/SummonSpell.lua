@@ -200,14 +200,14 @@ function SummonSpell:CanCast(caster, target, param, log)
     return true
 end
 
-function SummonSpell:ApplyExtraAttributes(caster, summoned, power)
+function SummonSpell:ApplyExtraAttributes(caster, summoned, param)
     if not self.extraSummonAttributes or not summoned then return end
     for attrName, attrConf in pairs(self.extraSummonAttributes) do
         local extraAttr = attrConf["额外属性"]
         local attrBuff = attrConf["属性增伤"]
         if extraAttr and attrBuff then
             local baseValue = caster:GetStat(attrBuff["属性类型"])
-            local addValue = (attrBuff["倍率"] or 1) * baseValue * power
+            local addValue = (attrBuff["倍率"] or 1) * baseValue * param.power
             if attrBuff["增加类型"] == "增加" then
                 summoned:AddStat(extraAttr, addValue, "SUMMON_EXTRA", false)
             elseif attrBuff["增加类型"] == "减少" then
@@ -220,7 +220,7 @@ function SummonSpell:ApplyExtraAttributes(caster, summoned, power)
     end
 end
 
-local function printSummonedStats(summoned)
+local function printSummonedStats(summoned, caster)
     local statText = string.format("召唤物属性: %s\n", summoned.name or tostring(summoned))
     local sortedStats = StatTypeConfig.GetSortedStatList()
     for _, statName in ipairs(sortedStats) do
@@ -288,17 +288,16 @@ function SummonSpell:CastReal(caster, target, param)
         local widthScale = param:GetValue(self, "宽度倍率", 1)
         local heightScale = param:GetValue(self, "高度倍率", 1)
         local scale = summoned.actor.LocalScale
-        gg.log("summoned", sizeScale, widthScale, heightScale)
         summoned.actor.LocalScale = Vector3.New(scale.x * sizeScale * widthScale, scale.y * sizeScale * heightScale, scale.z * sizeScale * widthScale)
         summoned.actor.Rotation = casterRot
         summoned:SetOwner(caster)
         self:AddSummon(caster, summoned)
         -- 应用额外召唤物属性
-        self:ApplyExtraAttributes(caster, summoned, param.power)
+        self:ApplyExtraAttributes(caster, summoned, param)
         caster:TriggerTags("召唤时", summoned, param, summoned)
         -- 打印召唤物属性
         if param.printInfo then
-            printSummonedStats(summoned)
+            printSummonedStats(summoned, caster)
         end
     end
     self:PlayEffect(self.projectileEffects, caster, target, param)

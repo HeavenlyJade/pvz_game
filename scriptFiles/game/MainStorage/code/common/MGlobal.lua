@@ -3,7 +3,8 @@ local Vec2 = require(MainStorage.code.common.math.Vec2)
 local Vec3 = require(MainStorage.code.common.math.Vec3)
 local Vec4 = require(MainStorage.code.common.math.Vec4)
 local Quat = require(MainStorage.code.common.math.Quat)
-local Dict = require(MainStorage.code.common.func_utils.Dict)
+-- 延迟加载Dict，避免循环依赖
+-- local Dict = require(MainStorage.code.common.func_utils.Dict)
 
 local inputservice = game:GetService("UserInputService")
 local Players = game:GetService('Players')
@@ -365,7 +366,7 @@ local gg = {
     Vec2 = Vec2, ---@type Vec2
     Vec3 = Vec3, ---@type Vec3
     Vec4 = Vec4, ---@type Vec4
-    Dict = Dict, ---@type Dict
+    -- Dict 延迟加载，避免循环依赖
     Quat = Quat, ---@type Quat
     noise = require(script.Parent.math.PerlinNoise),
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
@@ -431,11 +432,13 @@ function gg.GetFullPath(node)
     local path = node.Name
     local parent = node.Parent
 
-    while parent do
-        path = parent.Name .. "/" .. path
-        parent = parent.Parent
-        if parent.Name == "WorkSpace" then
-           break
+    if parent.Name ~= "WorkSpace" then
+        while parent do
+            path = parent.Name .. "/" .. path
+            parent = parent.Parent
+            if not parent or parent.Name == "WorkSpace" then
+                break
+            end
         end
     end
 
@@ -971,7 +974,7 @@ end
 -- 浅拷贝 不拷贝meta
 ---@param ori_tab table 原始表
 ---@param visited table|nil 访问过的表，防止循环引用
----@return table|nil 拷贝后的表
+---@return table 拷贝后的表
 function gg.clone(ori_tab, visited)
     if type(ori_tab) ~= "table" then
         return nil
@@ -1043,6 +1046,160 @@ function gg.GetTimeStamp()
     return game.RunService:CurrentSteadyTimeStampMS() / 1000
 end
 
+local function RecursivlyGet(source, paths, i, parent)
+    if not source then
+        return nil, i, parent
+    end
+    if i > #paths then
+        return source, i, parent
+    else
+        local nextNode = source[paths[i]]
+        if not nextNode then
+            local numKey = tonumber(paths[i])
+            if numKey and source[numKey] then
+                nextNode = source[numKey]
+            end
+        end
+        if not nextNode then
+            return nil, i, source
+        end
+        return RecursivlyGet(nextNode, paths, i + 1, source)
+    end
+end
+
+function gg.Debug(params, player)
+    local vars = {}
+    for _, value in ipairs(params["操作"]) do
+        if value["操作"] == "变量" then
+            local varDict = value["变量"]
+            local source = player ---@type any
+            if varDict["源"] and varDict["源"] ~= "" then
+                local paths = {}
+                for part in string.gmatch(varDict["源"], "[^%.]+") do
+                    table.insert(paths, part)
+                end
+                local starter = 1
+                source = game
+                if paths[1] == "game" then
+                    starter = 2
+                elseif paths[1] == "MainStorage" then
+                    source = MainStorage
+                    starter = 2
+                elseif paths[1] == "WorkSpace" then
+                    source = game.WorkSpace
+                    starter = 2
+                elseif paths[1] == "UI" then
+                    local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
+                    source = ViewBase.GetUI(paths[2])
+                    starter = 3
+                elseif string.sub(paths[1], -6) == "Config" then
+                    source = require(MainStorage.config [paths[1]]).config
+                    starter = 2
+                end
+                local returned, i, parent = RecursivlyGet(source, paths, starter)
+                if not returned then
+                    local log = gg.log("在从%s获取%s时，进行到%d(%s)时出错", source, paths, i, tostring(parent))
+                    if player then
+                        player:SendLog(log)
+                    end
+                    return
+                end
+                source = returned
+                if type(source) == "userdata" and source.IsA and source:IsA("ModuleScript") then
+                    source = require(source)
+                end
+            elseif varDict["快捷源"] then
+                if varDict["快捷源"] == "player" then
+                    source = player
+                elseif varDict["快捷源"] == "gg" then
+                    source = gg
+                elseif varDict["快捷源"] == "Scene" then
+                    source = require(MainStorage.code.server.Scene)         ---@type Scene
+                end
+            end
+            local obj, i, parent
+            if varDict["路径"] and varDict["路径"] ~= "" then
+                local paths = {}
+                for part in string.gmatch(varDict["路径"], "[^%.]+") do
+                    table.insert(paths, part)
+                end
+                obj, i, parent = RecursivlyGet(source, paths, 1)
+                if not obj then
+                    local log = gg.log("在从%s获取%s时，进行到%d(%s)时出错", source, paths, i, tostring(parent))
+                    if player then
+                        player:SendLog(log)
+                    end
+                    return
+                end
+            else
+                obj = source
+            end
+            if obj then
+                vars[varDict["变量名"]] = {
+                    type = type(obj),
+                    obj = obj,
+                    parent = parent,
+                    path = varDict["路径"]
+                }
+            end
+        elseif value["操作"] == "调用" then
+            local operation = value["调用"]
+            local op = {}
+            for index, value in ipairs(operation["参数"]) do
+                if not vars[value] then
+                    -- 检查是否为字符串字面量（被双引号包围）
+                    if type(value) == "string" and string.sub(value, 1, 1) == '"' and string.sub(value, -1) == '"' then
+                        op[index] = string.sub(value, 2, -2)  -- 去掉首尾的双引号
+                    else
+                        -- 尝试转换为数字
+                        local numValue = tonumber(value)
+                        if numValue then
+                            op[index] = numValue
+                        else
+                            local log = gg.log("不存在的变量", value)
+                            if player then
+                                player:SendLog(log)
+                            end
+                        end
+                    end
+                else
+                    op[index] = vars[value].obj
+                end
+            end
+            if operation["操作"] == "print" then
+                local log = gg.log(op)
+                if player then
+                    player:SendLog(log)
+                end
+            elseif operation["操作"] == "set" or operation["操作"] == "call" then
+                local funcStruct = vars[operation["调用"]]
+                if not funcStruct then
+                    gg.log("不存在的函数变量", operation["调用"])
+                    return
+                end
+                local returned
+                if not vars["静态函数"] then
+                    returned = funcStruct.obj(funcStruct.parent, unpack(op))
+                else
+                    returned = funcStruct.obj(unpack(op))
+                end
+                if operation["操作"] == "set" then
+                    vars[operation["变量名"]] = {
+                        type = type(returned),
+                        obj = returned,
+                        parent = "CALLED",
+                        path = "CALLED"
+                    }
+                end
+                local log = gg.log(funcStruct.path, returned)
+                if player then
+                    player:SendLog(log)
+                end
+            end
+        end
+    end
+end
+
 function gg.GetSceneNode(path)
     if not path then return nil end
 
@@ -1077,8 +1234,21 @@ function gg.log(...)
             tab[i] = tostring(v)
         end
     end
-    print(table.concat(tab, ' '))
+    if type(tab[1]) == "string" and string.find(tab[1], "%%s") then
+        local fmt_args = {}
+        for i = 2, n do
+            fmt_args[#fmt_args + 1] = tab[i]
+        end
+        tab[1] = string.format(tab[1], unpack(fmt_args))
+        for i = 2, #tab do
+            tab[i] = nil
+        end
+    end
+    local s = table.concat(tab, ' ')
+    print(s)
+    return s
 end
+
 
 -- 快速判断一个xyz的每个轴距都在len的范围内
 ---@param dir_ Vector3 方向向量
@@ -1157,8 +1327,8 @@ function gg.GetChild(node, path)
         if part ~= "" then
             lastPart = part
             if not node then
-                gg.log(string.format("[%s]获取路径[%s]失败: 在[%s]处节点不存在", root.Name, path,
-                    fullPath))
+                gg.log(string.format("[%s]获取路径[%s]失败: 在[%s]处节点不存在。%s", root.Name, path,
+                    fullPath, debug.traceback()))
                 return nil
             end
             node = node[part]
@@ -1171,7 +1341,7 @@ function gg.GetChild(node, path)
     end
 
     if not node then
-        gg.log(string.format("[%s]获取路径[%s]失败: 最终节点[%s]不存在", root.Name, path, lastPart))
+        gg.log(string.format("[%s]获取路径[%s]失败: 最终节点[%s]不存在。%s", root.Name, path, lastPart, debug.traceback()))
         return nil
     end
     return node
@@ -1636,5 +1806,20 @@ table.contains = function(tbl, value)
     end
     return false
 end
+
+-- 延迟加载Dict，避免循环依赖
+local _Dict = nil
+local dictMetatable = {
+    __index = function(t, k)
+        if k == "Dict" then
+            if not _Dict then
+                _Dict = require(MainStorage.code.common.func_utils.Dict)
+            end
+            return _Dict
+        end
+        return rawget(t, k)
+    end
+}
+setmetatable(gg, dictMetatable)
 
 return gg;

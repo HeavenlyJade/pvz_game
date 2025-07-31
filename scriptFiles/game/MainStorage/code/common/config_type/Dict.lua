@@ -4,6 +4,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 ---@class Dict<K, V>:Class
 local Dict = ClassMgr.Class("Dict")
 
+
 function Dict:OnInit(init)
     self._data = init or {}
     self.size = 0

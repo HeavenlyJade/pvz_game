@@ -45,9 +45,11 @@ _M.node2Entity = {}
 _M.TRIGGER_STAT_TYPES = TRIGGER_STAT_TYPES
 -- 新增属性
 function _M:OnInit(info_)
-    self.spawnPos = info_.position
+    info_ = info_ or {}
+    self.spawnPos = info_.position or Vector3.New(0, 0, 0)
     self._moveable = true
     self.name = nil
+    self.comboSpellProgress = {}
     self.isDestroyed = false
     self.isInvulnurable = false
     self:GenerateUUID()
@@ -55,7 +57,7 @@ function _M:OnInit(info_)
     self.isEntity = true
     self.showHealthBar = false
     self.isPlayer = false
-    self.uin = info_.uin
+    self.uin = info_.uin or 0
     self.scene = nil ---@type Scene
     self.exp = 0 -- 当前经验值
     self.level = 1 -- 当前等级
@@ -194,6 +196,13 @@ end
 
 function _M:GetPosition()
     return self.actor and self.actor.LocalPosition or Vector3.New(0, 0, 0)
+end
+
+function _M:GetRotation()
+    return self.actor and self.actor.Euler or Vector3.New(0, 0, 0)
+end
+function _M:SetRotation(rotation)
+    self.actor.Euler = rotation
 end
 
 function _M:GetCenterPosition()
@@ -650,7 +659,30 @@ end
 ---@param owner Entity
 function _M:SetOwner(owner)
     self.owner = owner
+    
+    -- 从旧的ColliderGroup实体列表中移除
+    if self.scene and self.actor and self.actor.CollideGroupID then
+        local oldGroupId = self.actor.CollideGroupID
+        if self.scene.entities[oldGroupId] then
+            for i, entity in ipairs(self.scene.entities[oldGroupId]) do
+                if entity == self then
+                    table.remove(self.scene.entities[oldGroupId], i)
+                    break
+                end
+            end
+        end
+    end
+    
     self.actor.CollideGroupID = owner.actor.CollideGroupID
+    
+    -- 添加到新的ColliderGroup实体列表中
+    if self.scene and self.actor.CollideGroupID then
+        local groupId = self.actor.CollideGroupID
+        if not self.scene.entities[groupId] then
+            self.scene.entities[groupId] = {}
+        end
+        table.insert(self.scene.entities[groupId], self)
+    end
 end
 
 function _M:GetPlayer()
@@ -731,11 +763,28 @@ function _M:GetEnemyGroup()
     end
 end
 
+function _M:SendLog( text, ... )
+end
+
 function _M:DestroyObject()
     if not self.isDead then
         self:Die()
     end
     self.isDestroyed = true
+    
+    -- 从场景的ColliderGroup实体列表中移除
+    if self.scene and self.actor and self.actor.CollideGroupID then
+        local groupId = self.actor.CollideGroupID
+        if self.scene.entities[groupId] then
+            for i, entity in ipairs(self.scene.entities[groupId]) do
+                if entity == self then
+                    table.remove(self.scene.entities[groupId], i)
+                    break
+                end
+            end
+        end
+    end
+    
     if self.actor then
         _M.node2Entity[self.actor] = nil
         self.actor:Destroy()
@@ -784,6 +833,15 @@ function _M:setGameActor(actor_)
     if actor_:IsA("Actor") then
         actor_.PhysXRoleType = Enum.PhysicsRoleType.BOX
         actor_.IgnoreStreamSync = false
+    end
+    
+    -- 添加到场景的ColliderGroup实体列表中
+    if self.scene and actor_.CollideGroupID then
+        local groupId = actor_.CollideGroupID
+        if not self.scene.entities[groupId] then
+            self.scene.entities[groupId] = {}
+        end
+        table.insert(self.scene.entities[groupId], self)
     end
 end
 
@@ -852,6 +910,10 @@ function _M:IsNear(loc, dist)
 end
 
 function _M:CreateTitle(nameOverride, scale, barNameOverride)
+    if not self.actor then
+        print(debug.traceback())
+        return
+    end
     scale = scale or 1
     nameOverride = nameOverride or self.name
     local name_level_billboard = self.name_level_billboard
@@ -982,6 +1044,19 @@ function _M:ChangeScene(new_scene)
         -- 从旧场景的注册表中移除
         self.scene.uuid2Entity[self.uuid] = nil
         
+        -- 从ColliderGroup实体列表中移除
+        if self.actor and self.actor.CollideGroupID then
+            local groupId = self.actor.CollideGroupID
+            if self.scene.entities[groupId] then
+                for i, entity in ipairs(self.scene.entities[groupId]) do
+                    if entity == self then
+                        table.remove(self.scene.entities[groupId], i)
+                        break
+                    end
+                end
+            end
+        end
+        
         -- 如果是玩家，还需要从玩家列表中移除
         if self.isPlayer then---@cast self Player
             self.scene:player_leave(self)
@@ -996,6 +1071,15 @@ function _M:ChangeScene(new_scene)
     -- 进入新场景
     self.scene = new_scene
     self.scene.uuid2Entity[self.uuid] = self
+    
+    -- 添加到新场景的ColliderGroup实体列表中
+    if self.actor and self.actor.CollideGroupID then
+        local groupId = self.actor.CollideGroupID
+        if not new_scene.entities[groupId] then
+            new_scene.entities[groupId] = {}
+        end
+        table.insert(new_scene.entities[groupId], self)
+    end
     
     -- 如果是玩家，还需要添加到玩家列表中
     if self.isPlayer then
@@ -1037,28 +1121,42 @@ function _M:setSkillCastTime(skill_uuid_, cast_time_)
 end
 
 -- 展示复活特效
-local reviveEffectPool = {}
-
 function _M:showReviveEffect(pos_)
-    local expl
-    -- 取对象池
-    if #reviveEffectPool > 0 then
-        expl = table.remove(reviveEffectPool)
-        expl.Parent = self.actor
-        expl.Visible = true
-        expl.Enabled = true
-    else
-        expl = SandboxNode.new('DefaultEffect', self.actor)
-        expl.AssetID = 'sandboxSysId://particles/item_137_red.ent'
+    if not gg.isServer then
+        return
     end
-    expl.Position = Vector3.New(pos_.x, pos_.y, pos_.z)
-    expl.LocalScale = Vector3.New(3, 3, 3)
-    ServerScheduler.add(function()
-        expl.Visible = false
-        expl.Enabled = false
-        expl.Parent = nil
-        table.insert(reviveEffectPool, expl)
-    end, 1.5)
+    
+    -- 创建特效事件数据
+    local effectId = gg.create_uuid("revive_fx_")
+    local eventData = {
+        effectId = effectId,
+        type = "特效",
+        name = "复活特效",
+        position = pos_ and {pos_.x, pos_.y, pos_.z} or {self:GetPosition().x, self:GetPosition().y, self:GetPosition().z},
+        duration = 1.5,
+        repeatCount = 1,
+        repeatDelay = 0,
+        offset = {0, 0, 0},
+        data = {
+            particleName = "特效/场景用/复活",
+            particleAssetId = "sandboxSysId://particles/item_137_red.ent",
+            boundToEntity = true,
+            boundToBone = nil
+        }
+    }
+    
+    -- 如果有actor，添加绑定路径
+    if self.actor then
+        eventData.boundToPath = gg.GetFullPath(self.actor)
+    end
+    
+    -- 发送特效事件
+    if self.isPlayer then
+        ---@cast self Player
+        self:SendEvent("PlayGraphicEffect", eventData)
+    elseif self.scene then
+        self.scene:BroadcastEventAround("PlayGraphicEffect", eventData, nil, 0)
+    end
 end
 
 -- 无法被攻击状态

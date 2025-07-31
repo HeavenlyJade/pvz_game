@@ -2618,6 +2618,9 @@
 
 
 ---@class MainStorage
+---@field code SandboxNode
+---@field config SandboxNode
+---@field plugin SandboxNode
 ---@field VersionCache boolean 运行时不应该再动态改变。
 ---@field OnlyInitSync boolean 开启后则仅仅在客户端加入服务器时,服务器会发送数据。完成后后续变化不会再同步。
 
@@ -2904,18 +2907,6 @@
 
 
 
----@class Event
-
-
-
----@class String
-
-
-
----@class Table
-
-
-
 ---@class TweenInfo
 ---@field New fun(duration:number, style?:EasingStyle, direction?:EasingDirection, delayTime?:number, repeatCount?:number, reverse?:boolean) TweenInfo 构造
 ---@field EasingDirection number 缓动方向
@@ -2935,6 +2926,7 @@
 
 
 ---@class Vector3
+---@field zero Vector3
 ---@field x number x坐标
 ---@field y number y坐标
 ---@field z number z坐标
@@ -4387,6 +4379,7 @@
 ---@class GameService
 ---@field UserInputService UserInputService
 ---@field Workspace WorkSpace 工作区
+---@field MainStorage MainStorage
 ---@field Players Players 玩家
 ---@field ServerStorage SandboxNode 服务器存储
 ---@field Tween TweenService

@@ -33,7 +33,7 @@ function ClassMgr.GetRegisterClass( classname )
 end
 
 function ClassMgr.RegisterClass( classname, cls)
-	assert(s_register_class[classname] == nil, string.format("classname[%s]is exist", classname))
+	assert(s_register_class[classname] == nil, string.format("classname[%s] is exist", classname))
 	s_register_class[classname] = cls
 end
 
@@ -70,7 +70,7 @@ function ClassMgr.Class( name, ...)
 	cls.__index = cls
 	cls.className = name
 	cls.ToString = function (instance)
-		local gg              = require(game:GetService("MainStorage").code.common.MGlobal) ---@type gg
+		local gg = require(game:GetService("MainStorage").code.common.MGlobal) ---@type gg
 		local paramsStr = {}
 		if instance.GetToStringParams then
 			local params = instance:GetToStringParams()

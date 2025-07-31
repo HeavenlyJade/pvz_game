@@ -9,13 +9,9 @@ local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr) ---@type MCl
 local ServerEventManager      = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local TagTypeConfig = require(MainStorage.config.TagTypeConfig) ---@type TagTypeConfig
 local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
-local cloudService      = game:GetService("CloudService")     --- @type CloudService
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
-local Level = require(MainStorage.code.server.Scene.Level) ---@type Level
 local MiscConfig = require(MainStorage.config.MiscConfig) ---@type MiscConfig
-
-
 
 
 ---@class Player : Entity    --玩家类  (单个玩家) (管理玩家状态)
@@ -138,6 +134,14 @@ function _M:OnInit(info_)
 end
 
 function _M:SubscribeEvent(eventType, listener, priority)
+    if not ServerEventManager then
+        gg.log("ServerEventManager module not loaded")
+        return
+    end
+    if not ServerEventManager.SubscribeToPlayer then
+        gg.log("ServerEventManager.SubscribeToPlayer method not found")
+        return
+    end
     ServerEventManager.SubscribeToPlayer(self, eventType, listener, self.uuid)
 end
 
@@ -608,7 +612,11 @@ function _M:RefreshStats()
     for statName, statType in pairs(StatTypeConfig.GetAll()) do
         local amount = statType.baseValue
         if statType.valuePerLevel then
-            amount = amount + gg.ProcessFormula(statType.valuePerLevel:gsub("LVL", tostring(self.level)))
+            if type(statType.valuePerLevel) == "string" then
+                amount = amount + gg.ProcessFormula(statType.valuePerLevel:gsub("LVL", tostring(self.level)))
+            else
+                amount = amount + statType.valuePerLevel * self.level
+            end
         end
         self:AddStat(statName, amount ,"EQUIP", false)
     end
@@ -1016,8 +1024,8 @@ function _M:SendLog( text, ... )
         text = string.format(text, ...)
     end
     self:SendEvent("Log", {
-        text = text,
-        trace = debug.traceback()
+        text = text
+        -- trace = debug.traceback()
     })
 end
 

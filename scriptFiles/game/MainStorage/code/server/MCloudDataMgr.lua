@@ -9,7 +9,6 @@ local game         = game
 local pairs        = pairs
 local SandboxNode  = SandboxNode ---@type SandboxNode
 
-
 local MainStorage = game:GetService("MainStorage")
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const

@@ -13,8 +13,9 @@ local SkillTypeUtils = {
     nodeCache = {},  ---@type SkillTreeNode[]
     forest = {}, ---@type table<string, SkillTreeNode> -- 节点缓存
     lastForest = nil, ---@type table<string, SkillTreeNode> -- 最近一次构建的技能森林
-
 }
+
+
 
 -- 工具函数：判断表中是否包含某元素
 local function table_contains(tbl, val)

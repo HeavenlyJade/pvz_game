@@ -98,7 +98,7 @@ function _M:initNpcs()
                     end
                     gg.log("可用的NPC节点：", table.concat(children, ", "))
                 else
-                    gg.log("找到NPC节点：", npc_name, "节点类型：", actor.ClassName, "节点名：", actor.Name)
+                    gg.log("找到NPC节点：", npc_name, "节点名：", actor.Name)
 
                     local npc = Npc.New(npc_data, actor)
                     self.uuid2Entity[actor] = npc
@@ -216,6 +216,7 @@ function _M:OnInit(node)
     self.level = nil --使用本场景的关卡
     self.npcs = {} -- NPC列表
     self.monster_spawns = {} -- 刷怪点管理   [ spawn_name = { count, config } ]
+    self.entities = {} ---@type table<number, Entity[]>
     self.npc_spawns = {}
     self.drop_boxs = {} -- 掉落物品列表
     self.uuid2Entity = {}
@@ -290,14 +291,45 @@ end
 
 ---@return Entity[]
 function _M:OverlapSphereEntity(center, radius, filterGroup, filterFunc)
-    local nodes = self:OverlapSphere(center, radius, filterGroup, filterFunc)
     local retEntities = {}
-    for _, node in ipairs(nodes) do
-        local entity = Entity.node2Entity[node]
-        if entity then
-            table.insert(retEntities, entity)
+    local radiusSq = radius * radius
+    
+    -- 遍历指定ColliderGroup中的所有实体
+    if filterGroup then
+        for _, groupId in ipairs(filterGroup) do
+            if self.entities[groupId] then
+                for _, entity in ipairs(self.entities[groupId]) do
+                    if entity and entity.actor and not entity.isDead then
+                        local entityPos = entity:GetPosition()
+                        local distanceSq = gg.vec.DistanceSq3(center, entityPos)
+                        
+                        if distanceSq <= radiusSq then
+                            if not filterFunc or filterFunc(entity.actor) then
+                                table.insert(retEntities, entity)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    else
+        -- 如果没有指定filterGroup，遍历所有ColliderGroup
+        for groupId, entities in pairs(self.entities) do
+            for _, entity in ipairs(entities) do
+                if entity and entity.actor and not entity.isDead then
+                    local entityPos = entity:GetPosition()
+                    local distanceSq = gg.vec.DistanceSq3(center, entityPos)
+                    
+                    if distanceSq <= radiusSq then
+                        if not filterFunc or filterFunc(entity.actor) then
+                            table.insert(retEntities, entity)
+                        end
+                    end
+                end
+            end
         end
     end
+    
     return retEntities
 end
 
@@ -325,6 +357,86 @@ function _M:OverlapBoxEntity(center, extent, angle, filterGroup, filterFunc)
         end
     end
     return retEntities
+end
+
+-- 获取指定ColliderGroup中的所有实体
+---@param filterGroup number[]|nil 要搜索的ColliderGroup列表，nil表示搜索所有
+---@return Entity[]
+function _M:GetEntitiesByGroup(filterGroup)
+    local retEntities = {}
+    
+    if filterGroup then
+        for _, groupId in ipairs(filterGroup) do
+            if self.entities[groupId] then
+                for _, entity in ipairs(self.entities[groupId]) do
+                    if entity and entity.actor and not entity.isDead then
+                        table.insert(retEntities, entity)
+                    end
+                end
+            end
+        end
+    else
+        -- 如果没有指定filterGroup，遍历所有ColliderGroup
+        for groupId, entities in pairs(self.entities) do
+            for _, entity in ipairs(entities) do
+                if entity and entity.actor and not entity.isDead then
+                    table.insert(retEntities, entity)
+                end
+            end
+        end
+    end
+    
+    return retEntities
+end
+
+-- 在指定范围内查找最近的实体
+---@param center Vector3 中心点
+---@param maxDistance number 最大距离
+---@param filterGroup number[]|nil ColliderGroup筛选
+---@param filterFunc fun(entity: Entity): boolean|nil 额外筛选函数
+---@return Entity|nil, number 最近的实体和距离
+function _M:FindNearestEntity(center, maxDistance, filterGroup, filterFunc)
+    local nearestEntity = nil
+    local nearestDistanceSq = maxDistance * maxDistance
+    
+    if filterGroup then
+        for _, groupId in ipairs(filterGroup) do
+            if self.entities[groupId] then
+                for _, entity in ipairs(self.entities[groupId]) do
+                    if entity and entity.actor and not entity.isDead then
+                        if not filterFunc or filterFunc(entity) then
+                            local entityPos = entity:GetPosition()
+                            local distanceSq = gg.vec.DistanceSq3(center, entityPos)
+                            
+                            if distanceSq < nearestDistanceSq then
+                                nearestEntity = entity
+                                nearestDistanceSq = distanceSq
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    else
+        -- 如果没有指定filterGroup，遍历所有ColliderGroup
+        for groupId, entities in pairs(self.entities) do
+            for _, entity in ipairs(entities) do
+                if entity and entity.actor and not entity.isDead then
+                    if not filterFunc or filterFunc(entity) then
+                        local entityPos = entity:GetPosition()
+                        local distanceSq = gg.vec.DistanceSq3(center, entityPos)
+                        
+                        if distanceSq < nearestDistanceSq then
+                            nearestEntity = entity
+                            nearestDistanceSq = distanceSq
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return nearestEntity, nearestEntity and math.sqrt(nearestDistanceSq) or nil
 end
 
 -- function _M:SelectCylinderTargets(center, radius, height, filterGroup, filterFunc)
@@ -524,6 +636,38 @@ function _M:update()
     -- 更新每一个怪物
     for _, monster_ in pairs(self.monsters) do
         monster_:update_monster()
+    end
+end
+
+---向指定玩家周围半径内的所有玩家广播事件
+---@param eventName string 事件名称
+---@param eventBody table 事件数据
+---@param player? Player 中心玩家
+---@param radius? number 广播半径，0表示向场景内所有玩家广播
+function _M:BroadcastEventAround(eventName, eventBody, player, radius)
+    if not eventName or not eventBody then
+        gg.log("BroadcastEventAround参数错误")
+        return
+    end
+    
+    if player==nil or radius == 0 then
+        -- 向场景内所有玩家广播
+        for _, scenePlayer in pairs(self.players) do
+            scenePlayer:SendEvent(eventName, eventBody)
+        end
+    else
+        -- 向指定半径内的玩家广播
+        local centerPos = player:GetPosition()
+        local radiusSq = radius * radius
+        
+        for _, scenePlayer in pairs(self.players) do
+            local playerPos = scenePlayer:GetPosition()
+            local distanceSq = gg.vec.DistanceSq3(centerPos, playerPos)
+            
+            if distanceSq <= radiusSq then
+                scenePlayer:SendEvent(eventName, eventBody)
+            end
+        end
     end
 end
 

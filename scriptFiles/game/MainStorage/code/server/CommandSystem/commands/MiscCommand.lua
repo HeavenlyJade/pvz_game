@@ -11,17 +11,17 @@ function MiscCommand.title(params, player)
 end
 
 function MiscCommand.viewUI(params, player)
-    local CustomUIConfig = require(MainStorage.config.CustomUIConfig) ---@type CustomUIConfig
-    local customUI = CustomUIConfig.Get(params["界面ID"])
     if not params["界面ID"] then
         gg.log("不存在的界面ID", params["界面ID"])
         return
     end
-    local item_name = ''
-    if params['参数'] and params['参数']['商品名'] then
-        item_name = params['参数']['商品名']
+    local CustomUIConfig = require(MainStorage.config.CustomUIConfig) ---@type CustomUIConfig
+    local customUI = CustomUIConfig.Get(params["界面ID"])
+    if not customUI then
+        gg.log("找不到界面配置", params["界面ID"])
+        return
     end
-    customUI:S_Open(player,item_name)
+    customUI:S_Open(player)
     return true
 end
 
@@ -45,5 +45,17 @@ function MiscCommand.toggleAutoBattle(params, player)
     })
     return true
 end
+
+---@param player Player
+function MiscCommand.debug(params, player)
+    if params["客户端执行"] then
+        params["客户端执行"] = false
+        player:SendEvent("Debug", params)
+    else
+        gg.Debug(params, player)
+    end
+    return true
+end
+
 
 return MiscCommand

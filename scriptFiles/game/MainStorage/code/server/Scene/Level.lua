@@ -394,18 +394,18 @@ function Level:Update()
             end
         end
 
-        -- 新增：怪物生成时同步进度条
+        -- 怪物生成时更新进度条
         if spawnedMobs and #spawnedMobs > 0 then
             local spawnedSoFar = 0
             for _, count in pairs(self.waveSpawnedCounts) do
                 spawnedSoFar = spawnedSoFar + count
             end
             local waveIndex = math.max(1, math.min(self.waveCount, #self.waveMobCounts or {}))
-            local mobPercent = self.currentWaveMobCount > 0 and (spawnedSoFar / self.currentWaveMobCount) or 0
+            local progressPercent = self.currentWaveMobCount > 0 and (1-spawnedSoFar / self.currentWaveMobCount) or 1
             for _, player in pairs(self.players) do
                 player:SendEvent("WaveHealthUpdate", {
                     waveIndex = waveIndex,
-                    healthPercent = mobPercent,
+                    healthPercent = progressPercent,
                     waveImg = self.currentWave and self.currentWave.waveImg or nil
                 })
             end
@@ -419,7 +419,6 @@ function Level:Update()
 
     -- 检查当前波次是否结束
     if #self.spawningWaves == 0 and #self.notSpawningWaves == 0 then
-        gg.log("self.allWaves", #self.allWaves, self.activeMobs:Count())
         if (#self.allWaves > 0 and self.activeMobs:Count() == 0) then
             self:OnWaveEnd()
         end

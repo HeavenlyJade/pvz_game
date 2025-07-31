@@ -72,7 +72,9 @@ function _M:Check(caster, target, param)
         success = self.condition:Check(self, c, t)
     end
     if not success and self.message then
-        caster:SendHoverText(gg.ProcessVariables(self.message, caster, target))
+        local message = gg.ProcessVariables(self.message, caster, target)
+        caster:SendHoverText(message)
+        param.message = message
     end
     local stop = false
     if self.invert then success = not success end

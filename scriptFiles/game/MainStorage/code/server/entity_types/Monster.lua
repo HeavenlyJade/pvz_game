@@ -30,9 +30,7 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 ---@field New fun(info_:table):Monster
 local _M = ClassMgr.Class('Monster', Entity)
 local MOB_COLLIDE_GROUP = 3
-game:GetService("PhysXService"):SetCollideInfo(3, 3, false)
-game:GetService("PhysXService"):SetCollideInfo(4, 4, false)
-game:GetService("PhysXService"):SetCollideInfo(2, 2, false)
+
 --------------------------------------------------
 -- 初始化与基础方法
 --------------------------------------------------
@@ -169,28 +167,17 @@ end
 function _M:TryFindTarget(detectRange)
     -- 获取敌对组
     local enemyGroup = self:GetEnemyGroup()
-    local detectRangeSq = detectRange * detectRange
-    -- 获取当前位置
-    local currentPos = self:GetPosition()
-    -- 在场景中检测范围内的敌人
-    local enemies = self.scene:OverlapBoxEntity(currentPos, Vector3.New(detectRange, detectRange, detectRange), Vector3.New(0, 0, 0), enemyGroup)
-    -- 找到最近的有效目标
-    local nearestTarget = nil
-    local minDistanceSq = detectRangeSq
-
-    -- gg.log("TryFindTarget", enemies)
-    for _, entity in ipairs(enemies) do
-        -- 检查是否是敌对单位
-        if entity.isEntity and not entity.isDead and not entity.isInvulnurable then
-            local distanceSq = gg.vec.DistanceSq3(currentPos, entity:GetPosition())
-
-            -- 如果距离更近且目标有效
-            if distanceSq < minDistanceSq and entity:CanBeTargeted() then
-                nearestTarget = entity
-                minDistanceSq = distanceSq
-            end
+    
+    -- 使用场景的新方法查找最近的敌人
+    local nearestTarget, distance = self.scene:FindNearestEntity(
+        self:GetPosition(),
+        detectRange,
+        enemyGroup,
+        function(entity)
+            -- 检查是否是有效的敌对目标
+            return entity.isEntity and not entity.isDead and not entity.isInvulnurable and entity:CanBeTargeted()
         end
-    end
+    )
 
     -- 如果找到目标，设置为目标
     if nearestTarget then

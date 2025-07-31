@@ -21,6 +21,7 @@ MailEventConfig.REQUEST = {
     MARK_READ = "MailRequest_MarkRead",         -- 标记邮件为已读
 }
 
+
 -- 服务器响应事件
 MailEventConfig.RESPONSE = {
     LIST_RESPONSE = "MailResponse_List",      -- 邮件列表响应

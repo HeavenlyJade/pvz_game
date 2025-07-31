@@ -12,6 +12,7 @@ local math = math
 local tostring = tostring
 local tonumber = tonumber
 
+
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local CloudMailDataAccessor = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailDataAccessor

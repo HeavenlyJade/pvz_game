@@ -3,7 +3,6 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 local ItemQualityConfig = require(MainStorage.config.ItemQualityConfig) ---@type ItemQualityConfig
 
-
 ---@class SerializedItem
 ---@field itype string|ItemType
 ---@field el number

@@ -27,8 +27,8 @@ function DOTBuffSpell:OnInit(data)
     self.baseDamage = data["基础伤害"] or 0
     self.baseMultiplier = data["基础倍率"] or 1
     self.extraStats = data["额外属性"] or {}
-    self.damageAmplifier = DamageAmplifier.Load(data["属性增伤"]) ---@type DamageAmplifier[]
-    self.targetDamageAmplifier = DamageAmplifier.Load(data["目标属性增伤"]) ---@type DamageAmplifier[]
+    self.damageAmplifier = DamageAmplifier.Load(data["属性增伤"]) ---@type DamageAmplifier[]|nil
+    self.targetDamageAmplifier = DamageAmplifier.Load(data["目标属性增伤"]) ---@type DamageAmplifier[]|nil
     self.pulseTime = data["脉冲时间"] or 0
 end
 

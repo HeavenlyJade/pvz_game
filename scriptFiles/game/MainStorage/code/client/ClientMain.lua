@@ -13,6 +13,12 @@ require(MainStorage.code.client.graphic.SoundPool)
 local CameraController = require(MainStorage.code.client.camera.CameraController) ---@type CameraController
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
+
+-- 添加空的OnInit方法，避免参数错误
+function ClientMain:OnInit(...)
+    -- 不需要任何初始化
+end
+
 function ClientMain.start_client()
     print("start_client", gg.isServer)
     gg.isServer = false
@@ -30,6 +36,10 @@ function ClientMain.start_client()
 
     require(MainStorage.code.client.graphic.DamagePool)
     require(MainStorage.code.client.graphic.WorldTextAnim)
+    local ClientGraphicManager = require(MainStorage.code.client.graphic.ClientGraphicManager)
+    ClientGraphicManager.Init()
+    local ClientNpcManager = require(MainStorage.code.client.npc.ClientNpcManager)
+    ClientNpcManager.Init()
     ClientEventManager.Subscribe("FetchAnimDuration", function (evt)
         local animator = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast animator Animator
         if animator then
@@ -41,6 +51,9 @@ function ClientMain.start_client()
             evt.Return(evt.states)
         end
     end)
+    ClientEventManager.Subscribe("Debug", function (evt)
+        gg.Debug(evt, nil)
+    end)
     ClientEventManager.Subscribe("HideTitle", function (evt)
         local nameTag = game.Players.LocalPlayer.Character["name_level"]
         if nameTag then
@@ -48,7 +61,7 @@ function ClientMain.start_client()
         end
     end)
     ClientEventManager.Subscribe("Log", function (evt)
-        print(evt.text .. "\n" .. evt.trace)
+        print(evt.text)
     end)
     if game.RunService:IsPC() then
         game.MouseService:SetMode(1)
@@ -56,8 +69,8 @@ function ClientMain.start_client()
     local plugins = MainStorage.plugin
     if plugins then
         for _, child in pairs(plugins.Children) do
-            if child then
-                local plugin = require(child)
+            if child and child.main then
+                local plugin = require(child.main)
                 if plugin.StartClient then
                     plugin.StartClient()
                 end
@@ -67,19 +80,19 @@ function ClientMain.start_client()
     ClientScheduler.add(function ()
         ViewBase.LockMouseVisible(false)
     end, 1)
-    require(MainStorage.code.client.graphic.MiniShopManagerClient)
+    require(MainStorage.code.client.graphic.MiniShopManagerClient) -- 文件不存在，已注释
     ClientEventManager.SendToServer("PlayerClientInited", {})
-    -- ClientEventManager.Subscribe("FetchModelSize", function (evt)
-    --     local actor = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast actor Actor
-    --     if actor then
-    --         -- local modelId = actor.ModelId
-    --         -- actor.ModelId = ""
-    --         -- actor.ModelId = modelId
-    --         local size = actor.Size
-    --         print("ModelId", size)
-    --         evt.Return({size.x, size.y, size.z})
-    --     end
-    -- end)
+    ClientEventManager.Subscribe("FetchModelSize", function (evt)
+        local actor = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast actor Actor
+        if actor then
+            -- local modelId = actor.ModelId
+            -- actor.ModelId = ""
+            -- actor.ModelId = modelId
+            local size = actor.Size
+            print("ModelId", size)
+            evt.Return({size.x, size.y, size.z})
+        end
+    end)
 end
 
 

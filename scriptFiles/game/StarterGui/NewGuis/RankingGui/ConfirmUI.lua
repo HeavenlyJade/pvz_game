@@ -32,7 +32,6 @@ local function InitComponentPaths(ui)
         PlayerRankingNum_3 = "界面背景/玩家自身排名/前三排名/第三名",
 
         PlayerNotRanking = "界面背景/玩家自身排名/未上榜排名",
-
     }
 end
 

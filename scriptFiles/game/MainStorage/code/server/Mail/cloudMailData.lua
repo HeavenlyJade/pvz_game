@@ -9,6 +9,7 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.code.common.MGlobal)
 local cloudService = game:GetService("CloudService")   ---@type CloudService
 
+
 ---@class CloudMailDataAccessor
 local CloudMailDataAccessor = {}
 

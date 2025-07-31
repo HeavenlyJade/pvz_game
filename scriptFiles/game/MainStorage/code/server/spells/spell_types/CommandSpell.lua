@@ -34,7 +34,7 @@ function CommandSpell:CastReal(caster, target, param)
             target and target.name or "无目标"))
     end
 
-    local anySucceed = false
+    local anySucceed = false ---@type boolean|nil
     for i, command in ipairs(self.commands) do
         -- 执行指令
         local success = caster:ExecuteCommand(command, target, param)

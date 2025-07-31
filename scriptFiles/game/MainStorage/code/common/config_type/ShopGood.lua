@@ -8,6 +8,7 @@ local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Ent
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local MiniShopManager = require(MainStorage.code.server.bag.MiniShopManager) ---@type MiniShopManager
 
+
 ---@enum ShopGoodRefreshType
 local ShopGoodRefreshType = {
     NONE = "不刷新",

@@ -6,8 +6,8 @@ local Vec2 = require(MainStorage.code.common.math.Vec2)
 local Vec3 = require(MainStorage.code.common.math.Vec3)
 local Vec4 = require(MainStorage.code.common.math.Vec4)
 local Quat = require(MainStorage.code.common.math.Quat)
-local Mat4x4 = require(MainStorage.code.common.math.Matrix4x4)
-local Mat3x4 = require(MainStorage.code.common.math.Matrix3x4)
+-- local Mat4x4 = require(MainStorage.code.common.math.Matrix4x4) -- 文件不存在，已注释
+-- local Mat3x4 = require(MainStorage.code.common.math.Matrix3x4) -- 文件不存在，已注释
 local MathDefines = require(MainStorage.code.common.math.MathDefines)
 local ShakeController = require(MainStorage.code.client.camera.ShakeController) ---@type ShakeController
 local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
@@ -192,11 +192,11 @@ function CameraController.SetActive(active)
                             local elapsedTime = currentTime - _touchStartTime
                             if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
                                 local deltaY = inputObj.Delta.y
-                                if game.RunService:IsPC() then
-                                    if not game.MouseService:IsSight() then
-                                        deltaY = -deltaY
-                                    end
-                                end
+                                -- if game.RunService:IsPC() then
+                                --     if not game.MouseService:IsSight() then
+                                --         deltaY = -deltaY
+                                --     end
+                                -- end
                                 if _alignWhenMoving and _lockedOnTarget then
                                     CameraController.InputMove(0, deltaY)
                                 else
@@ -537,17 +537,21 @@ end
 
 --获取世界矩阵
 function CameraController.GetEffectiveWorldTransform()
-    local position = CameraController.GetPosition()
-    local rotation = CameraController.GetRotation()
-    local mat3x4 = Mat3x4.new()
-    mat3x4:FromTransforms(position, rotation, 1.0)
-    return mat3x4
+    -- 临时禁用，因为Mat3x4类不存在
+    -- local position = CameraController.GetPosition()
+    -- local rotation = CameraController.GetRotation()
+    -- local mat3x4 = Mat3x4.new()
+    -- mat3x4:FromTransforms(position, rotation, 1.0)
+    -- return mat3x4
+    return nil -- 临时返回nil
 end
 
 --获取视图矩阵
 function CameraController.GetView()
     if _viewDirty then
-        _view = CameraController.GetEffectiveWorldTransform():Inverse()
+        -- 临时禁用，因为依赖的Mat3x4类不存在
+        -- _view = CameraController.GetEffectiveWorldTransform():Inverse()
+        _view = nil -- 临时返回nil
         _viewDirty = false
     end
     return _view
@@ -557,31 +561,32 @@ end
 --获取投影矩阵
 function CameraController.GetProjection()
     if _projectionDirty then
-        if _projection == nil then
-            _projection = Mat4x4.new()
-        end
-        _projection:SetData(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        local fov = _camera.FieldOfView
-        local far = _camera.ZFar
-        local near = _camera.ZNear
-        local viewportSize = CameraController.GetViewportSize()
-        local aspectRatio = viewportSize.x / viewportSize.y
+        -- 临时禁用，因为Mat4x4类不存在
+        -- if _projection == nil then
+        --     _projection = Mat4x4.new()
+        -- end
+        -- _projection:SetData(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        -- local fov = _camera.FieldOfView
+        -- local far = _camera.ZFar
+        -- local near = _camera.ZNear
+        -- local viewportSize = CameraController.GetViewportSize()
+        -- local aspectRatio = viewportSize.x / viewportSize.y
 
-        local h = (1.0 / math.tan(fov * MathDefines.M_DEGTORAD * 0.5))
-        local w = h / aspectRatio
-        local q = far / (far - near)
-        local r = -q * near
+        -- local h = (1.0 / math.tan(fov * MathDefines.M_DEGTORAD * 0.5))
+        -- local w = h / aspectRatio
+        -- local q = far / (far - near)
+        -- local r = -q * near
 
-        _projection.m00 = w
-        _projection.m02 = 2.0
-        _projection.m11 = h
-        _projection.m12 = 2.0
-        _projection.m22 = q
-        _projection.m23 = r
-        _projection.m32 = 1.0
+        -- _projection.m00 = w
+        -- _projection.m02 = 2.0
+        -- _projection.m11 = h
+        -- _projection.m12 = 2.0
+        -- _projection.m22 = q
+        -- _projection.m23 = r
+        -- _projection.m32 = 1.0
         _projectionDirty = false
     end
-    return _projection
+    return nil -- 临时返回nil
 end
 
 --获取视口大小

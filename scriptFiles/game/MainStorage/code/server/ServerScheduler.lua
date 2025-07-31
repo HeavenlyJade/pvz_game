@@ -68,7 +68,7 @@ function ServerScheduler.add(func, delay, repeatInterval, key)
         taskId = taskId,
         rounds = rounds,
         key = key,
-        traceback = debug.traceback("[ServerScheduler.add] task created here:")
+        traceback = debug.traceback("[ServerScheduler.add] task created here:", 2):match("^[^\n]*\n([^\n]*)")
     }
     
     ServerScheduler.tasks[taskId] = task

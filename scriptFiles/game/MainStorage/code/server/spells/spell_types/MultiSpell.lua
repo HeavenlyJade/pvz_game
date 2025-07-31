@@ -3,6 +3,7 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local Spell = require(MainStorage.code.server.spells.Spell) ---@type Spell
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local SubSpell = require(MainStorage.code.server.spells.SubSpell) ---@type SubSpell
+local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 
 ---@class MultiSpell:Spell
 ---@field randomOrder boolean 随机顺序
@@ -28,7 +29,7 @@ function MultiSpell:CastReal(caster, target, param)
     local log = {}
     if self.isCombo then
         -- 组合技逻辑
-        local spells
+        local spells ---@type SubSpell[]
         if self.randomOrder then
             spells = gg.clone(self.subSpells)
             self:Shuffle(spells)
@@ -36,10 +37,6 @@ function MultiSpell:CastReal(caster, target, param)
             spells = self.subSpells
         end
 
-        -- 获取当前施法者的组合技进度
-        if not caster.comboSpellProgress then
-            caster.comboSpellProgress = {}
-        end
         if not caster.comboSpellProgress[self.spellName] then
             caster.comboSpellProgress[self.spellName] = 0
         end
@@ -55,12 +52,12 @@ function MultiSpell:CastReal(caster, target, param)
             local checkParam = CastParam.New()
             if param.printInfo then
                 table.insert(log, string.format("尝试释放魔法：%s，当前索引：%d", 
-                    currentSpell.spell.spellName, currentIndex))
+                    currentSpell.spellCache.spellName, currentIndex))
             end
-            if currentSpell.spell:CanCast(caster, target, checkParam, log) then
+            if currentSpell.spellCache:CanCast(caster, target, checkParam, log) then
                 if param.printInfo and #log > 0 then
                     table.insert(log, string.format("释放组合技成功，释放魔法：%s", 
-                        currentSpell.spell.spellName))
+                        currentSpell.spellCache.spellName))
                     caster:SendLog(table.concat(log, "\n"))
                 end
                 currentSpell:Cast(caster, target, subParam)

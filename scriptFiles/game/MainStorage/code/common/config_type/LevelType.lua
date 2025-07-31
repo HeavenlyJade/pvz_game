@@ -434,7 +434,6 @@ function LevelType:Queue(player)
 
     -- 首先检查是否有可用的关卡实例
     for _, level in ipairs(self.levels) do
-        gg.log("level", level.scene.node.Name, level:IsActive(), level:GetPlayerCount(), level.levelType.maxPlayers)
         if level:IsActive() and level:GetPlayerCount() < level.levelType.maxPlayers then
             -- 找到有位置的关卡，直接加入
             if level:AddPlayer(player) then

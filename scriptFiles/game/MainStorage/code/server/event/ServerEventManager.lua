@@ -73,20 +73,27 @@ end
 ---@param priority? number 优先级，默认为10
 ---@param key? string 记录ID，可用 ServerEventManager.UnsubscribeByKey(key) 移除所有指定key的监听器
 function ServerEventManager.Subscribe(eventType, listener, priority, key)
-    local priority = priority or 10
-    local l = {
-        key = key,
-        cb = listener,
-        priority = priority
-    }
-    if not ServerEventManager._eventDictionary[eventType] then
-        ServerEventManager._eventDictionary[eventType] = {}
-    end
-    table.insert(ServerEventManager._eventDictionary[eventType], l)
-    -- 按优先级排序
-    table.sort(ServerEventManager._eventDictionary[eventType], function(a, b)
-        return a.priority < b.priority
+    local success, err = pcall(function()
+        local priority = priority or 10
+        local l = {
+            key = key,
+            cb = listener,
+            priority = priority
+        }
+        if not ServerEventManager._eventDictionary[eventType] then
+            ServerEventManager._eventDictionary[eventType] = {}
+        end
+        table.insert(ServerEventManager._eventDictionary[eventType], l)
+        -- 按优先级排序
+        table.sort(ServerEventManager._eventDictionary[eventType], function(a, b)
+            return a.priority < b.priority
+        end)
     end)
+    
+    if not success then
+        gg.log(string.format("订阅事件 %s 失败\n错误: %s\n调用位置: %s", 
+            eventType or "unknown", err or "unknown error", debug.traceback()))
+    end
 end
 
 --- 订阅指定玩家的事件

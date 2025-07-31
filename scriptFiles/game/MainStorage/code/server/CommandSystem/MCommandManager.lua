@@ -50,6 +50,7 @@ CommandManager.handlers = {
     -- 装载默认的配置技能
     ["skillConf"] = SkillCommands.main,
     ["player"] = PlayerCommands.main,
+    ["debug"] = MiscCommands.debug,
     -- ["装备"] = {},
 
     -- -- 玩家属性相关
@@ -72,6 +73,7 @@ CommandManager.handlers = {
 }
 
 ServerEventManager.Subscribe("ClientExecuteCommand", function(evt)
+    gg.log("ClientExecuteCommand", evt)
     if not gg.opUin[evt.player.uin] then
         evt.player:SendChatText("你没有执行指令的权限")
         return

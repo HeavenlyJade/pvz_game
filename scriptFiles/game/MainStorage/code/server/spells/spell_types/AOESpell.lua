@@ -51,8 +51,8 @@ function PulsingAOE:Start()
         function()
             -- 检查是否应该停止
             if not self.caster then
-                if param.printInfo then
-                    caster:SendLog(string.format("%s: 施法者消失，停止持续效果", self.spell.spellName))
+                if self.param.printInfo then
+                    self.caster:SendLog(string.format("%s: 施法者消失，停止持续效果", self.spell.spellName))
                 end
                 self:OnComplete() -- 确保在施法者消失时也清理特效
                 return
@@ -67,11 +67,11 @@ function PulsingAOE:Start()
     -- 设置持续时间结束时的清理
     if self.spell.duration > 0 then
         if self.spell.printInfo then
-            caster:SendLog(string.format("%s: 设置持续效果结束时间[%.1f]秒", self.spell.spellName, self.spell.duration))
+            self.caster:SendLog(string.format("%s: 设置持续效果结束时间[%.1f]秒", self.spell.spellName, self.spell.duration))
         end
         ServerScheduler.add(function()
             if self.spell.printInfo then
-                caster:SendLog(string.format("%s: 持续效果时间到，停止效果", self.spell.spellName))
+                self.caster:SendLog(string.format("%s: 持续效果时间到，停止效果", self.spell.spellName))
             end
             self:OnComplete()
         end, self.spell.duration)
@@ -95,7 +95,7 @@ function PulsingAOE:OnComplete()
     -- Cancel the scheduler task
     if self.timer then
         if self.spell.printInfo then
-            caster:SendLog(string.format("%s: 取消持续效果定时器", self.spell.spellName))
+            self.caster:SendLog(string.format("%s: 取消持续效果定时器", self.spell.spellName))
         end
         ServerScheduler.cancel(self.timer)
         self.timer = nil
@@ -116,19 +116,19 @@ function PulsingAOE:ExecutePulse()
             for _, hitTarget in ipairs(hitTargets) do
                 -- 如果不允许重复击中且已经击中过，则跳过
                 if not self.spell.canHitSameTarget and self.hitCreatures[hitTarget] then
-                    if param.printInfo then
+                    if self.param.printInfo then
                         table.insert(log, string.format("%s: 目标[%s]已被击中，跳过", self.spell.spellName, hitTarget.name))
                     end
                 else
                     self.hitCreatures[hitTarget] = true
                     anyHit = true
-                    if param.printInfo then
+                    if self.param.printInfo then
                         table.insert(log, string.format("%s: 对目标[%s]执行子魔法",
                             self.spell.spellName, hitTarget.name))
                     end
                     for _, subSpell in ipairs(self.spell.subSpells) do
                         local castSuccessed = subSpell:Cast(self.caster, hitTarget, self.param)
-                        if param.printInfo then
+                        if self.param.printInfo then
                             table.insert(log, string.format("%s: 子魔法[%s]执行[%s]", 
                                 self.spell.spellName, 
                                 subSpell.spellName, 
@@ -148,9 +148,9 @@ function PulsingAOE:ExecutePulse()
         end
     end
     self.spell:PlayEffect(self.spell.castEffects, self.caster, self.location, self.param, "触发点")
-    if param.printInfo then
+    if self.param.printInfo then
         if #log > 0 then
-            caster:SendLog(table.concat(log, "\n"))
+            self.caster:SendLog(table.concat(log, "\n"))
         end
     end
 end
@@ -190,12 +190,15 @@ function AOESpell:OnInit(data)
 end
 
 --- 获取命中目标
----@param loc Vector3 位置
+---@param loc Vector3|Vec3 位置
 ---@param caster Entity 施法者
 ---@param param CastParam 参数
 ---@param log table 日志表
 ---@return Entity[]|nil 命中的目标列表
 function AOESpell:GetHitTargets(loc, caster, param, log)
+    if type(loc) == "table" then ---@cast loc Vec3
+        loc = loc:ToVector3()
+    end
     local sizeScale = param:GetValue(self, "尺寸倍率", 1)
     local widthScale = param:GetValue(self, "宽度倍率", 1)
     local heightScale = param:GetValue(self, "高度倍率", 1)
@@ -224,9 +227,9 @@ function AOESpell:GetHitTargets(loc, caster, param, log)
             return hitTargets
         end
     elseif self.collisionType == CollisionType.RECTANGLE then
-        local scaleX = self.rectangleSize.X * widthScale * sizeScale
-        local scaleY = self.rectangleSize.Y * heightScale * sizeScale
-        local scaleZ = self.rectangleSize.Z * sizeScale
+        local scaleX = self.rectangleSize.x * widthScale * sizeScale
+        local scaleY = self.rectangleSize.y * heightScale * sizeScale
+        local scaleZ = self.rectangleSize.z * sizeScale
         local size = Vector3.New(scaleX, scaleY, scaleZ)
         if param.printInfo then
             table.insert(log, string.format("%s: 矩形尺寸[%.1f, %.1f, %.1f]", self.spellName, scaleX, scaleY, scaleZ))
@@ -349,8 +352,8 @@ function AOESpell:CastReal(caster, target, param)
 end
 
 --- 检查点是否在椭圆内
----@param point Vector3 要检查的点
----@param center Vector3 椭圆中心
+---@param point Vector3|Vec3 要检查的点
+---@param center Vector3|Vec3 椭圆中心
 ---@param a number 长轴
 ---@param b number 短轴
 ---@param angle number 旋转角度（度）

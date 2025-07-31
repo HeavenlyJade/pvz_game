@@ -9,121 +9,7 @@ local DummyEntity = require(MainStorage.code.server.entity_types.DummyEntity) --
 ---@class Graphic:Class
 local Graphic = ClassMgr.Class("Graphic")
 
--- 从模板创建新的特效对象
-local particlePools = {} ---@type table<string, table<SandboxNode>>
-local nodeCache = {} ---@type table<string, SandboxNode>
-
-local function CreateParticle(particleName)
-    if particleName == "" then
-        return nil, nil
-    end
-    
-    -- 获取或创建对象池
-    if not particlePools[particleName] then
-        particlePools[particleName] = {}
-    end
-    local pool = particlePools[particleName]
-    
-    -- 尝试从对象池中获取对象
-    local fx = table.remove(pool)
-    if fx then
-        fx.Visible = true
-        fx.Enabled = true
-        for _, child in ipairs(fx.Children) do
-            child.Enabled = true
-            child.Visible = true
-        end
-        return fx, nodeCache[particleName]
-    end
-    
-    if not nodeCache[particleName] then
-        local node = MainStorage
-        local fullPath = ""
-        local lastPart = ""
-        
-        -- 遍历路径的每一部分
-        for part in particleName:gmatch("[^/]+") do
-            if part ~= "" then
-                lastPart = part
-                if not node then
-                    return nil
-                end
-                node = node[part]
-                if fullPath == "" then
-                    fullPath = part
-                else
-                    fullPath = fullPath .. "/" .. part
-                end
-            end
-        end
-        
-        if not node then
-            return nil, nil
-        end
-        nodeCache[particleName] = node
-    end
-    
-    return nodeCache[particleName]:Clone(), nodeCache[particleName]
-end
-
--- 回收特效对象到对象池
-local function RecycleParticle(particleName, fx)
-    if not fx or not particleName or particleName == "" then
-        return
-    end
-    
-    -- 确保对象池存在
-    if not particlePools[particleName] then
-        particlePools[particleName] = {}
-    end
-    
-    -- 重置特效状态
-    fx.Visible = false
-    fx.Enabled = false
-    -- if fx:IsA("EffectObject") then
-    --     fx:Stop(0)
-    -- end
-    if fx:IsA("EffectObject") then
-        for _, child in ipairs(fx.Children) do
-            child.Visible = false
-            child.Enabled = false
-        end
-    end
-    -- 将对象添加到对象池
-    table.insert(particlePools[particleName], fx)
-end
-
--- 清理对象池
-local function ClearParticlePool(particleName)
-    if not particleName or particleName == "" then
-        return
-    end
-    
-    local pool = particlePools[particleName]
-    if pool then
-        for _, fx in ipairs(pool) do
-            if fx.Enabled then
-                fx.Enabled = false
-            end
-            fx:Destroy()
-        end
-        particlePools[particleName] = {}
-    end
-end
-
--- 清理所有对象池
-local function ClearAllParticlePools()
-    for particleName, pool in pairs(particlePools) do
-        for _, fx in ipairs(pool) do
-            if fx.Enabled then
-                fx.Enabled = false
-            end
-            fx:Destroy()
-        end
-    end
-    particlePools = {}
-    nodeCache = {} -- 同时清理node缓存
-end
+-- 服务端不再管理特效对象，仅发送事件到客户端
 
 function Graphic:OnInit( data )
     self.offset = gg.Vec3.new(data["偏移"]) or gg.Vec3.zero()
@@ -177,6 +63,7 @@ end
 ---@param target Entity
 ---@param param CastParam
 ---@param actions table
+---@return function|nil 取消函数
 function Graphic:PlayAt(caster, target, param, actions)
     local c
     if self.autoPlay then
@@ -184,72 +71,109 @@ function Graphic:PlayAt(caster, target, param, actions)
     else
         c = target
     end
+    
+    local isCancelled = false
+    local cancelFunction = function()
+        isCancelled = true
+    end
+    
     if self.delay > 0 then
         if gg.isServer then
             ServerScheduler.add(function ()
-                self:PlayAtReal(caster, c, param, actions)
+                if not isCancelled then
+                    self:PlayAtReal(caster, c, param, actions, cancelFunction)
+                end
             end, self.delay)
         else
             ClientScheduler.add(function ()
-                self:PlayAtReal(caster, c, param, actions)
+                if not isCancelled then
+                    self:PlayAtReal(caster, c, param, actions, cancelFunction)
+                end
             end, self.delay)
         end
     else
-        self:PlayAtReal(caster, c, param, actions)
+        self:PlayAtReal(caster, c, param, actions, cancelFunction)
     end
+    
+    return cancelFunction
 end
 
 ---@param caster Entity
----@param target Entity
+---@param target Entity  
 ---@param param CastParam
 ---@param actions table
-function Graphic:PlayAtReal(caster, target, param, actions)
-    local isCancelled = false
-    local currentRepeat = 0
-    
-    local function addCancelFunction(effect, repeatIndex)
-        local effectCancel = function()
-            if effect.Enabled then
-                effect.Enabled = false
-                effect:Destroy()
+---@param cancelFunction function
+function Graphic:PlayAtReal(caster, target, param, actions, cancelFunction)
+    -- 只在服务端向客户端发送特效事件
+    if gg.isServer then
+        local effectId = gg.create_uuid("fx_")
+        local targetPos = target:GetCenterPosition()
+        local eventData = {
+            effectId = effectId,
+            type = self:GetType(),
+            name = self:GetName(),
+            targetUin = target.isPlayer and target.uin or nil,
+            position = {targetPos.x, targetPos.y, targetPos.z},
+            duration = self.duration,
+            repeatCount = self.repeatCount,
+            repeatDelay = self.repeatDelay,
+            offset = {self.offset.x, self.offset.y, self.offset.z},
+            data = self:GetEffectData()
+        }
+        
+        -- 为需要绑定的特效添加目标节点路径
+        if self.boundToEntity and target.actor then
+            eventData.boundToPath = gg.GetFullPath(target.actor)
+        end
+        
+        -- 增强取消函数以发送取消事件
+        if cancelFunction then
+            local originalCancel = cancelFunction
+            cancelFunction = function()
+                originalCancel()
+                -- 发送取消事件到客户端
+                local cancelEventData = { effectId = effectId }
+                if target.isPlayer then
+                    target:SendEvent("CancelGraphicEffect", cancelEventData)
+                else
+                    caster.scene:BroadcastEventAround("CancelGraphicEffect", cancelEventData, nil, 0)
+                end
             end
         end
-        table.insert(actions, effectCancel)
-        return effectCancel
-    end
-    
-    local function playEffect()
-        if isCancelled then 
-            return 
-        end
-        -- 创建并设置效果对象
-        local effect = self:CreateEffect(target, caster.scene)
-        if not effect then 
-            return 
+        
+        -- 如果目标是玩家，只发送给该玩家；否则发送给场景内所有玩家
+        if target.isPlayer then
+            target:SendEvent("PlayGraphicEffect", eventData)
+        else
+            caster.scene:BroadcastEventAround("PlayGraphicEffect", eventData, nil, 0)
         end
         
-        -- 添加取消函数
-        local effectCancel = addCancelFunction(effect, currentRepeat + 1)
-        
-        currentRepeat = currentRepeat + 1
-        
-        -- 设置持续时间
-        if self.duration > 0 then
-            ServerScheduler.add(function()
-                if not isCancelled then
-                    effectCancel()
+        -- 处理重复播放的取消机制
+        if self.repeatCount > 1 and self.repeatDelay > 0 then
+            local currentRepeat = 1
+            local scheduleNext
+            scheduleNext = function()
+                if cancelFunction and not cancelFunction.cancelled then
+                    currentRepeat = currentRepeat + 1
+                    if currentRepeat <= self.repeatCount then
+                        ServerScheduler.add(function()
+                            if not cancelFunction.cancelled then
+                                -- 发送下一次重复的特效事件
+                                eventData.effectId = gg.create_uuid("fx_")
+                                if target.isPlayer then
+                                    target:SendEvent("PlayGraphicEffect", eventData)
+                                else
+                                    caster.scene:BroadcastEventAround("PlayGraphicEffect", eventData, nil, 0)
+                                end
+                                scheduleNext()
+                            end
+                        end, self.repeatDelay)
+                    end
                 end
-            end, self.duration)
-        end
-        
-        -- 设置下一次重复
-        if currentRepeat < self.repeatCount and self.repeatDelay > 0 then
-            ServerScheduler.add(playEffect, self.repeatDelay)
+            end
+            scheduleNext()
         end
     end
-    
-    -- 启动第一次播放
-    playEffect()
 end
 
 -- 子类需要实现的抽象方法
@@ -261,8 +185,9 @@ function Graphic:GetName()
     return "Unknown"
 end
 
-function Graphic:CreateEffect(target, scene)
-    return nil
+-- 由子类实现，返回特效数据
+function Graphic:GetEffectData()
+    return {}
 end
 
 ---@class ParticleGraphic:Graphic
@@ -282,39 +207,13 @@ function ParticleGraphic:GetName()
     return self.particleName
 end
 
-function ParticleGraphic:CreateEffect(target, scene)
-    local fx, previous = CreateParticle(self.particleName)
-    if not fx or not previous then 
-        return nil 
-    end
-    if gg.isServer then
-        local container
-        if self.boundToEntity and target.isEntity then
-            container = target.actor
-        else
-            container = game.WorkSpace["Ground"][scene.name]["世界特效"]
-        end
-        if not container then
-            return nil
-        end
-        fx:SetParent(container)
-        if not self.boundToEntity then
-            fx.Position = gg.vec.ToVector3(self.offset + target:GetCenterPosition())
-        else
-            fx.LocalPosition = previous.LocalPosition
-            fx.LocalEuler = previous.LocalEuler
-        end
-        if self.duration > 0 then
-            ServerScheduler.add(function()
-                RecycleParticle(self.particleName, fx)
-            end, self.duration)
-        end
-    else
-        fx:SetParent(target)
-        fx.LocalPosition = previous.LocalPosition
-        fx.LocalEuler = previous.LocalEuler
-    end
-    return fx
+function ParticleGraphic:GetEffectData()
+    return {
+        particleName = self.particleName,
+        particleAssetId = self.particleAssetId,
+        boundToEntity = self.boundToEntity,
+        boundToBone = self.boundToBone
+    }
 end
 
 ---@class AnimationGraphic:Graphic
@@ -385,43 +284,14 @@ function ModelGraphic:GetName()
     return self.modelName
 end
 
-function ModelGraphic:CreateEffect(target, scene)
-    local model, previous = CreateParticle(self.modelName)
-    if not model or not previous then return nil end
-    if gg.isServer then
-        local container
-        if self.boundToEntity and target.isEntity then
-            container = target.actor
-        else
-            container = game.WorkSpace["Ground"][scene.name]["世界特效"]
-        end
-        
-        if not container then
-            return nil
-        end
-        
-        
-        model:SetParent(container)
-        if not self.boundToEntity then
-            model.LocalPosition = gg.vec.ToVector3(target:GetPosition())
-        else
-            model.LocalPosition = previous.LocalPosition
-            model.LocalEuler = previous.LocalEuler
-        end
-        model.Enabled = true
-    else
-        model:SetParent(target)
-        model.LocalPosition = previous.LocalPosition
-        model.LocalEuler = previous.LocalEuler
-    end
-    
-    if self.animationName and self.animationName ~= "" then
-        local modelPlayer = model.Animator
-        if modelPlayer then
-            modelPlayer:Play(self.animationName, 0, 0)
-        end
-    end
-    return model
+function ModelGraphic:GetEffectData()
+    return {
+        modelName = self.modelName,
+        stateMachine = self.stateMachine,
+        animationName = self.animationName,
+        boundToEntity = self.boundToEntity,
+        boundToBone = self.boundToBone
+    }
 end
 
 ---@class SoundGraphic:Graphic
@@ -443,38 +313,15 @@ function SoundGraphic:GetName()
     return self.soundAssetId
 end
 
-function SoundGraphic:PlayAtReal(caster, target, param)
-    if not self.soundAssetId or self.soundAssetId == "" then
-        return
-    end
-    if gg.isServer then
-        local boundTo = nil
-        if self.boundToEntity and target.isEntity then
-            boundTo = target.actor
-        else
-            boundTo = gg.Vec3.new(target:GetPosition())
-        end
-        if self.relevantOnly then
-            if ClassMgr.Is(target, "Player") then ---@cast target Player
-                target:PlaySound(self.soundAssetId, boundTo, self.volume, self.pitch)
-            end
-            if caster ~= target and ClassMgr.Is(caster, "Player") then ---@cast caster Player
-                caster:PlaySound(self.soundAssetId, boundTo, self.volume, self.pitch)
-            end
-        else
-        caster.scene:PlaySound(self.soundAssetId, boundTo, self.volume, self.pitch)
-        end
-    else
-        local data = {
-            soundAssetId = self.soundAssetId,
-            volume = self.volume,
-            pitch = self.pitch,
-            range = self.range,
-            position = {target.Position.x, target.Position.y, target.Position.z}
-        }
-        local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
-        ClientEventManager.Publish("PlaySound", data)
-    end
+function SoundGraphic:GetEffectData()
+    return {
+        soundAssetId = self.soundAssetId,
+        boundToEntity = self.boundToEntity,
+        volume = self.volume,
+        pitch = self.pitch,
+        range = self.range,
+        relevantOnly = self.relevantOnly
+    }
 end
 
 ---@class Graphics

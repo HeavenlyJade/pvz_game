@@ -15,9 +15,14 @@ local _M                 = ClassMgr.Class('Npc', Entity) --父类Entity
 ---@param player Player 玩家
 function _M:OnPlayerTouched(player)
     self:SetTarget(player)
-    player:AddNearbyNpc(self)
+    if self.className ~= "Npc" or (self.interactCommands and #self.interactCommands >0) then
+        player:AddNearbyNpc(self)
+    end
     -- 将玩家添加到附近玩家列表
     self.nearbyPlayers[player.uuid] = player
+    
+    -- 为该玩家更新NPC节点变量
+    self:UpdateNodeVariablesForPlayer(player)
 end
 
 ---@param npcData NpcData
@@ -36,6 +41,10 @@ function _M:OnInit(npcData, actor)
     self.target = nil
     self.actor = actor
     self.nearbyPlayers = {} -- 存储附近玩家的列表
+    
+    -- 实体节点变量修改配置
+    self.nodeVariables = npcData["实体节点变量修改"] or {}
+    
     local npcSize = Vector3.New(0,0,0)
     if actor:IsA("Actor") then
         actor.CollideGroupID   = 1
@@ -44,6 +53,11 @@ function _M:OnInit(npcData, actor)
         end
         npcSize = actor.Size
         self:CreateTitle()
+        -- local startPos = actor:GetAttribute("初始位置")
+        -- if startPos then
+        --     actor.Position = startPos
+        --     gg.log("SetStartPos", self.name, startPos)
+        -- end
     end
     local trigger         = SandboxNode.new('TriggerBox', actor) ---@type TriggerBox
     trigger.LocalPosition = self.actor.Center
@@ -108,7 +122,9 @@ function _M:SetTarget(target)
 end
 
 function _M:CreateTitle(name)
-    Entity.CreateTitle(self, self.displayName, self.nameSize)
+    -- 调用父类的CreateTitle方法
+    -- 参数：nameOverride, scale, barNameOverride
+    Entity.CreateTitle(self, self.displayName, self.nameSize, "Npc")
 end
 
 ---更新NPC状态
@@ -116,6 +132,105 @@ function _M:update_npc()
     -- 如果有目标，持续看向目标
     if self.lookAtNearbyPlayer and self.target then
         self.actor:LookAt(self.target:GetPosition(), true)
+    end
+end
+
+---为特定玩家更新实体节点变量
+---@param player Player 要检查的玩家
+function _M:UpdateNodeVariablesForPlayer(player)
+    if not self.nodeVariables or not next(self.nodeVariables) then
+        return
+    end
+    
+    local variableUpdates = {} -- 收集所有有效的变量更新
+    
+    -- 遍历所有需要检查的变量
+    for variableName, variableConfig in pairs(self.nodeVariables) do
+        local condition = variableConfig["值的条件"] ---@type Modifiers
+        local variableType = variableConfig["变量类型"]
+        
+        if condition then
+            -- 使用指定玩家检查条件
+            local param = condition:Check(player, self)
+            local newValue = self:GetVariableValue(param, variableType)
+            
+            -- 跳过nil值
+            if newValue ~= nil then
+                variableUpdates[variableName] = {
+                    value = newValue,
+                    variableType = variableType
+                }
+            end
+        end
+    end
+    
+    -- 如果有变量需要更新，发送批量更新事件
+    if next(variableUpdates) then
+        self:SendNodeVariablesBatchUpdateToPlayer(player, variableUpdates)
+    end
+end
+
+---向特定玩家发送节点变量批量更新事件
+---@param player Player 目标玩家
+---@param variableUpdates table<string, {value: any, variableType: string}> 变量更新数据
+function _M:SendNodeVariablesBatchUpdateToPlayer(player, variableUpdates)
+    if not self.actor or not next(variableUpdates) then
+        return
+    end
+    
+    -- 获取NPC节点的完整路径
+    local nodePath = gg.GetFullPath(self.actor)
+    
+    local eventData = {
+        nodePath = nodePath,
+        variables = variableUpdates, -- 包含所有变量的键值对
+        npcUuid = self.uuid,
+        npcName = self.name
+    }
+    
+    -- 只向指定玩家发送事件
+    player:SendEvent("UpdateNpcNodeVariables", eventData)
+end
+
+---向特定玩家发送节点变量更新事件（单个变量，保留用于向后兼容）
+---@param player Player 目标玩家
+---@param variableName string 变量名
+---@param value any 要设置的值
+---@param variableType string 变量类型
+function _M:SendNodeVariableUpdateToPlayer(player, variableName, value, variableType)
+    if not self.actor then
+        return
+    end
+    
+    -- 获取NPC节点的完整路径
+    local nodePath = gg.GetFullPath(self.actor)
+    
+    local eventData = {
+        nodePath = nodePath,
+        variableName = variableName,
+        value = value,
+        variableType = variableType,
+        npcUuid = self.uuid,
+        npcName = self.name
+    }
+    
+    -- 只向指定玩家发送事件
+    player:SendEvent("UpdateNpcNodeVariable", eventData)
+end
+
+---根据条件结果和变量类型获取应该设置的值
+---@param param CastParam 条件是否满足
+---@param variableType string 变量类型
+---@return any 应该设置的值
+function _M:GetVariableValue(param, variableType)
+    if variableType == "真假" then
+        return not param.cancelled
+    elseif variableType == "数字" then
+        return param.power
+    elseif variableType == "字符串" then
+        return param.message
+    else
+        return nil
     end
 end
 

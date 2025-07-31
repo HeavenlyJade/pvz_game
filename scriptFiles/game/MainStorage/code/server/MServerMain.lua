@@ -1,4 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
+local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local MiniShopManager = require(MainStorage.code.server.bag.MiniShopManager) ---@type MiniShopManager
 local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
 gg.isServer = true
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
@@ -8,11 +11,7 @@ local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@t
 local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
 local cloudMailData = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailDataAccessor
 local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
-local TransmitEvent = require(MainStorage.code.server.Transmit.TransmitEvent) ---@type TransmitEvent
-
-local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
-local MiniShopManager = require(MainStorage.code.server.bag.MiniShopManager) ---@type MiniShopManager
+--local TransmitEvent = require(MainStorage.code.server.Transmit.TransmitEvent) ---@type TransmitEvent
 -- 总入口
 ---@class MainServer
 local MainServer = {};
@@ -53,50 +52,66 @@ function MainServer.start_server()
     for _, node in  pairs(game.WorkSpace.Ground.Children) do
         Scene.New( node )
     end
+    game:GetService("PhysXService"):SetCollideInfo(3, 3, false)
+    game:GetService("PhysXService"):SetCollideInfo(4, 4, false)
+    game:GetService("PhysXService"):SetCollideInfo(2, 2, false)
+    game:GetService("PhysXService"):SetCollideInfo(1, 1, false)
     MainServer.createNetworkChannel()     --建立网络通道
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
     MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     initFinished = true
-
     for _, player in ipairs(waitingPlayers) do
         MainServer.player_enter_game(player)
     end
     waitingPlayers = {} -- 清空等待列表
     for _, child in pairs(MainStorage.config.Children) do
-        require(child)
+        gg.log("加载配置 %s", child.Name)
+        local success, err = pcall(function()
+            require(child)
+        end)
+        
+        if not success then
+            gg.log(string.format("加载配置 %s 失败\n错误: %s", child.Name, err or "unknown error"))
+        end
     end
+    gg.log("加载指令系统")
+    require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
     local plugins = MainStorage.plugin
     if plugins then
         for _, child in pairs(plugins.Children) do
-            if child then
-                local plugin = require(child)
+            if child and child.main then
+                local plugin = require(child.main)
                 if plugin.StartServer then
-                    plugin.StartServer()
+                    gg.log("服务端插件 %s 加载中……", child.Name)
+                    local success, err = pcall(plugin.StartServer)
+                    
+                    if not success then
+                        gg.log("服务端插件 %s 加载失败\n错误: %s", child.Name, err or "unknown error")
+                    else
+                        gg.log("服务端插件 %s 加载成功！", child.Name)
+                    end
                 end
             end
         end
     end
 end
 
-
 function MainServer.initModule()
-    gg.log("初始化模块")
-    -- local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
     local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
     local BagEventManager = require(MainStorage.code.server.bag.BagEventManager) ---@type BagEventManager
     -- gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
     -- gg.cloudMailData = cloudMailData:Init()
     SkillEventManager.Init()
     MailManager:Init()
-    TransmitEvent.Init()
-    gg.log("背包事件管理")
+    --TransmitEvent.Init()
+    gg.log("initModule", 3)
     BagEventManager:Init()
-    gg.log("事件初始化完成")
+    gg.log("initModule", 4)
     ServerEventManager.Subscribe("PlayerClientInited", function (evt)
         evt.player:UpdateHud()
     end)
-
+    gg.log("initModule", 5)
 end
 
 -- --设置碰撞组

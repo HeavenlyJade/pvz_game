@@ -59,6 +59,8 @@ function HudMoney:RegisterEventFunction()
         local button = self["moneyButton_" .. i]
         if button then
             button.clickCb = function(ui, button)
+                _G['商城点击_货币' .. i] = true
+                --       _G['商城点击_货币' .. i] = true
                 ClientEventManager.SendToServer("ClickMenu", {
                     menu = "商城购买_货币" .. i
                 })

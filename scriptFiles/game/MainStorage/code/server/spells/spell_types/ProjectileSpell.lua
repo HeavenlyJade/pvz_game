@@ -262,7 +262,7 @@ function ProjectileSpell:UpdateProjectile(id)
         local toTarget = (targetPos - currentPos):Normalized()
         item.velocity = item.velocity + toTarget * self.trackingSpeed
         if item.param.printInfo and item.updateCount % 60 == 0 then
-            caster:SendLog(string.format("%s: 飞弹正在追踪目标，当前速度: %.1f", self.spellName, item.velocity:Length()))
+            item.caster:SendLog(string.format("%s: 飞弹正在追踪目标，当前速度: %.1f", self.spellName, item.velocity:Length()))
         end
     end
     
@@ -340,9 +340,9 @@ function ProjectileSpell:UpdateProjectile(id)
             {1, 2}
         )
         if hitGround and #hitGround > 0 then
-            if param.printInfo then
+            if item.param.printInfo then
                 for index, value in ipairs(hitGround) do
-                    caster:SendLog(string.format("%s: 飞弹碰撞到了地形 %s", self.spellName, value.Name))
+                    item.caster:SendLog(string.format("%s: 飞弹碰撞到了地形 %s", self.spellName, value.Name))
                 end
             end
             self:MarkDestroy(item)
@@ -371,14 +371,14 @@ function ProjectileSpell:HandleProjectileHit(id, target)
     
     -- 检查是否可以命中目标
     if not self:CanHitTarget(item, target) then
-        if param.printInfo then
-            caster:SendLog(string.format("%s: 飞弹无法命中目标 %s (已命中或冷却中)", self.spellName, target.name))
+        if item.param.printInfo then
+            item.caster:SendLog(string.format("%s: 飞弹无法命中目标 %s (已命中或冷却中)", self.spellName, target.name))
         end
         return
     end
     
-    if param.printInfo then
-        caster:SendLog(string.format("%s: 飞弹命中目标 %s", self.spellName, target.name))
+    if item.param.printInfo then
+        item.caster:SendLog(string.format("%s: 飞弹命中目标 %s", self.spellName, target.name))
     end
     
     -- 执行子魔法
@@ -427,8 +427,8 @@ function ProjectileSpell:DestroyProjectile(id)
     local item = self.activeProjectiles[id]
     if not item then return end
 
-    if param.printInfo then
-        caster:SendLog(string.format("%s: 销毁飞弹，剩余飞弹数: %d", self.spellName, self.projectileCount - 1))
+    if item.param.printInfo then
+        item.caster:SendLog(string.format("%s: 销毁飞弹，剩余飞弹数: %d", self.spellName, self.projectileCount - 1))
     end
 
     -- 在飞弹消失位置释放结束子魔法
@@ -437,8 +437,8 @@ function ProjectileSpell:DestroyProjectile(id)
         for _, subSpell in ipairs(self.subSpellsOnEnd) do
             subSpell:Cast(item.caster, finalPosition, item.param)
         end
-        if param.printInfo then
-            caster:SendLog(string.format("%s: 释放结束子魔法", self.spellName))
+        if item.param.printInfo then
+            item.caster:SendLog(string.format("%s: 释放结束子魔法", self.spellName))
         end
     end
 
