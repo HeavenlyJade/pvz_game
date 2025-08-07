@@ -1771,6 +1771,10 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
         if skill.miniIcon then
             iconNode.Icon = skill.miniIcon
             iconNode.Visible = true
+            -- 同步更新ViewButton的角标缓存，避免被ReloadStateFromNode覆盖
+            if viewButton.childClickImgs and viewButton.childClickImgs["角标"] then
+                viewButton.childClickImgs["角标"].normalImg = skill.miniIcon
+            end
         else
             iconNode.Visible = false
         end
