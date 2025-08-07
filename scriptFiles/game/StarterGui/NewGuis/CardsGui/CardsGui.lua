@@ -58,16 +58,6 @@ ClientEventManager.Subscribe("PressKey", function (evt)
 end)
 
 
-
--- 通用按钮创建
-function CardsGui:_createButtonWithCallback(node, clickCallback, extraParams, backgroundPath)
-    local button = ViewButton.New(node, self, nil, backgroundPath or "卡框背景")
-    button.extraParams = extraParams or {}
-    button:SetTouchEnable(true)
-    button.clickCb = clickCallback
-    return button
-end
-
 -- 通用技能数据更新
 function CardsGui:_updateSkillData(skillName, level, slot, starLevel, growth)
     local skillData = self.ServerSkills[skillName]
@@ -442,8 +432,10 @@ function CardsGui:_updateSubCardFunctionButtons(skill, skillLevel, serverData)
         -- 强化按钮：未满级时显示
         local showUpgrade = not isMaxLevel
         self:_setButtonVisible(self.SubcardEnhancementButton, showUpgrade, canAffordUpgrade)
+        self.SubcardEnhancementButton.newNode.Visible = self:CheckSkillCanUpgrade(skill.name, skill)
         -- === 修复：一键强化按钮：未满级且有配置时显示，始终可点击 ===
         self:_setButtonVisible(self.SubcardAllEnhancementButton, showUpgrade and shouldShowUpgradeAllButton, true)
+        self.SubcardAllEnhancementButton.newNode.Visible = upgradeAllData and upgradeAllData.canUpgrade
         -- 升星按钮：未满星且配置了升星素材时显示
         local showUpgradeStar = currentStar < maxStar
         local starCosts = skill:GetStarUpgradeCostAtLevel(skillLevel)
@@ -476,6 +468,8 @@ function CardsGui:RegisterCardButtons()
         self.mainCardButton.clickCb = function(ui, button)
             self:SwitchToCardType("主卡")
         end
+        -- === 新增：为主卡按钮注册红点路径 ===
+        self.mainCardButton:SetNewsPath("技能/主动")
     else
     end
 
@@ -484,6 +478,8 @@ function CardsGui:RegisterCardButtons()
         self.subCardButton.clickCb = function(ui, button)
             self:SwitchToCardType("副卡")
         end
+        -- === 新增：为副卡按钮注册红点路径 ===
+        self.subCardButton:SetNewsPath("技能/被动")
     else
     end
 end
@@ -751,74 +747,37 @@ end
 -- === 修改：按顺序重新创建主卡按钮（采用协调算法） ===
 function CardsGui:RecreateMainCardButtonsInOrder(sortedCards)
     -- gg.log("按新顺序重新创建主卡按钮", sortedCards)
-    local mainCardList = self:Get('框体/主卡/选择列表/列表', ViewList)
-    local templateNode = self:Get('框体/主卡/选择列表/模板/主卡_1', ViewComponent).node
-
-    -- 步骤 1: 建立当前子节点的映射，方便快速查找
-    local existingChildrenMap = {}
-    for _, child in ipairs(mainCardList.childrens) do
-        if child.node and child.node.Name then
-            existingChildrenMap[child.node.Name] = child
+    local mainCardList = self:GetList('框体/主卡/选择列表/列表', function (node, path)
+        local button = ViewButton.New(node, self, path, "卡框背景")
+        button:SetTouchEnable(true)
+        button.clickCb = function(ui, button)
+            local skillId = button.extraParams["skillId"]
+            self:ShowSkillTree(skillId)
+            if self.skillLists[skillId] then
+                self.attributeButton:SetVisible(true)
+                self:AutoClickMainCardFrameInSkillTree(skillId)
+            end
         end
-    end
-
-    -- 步骤 2: 遍历排序后的列表，协调UI状态
-    local newChildrens = {}
+        return button
+    end)
+    mainCardList:SetElementSize(#sortedCards)
     for newIndex, skillName in ipairs(sortedCards) do
-        local buttonState = self.mainCardButtonStates[skillName]
-
-        if buttonState then
-            local skillType = self.mainCardButtonConfig[skillName].skillType
-            local mainCardButton
-
-            -- 检查节点是否已存在
-            if existingChildrenMap[skillName] then
-                mainCardButton = existingChildrenMap[skillName]
-                -- 标记为已处理，这样它就不会在末尾被删除
-                existingChildrenMap[skillName] = nil
-            else
-                -- 节点不存在，创建新的
-                local clonedNode = templateNode:Clone()
-                clonedNode.Name = skillName
-                mainCardButton = self:_createButtonWithCallback(clonedNode, function(ui, button)
-                    local skillId = button.extraParams["skillId"]
-                    self:ShowSkillTree(skillId)
-                    if self.skillLists[skillId] then
-                        self.attributeButton:SetVisible(true)
-                        self:AutoClickMainCardFrameInSkillTree(skillId)
-                    end
-                end, {skillId = skillName})
-
-                self.mainCardButtonStates[skillName].button = mainCardButton
-            end
-
-            -- 步骤 3: 更新按钮状态（无论是新是旧）
-            mainCardButton.extraParams.skillId = skillName
-            mainCardButton.node.Visible = true
-            local iconResources = {iconPath = skillType.icon, iconNodePath = "卡框背景/图标"}
-            self:_setCardIcon(mainCardButton.node, iconResources)
-            self:_setMainCardQualityIcons(mainCardButton.node, skillType)
-            table.insert(newChildrens, mainCardButton)
-            mainCardButton:ReloadStateFromNode()
-        end
+        local mainCardButton = mainCardList:GetChild(newIndex) ---@type ViewButton
+        local skillType = self.mainCardButtonConfig[skillName].skillType
+        self.mainCardButtonStates[skillName].button = mainCardButton
+        local redDotPath = "技能/主动/" .. skillName
+        mainCardButton:SetNewsPath(redDotPath)
+        mainCardButton.extraParams.skillId = skillName
+        mainCardButton.node.Visible = true
+        local severSkill = self.ServerSkills[skillName]
+        local skillLevel = severSkill and severSkill.level or 0
+        mainCardButton.node.Grayed = skillLevel == 0
+        local iconResources = {iconPath = skillType.icon, iconNodePath = "卡框背景/图标"}
+        self:_setCardIcon(mainCardButton.node, iconResources)
+        self:_setMainCardQualityIcons(mainCardButton.node, skillType)
+        mainCardButton:ReloadStateFromNode()
     end
-
-    -- 步骤 4: 移除不再需要的旧节点
-    for skillName, child in pairs(existingChildrenMap) do
-        if child and child.node then
-            child.node:Destroy()
-            -- 修复：完整地清理所有相关引用，防止内存泄漏
-            if self.mainCardButtonStates[skillName] then
-                self.mainCardButtonStates[skillName].button = nil
-            end
-            -- 注意：mainCardButtondict存储的是技能树内部的按钮，在此处不应被清理
-        end
-    end
-
-    -- 步骤 5: 应用新的子节点列表并刷新布局
-    mainCardList.childrens = newChildrens
     mainCardList:_refreshLayout()
-    -- gg.log("主卡按钮重新创建完成")
 end
 
 -- 注册主卡功能按钮事件
@@ -883,8 +842,6 @@ function CardsGui:RegisterMainCardFunctionButtons()
     if self.SubcardAllEnhancementButton then
         self.SubcardAllEnhancementButton.clickCb = function(ui, button)
             local skillName = self.currentSubCardButtonName.extraParams["skillId"]
-
-            -- 计算强化数据并显示确认对话框
             self:ShowUpgradeConfirmDialog(skillName)
         end
     end
@@ -1007,7 +964,9 @@ function CardsGui:HandleSkillSync(data)
         self.isFirstTimeToMainCard = false
         self:AutoSelectFirstMainCard()
     end
+    self:CheckAndUpdateSkillUpgradeRedDots()
 end
+
 
 function CardsGui:UpdateSkillTreeNodeDisplay(skillName)
     --- 更新对应主卡技能按钮的是否为灰色
@@ -1131,7 +1090,14 @@ function CardsGui:OnSkillLearnUpgradeResponse(response)
             local attributeButton = self.attributeButton.node
             local skillData = self.ServerSkills[skillName]
             local newSkillLevel = skillData and skillData.level or 0
-            self:UpdateMainCardResourceCost(attributeButton, skillType, newSkillLevel)
+            local canAfford = self:UpdateMainCardResourceCost(attributeButton, skillType, newSkillLevel)
+            if newSkillLevel < skillType.maxLevel then
+                self.confirmPointsButton:SetTouchEnable(canAfford)
+                self.confirmPointsButton.newNode.Visible = canAfford
+            else
+                self.confirmPointsButton:SetTouchEnable(false)
+                self.confirmPointsButton.newNode.Visible = false
+            end
         end
     end
 
@@ -1713,12 +1679,14 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
         -- 研究按钮：未满级可研究
         if skillLevel < maxLevel then
             self.confirmPointsButton:SetTouchEnable(canAfford)
+            self.confirmPointsButton.newNode.Visible = canAfford
         else
             self.confirmPointsButton:SetTouchEnable(false)
+            self.confirmPointsButton.newNode.Visible = false
         end
 
         if levelNode then
-            levelNode.Title = string.format("%d/%d", skillLevel, maxLevel)
+            levelNode.Title = string.format("%s/%s", gg.FormatLargeNumber(skillLevel), gg.FormatLargeNumber(maxLevel))
         end
     else
         -- 服务端无数据：隐藏所有功能按钮
@@ -1733,7 +1701,7 @@ function CardsGui:OnSkillTreeNodeClick(ui, button, cardFrame)
         -- 显示等级0
         local levelNode = cardFrame["等级"]
         if levelNode then
-            levelNode.Title = string.format("0/%d", skill.maxLevel or 1)
+            levelNode.Title = string.format("0/%s", gg.FormatLargeNumber(skill.maxLevel or 1))
         end
     end
 
@@ -1790,6 +1758,11 @@ function CardsGui:RegisterSkillCardButton(cardFrame, skill, lane, position)
         viewButton:SetGray(false)
     end
     viewButton.clickCb = function(ui, button)self:OnSkillTreeNodeClick(ui, button, cardFrame)end
+    
+    -- === 新增：为主卡技能按钮注册红点路径 ===
+    local redDotPath = self:BuildSkillRedDotPath(skill, skill.name)
+    viewButton:SetNewsPath(redDotPath)
+    
     -- 设置技能名称
     cardFrame["技能名"].Title = skill.shortName
 
@@ -1824,7 +1797,7 @@ function CardsGui:SetSkillLevelSubCardFrame(cardFrame, skill)
     local star_level = severSkill and severSkill.star_level or 0
 
     -- 使用工具函数设置等级
-    cardFrame["强化等级"].Title = "强化等级:" .. skillLevel
+    cardFrame["强化等级"].Title = "强化等级:" .. gg.FormatLargeNumber(skillLevel)
     -- 使用工具函数设置图标和名称
     local iconResources = { iconPath = skill.icon,iconNodePath = "图标底图/图标"}
     self:_setCardIcon(cardFrame, iconResources)
@@ -1893,7 +1866,7 @@ function CardsGui:UpdateSubCardProgress( skill, growth, skillLevel)
     -- 更新进度文本
     if progressText then
         -- 显示当前经验/当前等级最大经验
-        progressText.Title = string.format("%d/%d", currentLevelProgress, maxGrowthThisLevel)
+        progressText.Title = string.format("%s/%s", gg.FormatLargeNumber(currentLevelProgress), gg.FormatLargeNumber(maxGrowthThisLevel))
     end
 
 
@@ -1978,8 +1951,8 @@ function CardsGui:UpdateSubCardProgressInAttributePanel(attributePanel, skill, g
     -- 更新进度文本
     if progressText then
         -- 显示当前经验/当前等级最大经验和百分比
-        progressText.Title = string.format("强化进度: %d/%d (%.1f%%)",
-            currentLevelProgress, maxGrowthThisLevel, progressPercent * 100)
+        progressText.Title = string.format("强化进度: %s/%s (%.1f%%)",
+            gg.FormatLargeNumber(currentLevelProgress), gg.FormatLargeNumber(maxGrowthThisLevel), progressPercent * 100)
     end
 
 
@@ -2280,6 +2253,11 @@ function CardsGui:BindQualityButtonEvents()
                     self:AutoSelectFirstSubCardInQuality(quality)
                 end
             end
+            
+            -- === 新增：为品质按钮注册红点路径 ===
+            -- 副卡的品质按钮路径格式：技能/被动/品级
+            local redDotPath = string.format("技能/被动/%s", quality)
+            qualityBtn:SetNewsPath(redDotPath)
         end
     end
 end
@@ -2325,6 +2303,9 @@ function CardsGui:AddDynamicMainCardSkill(skillName, skillType, skillData)
         -- 动态添加的技能默认为正常颜色（已解锁）
         button:SetGray(false)
 
+        -- === 新增：为动态添加的主卡按钮注册红点路径 ===
+        local redDotPath = self:BuildSkillRedDotPath(skillType, skillName)
+        button:SetNewsPath(redDotPath)
 
         button.clickCb = function(ui, button)
             local skillId = button.extraParams["skillId"]
@@ -2380,10 +2361,7 @@ end
 
 -- === 新增：动态添加配置中不存在的副卡技能 ===
 function CardsGui:AddDynamicSubCardSkill(skillName, skillType, skillData)
-
     local quality = skillType.quality or "N"
-
-    -- 添加到配置中
     self.subCardButtonConfig[skillName] = {
         skillType = skillType
     }
@@ -2443,6 +2421,11 @@ function CardsGui:AddDynamicSubCardSkill(skillName, skillType, skillData)
             subCardButton.clickCb = function(ui, button)
                 self:OnSubCardButtonClick(ui, button)
             end
+            
+            -- === 新增：为动态添加的副卡按钮注册红点路径 ===
+            local redDotPath = self:BuildSkillRedDotPath(skillType, skillName)
+            subCardButton:SetNewsPath(redDotPath)
+            
             -- subCardButton:ReloadStateFromNode()
             -- 如果是原品质，存储按钮引用
             if qualityToUpdate == quality then
@@ -2573,6 +2556,11 @@ function CardsGui:InitializeSubCardButtons()
                 subCardButton.clickCb = function(ui, button) self:OnSubCardButtonClick(ui, button)end
                 -- === 修复：初始化时设置为置灰状态（因为还没有服务端数据）===
                 subCardButton:SetGray(true)
+                
+                -- === 新增：为副卡按钮注册红点路径 ===
+                local redDotPath = self:BuildSkillRedDotPath(skillType, skillName)
+                subCardButton:SetNewsPath(redDotPath)
+                
                 ViewListNode:insertIntoChildrens(subCardButton, index)
                 -- 设置副卡UI
                 self:SetSkillLevelSubCardFrame(clonedNode, skillType)
@@ -2786,6 +2774,11 @@ function CardsGui:RecreateSubCardButtonsInOrder(quality, sortedCards)
                 -- === 修复：新创建的按钮需要根据解锁状态设置置灰 ===
                 local isUnlocked = buttonState.serverUnlocked or false
                 subCardButton:SetGray(not isUnlocked)
+                
+                -- === 新增：为副卡按钮注册红点路径 ===
+                local redDotPath = self:BuildSkillRedDotPath(skillType, skillName)
+                subCardButton:SetNewsPath(redDotPath)
+                
                 -- 更新全局存储
                 self.subCardButtondict[skillName] = subCardButton
                 self.subCardButtonStates[skillName].button = subCardButton
@@ -3029,6 +3022,114 @@ function CardsGui:HandleInventorySync(data)
             self.playerInventory[itemName] = 0 -- 或者 = 0，根据UI需求
         end
     end
+    self:CheckAndUpdateSkillUpgradeRedDots()
+end
+
+
+-- === 新增方法：检查并更新技能升级红点 ===
+function CardsGui:CheckAndUpdateSkillUpgradeRedDots()
+    -- 获取ViewBase红点系统的引用
+    local ViewBase = require(MainStorage.code.client.ui.ViewBase)
+    
+    -- 获取所有技能类型配置
+    local allSkills = SkillTypeConfig.GetAll()
+    
+    -- 遍历所有技能类型
+    for skillName, skillType in pairs(allSkills) do
+        -- 检查技能是否可以升级
+        local canUpgrade = self:CheckSkillCanUpgrade(skillName, skillType)
+        local redDotPath = self:BuildSkillRedDotPath(skillType, skillName)
+        
+        -- 设置红点状态
+        ViewBase.SetNew(redDotPath, canUpgrade)
+        if skillType.category == 1 then
+            local upgradeAllData = self:CalculateUpgradeAllCost(skillName)
+            ViewBase.SetNew(redDotPath .. "/一键强化", upgradeAllData and upgradeAllData.canUpgrade)
+        end
+    end
+end
+
+
+-- === 新增方法：检查技能是否可以升级 ===
+function CardsGui:CheckSkillCanUpgrade(skillName, skillType)
+    local prerequisite = skillType.prerequisite
+
+    -- === 检查前置技能和服务端数据 ===
+    local existsPrerequisite = true
+    existsPrerequisite = true
+    for i, preSkillType in ipairs(prerequisite) do
+        if not self.ServerSkills[preSkillType.name] then
+            existsPrerequisite = false
+            break
+        end
+    end
+    if not existsPrerequisite then
+        return false
+    end
+    local serverSkill = self.ServerSkills[skillName]
+    local currentLevel = 0
+    if serverSkill and serverSkill.level then
+        currentLevel = serverSkill.level or 0
+    end
+    if skillType.isEntrySkill and currentLevel == 0 then
+        return false
+    end
+    if skillType.category == 0 and not skillType.ofEntrySkill then
+        return false
+    end
+    local maxLevel = skillType.maxLevel or 1
+    
+    -- 检查是否已达最大等级
+    if currentLevel >= maxLevel then
+        return false -- 已满级，不显示红点
+    end
+    if skillType.category == 1 and serverSkill and serverSkill.growth < skillType:GetMaxGrowthAtLevel(currentLevel) then
+        return false
+    end
+    
+    -- 检查下一级的升级资源是否足够
+    local nextLevel = currentLevel + 1
+    local upgradeCosts = skillType:GetCostAtLevel(nextLevel)
+    
+    if not upgradeCosts or not next(upgradeCosts) then
+        return true -- 没有消耗，可以升级
+    end
+    
+    -- 检查每项升级资源是否足够
+    for resourceName, cost in pairs(upgradeCosts) do
+        local needAmount = math.abs(cost)
+        if needAmount > 0 then
+            local currentAmount = self:GetItemAmount(resourceName)
+            if currentAmount < needAmount then
+                return false -- 资源不足，不显示红点
+            end
+        end
+    end
+    return true -- 资源足够，显示红点
+end
+
+-- === 新增方法：构建技能红点路径 ===
+function CardsGui:BuildSkillRedDotPath(skillType, skillName)
+    local category = skillType.category
+    local quality = skillType.quality or "N"
+    if category == 0 and skillType.ofEntrySkill then
+        quality = skillType.ofEntrySkill
+    end
+    
+    -- 根据技能分类确定主动/被动类型
+    local skillTypeStr = ""
+    if category == 0 then
+        skillTypeStr = "主动" -- 主卡为主动技能
+    elseif category == 1 then
+        skillTypeStr = "被动" -- 副卡为被动技能
+    else
+        skillTypeStr = "其他"
+    end
+    
+    -- 构建红点路径：技能/主动or被动/[技能品级]/[技能名]
+    local redDotPath = string.format("技能/%s/%s/%s", skillTypeStr, quality, skillName)
+    
+    return redDotPath
 end
 
 
@@ -3076,6 +3177,9 @@ function CardsGui:CalculateUpgradeAllCost(skillName)
 
     local serverSkill = self.ServerSkills[skillName]
     local currentLevel = serverSkill and serverSkill.level or 0
+    if currentLevel == 0 then
+        return
+    end
     local maxLevel = skillType.maxLevel or 1
     local nextLevel = currentLevel + 1
 
@@ -3225,11 +3329,11 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
     table.insert(lines, string.format("技能：%s", upgradeData.skillName))
 
     if upgradeData.canFullUpgrade then
-        table.insert(lines, string.format("等级：%d → %d (满级)",
-            upgradeData.currentLevel, upgradeData.nextLevel))
+        table.insert(lines, string.format("等级：%s → %s (满级)",
+            gg.FormatLargeNumber(upgradeData.currentLevel), gg.FormatLargeNumber(upgradeData.nextLevel)))
     else
-        table.insert(lines, string.format("等级：%d → %d",
-            upgradeData.currentLevel, upgradeData.nextLevel))
+        table.insert(lines, string.format("等级：%s → %s",
+            gg.FormatLargeNumber(upgradeData.currentLevel), gg.FormatLargeNumber(upgradeData.nextLevel)))
     end
 
     table.insert(lines, "")
@@ -3239,7 +3343,7 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
         table.insert(lines, "❌ 无法升级到下一级，资源不足")
         if upgradeData.limitingResource then
             local available = upgradeData.availableResources[upgradeData.limitingResource] or 0
-            table.insert(lines, string.format("💰 限制资源：%s (拥有%d)", upgradeData.limitingResource, available))
+            table.insert(lines, string.format("💰 限制资源：%s (拥有%s)", upgradeData.limitingResource, gg.FormatLargeNumber(available)))
         end
         return table.concat(lines, "\n")
     end
@@ -3261,8 +3365,8 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
             local available = upgradeData.availableResources[resource.name] or 0
             local remaining = math.max(0, available - resource.amount)
             local status = available >= resource.amount and "✅" or "❌"
-            table.insert(lines, string.format("%s %s：%d (拥有%d，剩余%d)",
-                status, resource.name, resource.amount, available, remaining))
+            table.insert(lines, string.format("%s %s：%s (拥有%s，剩余%s)",
+                status, resource.name, gg.FormatLargeNumber(resource.amount), gg.FormatLargeNumber(available), gg.FormatLargeNumber(remaining)))
         end
     else
         table.insert(lines, "无需消耗资源")
@@ -3274,7 +3378,7 @@ function CardsGui:GenerateUpgradeContentText(upgradeData)
     if upgradeData.canFullUpgrade then
         table.insert(lines, "🎉 升级后将达到满级！")
     else
-        table.insert(lines, string.format("✅ 可以升级到等级%d", upgradeData.nextLevel))
+        table.insert(lines, string.format("✅ 可以升级到等级%s", gg.FormatLargeNumber(upgradeData.nextLevel)))
     end
 
     return table.concat(lines, "\n")
@@ -3371,8 +3475,8 @@ function CardsGui:ShowOneKeyUpgradeInsufficientResourcesMessage(upgradeData)
     table.insert(resourceLines, "")
 
     if upgradeData.currentLevel < upgradeData.maxLevel then
-        table.insert(resourceLines, string.format("升级目标：等级 %d → %d",
-            upgradeData.currentLevel, upgradeData.nextLevel))
+        table.insert(resourceLines, string.format("升级目标：等级 %s → %s",
+            gg.FormatLargeNumber(upgradeData.currentLevel), gg.FormatLargeNumber(upgradeData.nextLevel)))
     else
         table.insert(resourceLines, "技能已达最大等级")
     end
@@ -3392,9 +3496,9 @@ function CardsGui:ShowOneKeyUpgradeInsufficientResourcesMessage(upgradeData)
             local available = upgradeData.availableResources[resource.name] or 0
             local sufficient = available >= resource.amount
             local status = sufficient and "✅" or "❌"
-            table.insert(resourceLines, string.format("%s %s：需要 %d，拥有 %d，缺少 %d",
-                status, resource.name, resource.amount, available,
-                math.max(0, resource.amount - available)))
+            table.insert(resourceLines, string.format("%s %s：需要 %s，拥有 %s，缺少 %s",
+                status, resource.name, gg.FormatLargeNumber(resource.amount), gg.FormatLargeNumber(available),
+                gg.FormatLargeNumber(math.max(0, resource.amount - available))))
         end
     end
 
@@ -3458,7 +3562,7 @@ function CardsGui:OnSubCardButtonClick(ui, button)
         if currentLevelNode then
             if serverData then
                 -- 已解锁：显示当前强化等级
-                currentLevelNode.Title = "当前强化等级: LV" .. skillLevel
+                currentLevelNode.Title = "当前强化等级: LV" .. gg.FormatLargeNumber(skillLevel)
             else
                 -- 未解锁：不显示等级信息
                 currentLevelNode.Title = ""
@@ -3502,7 +3606,7 @@ end
 function CardsGui:GetDescriptions(skill, currentLevel)
     local nextLevel = currentLevel + 1
 
-    local pre = string.format("等级 %d/%d", currentLevel, skill.maxLevel)
+    local pre = string.format("等级 %s/%s", gg.FormatLargeNumber(currentLevel), gg.FormatLargeNumber(skill.maxLevel))
     local descPre = {}
     if currentLevel == 0 then
         table.insert(descPre, "未解锁")
@@ -3514,7 +3618,7 @@ function CardsGui:GetDescriptions(skill, currentLevel)
     local post = ""
     local postD = "已达最大等级"
     if currentLevel < skill.maxLevel then
-        post = string.format("等级 %d/%d", nextLevel, skill.maxLevel)
+        post = string.format("等级 %s/%s", gg.FormatLargeNumber(nextLevel), gg.FormatLargeNumber(skill.maxLevel))
         local descPost = {}
         for _, tag in pairs(skill.passiveTags) do
             table.insert(descPost, tag:GetDescription(nextLevel))
@@ -3524,7 +3628,7 @@ function CardsGui:GetDescriptions(skill, currentLevel)
         end
         local levelUpPlayerValue = skill:GetLevelUpPlayerAtLevel(nextLevel)
         -- gg.log("玩家等级: +%s", levelUpPlayerValue,skill.levelUpPlayer)
-        table.insert(descPost, string.format("\n玩家等级: +%s", levelUpPlayerValue))
+        table.insert(descPost, string.format("\n玩家等级: +%s", gg.FormatLargeNumber(levelUpPlayerValue)))
         postD = table.concat(descPost, "\n")
     end
     return {
@@ -3606,8 +3710,8 @@ function CardsGui:UpdateMainCardResourceCost(attributeButton, skill, currentLeve
             allSufficient = false
         end
         local status = sufficient and "✅" or "❌"
-        local costText = string.format("%s %s: %d/%d",
-            status, resource.name, resource.current, resource.need)
+        local costText = string.format("%s %s: %s/%s",
+            status, resource.name, gg.FormatLargeNumber(resource.current), gg.FormatLargeNumber(resource.need))
         table.insert(costTexts, costText)
 
         -- gg.log("主卡资源消耗:", skill.name, "升级到", nextLevel,
@@ -3628,14 +3732,14 @@ function CardsGui:UpdateSubCardLevelDisplay(skillName, skillLevel)
         return
     end
 
-    -- 更新副卡组件中的强化等级显示
-    local subNode = self.subCardComponent.node
-    if subNode then
-        local currentLevelNode = subNode["主背景"]["主背景强化显示"]["当前强化等级"]
-        if currentLevelNode then
-            currentLevelNode.Title = "当前强化等级: LV" .. skillLevel
+            -- 更新副卡组件中的强化等级显示
+        local subNode = self.subCardComponent.node
+        if subNode then
+            local currentLevelNode = subNode["主背景"]["主背景强化显示"]["当前强化等级"]
+            if currentLevelNode then
+                currentLevelNode.Title = "当前强化等级: LV" .. gg.FormatLargeNumber(skillLevel)
+            end
         end
-    end
 
     -- 更新副卡属性面板中的强化等级显示
     if self.subCardAttributeButton then
@@ -3644,7 +3748,7 @@ function CardsGui:UpdateSubCardLevelDisplay(skillName, skillLevel)
         if descPreTitleNode then
             local skillType = SkillTypeConfig.Get(skillName)
             if skillType then
-                descPreTitleNode.Title = string.format("等级 %d/%d", skillLevel, skillType.maxLevel or 1)
+                descPreTitleNode.Title = string.format("等级 %s/%s", gg.FormatLargeNumber(skillLevel), gg.FormatLargeNumber(skillType.maxLevel or 1))
             end
         end
     end

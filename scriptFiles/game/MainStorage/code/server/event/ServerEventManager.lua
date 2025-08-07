@@ -14,7 +14,11 @@ local ServerEventManager = {
     _localListeners = {}, -- @type table<number, table<string, fun(evt: table)[]>>
     _callbackMap = {}, -- @type table<string, table<uin, fun(data: table)>> 按uin存储回调函数
     _callbackCounter = 0, -- 用于生成唯一ID
-    _callbackTimeout = 2 -- 回调超时时间（秒）
+    _callbackTimeout = 2, -- 回调超时时间（秒）
+    
+    -- 初始化相关
+    _serverInitialized = false, -- 服务器是否初始化完成
+    _pendingEvents = {} -- 待发布的事件队列 @type table<{eventType: string, eventData: table, callback?: fun(data: table)}>
 }
 
 ---@class ServerEventListener
@@ -63,6 +67,31 @@ function ServerEventManager.CleanupPlayerCallbacks(uin)
     for callbackId, callbacks in pairs(ServerEventManager._callbackMap) do
         if callbacks[uin] then
             CleanupCallback(callbackId, uin)
+        end
+    end
+end
+
+--- 标记服务器初始化完成，并发布所有待发布的事件
+function ServerEventManager.SetServerInitialized()
+    ServerEventManager._serverInitialized = true
+    for _, eventInfo in ipairs(ServerEventManager._pendingEvents) do
+        ServerEventManager._PublishImmediate(eventInfo.eventType, eventInfo.eventData, eventInfo.callback)
+    end
+    ServerEventManager._pendingEvents = {}
+end
+
+--- 立即发布事件（内部方法，跳过初始化检查）
+---@param eventType string 事件类型
+---@param eventData table 事件数据
+---@param callback? fun(data: table) 回调函数
+function ServerEventManager._PublishImmediate(eventType, eventData, callback)
+    eventData.__class = eventType
+    if ServerEventManager._eventDictionary[eventType] then
+        for i, item in ipairs(ServerEventManager._eventDictionary[eventType]) do
+            local success, err = pcall(item.cb, eventData)
+            if not success then
+                gg.log(string.format("事件执行失败 %s\\n%s", err, debug.traceback()))
+            end
         end
     end
 end
@@ -178,15 +207,18 @@ end
 ---@param eventData table 事件数据
 ---@param callback? fun(data: table) 回调函数
 function ServerEventManager.Publish(eventType, eventData, callback)
-    eventData.__class = eventType
-    if ServerEventManager._eventDictionary[eventType] then
-        for i, item in ipairs(ServerEventManager._eventDictionary[eventType]) do
-            local success, err = pcall(item.cb, eventData)
-            if not success then
-                gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
-            end
-        end
+    -- 如果服务器还未初始化完成，将事件加入待发布队列
+    if not ServerEventManager._serverInitialized then
+        table.insert(ServerEventManager._pendingEvents, {
+            eventType = eventType,
+            eventData = eventData,
+            callback = callback
+        })
+        return
     end
+    
+    -- 服务器已初始化完成，立即发布事件
+    ServerEventManager._PublishImmediate(eventType, eventData, callback)
 end
 
 ---@param eventType string 事件类型

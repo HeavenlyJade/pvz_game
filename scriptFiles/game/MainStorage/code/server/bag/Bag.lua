@@ -29,7 +29,6 @@ function Bag:OnInit(player)
 
     self.loaded = false
     self.dirtySyncSlots = {}
-    self.dirtySave = false
     self.dirtySyncAll = false
 
     self.removedItems = {} ---@type table<string, boolean> 记录本次被移除的物品
@@ -138,6 +137,7 @@ function Bag:AddItem(item)
 end
 
 function Bag:SyncToClient()
+    self.player.needSaveBag = false
     if #self.dirtySyncSlots == 0 and not self.dirtySyncAll then
         return
     end
@@ -203,7 +203,6 @@ function Bag:SetItemAmount(slot, amount)
 end
 
 function Bag:MarkDirty(slot)
-    self.dirtySave = true
     if slot then
         if type(slot) == "boolean" then
             self.dirtySyncAll = true
@@ -211,7 +210,7 @@ function Bag:MarkDirty(slot)
             table.insert(self.dirtySyncSlots, slot)
         end
     end
-    BagMgr.need_sync_bag[self] = true
+    self.player.needSaveBag = true
 end
 
 ---@param slot Slot 格子序号

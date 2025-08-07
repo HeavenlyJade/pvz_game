@@ -42,7 +42,7 @@ local _mouseYSensitivity = 0.1
 local _wheelSensitivity = 50
 local _mouseXMin = -60.0
 local _mouseXMax = 60.0
-local _mouseYMin = -90.0
+local _mouseYMin = -13.0
 local _mouseYMax = 90.0
 local _mouseSmoothTime = 0.005
 local _minDistance = 50
@@ -347,6 +347,9 @@ function CameraController.ThirdPersonUpdate(dt)
     -- 计算并平滑处理摄像机枢轴位置 （现在用真实的偏航值）
     local pivotPosition = CameraController.CalcPivotPosition(_mouseXSmooth)
     _pivotPositionSmooth = _pivotPositionSmooth:Lerp(pivotPosition, _pivotPositionSmoothSpeed * dt)
+
+    -- 平滑处理后再次限制角度
+    _mouseYSmooth = math.clamp(_mouseYSmooth, _mouseYMin, _mouseYMax)
 
     -- 检测并处理摄像机与障碍物的碰撞
     local isHit, closestDistance = CameraController.GetClosestDistance(_pivotPositionSmooth, _currentCameraRot)
@@ -719,10 +722,15 @@ function CameraController.OnWheel(delta)
 end
 
 --震动更新
+-- function CameraController.ShakeUpdate(dt)
+--     local shakeRotData = ShakeController.GetRotDelta()
+--     _mouseX = _rawMouseX + shakeRotData.x
+--     _mouseY = _rawMouseY + shakeRotData.y
+-- end
 function CameraController.ShakeUpdate(dt)
     local shakeRotData = ShakeController.GetRotDelta()
     _mouseX = _rawMouseX + shakeRotData.x
-    _mouseY = _rawMouseY + shakeRotData.y
+    _mouseY = math.clamp(_rawMouseY + shakeRotData.y, _mouseYMin, _mouseYMax)  -- 添加限制
 end
 
 --是否在震动

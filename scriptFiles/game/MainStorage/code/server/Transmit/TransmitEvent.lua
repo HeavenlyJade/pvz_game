@@ -34,6 +34,10 @@ function TransmitEvent.HandlePlayerTeleport(evt)
         gg.log("传送事件错误: 找不到玩家对象, uin: " .. tostring(evt.player.uin))
         return
     end
+    player:SetVariable("autofighting", 0)
+    player:SendEvent("ToggleAutoBattleFromServer", {
+        autoBattle = false
+    })
 
     gg.log("收到玩家 " .. player.name .. " 的传送请求 (脱离卡死)")
 

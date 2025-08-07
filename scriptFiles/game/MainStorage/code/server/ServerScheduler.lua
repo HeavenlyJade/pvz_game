@@ -4,11 +4,10 @@ local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 
 ---@class Task
 ---@field func function The function to execute
----@field delay number Delay in seconds before first execution
----@field repeatInterval number Repeat interval in seconds (0 for one-time execution)
----@field remaining number Remaining ticks before execution
+---@field delay number Original delay in ticks (for debugging)
+---@field repeatInterval number Repeat interval in ticks (0 for one-time execution)
 ---@field taskId number Unique identifier for the task
----@field rounds number For time wheel implementation (number of wheel rotations needed)
+---@field rounds number Number of wheel rotations needed before execution
 ---@field key string|nil Optional key for task identification
 
 ---@class ServerScheduler
@@ -56,15 +55,15 @@ function ServerScheduler.add(func, delay, repeatInterval, key)
     end
     
     -- Calculate rounds and slot for the time wheel
-    local totalDelay = delay
-    local rounds = math.floor(totalDelay / (ServerScheduler.wheelSlots * ServerScheduler.wheelPrecision))
-    local slot = (ServerScheduler.currentSlot + math.floor(totalDelay / ServerScheduler.wheelPrecision) - 1) % ServerScheduler.wheelSlots + 1
+    local totalTicks = delay
+    local rounds = math.floor(totalTicks / ServerScheduler.wheelSlots)
+    local slotOffset = totalTicks % ServerScheduler.wheelSlots
+    local slot = (ServerScheduler.currentSlot + slotOffset - 1) % ServerScheduler.wheelSlots + 1
     
     local task = {
         func = func,
-        delay = delay,
+        delay = delay, -- 保留原始延迟用于调试
         repeatInterval = repeatInterval * 30,
-        remaining = delay,
         taskId = taskId,
         rounds = rounds,
         key = key,
@@ -97,11 +96,12 @@ end
 
 ---Update all scheduled tasks
 function ServerScheduler.update()
-    local tasks = ServerScheduler.timeWheel[ServerScheduler.currentSlot]
+    local currentSlot = ServerScheduler.currentSlot
+    local tasks = ServerScheduler.timeWheel[currentSlot]
     local remainingTasks = {}
-    local tasksToReschedule = {}  -- 新增：收集需要重新调度的任务
+    local tasksToReschedule = {}  -- 收集需要重新调度的任务
     
-    for _, task in ipairs(tasks) do
+    for i, task in ipairs(tasks) do
         if ServerScheduler.tasks[task.taskId] then  -- Check if task wasn't cancelled
             if task.rounds <= 0 then
                 -- Execute the task
@@ -112,15 +112,23 @@ function ServerScheduler.update()
                 
                 -- Handle repeating tasks
                 if task.repeatInterval > 0 then
-                    -- 将需要重新调度的任务收集起来
-                    local newRounds = math.floor(task.repeatInterval / (ServerScheduler.wheelSlots * ServerScheduler.wheelPrecision))
-                    local newSlot = (ServerScheduler.currentSlot + math.floor(task.repeatInterval / ServerScheduler.wheelPrecision) - 1) % ServerScheduler.wheelSlots + 1
+                    -- 重新计算下次执行的rounds和slot
+                    local intervalTicks = task.repeatInterval
+                    local newRounds = math.floor(intervalTicks / ServerScheduler.wheelSlots)
+                    local slotOffset = intervalTicks % ServerScheduler.wheelSlots
+                    local newSlot = (currentSlot + slotOffset - 1) % ServerScheduler.wheelSlots + 1
                     
+                    -- 更新任务的rounds
                     task.rounds = newRounds
+                    
+                    -- 将任务重新调度到新的slot
                     table.insert(tasksToReschedule, {task = task, slot = newSlot})
                 else
                     -- Remove one-time tasks
                     ServerScheduler.tasks[task.taskId] = nil
+                    if task.key then
+                        ServerScheduler.tasksByKey[task.key] = nil
+                    end
                 end
             else
                 -- Task needs more rounds, decrement and keep
@@ -130,15 +138,131 @@ function ServerScheduler.update()
         end
     end
     
-    -- 更新当前槽位的任务
-    ServerScheduler.timeWheel[ServerScheduler.currentSlot] = remainingTasks
+    -- 清空当前槽位并放入剩余任务
+    ServerScheduler.timeWheel[currentSlot] = remainingTasks
     
     -- 处理需要重新调度的任务
     for _, rescheduleInfo in ipairs(tasksToReschedule) do
         table.insert(ServerScheduler.timeWheel[rescheduleInfo.slot], rescheduleInfo.task)
     end
     
-    ServerScheduler.currentSlot = ServerScheduler.currentSlot % ServerScheduler.wheelSlots + 1
+    -- 移动到下一个槽位
+    ServerScheduler.currentSlot = currentSlot % ServerScheduler.wheelSlots + 1
+end
+
+-- === 诊断和调试函数 ===
+
+---查找指定key的任务信息
+---@param key string 任务key
+---@return table|nil 任务信息
+function ServerScheduler.findTaskByKey(key)
+    local taskId = ServerScheduler.tasksByKey[key]
+    if not taskId then
+        return nil
+    end
+    
+    local task = ServerScheduler.tasks[taskId]
+    if not task then
+        return nil
+    end
+    
+    -- 找到任务在哪个slot中
+    local foundSlot = nil
+    for slot = 1, ServerScheduler.wheelSlots do
+        for _, slotTask in ipairs(ServerScheduler.timeWheel[slot]) do
+            if slotTask.taskId == taskId then
+                foundSlot = slot
+                break
+            end
+        end
+        if foundSlot then break end
+    end
+    
+    return {
+        taskId = task.taskId,
+        key = task.key,
+        rounds = task.rounds,
+        delay = task.delay,
+        repeatInterval = task.repeatInterval,
+        traceback = task.traceback,
+        inSlot = foundSlot,
+        currentSlot = ServerScheduler.currentSlot
+    }
+end
+
+---获取时间轮的整体状态
+---@return table 时间轮状态信息
+function ServerScheduler.getWheelStatus()
+    local totalTasks = 0
+    local slotCounts = {}
+    
+    for slot = 1, ServerScheduler.wheelSlots do
+        local count = #ServerScheduler.timeWheel[slot]
+        slotCounts[slot] = count
+        totalTasks = totalTasks + count
+    end
+    
+    return {
+        currentSlot = ServerScheduler.currentSlot,
+        totalTasks = totalTasks,
+        totalRegisteredTasks = gg.table_count(ServerScheduler.tasks),
+        totalKeyedTasks = gg.table_count(ServerScheduler.tasksByKey),
+        slotCounts = slotCounts,
+        wheelSlots = ServerScheduler.wheelSlots
+    }
+end
+
+---检查指定slot的任务详情
+---@param slot number 要检查的slot编号
+---@return table slot中的任务列表
+function ServerScheduler.inspectSlot(slot)
+    if slot < 1 or slot > ServerScheduler.wheelSlots then
+        return nil
+    end
+    
+    local tasks = ServerScheduler.timeWheel[slot]
+    local result = {}
+    
+    for i, task in ipairs(tasks) do
+        table.insert(result, {
+            index = i,
+            taskId = task.taskId,
+            key = task.key,
+            rounds = task.rounds,
+            delay = task.delay,
+            repeatInterval = task.repeatInterval,
+            isRegistered = ServerScheduler.tasks[task.taskId] ~= nil
+        })
+    end
+    
+    return {
+        slot = slot,
+        taskCount = #tasks,
+        tasks = result
+    }
+end
+
+---强制执行指定key的任务（用于测试）
+---@param key string 任务key
+---@return boolean 是否成功执行
+function ServerScheduler.forceExecuteTask(key)
+    local taskId = ServerScheduler.tasksByKey[key]
+    if not taskId then
+        return false
+    end
+    
+    local task = ServerScheduler.tasks[taskId]
+    if not task then
+        return false
+    end
+    
+    local success, err = pcall(task.func)
+    if not success then
+        gg.log("[ERROR] Force execute task failed:", err)
+        return false
+    end
+    
+    return true
 end
 
 return ServerScheduler

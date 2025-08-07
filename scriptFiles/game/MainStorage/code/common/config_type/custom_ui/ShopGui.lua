@@ -27,12 +27,44 @@ function ShopGui:S_BuildPacket(player, packet)
     packet.shopGoods = {}
     for privilegeType, shopGood in pairs(self.shopGoods) do
         local param = shopGood:GetParam(player)
+        local price = shopGood.price.priceAmount * param.power
+        local priceHas = shopGood.price:GetPlayerHas(player)
+        local affordable = shopGood.price:CanAfford(player, param)
+        local bought = player:GetVariable(shopGood.price.varKey)
+        
+        -- === 新增：检查是否为免费可领取商品 ===
+        local isFreeAvailable = (price <= 0) and affordable and not bought
+        
         packet.shopGoods[privilegeType] = {
-            affordable = shopGood.price:CanAfford(player, param),
-            bought = player:GetVariable(shopGood.price.varKey),
-            price = shopGood.price.priceAmount * param.power,
-            priceHas = shopGood.price:GetPlayerHas(player)
+            affordable = affordable,
+            bought = bought,
+            price = price,
+            priceHas = priceHas,
+            -- === 新增：添加免费可领取标识 ===
+            isFreeAvailable = isFreeAvailable
         }
+    end
+    
+    -- === 新增：更新商城红点状态 ===
+    self:UpdateShopRedDots(packet.shopGoods)
+end
+
+-- === 新增方法：更新商城红点状态 ===
+---@param shopGoods table<string, ShopGoodStatus>
+function ShopGui:UpdateShopRedDots(shopGoods)
+    -- 这里可以实现服务端红点逻辑，或者留给客户端处理
+    -- 由于红点系统主要在客户端，这里暂时不实现具体逻辑
+    -- 可以在后续需要时添加服务端通知客户端的逻辑
+end
+
+-- === 新增方法：清除单个商品的红点 ===
+---@param shopGoodId string
+function ShopGui:ClearShopGoodRedDot(shopGoodId)
+    local shopGood = self.shopGoods[shopGoodId]
+    if shopGood then
+        -- 获取ViewBase红点系统的引用（如果在服务端需要通知客户端）
+        -- 这里可以发送事件到客户端来清除红点
+        -- 或者在下次S_Open时会自动更新红点状态
     end
 end
 
@@ -46,6 +78,8 @@ function ShopGui:onPurchase(player, evt)
     local shopGood = self.shopGoods[evt.shopGood]
     print("onPurchase", evt.shopGood)
     if shopGood:Buy(player) then
+        -- === 新增：购买成功后清除该商品的红点 ===
+        self:ClearShopGoodRedDot(evt.shopGood)
         self:S_Open(player)
     end
 end
@@ -71,6 +105,10 @@ function ShopGui:_UpdateCard(node, shopGood, status)
         self.currentDisplayGoodIndex = button.index
         self:_ShowGood(shopGood)
     end
+    
+    -- === 新增：为商品按钮注册红点路径 ===
+    local redDotPath = string.format("商城/%s/%s", self.id or "默认商城", shopGood.name)
+    node:SetNewsPath(redDotPath)
 end
 
 ---@param shopGood ShopGood
@@ -117,6 +155,7 @@ function ShopGui:C_BuildUI(packet)
                 shop = self.otherShops[button.index]
             })
         end
+        
         return c
     end) ---@type ViewList
     self.categoryList:SetElementSize(0)
@@ -131,6 +170,10 @@ function ShopGui:C_BuildUI(packet)
             categoryNode.node.TitleColor = ColorQuad.New(255,255,255,255)
             child.node.FillColor = ColorQuad.New(255,255,255,255)
         end
+        
+        -- === 新增：为商城分类按钮注册红点路径 ===
+        local redDotPath = string.format("商城/%s", shopName)
+        child:SetNewsPath(redDotPath)
     end
 
     self.goodsList = ui:Get(self.paths.GoodsList, ViewList, function (child, childPath)
@@ -149,6 +192,10 @@ function ShopGui:C_BuildUI(packet)
         self:_UpdateCard(self.goodsList:GetChild(index), shopGood, packet.shopGoods[shopGoodId])
         index = index+1
     end
+    
+    -- === 新增：更新所有商品的红点状态 ===
+    self:UpdateAllShopRedDots(packet.shopGoods)
+    
     -- 检查shop id是否变化，变化则重置index
     if self.lastShopId ~= self.id then
         self.currentDisplayGoodIndex = 1
@@ -157,7 +204,6 @@ function ShopGui:C_BuildUI(packet)
     -- 显示指定的物品并且判断物品是否存在
     local config_item = packet.item_name and ShopGoodConfig.Get(packet.item_name)
     if config_item then
-        print('显示指定物品')
         self:_ShowGood(config_item)
     else
         -- 显示第一个物品
@@ -168,9 +214,26 @@ function ShopGui:C_BuildUI(packet)
     end
 
     self.view:Open()
-    for i = 1, 4 do
-        if _G['商城点击_货币' .. i] then
-            _G['商城点击_货币' .. i] = false
+end
+
+
+-- === 新增方法：更新所有商品的红点状态 ===
+---@param shopGoods table<string, ShopGoodStatus>
+function ShopGui:UpdateAllShopRedDots(shopGoods)
+    local ViewBase = require(MainStorage.code.client.ui.ViewBase)
+    
+    -- 遍历所有商品，更新红点状态
+    for shopGoodId, status in pairs(shopGoods) do
+        local shopGood = self.shopGoods[shopGoodId]
+        if shopGood then
+            -- 构建红点路径
+            local redDotPath = string.format("商城/%s/%s", self.id or "默认商城", shopGood.name)
+            
+            -- 判断是否应该显示红点（免费可领取且未购买）
+            local shouldShowRedDot = status.isFreeAvailable or false
+            
+            -- 设置红点状态
+            ViewBase.SetNew(redDotPath, shouldShowRedDot)
         end
     end
 end

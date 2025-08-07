@@ -10,7 +10,7 @@ local CommandSpell = ClassMgr.Class("CommandSpell", Spell)
 function CommandSpell:OnInit(data)
     self.commands = data["指令"] ---@type string[]
     if self.printInfo then
-        print(string.format("CommandSpell[%s] 初始化，指令数量: %d", self.spellName, #self.commands))
+        print(string.format("CommandSpell[%s] 初始化，指令数量: %d", self.spellName, self.commands and #self.commands or 0))
     end
 end
 

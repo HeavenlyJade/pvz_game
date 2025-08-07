@@ -79,8 +79,6 @@ function _M:initNpcs()
     for npc_name, npc_data in pairs(all_npcs) do
         if npc_data["场景"] == self.name then
             local sceneNode = self.node["NPC"]
-            gg.log("初始化NPC：", npc_name, "场景：", npc_data["场景"], "节点名：", npc_data["节点名"])
-
             if not sceneNode then
                 gg.log("错误：场景中没有NPC节点容器")
             else
@@ -98,14 +96,10 @@ function _M:initNpcs()
                     end
                     gg.log("可用的NPC节点：", table.concat(children, ", "))
                 else
-                    gg.log("找到NPC节点：", npc_name, "节点名：", actor.Name)
-
                     local npc = Npc.New(npc_data, actor)
                     self.uuid2Entity[actor] = npc
                     self.npcs[npc.uuid] = npc
                     npc:ChangeScene(self)
-
-                    gg.log("NPC创建成功：", npc_name, "UUID：", npc.uuid)
                 end
             end
         end

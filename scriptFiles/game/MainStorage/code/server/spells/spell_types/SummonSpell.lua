@@ -68,7 +68,7 @@ ServerEventManager.Subscribe("PostBattleEvent", function(event)
     OnPostBattle(event.battle)
 end)
 
-local function ClearAllSummonsForPlayer(player)
+function SummonSpell.ClearAllSummonsForPlayer(player)
     if player then
         local summons = SummonSpell.summonerSummons[player]
         if summons then
@@ -84,11 +84,11 @@ local function ClearAllSummonsForPlayer(player)
 end
 
 ServerEventManager.Subscribe("PlayerLeaveGameEvent", function(event)
-    ClearAllSummonsForPlayer(event.player)
+    SummonSpell.ClearAllSummonsForPlayer(event.player)
 end)
 
 ServerEventManager.Subscribe("PlayerExitBattleEvent", function(event)
-    ClearAllSummonsForPlayer(event.player)
+    SummonSpell.ClearAllSummonsForPlayer(event.player)
 end)
 
 function SummonSpell:OnInit(data)
@@ -157,28 +157,6 @@ function SummonSpell:RemoveSummon(summoner, summoned)
     end
 end
 
---- 清理召唤者的所有召唤物
----@param summoner Entity 召唤者
-function SummonSpell:ClearSummons(summoner)
-    local summons = SummonSpell.summonerSummons[summoner]
-    if not summons then return end
-
-    for mob, spell in pairs(summons) do
-        if spell == self then
-            if mob and mob.isEntity then
-                mob:DestroyObject()
-            end
-            SummonSpell.summoned2Caster[mob] = nil
-            summons[mob] = nil
-        end
-    end
-
-    -- 如果召唤者没有召唤物了，清理表项
-    if next(summons) == nil then
-        SummonSpell.summonerSummons[summoner] = nil
-    end
-end
-
 --- 检查是否可以释放魔法
 ---@param caster Entity 施法者
 ---@param target Entity|Vector3 目标
@@ -186,7 +164,6 @@ end
 ---@param log string[] 日志数组
 ---@return boolean 是否可以释放
 function SummonSpell:CanCast(caster, target, param, log)
-    -- 检查是否达到最大召唤数量
     if self:GetSummonCount(caster) >= self.maxCount then
         if log then
             log[#log + 1] = string.format("%s：已达到最大召唤数量 %d", self.spellName, self.maxCount)
@@ -291,6 +268,7 @@ function SummonSpell:CastReal(caster, target, param)
         summoned.actor.LocalScale = Vector3.New(scale.x * sizeScale * widthScale, scale.y * sizeScale * heightScale, scale.z * sizeScale * widthScale)
         summoned.actor.Rotation = casterRot
         summoned:SetOwner(caster)
+        
         self:AddSummon(caster, summoned)
         -- 应用额外召唤物属性
         self:ApplyExtraAttributes(caster, summoned, param)

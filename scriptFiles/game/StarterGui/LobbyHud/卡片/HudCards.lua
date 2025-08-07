@@ -48,10 +48,14 @@ end
 
 function HudCards:AutoBattleTick(target)
     if not target or not target.Position then return false end
+    local hasAvailableSubCard = false
+    
+    -- 检查是否有可用的副卡技能
     for slotId, skill in pairs(self.subCardData) do
         if skill and skill.skillType then
             local isOnCooldown = self:CheckSkillCooldown(skill)
             if not isOnCooldown then
+                hasAvailableSubCard = true
                 -- 释放技能，传入目标位置
                 if self:CastSkill(skill, target.Position) then
                     return true
@@ -59,7 +63,9 @@ function HudCards:AutoBattleTick(target)
             end
         end
     end
-    return false
+    
+    -- 如果没有可用的副卡技能，返回false让主卡普攻
+    return hasAvailableSubCard
 end
 
 -- 更新冷却显示

@@ -21,7 +21,11 @@ function MiscCommand.viewUI(params, player)
         gg.log("找不到界面配置", params["界面ID"])
         return
     end
-    customUI:S_Open(player)
+    local item_name = ''
+    if params['参数'] and params['参数']['商品名'] then
+        item_name = params['参数']['商品名']
+    end
+    customUI:S_Open(player,item_name)
     return true
 end
 
@@ -30,18 +34,19 @@ function MiscCommand.toggleAutoBattle(params, player)
     local newState
     
     if operation == "开启" then
-        newState = true
+        newState = 1
     elseif operation == "关闭" then
-        newState = false
+        newState = 0
     else -- "切换" 或其他情况
-        newState = not (player.isAutoFighting or false)
+        local currentState = player:GetVariable("autofighting", 0)
+        newState = currentState == 0 and 1 or 0
     end
     
-    player.isAutoFighting = newState
-    local status = player.isAutoFighting and "开启" or "关闭"
+    player:SetVariable("autofighting", newState)
+    local status = newState == 1 and "开启" or "关闭"
     player:SendChatText(string.format("自动战斗已%s", status))
     player:SendEvent("ToggleAutoBattleFromServer", {
-        autoBattle = player.isAutoFighting
+        autoBattle = newState == 1
     })
     return true
 end

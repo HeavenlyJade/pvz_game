@@ -29,6 +29,7 @@ function SkillType:OnInit(data)
     ---客户端
     self.isEntrySkill = data["是入口技能"] or false
     self.nextSkills = data["下一技能"]
+    self.ofEntrySkill = nil
     self.prerequisite = {} ---@type SkillType[]
     self.targetMode = data["目标模式"]
     self.category = data["技能分类"]

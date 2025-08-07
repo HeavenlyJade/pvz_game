@@ -12,7 +12,7 @@ local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local CastParam = require(MainStorage.code.server.spells.CastParam) ---@type CastParam
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
 local MiscConfig = require(MainStorage.config.MiscConfig) ---@type MiscConfig
-
+local Level      = require(MainStorage.code.server.Scene.Level) ---@type Level
 
 ---@class Player : Entity    --玩家类  (单个玩家) (管理玩家状态)
 ---@field daily_tasks table 每日任务数据
@@ -33,10 +33,11 @@ local _M = ClassMgr.Class('Player', Entity)
 -- 初始化玩家
 function _M:OnInit(info_)
     self.inited = false
+    self.initedHud = false
     self.name = info_.nickname
     self.isPlayer = true
     self._levelTeleporting = false
-    self.isAutoFighting = false
+    self.needSaveBag = false
     self.bag = nil ---@type Bag
     self.mail = nil ---@type PlayerMailBundle
     self.auto_attack      = 0                                   -- 自动攻击技能ID
@@ -68,7 +69,7 @@ function _M:OnInit(info_)
         end
     end)
     self:SubscribeEvent("ToggleAutoBattle", function (evt)
-        self.isAutoFighting = evt.autoBattle
+        self:SetVariable("autofighting", evt.autoBattle and 1 or 0)
     end)
 
     self:SubscribeEvent("ClickQuest", function (evt)
@@ -222,8 +223,13 @@ end
 ---标记红点
 ---@param path string 以/分割的路径
 ---@param mark boolean true=标记, false=取消标记
-function _M:MarkNew(path, mark)
+---@param syncToClient? boolean 是否同步到客户端，默认true
+function _M:MarkNew(path, mark, syncToClient)
     if not path then return end
+    
+    if syncToClient == nil then
+        syncToClient = true
+    end
 
     -- 初始化news表（如果不存在）
     if not self.news then
@@ -250,7 +256,12 @@ function _M:MarkNew(path, mark)
         else
             -- 中间部分
             if mark then
-                current[part] = current[part] or {}
+                if type(current[part]) == "boolean" then
+                    -- 如果当前节点是boolean值，需要转换为table
+                    current[part] = {}
+                else
+                    current[part] = current[part] or {}
+                end
             elseif not current[part] then
                 return -- 如果是要取消标记但路径不存在，直接返回
             end
@@ -269,6 +280,11 @@ function _M:MarkNew(path, mark)
                 break -- 如果遇到非空表，停止清理
             end
         end
+    end
+    
+    -- 同步到客户端
+    if syncToClient then
+        self:SyncNewsToClient(path, mark)
     end
 end
 
@@ -289,11 +305,37 @@ function _M:IsNew(path)
     return true
 end
 
+---同步红点变化到客户端
+---@param path string 红点路径
+---@param mark boolean 红点状态
+function _M:SyncNewsToClient(path, mark)
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "UpdateNews",
+        path = path,
+        mark = mark
+    })
+end
+
+---同步所有红点到客户端
+function _M:SyncAllNewsToClient()
+    if not self.news then
+        self.news = {}
+    end
+    
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "SyncAllNews",
+        news = self.news
+    })
+end
+
 ---@param key string 变量名
 ---@return number 变量值
 function _M:GetVariable(key, defaultValue)
     if key == "online_time" and self.GetOnlineTime then
         return self:GetOnlineTime()
+    end
+    if key == "in_level" then
+        return Level.GetCurrentLevel(self) == nil and 0 or 1
     end
     return Entity.GetVariable(self, key, defaultValue)
 end
@@ -497,6 +539,10 @@ end
 ---@override
 function _M:Die()
     if self.isDead then return end
+    self:SetVariable("autofighting", 0)
+    self:SendEvent("ToggleAutoBattleFromServer", {
+        autoBattle = false
+    })
     self:StopSkillCastabilityCheck()
     -- 发布死亡事件
     local evt = { player = self, viewDeath=true }
@@ -741,10 +787,21 @@ end
 
 
 function _M:ChangeScene(new_scene)
+    local old_scene = self.scene
     if new_scene.bgmSound then
         self:PlaySound(new_scene.bgmSound, nil, 0.2, nil, nil, "bgm")
     end
     Entity.ChangeScene(self, new_scene)
+    local event = {
+        player = self,
+        oldScene = old_scene,
+        newScene = new_scene
+    }
+    if self.initedHud then
+        ServerEventManager.Publish("PlayerSceneChangeEvent", event)
+    else
+        self._pendingSceneChangeEvent = event
+    end
 end
 
 
@@ -984,9 +1041,10 @@ end
 function _M:update_player()
     -- 调用父类更新
     self:update()
-
-    -- 更新Buff
     self:updateBuffs()
+    if self.needSaveBag then
+        self.bag:SyncToClient()
+    end
 end
 
 
@@ -1138,6 +1196,7 @@ function _M:UpdateHud()
     self:UpdateQuestsData()
     self:syncSkillData()
     self.bag:SyncToClient()
+    self:SyncAllNewsToClient()  -- 同步所有红点到客户端
 
     self.level = self:GetVariable("level", 1)
     self:CreateTitle()
@@ -1146,7 +1205,13 @@ function _M:UpdateHud()
         level = self.level
     })
     self:SendEvent("HideTitle", { })
+    
+    -- === 新增：发布玩家HUD更新事件，让各个CustomUI监听并更新红点 ===
+    ServerEventManager.Publish("PlayerHudUpdateEvent", {
+        player = self
+    })
 end
+
 
 -- 同步任务数据到客户端
 function _M:UpdateQuestsData()

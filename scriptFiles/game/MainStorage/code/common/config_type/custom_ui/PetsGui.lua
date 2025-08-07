@@ -275,7 +275,7 @@ function PetsGui:C_BuildUI(packet)
     -- 设置按钮点击回调
     if self.closeButton then
         self.closeButton.clickCb = function(ui, button)
-            self:C_Close()
+            self.view:Close()
         end
     end
     
@@ -385,36 +385,6 @@ function PetsGui:C_BuildUI(packet)
     self.attributeButton.node.Active = true
     self.petsComponent.node.Visible = true
     self.petsComponent.node.Active = true
-    
-    -- 确保子组件也可见，并强制刷新
-    if self.UpgradeButton and self.UpgradeButton.node then
-        self.UpgradeButton.node.Visible = true
-        self.UpgradeButton.node.Active = true
-    end
-    if self.EquipmentButton and self.EquipmentButton.node then
-        self.EquipmentButton.node.Visible = true
-        self.EquipmentButton.node.Active = true
-    end
-    if self.UnEquipButton and self.UnEquipButton.node then
-        self.UnEquipButton.node.Visible = true
-        self.UnEquipButton.node.Active = true
-    end
-    if self.UpgradeRankButton and self.UpgradeRankButton.node then
-        self.UpgradeRankButton.node.Visible = true
-        self.UpgradeRankButton.node.Active = true
-    end
-    if self.AllUpgradeButton and self.AllUpgradeButton.node then
-        self.AllUpgradeButton.node.Visible = true
-        self.AllUpgradeButton.node.Active = true
-    end
-    if self.functionList and self.functionList.node then
-        self.functionList.node.Visible = true
-        self.functionList.node.Active = true
-    end
-    if self.PetsList and self.PetsList.node then
-        self.PetsList.node.Visible = true
-        self.PetsList.node.Active = true
-    end
     -- 最后设置packet
     self.packet = packet
     

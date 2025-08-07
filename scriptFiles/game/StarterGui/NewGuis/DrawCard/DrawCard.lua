@@ -72,6 +72,7 @@ function DrawCard:OnInit(node, config)
     local modelView = self:Get("UIImage").node
     self.flyingCardList = self:Get("FlyingCard", ViewList) ---@type ViewList
     self.initialFlyingCardPos = self.flyingCardList:GetChild(1).node.Position
+    self.belowScreenCardPos = Vector2.New(self.initialFlyingCardPos.x, ViewBase.GetScreenSize().y + 300)
     self.cardSize = self.flyingCardList:GetChild(1).node.Size
     self.swipeHint = self:Get("SwipeHint")
     self.swipeHint.node.Visible = false
@@ -81,6 +82,10 @@ function DrawCard:OnInit(node, config)
     self.closeButton.clickCb = function (ui, button)
         self:Close()
     end
+    
+    -- === 新增：初始化抽卡红点管理 ===
+    self:InitDrawCardRedDots()
+    
     modelView.TouchBegin:Connect(
         function(node, isTouchMove, vector2, int)
             if self.state == 1 then
@@ -88,6 +93,8 @@ function DrawCard:OnInit(node, config)
                 self._dragCompleted = false
                 self.animator:Play("kai_0", 0, 0)
                 self.animator:Play("kai_1", 1, 0)
+                self.animator:SetLayerWeight(0, 1)
+                self.animator:SetLayerWeight(1, 0)
             end
         end
     )
@@ -99,7 +106,7 @@ function DrawCard:OnInit(node, config)
                 
                 -- 检查拖动距离是否达到500以上，自动触发完成
                 local totalDistance = math.abs(vector2.x - self._dragStartPos.x) + math.abs(vector2.y - self._dragStartPos.y)
-                if totalDistance >= 500 and not self._dragCompleted then
+                if totalDistance >= 500 and not self._dragCompleted and self.state == 1 then
                     self.state = 2
                     self._dragCompleted = true
                     self:onDragComplete()
@@ -193,6 +200,16 @@ function DrawCard:OnInit(node, config)
     end)
 end
 
+-- === 新增方法：初始化抽卡红点管理 ===
+function DrawCard:InitDrawCardRedDots()
+    -- DrawCard.lua 主要负责抽卡结果展示和动画
+    -- 红点逻辑已在 RollCardsGui.lua 中实现
+    -- 这里可以添加与抽卡动画相关的红点逻辑（如果需要）
+    
+    -- 如果需要在抽卡结果界面显示红点提示，可以在此处实现
+    -- 例如：提示还有更多抽卡机会等
+end
+
 function DrawCard:Close()
     ViewBase.Close(self)
     if self.model then
@@ -233,21 +250,22 @@ function DrawCard:onDragComplete()
         card:Get("ItemIcon"):SetVisible(false)
         card:Get("Amount"):SetVisible(false)
         card:Get("ItemName"):SetVisible(false)
-        local mask = card.node["MaskUIImage"]
-        mask.Scale = Vector2.New(1, 0)
+        card.node.Position = self.belowScreenCardPos
+        card.node.Icon = (rarityRanks[reward.rarity] or rarityRanks.default).card_back
+        -- local mask = card.node["MaskUIImage"]
+        -- mask.Scale = Vector2.New(1, 0)
         ClientScheduler.add(function ()
             ClientEventManager.Publish("PlaySound", {
                 soundAssetId = "sandboxId://soundeffect/carddraw/card_flip.ogg"
             })
             card:SetVisible(true)
-            card.node.Position = self.initialFlyingCardPos
-            card.node.Icon = (rarityRanks[reward.rarity] or rarityRanks.default).card_back
+            card.node.Position = self.belowScreenCardPos
             TweenService:Create(card.node, tweenInfo, {
                 Position = Vector2.New(self.initialFlyingCardPos.x, -500),
             }):Play()
-            TweenService:Create(mask, maskInfo, {
-                Scale = Vector2.New(1, 1)
-            }):Play()
+            -- TweenService:Create(mask, maskInfo, {
+            --     Scale = Vector2.New(1, 1)
+            -- }):Play()
         end, self.chosenAnim.delay + 0.3 * i)
     end
     

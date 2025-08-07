@@ -137,17 +137,20 @@ function _M:CreateModel(scene)
     self:setGameActor(actor_monster)
 
     -- 加载完成事件处理
-    actor_monster.LoadFinish:connect(function(ret)
+    self:SetHealth(self:GetStat("生命"))
+    if self.mobType.data["状态机"] then
+        self:SetAnimationController(self.mobType.data["状态机"])
+    end
+    ServerScheduler.add(function(ret)
+        if self.isDestroyed then
+           return 
+        end
         local barNameOverride = self.className
         if self.owner then
             barNameOverride = "Minion"
         end
         self:CreateTitle(nil, nil, barNameOverride)
-    end)
-    self:SetHealth(self:GetStat("生命"))
-    if self.mobType.data["状态机"] then
-        self:SetAnimationController(self.mobType.data["状态机"])
-    end
+    end, 0.5)
 end
 
 --------------------------------------------------
@@ -243,6 +246,14 @@ function _M:Hurt(amount, damager, isCrit)
     end
     if not self.target then
         self:SetTarget(damager)
+    end
+    gg.log('--造成伤害', amount)
+    if amount and amount > 0 then
+        -- 发布怪物受伤事件，包含伤害记录
+        ServerEventManager.Publish("MobCombEvent", {
+            mob = self,
+            damageRecords = self.damageRecords
+        })
     end
 end
 

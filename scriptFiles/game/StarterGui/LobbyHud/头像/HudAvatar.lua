@@ -32,7 +32,11 @@ function HudAvatar:OnInit(node, config)
         end
         return button
     end)
-    self:Get("头像背景/任务按钮", ViewButton).clickCb = function (ui, viewButton)
+    
+    -- === 新增：为任务按钮注册红点路径 ===
+    self.questButton = self:Get("头像背景/任务按钮", ViewButton)
+    self.questButton:SetNewsPath("任务/总览")
+    self.questButton.clickCb = function (ui, viewButton)
         self.questList:SetVisible(not self.questList.node.Enabled)
     end
     
@@ -40,12 +44,23 @@ function HudAvatar:OnInit(node, config)
         local evt = evt ---@type QuestsUpdate
         self.questList:SetElementSize(#evt.quests)
         self:NavigateTo(nil, "")
+        
+        -- === 新增：跟踪可完成任务数量 ===
+        local completableQuestCount = 0
+        
         for i, child in ipairs(evt.quests) do
             local ele = self.questList:GetChild(i) ---@cast ele ViewButton
             ele.extraParams = {
                 questId = child.name
             }
-            if child.count >= child.countMax then
+            
+            -- === 新增：检查任务是否可完成 ===
+            local isCompletable = child.count >= child.countMax
+            if isCompletable then
+                completableQuestCount = completableQuestCount + 1
+            end
+            
+            if isCompletable then
                 ele.normalImg = "sandboxId://textures/ui/主界面UI/头像信息UI/任务面板_1.png"
                 ele.hoverImg = ele.normalImg
                 ele.clickImg = ele.normalImg
@@ -56,12 +71,20 @@ function HudAvatar:OnInit(node, config)
                 ele.clickImg = ele.normalImg
                 ele.node.Icon = ele.normalImg
             end
+            
+            -- === 新增：为每个任务项注册红点路径并设置状态 ===
+            local questRedDotPath = string.format("任务/任务项/%s", child.name)
+            ele:SetNewsPath(questRedDotPath)
+            
             ele:Get("任务标题").node.Title = child.description
             ele:Get("任务数量").node.Title = string.format("%d/%d", child.count, child.countMax)
             if i == 1 and child.targetLoc then
                 self:NavigateTo(gg.Vec3.new(child.targetLoc), child.description)
             end
         end
+        
+        -- === 新增：更新所有任务红点状态 ===
+        self:UpdateAllQuestRedDots(evt.quests, completableQuestCount)
     end)
     ClientEventManager.Subscribe("UpdateHud", function(data)
         self:Get("名字背景/等级").node.Title = tostring(data.level)
@@ -92,6 +115,8 @@ function HudAvatar:OnInit(node, config)
                 gg.network_channel:FireServer({
                     cmd = "NavigateReached"
                 })
+                -- 隐藏导航箭头
+                self:NavigateTo(nil, "")
                 -- 取消检查任务
                 ClientScheduler.cancel(self.navigationCheckTaskId)
                 self.navigationCheckTaskId = nil
@@ -112,11 +137,31 @@ function HudAvatar:OnInit(node, config)
                     if character and targetPos:DistanceSq(character.Position) < data.distance * data.distance then
                         self:NavigateTo(nil)  -- 关闭指针
                         ClientScheduler.cancel(self.checkTask)
+                        self.checkTask = nil
                     end
                 end, 1, 1)
             end
         end
     end)
+end
+
+-- === 新增方法：更新所有任务红点状态 ===
+---@param quests table 任务列表
+---@param completableCount number 可完成任务数量
+function HudAvatar:UpdateAllQuestRedDots(quests, completableCount)
+    local ViewBase = require(MainStorage.code.client.ui.ViewBase)
+    
+    -- 更新任务总览按钮的红点状态
+    ViewBase.MarkNew("任务/总览", completableCount > 0)
+    
+    -- 更新每个任务项的红点状态
+    for i, quest in ipairs(quests) do
+        local questRedDotPath = string.format("任务/任务项/%s", quest.name)
+        local isCompletable = quest.count >= quest.countMax
+        
+        -- 设置红点状态
+        ViewBase.SetNew(questRedDotPath, isCompletable)
+    end
 end
 
 function HudAvatar:NavigateTo(pos, text)

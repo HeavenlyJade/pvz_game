@@ -13,18 +13,7 @@ local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@typ
 ---@class BagMgr
 local BagMgr = {
     server_player_bag_data = {}, ---@type table<number, Bag>
-    need_sync_bag = {} ---@type table<Bag, boolean>
 }
-
-function SyncAll()
-    for bag, _ in pairs(BagMgr.need_sync_bag) do
-        bag:SyncToClient()
-    end
-    BagMgr.need_sync_bag = {}
-end
-
--- 使用ServerScheduler替代Timer
-ServerScheduler.add(SyncAll, 0, 0.2) -- 立即开始，每秒执行一次
 
 ---刷新玩家的背包数据（服务器 to 客户端）
 ---@param uin_ number 玩家ID
@@ -86,5 +75,4 @@ end
 function BagMgr.setPlayerBagData( uin_, bag )
     BagMgr.server_player_bag_data[ uin_ ] = bag
 end
-
 return BagMgr

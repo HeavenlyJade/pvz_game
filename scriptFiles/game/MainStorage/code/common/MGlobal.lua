@@ -1074,39 +1074,43 @@ function gg.Debug(params, player)
             local varDict = value["变量"]
             local source = player ---@type any
             if varDict["源"] and varDict["源"] ~= "" then
-                local paths = {}
-                for part in string.gmatch(varDict["源"], "[^%.]+") do
-                    table.insert(paths, part)
-                end
-                local starter = 1
-                source = game
-                if paths[1] == "game" then
-                    starter = 2
-                elseif paths[1] == "MainStorage" then
-                    source = MainStorage
-                    starter = 2
-                elseif paths[1] == "WorkSpace" then
-                    source = game.WorkSpace
-                    starter = 2
-                elseif paths[1] == "UI" then
-                    local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
-                    source = ViewBase.GetUI(paths[2])
-                    starter = 3
-                elseif string.sub(paths[1], -6) == "Config" then
-                    source = require(MainStorage.config [paths[1]]).config
-                    starter = 2
-                end
-                local returned, i, parent = RecursivlyGet(source, paths, starter)
-                if not returned then
-                    local log = gg.log("在从%s获取%s时，进行到%d(%s)时出错", source, paths, i, tostring(parent))
-                    if player then
-                        player:SendLog(log)
+                if vars[varDict["源"]] then
+                    source = require(vars[varDict["源"]].obj)
+                else
+                    local paths = {}
+                    for part in string.gmatch(varDict["源"], "[^%.]+") do
+                        table.insert(paths, part)
                     end
-                    return
-                end
-                source = returned
-                if type(source) == "userdata" and source.IsA and source:IsA("ModuleScript") then
-                    source = require(source)
+                    local starter = 1
+                    source = game
+                    if paths[1] == "game" then
+                        starter = 2
+                    elseif paths[1] == "MainStorage" then
+                        source = MainStorage
+                        starter = 2
+                    elseif paths[1] == "WorkSpace" then
+                        source = game.WorkSpace
+                        starter = 2
+                    elseif paths[1] == "UI" then
+                        local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
+                        source = ViewBase.GetUI(paths[2])
+                        starter = 3
+                    elseif string.sub(paths[1], -6) == "Config" then
+                        source = require(MainStorage.config [paths[1]]).config
+                        starter = 2
+                    end
+                    local returned, i, parent = RecursivlyGet(source, paths, starter)
+                    if not returned then
+                        local log = gg.log("在从%s获取%s时，进行到%d(%s)时出错", source, paths, i, tostring(parent))
+                        if player then
+                            player:SendLog(log)
+                        end
+                        return
+                    end
+                    source = returned
+                    if type(source) == "userdata" and source.IsA and source:IsA("ModuleScript") then
+                        source = require(source)
+                    end
                 end
             elseif varDict["快捷源"] then
                 if varDict["快捷源"] == "player" then
@@ -1148,7 +1152,11 @@ function gg.Debug(params, player)
             for index, value in ipairs(operation["参数"]) do
                 if not vars[value] then
                     -- 检查是否为字符串字面量（被双引号包围）
-                    if type(value) == "string" and string.sub(value, 1, 1) == '"' and string.sub(value, -1) == '"' then
+                    if value == "true" then
+                        op[index] = true
+                    elseif value == "false" then
+                        op[index] = false
+                    elseif type(value) == "string" and string.sub(value, 1, 1) == '"' and string.sub(value, -1) == '"' then
                         op[index] = string.sub(value, 2, -2)  -- 去掉首尾的双引号
                     else
                         -- 尝试转换为数字

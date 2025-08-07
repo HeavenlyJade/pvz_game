@@ -34,7 +34,7 @@ function SpellCommand.navigate(params, player)
         end
     end
     local range = 300
-    if node:IsA("Actor") then
+    if node:IsA("Actor") and node.EnablePhysics then
         range = range + math.max(node.Size.x, node.Size.z)
     end
     if params["不强制移动过去"] then

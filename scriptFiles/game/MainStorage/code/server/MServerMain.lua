@@ -11,7 +11,7 @@ local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@t
 local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
 local cloudMailData = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailDataAccessor
 local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
---local TransmitEvent = require(MainStorage.code.server.Transmit.TransmitEvent) ---@type TransmitEvent
+local TransmitEvent = require(MainStorage.code.server.Transmit.TransmitEvent) ---@type TransmitEvent
 -- 总入口
 ---@class MainServer
 local MainServer = {};
@@ -95,6 +95,10 @@ function MainServer.start_server()
             end
         end
     end
+    
+    -- 标记服务器初始化完成，发布所有待发布的事件
+    gg.log("服务器初始化完成，通知事件系统")
+    ServerEventManager.SetServerInitialized()
 end
 
 function MainServer.initModule()
@@ -104,14 +108,18 @@ function MainServer.initModule()
     -- gg.cloudMailData = cloudMailData:Init()
     SkillEventManager.Init()
     MailManager:Init()
-    --TransmitEvent.Init()
-    gg.log("initModule", 3)
+    TransmitEvent.Init()
     BagEventManager:Init()
-    gg.log("initModule", 4)
     ServerEventManager.Subscribe("PlayerClientInited", function (evt)
-        evt.player:UpdateHud()
+        gg.log("PlayerClientInited", player)
+        local player = evt.player
+        player:UpdateHud()
+        if player._pendingSceneChangeEvent then
+            ServerEventManager.Publish("PlayerSceneChangeEvent", player._pendingSceneChangeEvent)
+            player._pendingSceneChangeEvent = nil
+        end
+        player.initedHud = true
     end)
-    gg.log("initModule", 5)
 end
 
 -- --设置碰撞组
@@ -226,7 +234,6 @@ function MainServer.player_enter_game(player)
     player_:initSkillData()                 --- 加载玩家技能
     player_:RefreshStats()               --重生 --刷新战斗属性
     player_:SetHealth(player_.maxHealth)
-    player_:UpdateHud()
 
     if Scene.spawnScene then
         if not player_:IsNear(Scene.spawnScene.node.Position, 500) then
@@ -237,6 +244,7 @@ function MainServer.player_enter_game(player)
     ServerEventManager.Publish("PlayerInited", {player = player_})
 
     MailManager:SendMailListToClient(uin_)
+    player_:UpdateHud()
 end
 
 --玩家离开游戏
@@ -310,6 +318,7 @@ function MainServer.update()
     for _, scene_ in pairs(gg.server_scene_list) do
         scene_:update()
     end
+    
     ServerScheduler.tick = gg.tick  -- 对于服务器端
     ServerScheduler.update()  -- 对于服务器端
 end

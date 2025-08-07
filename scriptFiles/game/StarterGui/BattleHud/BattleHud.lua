@@ -11,6 +11,7 @@ local UserInputService = game:GetService("UserInputService") ---@type UserInputS
 -- local ShakeBeh = require(MainStorage.code.client.camera.ShakeBeh) ---@type ShakeBeh
 local tweenInfo = TweenInfo.New(0.2, Enum.EasingStyle.Linear)
 local TweenService = game:GetService('TweenService') ---@type TweenService
+local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
 
 ---@class BattleHud:ViewBase
 local BattleHud = ClassMgr.Class("BattleHud", ViewBase)
@@ -47,7 +48,6 @@ function BattleHud:Close()
     -- end
     ViewBase.Close(self)
     ViewBase.GetUI("HudAvatar"):Open()
-    ViewBase.GetUI("HudMenu"):Open()
     if updateTaskId then
         ClientScheduler.cancel(updateTaskId)
         updateTaskId = nil
@@ -79,7 +79,6 @@ function BattleHud:Open()
     if self._isInit or not MainStorage:GetAttribute("初始是战斗状态")  then
         ViewBase.Open(self)
         ViewBase.GetUI("HudAvatar"):Close()
-        ViewBase.GetUI("HudMenu"):Close()
     end
     self._isInit = true
     if updateTaskId then
@@ -411,6 +410,33 @@ function BattleHud:OnInit(node, config)
             self:onFireMove(vector2)
         end
     )
+
+    if not self._rankingUpdateRegistered then
+        -- 监听排行列表响应
+        gg.log('--监听排行列表响应')
+        ClientEventManager.Subscribe('tmp_kill_ranking', function(data)
+            self:HandleRankingListResponse(data)
+        end)
+        self._rankingUpdateRegistered = true
+    end
+    self:Get("排行榜单背景/榜单名").node.Title = '伤害榜'
+    self:Get("排行榜单背景/我的伤害/伤害").node.Title = '0'
+    self:Get("排行榜单背景/我的伤害/名字").node.Title = game:GetService("Players").LocalPlayer.Nickname
+    self.old_ranking_list = {}
+end
+
+function BattleHud:HandleRankingListResponse(data)
+    if data.list then
+        local ranking_list = data.list
+        if #ranking_list > 1 then
+            -- 从大到小排序
+            table.sort(ranking_list, function(a, b)
+                return a.val > b.val
+            end)
+        end
+        ViewComponent:UpdateRankingAnimation(self, self.old_ranking_list, ranking_list, data.uin)
+        self.old_ranking_list = ranking_list
+    end
 end
 
 ---播放波次接近动画

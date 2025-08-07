@@ -65,13 +65,38 @@ function RollCardsGui:S_BuildPacket(player, packet)
     local price_count = player.bag:GetItemAmount(self.priceConfig.priceType)
     if price_count == -1 then price_count = math.huge end
 
+    -- === 新增：检查十连抽是否可用 ===
+    local canDrawTen = false
+    if item_count >= 10 then
+        -- 直接有足够的抽卡券
+        canDrawTen = true
+    elseif item_count + price_count >= 10 then
+        -- 抽卡券不足，但可以用替代货币补足
+        local missingCount = 10 - item_count
+        local missingCost = self.priceConfig.priceAmount * missingCount
+        canDrawTen = price_count >= missingCost
+    end
+
     packet.lottery = {
         next_pity = next_pity,
         next_pity_count = next_pity_count,
         pity_list = pity_list,
         item_count = item_count,
-        price_count = price_count
+        price_count = price_count,
+        -- === 新增：添加十连抽可用状态 ===
+        canDrawTen = canDrawTen
     }
+    
+    -- === 新增：更新抽卡红点状态 ===
+    self:UpdateDrawCardRedDots(packet.lottery)
+end
+
+-- === 新增方法：更新抽卡红点状态 ===
+---@param lotteryData table
+function RollCardsGui:UpdateDrawCardRedDots(lotteryData)
+    -- 这里可以实现服务端红点逻辑，或者留给客户端处理
+    -- 由于红点系统主要在客户端，这里暂时不实现具体逻辑
+    -- 可以在后续需要时添加服务端通知客户端的逻辑
 end
 
 ---@param player Player
@@ -225,6 +250,10 @@ function RollCardsGui:C_InitUI()
     self._drawTen.clickCb = function (ui, button)
         self:C_TryDraw(10)
     end
+    
+    -- === 新增：为十连抽按钮注册红点路径 ===
+    local redDotPath = string.format("抽卡/%s/十连抽", self.id or "默认抽卡")
+    self._drawTen:SetNewsPath(redDotPath)
     ui:Get(paths.BuyTicket, ViewButton).clickCb = function (ui, button)
         self:C_SendEvent("S_TriggerPurchaseCommands", {})
     end
@@ -329,8 +358,26 @@ function RollCardsGui:C_BuildUI(packet)
     ui:Get(paths.ItemIcon, ViewItem):SetItem(self.material:ToItem(1))
     ui:Get(paths.ItemIconAmount, ViewComponent).node.Title = gg.FormatLargeNumber(display_count)
     
+    -- === 新增：更新抽卡红点状态 ===
+    self:UpdateAllDrawCardRedDots(lottery)
+    
     self.packet = packet
     self.view:Open()
+end
+
+-- === 新增方法：更新所有抽卡红点状态 ===
+---@param lotteryData table
+function RollCardsGui:UpdateAllDrawCardRedDots(lotteryData)
+    local ViewBase = require(MainStorage.code.client.ui.ViewBase)
+    
+    -- 构建红点路径
+    local redDotPath = string.format("抽卡/%s/十连抽", self.id or "默认抽卡")
+    
+    -- 判断是否应该显示红点（十连抽可用）
+    local shouldShowRedDot = lotteryData.canDrawTen or false
+    
+    -- 设置红点状态
+    ViewBase.SetNew(redDotPath, shouldShowRedDot)
 end
 
 return RollCardsGui

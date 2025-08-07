@@ -56,6 +56,7 @@ local function LoadConfig()
         },
         ["商品"] = {
             "水晶x10",
+            "水晶x50",
             "水晶x250",
             "水晶x980",
             "水晶x5000",
@@ -106,6 +107,7 @@ local function LoadConfig()
         },
         ["ID"] = "抽卡页面"
     }),
+
     ["在线奖励"] = CustomUI.Load({
         ["UI名"] = "OnlineRewards",
         ["奖励物品"] = {
@@ -141,6 +143,10 @@ local function LoadConfig()
     ["排行榜页面"] = CustomUI.Load({
         ["UI名"] = "RankingGui",
         ["ID"] = "排行榜页面"
+    }),
+    ["宠物页面"] = CustomUI.Load({
+        ["UI名"] = "PetGui",
+        ["ID"] = "宠物页面"
     }),
     ["月卡"] = CustomUI.Load({
         ["UI名"] = "MonthlyRewards",

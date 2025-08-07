@@ -70,12 +70,44 @@ function Level:OnInit(levelType, scene, index)
     self.activeMobs = gg.Dict.New() ---@type Dict<string, Monster>
     self.currentWaveMobCount = 0 ---@type number
     self.playerStats = {} ---@type table<string, {kills: table<string, number>, rewards: table<string, number>}>
+    self.killRankingList = {}
+    -- 监听造成伤害事件
+    ServerEventManager.Subscribe("MobCombEvent", function(data)
+        gg.log('---监听造成伤害事件',data)
+        if self:IsActive() and data.mob then
+            if data.damageRecords then
+                local tmp_list = {}
+                for entityUuid, damage in pairs(data.damageRecords) do
+                    local player = self.players[entityUuid]
+                    if player then
+                        tmp_list[entityUuid] = { name = player.name, uin = entityUuid, val = math.floor(damage) }
+                    end
+                end
+                for uin, i in pairs(tmp_list) do
+                    local add_p = false
+                    for _, v in ipairs(self.killRankingList) do
+                        if uin == v.uin then
+                            v.val = v.val + i.val
+                            add_p = true
+                        end
+                    end
+                    if not add_p then
+                        self.killRankingList[#self.killRankingList + 1] = i
+                    end
+                end
+                for uin, player in pairs(self.players) do
+                    gg.network_channel:fireClient(uin, {
+                        cmd = 'tmp_kill_ranking',
+                        uin = uin,
+                        list = self.killRankingList
+                    })
+                end
+            end
+        end
+    end)
 
     -- 监听怪物死亡事件
     ServerEventManager.Subscribe("MobDeadEvent", function(data)
-        if self:IsActive() then
-            gg.log("MobDeadEvent", self.activeMobs:Count(), self.activeMobs)
-        end
         if self:IsActive() and data.mob and self.activeMobs:ContainsKey(data.mob.uuid) then
             -- 处理击杀奖励
             if data.damageRecords then
@@ -169,15 +201,52 @@ function Level:OnInit(levelType, scene, index)
             if self.players[player.uin] then
                 self:RemovePlayer(player, nil, "PlayerLeaveGameEvent")
             end
+            local idx = -1
+            for i, v in ipairs(self.killRankingList) do
+                if player.uin == v.uin then
+                    idx = i
+                    break
+                end
+            end
+            if idx > 0 then
+                table.remove(self.killRankingList, idx)
+                for uin, player_ in pairs(self.players) do
+                    if uin ~= player.uin then
+                        gg.network_channel:fireClient(uin, {
+                            cmd = 'tmp_kill_ranking',
+                            uin = uin,
+                            list = self.killRankingList
+                        })
+                    end
+                end
+            end
         end
     end)
-
     -- 监听玩家离开场景事件
     ServerEventManager.Subscribe("PlayerLeaveSceneEvent", function(event)
         local player = event.player
         local scene = event.scene
         if player and scene == self.scene then
             if self.players[player.uin] then
+                local idx = -1
+                for i, v in ipairs(self.killRankingList) do
+                    if player.uin == v.uin then
+                        idx = i
+                        break
+                    end
+                end
+                if idx > 0 then
+                    table.remove(self.killRankingList, idx)
+                    for uin, player_ in pairs(self.players) do
+                        if uin ~= player.uin then
+                            gg.network_channel:fireClient(uin, {
+                                cmd = 'tmp_kill_ranking',
+                                uin = uin,
+                                list = self.killRankingList
+                            })
+                        end
+                    end
+                end
                 self:RemovePlayer(player, nil, "PlayerLeaveSceneEvent")
             end
         end
@@ -632,8 +701,13 @@ function Level:End(success)
             stars = self.currentStars,
             duration = self.endTime - self.startTime
         })
-        if player.isAutoFighting and not player.isDestroyed then
-            self.levelType:Queue(player)
+        if player:GetVariable("autofighting", 0) == 1 and not player.isDestroyed then
+            -- 延迟1秒再重新开始匹配
+            ServerScheduler.add(function()
+                if player:GetVariable("autofighting", 0) == 1 and not player.isDestroyed then
+                    self.levelType:Queue(player)
+                end
+            end, 1)
         end
         player:ExitBattle()
         player:ResetTempSkill()
@@ -648,6 +722,21 @@ end
 function Level:AddPlayer(player)
     if self:GetPlayerCount() >= self.levelType.maxPlayers then
         return false
+    end
+    local have_player = false
+    for i, v in ipairs(self.killRankingList) do
+        if player.uin == v.uin then
+            have_player = true
+            break
+        end
+    end
+    if not have_player then
+        table.insert(self.killRankingList, { name = player.name, uin = player.uin, val = 0 })
+        gg.network_channel:fireClient(player.uin, {
+            cmd = 'tmp_kill_ranking',
+            uin = player.uin,
+            list = self.killRankingList
+        })
     end
     -- 如果玩家已在关卡则不重复添加
     if self.players[player.uin] then
@@ -682,6 +771,12 @@ function Level:AddPlayer(player)
             euler = originalEuler
         }
     end
+
+    -- 重置技能冷却和清除召唤物
+    player.cd_list = {}
+    player.cooldownTarget = {}
+    local SummonSpell = require(MainStorage.code.server.spells.spell_types.SummonSpell) ---@type SummonSpell
+    SummonSpell.ClearAllSummonsForPlayer(player)
 
     -- 设置临时技能
     if self.levelType.tempSkill then
@@ -758,6 +853,30 @@ function Level:RemovePlayer(player, success, reason)
         player._levelTeleporting = nil
 
         self.players[player.uin] = nil
+        
+        -- 重置技能冷却和清除召唤物
+        player.cd_list = {}
+        player.cooldownTarget = {}
+        local SummonSpell = require(MainStorage.code.server.spells.spell_types.SummonSpell) ---@type SummonSpell
+        local summons = SummonSpell.summonerSummons[player]
+        if summons then
+            for mob, _ in pairs(summons) do
+                if mob and mob.isEntity then
+                    mob:DestroyObject()
+                end
+                SummonSpell.summoned2Caster[mob] = nil
+            end
+            SummonSpell.summonerSummons[player] = nil
+        end
+        
+        -- 停止并重启技能可释放状态检查，确保客户端立即更新技能状态
+        if player.StopSkillCastabilityCheck then
+            player:StopSkillCastabilityCheck()
+        end
+        if player.StartSkillCastabilityCheck then
+            player:StartSkillCastabilityCheck()
+        end
+        
         -- 怪物仇恨转移：将target为该玩家的怪物直接SetTarget为随机其它玩家
         local playersList = {}
         for uin, p in pairs(self.players) do
@@ -793,7 +912,7 @@ function Level:RemovePlayer(player, success, reason)
             stars = self.currentStars,
             duration = self.endTime - self.startTime
         })
-        if player.isAutoFighting and not player.isDestroyed then
+        if player:GetVariable("autofighting", 0) == 1 and not player.isDestroyed then
             self.levelType:Queue(player)
         end
         player:ExitBattle()

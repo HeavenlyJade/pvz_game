@@ -20,7 +20,6 @@ function ClientMain:OnInit(...)
 end
 
 function ClientMain.start_client()
-    print("start_client", gg.isServer)
     gg.isServer = false
     ClientMain.tick = 0
     gg.uuid_start = gg.rand_int_between(100000, 999999);
@@ -85,11 +84,7 @@ function ClientMain.start_client()
     ClientEventManager.Subscribe("FetchModelSize", function (evt)
         local actor = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast actor Actor
         if actor then
-            -- local modelId = actor.ModelId
-            -- actor.ModelId = ""
-            -- actor.ModelId = modelId
             local size = actor.Size
-            print("ModelId", size)
             evt.Return({size.x, size.y, size.z})
         end
     end)
@@ -102,8 +97,6 @@ function ClientMain.createNetworkChannel()
     gg.network_channel.OnClientNotify:Connect(ClientMain.OnClientNotify)
 
     gg.network_channel:FireServer({ cmd = 'cmd_heartbeat', msg = 'new_client_join' })
-
-    gg.log('网络通道建立结束')
 end
 
 --  通过CoreUI 屏蔽默认的按钮组件

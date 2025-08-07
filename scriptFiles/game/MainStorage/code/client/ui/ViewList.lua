@@ -22,7 +22,7 @@ end
 
 ---@param node SandboxNode
 ---@param ui ViewBase
----@param onAddElementCb fun(child: SandboxNode): ViewComponent
+---@param onAddElementCb fun(child: SandboxNode, childPath: string): ViewComponent
 function ViewList:OnInit(node, ui, path, onAddElementCb)
     self.childrens = {} ---@type ViewComponent[]
     self.childNameTemplate = nil

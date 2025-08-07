@@ -154,6 +154,7 @@ end
 function _M:GetSize()
     if not self.actor then
         print(debug.traceback())
+        return Vector3.zero
     end
     local size = self.actor.Size
     local scale = self.actor.LocalScale
@@ -191,11 +192,11 @@ function _M:SetAnimationController(name)
 end
 
 function _M:SetPosition(position)
-    self.actor.LocalPosition = position
+    self.actor.Position = position
 end
 
 function _M:GetPosition()
-    return self.actor and self.actor.LocalPosition or Vector3.New(0, 0, 0)
+    return self.actor and self.actor.Position or Vector3.New(0, 0, 0)
 end
 
 function _M:GetRotation()
@@ -797,7 +798,7 @@ function _M:SetLevel(level)
     self.level = level
     self:SetVariable("level", level)
     if self.name_level_billboard then
-    self:CreateTitle()
+        self:CreateTitle()
     end
 end
 
@@ -970,7 +971,7 @@ end
 function _M:showDamage(number_, eff_, victim)
     -- 无伤害，无特殊效果
     local victimPosition = victim:GetCenterPosition()
-    local position =victimPosition + ( self:GetCenterPosition() - victimPosition):Normalize()*2 * victim:GetSize().x
+    local position = victimPosition + ( self:GetCenterPosition() - victimPosition):Normalize()*2 * victim:GetSize().x
     if self._attackCache == 0 then
         self._attackCache = self:GetStat("攻击")
     end

@@ -328,11 +328,14 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     local img = self.img
 
     self:InitButtonProperties(img)
-        if img["pc_hint"] then
-            img["pc_hint"].Visible = game.RunService:IsPC()
-        end
-        self.isHover = false
+    if img["pc_hint"] then
+        img["pc_hint"].Visible = game.RunService:IsPC()
     end
+    self.isHover = false
+    
+    -- 红点系统初始化
+    self:_initNewsSystem()
+end
 
 -- === 新增：重新绑定到新的UI节点 ===
 -- 用于在按钮复用时重新绑定到新的UI节点，重新设置所有事件监听器和属性
@@ -358,6 +361,9 @@ function ViewButton:RebindToNewNode(newNode, realButtonPath)
     end
 
     self:InitButtonProperties(img)
+    
+    -- 红点系统初始化
+    self:_initNewsSystem()
 end
 
 -- === 新增：更新子节点的图标缓存 ===
@@ -502,6 +508,9 @@ end
 
 -- === 新增：销毁按钮，清理所有引用和事件绑定 ===
 function ViewButton:Destroy()
+    -- 清理红点系统
+    self:_cleanupNewsSystem()
+    
     -- === 关键：销毁UI节点，自动清理所有事件绑定和子节点 ===
     if self.node then
         self.node:Destroy()
@@ -539,6 +548,85 @@ function ViewButton:Destroy()
     self.extraParams = nil
     self.enabled = nil
     self.isHover = nil
+end
+
+---初始化红点系统
+function ViewButton:_initNewsSystem()
+    -- 检查是否有新控件
+    if self.node["new"] then
+        self.newNode = self.node["new"]
+        self:_BindNodeAndChild(self.newNode, true, true)
+        
+        -- 获取红点路径属性
+        local newsPath = self.node:GetAttribute("红点路径")
+        if newsPath and newsPath ~= "" then
+            self.newsPath = newsPath
+            -- 注册到ViewBase红点系统
+            local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
+            ViewBase.RegisterNewsWatcher(self.newsPath, self)
+        end
+    end
+end
+
+---清理红点系统
+function ViewButton:_cleanupNewsSystem()
+    if self.newsPath then
+        local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
+        ViewBase.UnregisterNewsWatcher(self.newsPath, self)
+        self.newsPath = nil
+    end
+    self.newNode = nil
+end
+
+
+---设置或更改红点监听路径
+---@param path string|nil 红点路径，传入nil则清除监听
+function ViewButton:SetNewsPath(path)
+    -- 检查是否有新控件
+    if not self.node or not self.node["new"] then
+        gg.log("ViewButton:SetNewsPath - 按钮没有 'new' 子节点，无法设置红点监听", self.ui.className, self.path)
+        return false
+    end
+    
+    -- 先清理现有的监听
+    if self.newsPath then
+        local ViewBase = require(MainStorage.code.client.ui.ViewBase)
+        ViewBase.UnregisterNewsWatcher(self.newsPath, self)
+        self.newsPath = nil
+    end
+    
+    -- 设置新的监听路径
+    if path and path ~= "" then
+        self.newsPath = path
+        self.newNode = self.node["new"]
+        
+        -- 注册到ViewBase红点系统
+        local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
+        ViewBase.RegisterNewsWatcher(self.newsPath, self)
+        return true
+    end
+    
+    return false
+end
+
+---清除红点监听
+function ViewButton:ClearNewsPath()
+    self:SetNewsPath(nil)
+end
+
+---获取当前监听的红点路径
+---@return string|nil
+function ViewButton:GetNewsPath()
+    return self.newsPath
+end
+
+---手动刷新红点状态（用于调试或特殊情况）
+function ViewButton:RefreshNewsState()
+    if self.newsPath and self.newNode then
+        local ViewBase = require(MainStorage.code.client.ui.ViewBase)
+        local isNew = ViewBase.IsNew(self.newsPath)
+        self.newNode.Visible = isNew
+    end
 end
 
 return ViewButton
